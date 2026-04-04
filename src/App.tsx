@@ -15,6 +15,9 @@ import Messages from "./pages/Messages.tsx";
 import Login from "./pages/Login.tsx";
 import Signup from "./pages/Signup.tsx";
 import Profile from "./pages/Profile.tsx";
+import Notifications from "./pages/Notifications.tsx";
+import Leaderboard from "./pages/Leaderboard.tsx";
+import Admin from "./pages/Admin.tsx";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +43,9 @@ const App = () => (
             <Route path="/discover" element={<ProtectedRoute><WithNav><Discover /></WithNav></ProtectedRoute>} />
             <Route path="/sessions" element={<ProtectedRoute><WithNav><Sessions /></WithNav></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute><WithNav><Messages /></WithNav></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><WithNav><Notifications /></WithNav></ProtectedRoute>} />
+            <Route path="/leaderboard" element={<ProtectedRoute><WithNav><Leaderboard /></WithNav></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><WithNav><Admin /></WithNav></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
