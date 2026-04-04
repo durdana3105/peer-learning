@@ -15,6 +15,9 @@ import Messages from "./pages/Messages.tsx";
 import Login from "./pages/Login.tsx";
 import Signup from "./pages/Signup.tsx";
 import Profile from "./pages/Profile.tsx";
+import Notifications from "./pages/Notifications.tsx";
+import Leaderboard from "./pages/Leaderboard.tsx";
+import Admin from "./pages/Admin.tsx";
 
 const queryClient = new QueryClient();
 
