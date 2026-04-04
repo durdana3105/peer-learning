@@ -43,6 +43,9 @@ const App = () => (
             <Route path="/discover" element={<ProtectedRoute><WithNav><Discover /></WithNav></ProtectedRoute>} />
             <Route path="/sessions" element={<ProtectedRoute><WithNav><Sessions /></WithNav></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute><WithNav><Messages /></WithNav></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><WithNav><Notifications /></WithNav></ProtectedRoute>} />
+            <Route path="/leaderboard" element={<ProtectedRoute><WithNav><Leaderboard /></WithNav></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><WithNav><Admin /></WithNav></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -16,6 +16,8 @@ const Navbar = () => {
         { to: "/discover", label: "Discover" },
         { to: "/sessions", label: "Sessions" },
         { to: "/messages", label: "Messages" },
+        { to: "/notifications", label: "Notifications" },
+        { to: "/leaderboard", label: "Leaderboard" },
       ]
     : [{ to: "/", label: "Home" }];
 
