@@ -3,13 +3,14 @@ import { motion } from "framer-motion";
 import { Calendar, Trophy, TrendingUp, BookOpen, Star, Settings } from "lucide-react";
 import PeerCard from "@/components/PeerCard";
 import SessionCard from "@/components/SessionCard";
-import { peers, sessions, leaderboard } from "@/data/mockData";
+import { sessions, leaderboard } from "@/data/mockData";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import type { User } from "@/data/mockData";
 
 interface Profile {
   name: string;
@@ -29,22 +30,74 @@ interface Profile {
 const Dashboard = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [recommendedPeers, setRecommendedPeers] = useState<User[]>([]);
 
   useEffect(() => {
     if (!user) return;
+
+    // Fetch own profile
     supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single()
       .then(({ data }) => {
-        if (data) setProfile(data);
+        if (data) {
+          setProfile(data);
+          fetchRecommendedPeers(data);
+        }
       });
   }, [user]);
 
+  const fetchRecommendedPeers = async (myProfile: Profile) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .neq("id", user!.id)
+      .limit(6);
+
+    if (data && data.length > 0) {
+      const myLearn = myProfile.learn_subjects || [];
+      const myTeach = myProfile.teach_subjects || [];
+      const myInterests = myProfile.interests || [];
+
+      const mapped: User[] = data.map((p) => {
+        const pTeach = p.teach_subjects || [];
+        const pLearn = p.learn_subjects || [];
+        const pInterests = p.interests || [];
+
+        // Match score: how well this peer complements me
+        const teachOverlap = myLearn.filter((s) => pTeach.includes(s)).length;
+        const learnOverlap = myTeach.filter((s) => pLearn.includes(s)).length;
+        const interestOverlap = myInterests.filter((s) => pInterests.includes(s)).length;
+        const maxPossible = Math.max(myLearn.length + myTeach.length + myInterests.length, 1);
+        const matchScore = Math.min(Math.round(((teachOverlap + learnOverlap + interestOverlap) / maxPossible) * 100), 100);
+
+        return {
+          id: p.id,
+          name: p.name || "Anonymous",
+          avatar: p.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${p.name}`,
+          bio: p.bio || "",
+          skills: p.skills || [],
+          interests: p.interests || [],
+          teachSubjects: p.teach_subjects || [],
+          learnSubjects: p.learn_subjects || [],
+          rating: p.rating || 0,
+          sessionsCompleted: p.sessions_completed || 0,
+          points: p.points || 0,
+          badges: p.badges || [],
+          matchScore,
+        };
+      });
+
+      // Sort by match score
+      mapped.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+      setRecommendedPeers(mapped.slice(0, 3));
+    }
+  };
+
   const displayName = profile?.name || user?.user_metadata?.name || "Learner";
   const upcomingSessions = sessions.filter((s) => s.status === "upcoming");
-  const topPeers = peers.slice(0, 3);
 
   const userPoints = profile?.points ?? 0;
   const userRating = profile?.rating ?? 0;
@@ -92,17 +145,38 @@ const Dashboard = () => {
                 <h2 className="font-heading text-xl font-bold flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-primary" /> Upcoming Sessions
                 </h2>
+                <Link to="/sessions">
+                  <Button variant="ghost" size="sm" className="text-primary">View all →</Button>
+                </Link>
               </div>
               <div className="space-y-3">
-                {upcomingSessions.map((s) => <SessionCard key={s.id} session={s} />)}
+                {upcomingSessions.length > 0 ? (
+                  upcomingSessions.map((s) => <SessionCard key={s.id} session={s} />)
+                ) : (
+                  <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">
+                    <Calendar className="mx-auto h-8 w-8 opacity-30" />
+                    <p className="mt-2 text-sm">No upcoming sessions.</p>
+                    <Link to="/sessions">
+                      <Button variant="outline" size="sm" className="mt-3">Schedule one</Button>
+                    </Link>
+                  </div>
+                )}
               </div>
             </section>
             <section>
-              <h2 className="mb-4 font-heading text-xl font-bold flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-primary" /> Recommended for You
-              </h2>
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="font-heading text-xl font-bold flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" /> Recommended for You
+                </h2>
+                <Link to="/discover">
+                  <Button variant="ghost" size="sm" className="text-primary">Discover more →</Button>
+                </Link>
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                {topPeers.map((p, i) => <PeerCard key={p.id} peer={p} index={i} />)}
+                {recommendedPeers.length > 0
+                  ? recommendedPeers.map((p, i) => <PeerCard key={p.id} peer={p} index={i} />)
+                  : <p className="text-sm text-muted-foreground col-span-2">Complete your profile to get recommendations!</p>
+                }
               </div>
             </section>
           </div>
@@ -130,12 +204,20 @@ const Dashboard = () => {
                   {userBadges.map((b) => <Badge key={b} variant="secondary" className="text-xs">{b}</Badge>)}
                 </div>
               )}
+              <Link to="/profile" className="mt-4 block">
+                <Button variant="outline" size="sm" className="w-full">Edit Profile</Button>
+              </Link>
             </div>
 
             <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-              <h3 className="font-heading font-bold flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-warning" /> Leaderboard
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-heading font-bold flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-warning" /> Leaderboard
+                </h3>
+                <Link to="/leaderboard">
+                  <Button variant="ghost" size="sm" className="text-xs text-primary">View all</Button>
+                </Link>
+              </div>
               <div className="mt-4 space-y-3">
                 {leaderboard.map((entry) => (
                   <div key={entry.rank} className="flex items-center gap-3">
