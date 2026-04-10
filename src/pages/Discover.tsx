@@ -1,110 +1,109 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, SlidersHorizontal } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import PeerCard from "@/components/PeerCard";
-import { peers as mockPeers } from "@/data/mockData";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import type { User } from "@/data/mockData";
+import { supabase } from "@/lib/supabase";
 
 const Discover = () => {
-  const { user } = useAuth();
-  const [search, setSearch] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
-  const [dbPeers, setDbPeers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from("profiles")
-      .select("*")
-      .neq("id", user?.id || "")
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          const mapped: User[] = data.map((p) => ({
-            id: p.id,
-            name: p.name || "Anonymous",
-            avatar: p.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${p.name}`,
-            bio: p.bio || "",
-            skills: p.skills || [],
-            interests: p.interests || [],
-            teachSubjects: p.teach_subjects || [],
-            learnSubjects: p.learn_subjects || [],
-            rating: p.rating || 0,
-            sessionsCompleted: p.sessions_completed || 0,
-            points: p.points || 0,
-            badges: p.badges || [],
-          }));
-          setDbPeers(mapped);
-        } else {
-          setDbPeers(mockPeers);
-        }
+  const fetchData = async () => {
+    try {
+      const { data } = await supabase.auth.getUser();
+      const user = data?.user;
+
+      if (!user) {
+        console.log("No user logged in");
         setLoading(false);
-      });
-  }, [user]);
+        return;
+      }
 
-  const peers = dbPeers;
-  const allSubjects = Array.from(new Set(peers.flatMap((p) => [...p.teachSubjects, ...p.learnSubjects])));
+      // current user
+      const { data: current } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", user.id)
+        .single();
 
-  const filtered = peers.filter((p) => {
-    const matchesSearch =
-      !search ||
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.teachSubjects.some((s) => s.toLowerCase().includes(search.toLowerCase())) ||
-      p.learnSubjects.some((s) => s.toLowerCase().includes(search.toLowerCase()));
-    const matchesSubject =
-      !selectedSubject || p.teachSubjects.includes(selectedSubject) || p.learnSubjects.includes(selectedSubject);
-    return matchesSearch && matchesSubject;
-  });
+      setCurrentUser(current);
+
+      // all users
+      const { data: allUsers } = await supabase
+        .from("users")
+        .select("*");
+
+      setUsers(allUsers || []);
+    } catch (err) {
+      console.log("Error:", err);
+    } finally {
+      setLoading(false); // 🔥 ALWAYS stop loading
+    }
+  };
+
+  fetchData();
+}, []);
+
+  // 🔥 Match score function
+  const getMatchScore = (user: any) => {
+    if (!currentUser) return 0;
+
+    const userSkills = user.skills?.split(",") || [];
+    const myGoals = currentUser.learning_goals?.split(",") || [];
+
+    return userSkills.filter((skill: string) =>
+      myGoals.includes(skill.trim())
+    ).length;
+  };
+
+  // 🔥 Filter matched users
+  const matchedUsers = users
+    .filter((u) => u.id !== currentUser?.id)
+    .map((u) => ({
+      ...u,
+      score: getMatchScore(u),
+    }))
+    .filter((u) => u.score > 0)
+    .sort((a, b) => b.score - a.score);
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="container">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="font-heading text-3xl font-extrabold">Discover Peers 🔍</h1>
-          <p className="mt-1 text-muted-foreground">Find the perfect learning partner.</p>
-        </motion.div>
+    <div className="min-h-screen p-6">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <h1 className="text-3xl font-bold">Discover Peers 🤝</h1>
+        <p className="text-gray-500">Find your best learning partner</p>
+      </motion.div>
 
-        <div className="mt-6 space-y-4">
-          <div className="flex gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search by name, skill, or subject..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
-            </div>
-            <Button variant="outline" size="icon">
-              <SlidersHorizontal className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant={!selectedSubject ? "default" : "outline"} className="cursor-pointer" onClick={() => setSelectedSubject(null)}>All</Badge>
-            {allSubjects.slice(0, 10).map((s) => (
-              <Badge key={s} variant={selectedSubject === s ? "default" : "outline"} className="cursor-pointer" onClick={() => setSelectedSubject(selectedSubject === s ? null : s)}>
-                {s}
-              </Badge>
-            ))}
-          </div>
+      {loading ? (
+        <div className="mt-10 text-center">Loading...</div>
+      ) : matchedUsers.length === 0 ? (
+        <div className="mt-10 text-center text-gray-500">
+          No matches found 😔
         </div>
+      ) : (
+        <div className="mt-6 grid gap-4">
+          {matchedUsers.map((u) => (
+            <div key={u.id} className="p-4 border rounded-lg shadow-sm">
+              <h2 className="text-lg font-semibold">{u.name}</h2>
 
-        {loading ? (
-          <div className="mt-16 flex justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          </div>
-        ) : (
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((p, i) => <PeerCard key={p.id} peer={p} index={i} />)}
-          </div>
-        )}
+              <p className="text-sm">
+                <strong>Skills:</strong> {u.skills}
+              </p>
 
-        {!loading && filtered.length === 0 && (
-          <div className="mt-16 text-center text-muted-foreground">
-            <p className="text-lg">No peers found matching your search.</p>
-            <p className="mt-1 text-sm">Try different keywords or remove filters.</p>
-          </div>
-        )}
-      </div>
+              <p className="text-sm">
+                <strong>Goals:</strong> {u.learning_goals}
+              </p>
+
+              <p className="mt-2 text-green-600 font-bold">
+                Match Score: {u.score} 🔥
+              </p>
+
+              <button className="mt-3 px-4 py-1 bg-blue-500 text-white rounded">
+                Connect
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
