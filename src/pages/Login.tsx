@@ -43,8 +43,7 @@ const Login = () => {
 
     setIsLoading(true);
 
-    // 🔐 Supabase login
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -65,6 +64,21 @@ const Login = () => {
     }
   };
 
+  // ✅ GOOGLE LOGIN FUNCTION (CORRECT PLACE)
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+    });
+
+    if (error) {
+      toast({
+        title: "Google login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -75,8 +89,11 @@ const Login = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
-
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md"
+      >
         <div className="mb-8 text-center">
           <Link to="/" className="inline-flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-hero">
@@ -88,13 +105,17 @@ const Login = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email */}
           <Input
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+          {errors.email && (
+            <p className="text-red-500 text-sm">{errors.email}</p>
+          )}
 
+          {/* Password */}
           <div className="relative">
             <Input
               type={showPassword ? "text" : "password"}
@@ -110,8 +131,22 @@ const Login = () => {
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
-          {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
 
+          {errors.password && (
+            <p className="text-red-500 text-sm">{errors.password}</p>
+          )}
+
+          {/* Forgot Password */}
+          <div className="text-right">
+            <Link
+              to="/forgot-password"
+              className="text-sm text-primary hover:underline"
+            >
+              Forgot Password?
+            </Link>
+          </div>
+
+          {/* Remember me */}
           <div className="flex items-center gap-2">
             <Checkbox
               checked={rememberMe}
@@ -120,9 +155,25 @@ const Login = () => {
             <Label>Remember me</Label>
           </div>
 
+          {/* Login button */}
           <Button type="submit" disabled={isLoading} className="w-full">
             {isLoading ? "Logging in..." : "Log in"}
             <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+
+          {/* ✅ GOOGLE LOGIN BUTTON */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full flex items-center justify-center gap-2"
+            onClick={handleGoogleLogin}
+          >
+            <img
+              src="https://www.svgrepo.com/show/475656/google-color.svg"
+              alt="google"
+              className="w-5 h-5"
+            />
+            Continue with Google
           </Button>
         </form>
 
@@ -132,7 +183,6 @@ const Login = () => {
             Sign up
           </Link>
         </p>
-
       </motion.div>
     </div>
   );

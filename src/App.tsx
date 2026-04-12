@@ -20,6 +20,13 @@ import Notifications from "./pages/Notifications.tsx";
 import Leaderboard from "./pages/Leaderboard.tsx";
 import Admin from "./pages/Admin.tsx";
 import { supabase } from "./lib/supabase";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+
+<Routes>
+  <Route path="/forgot-password" element={<ForgotPassword />} />
+  <Route path="/reset-password/:token" element={<ResetPassword />} />
+</Routes>
 
 const queryClient = new QueryClient();
 
@@ -50,7 +57,29 @@ function App() {
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+
             <Routes>
+  <Route path="/" element={<Index />} />
+  <Route path="/login" element={<Login />} />
+  <Route path="/signup" element={<Signup />} />
+
+  {/* ✅ FORGOT PASSWORD ROUTES (ADD HERE ONLY ONCE) */}
+  <Route path="/forgot-password" element={<ForgotPassword />} />
+<Route path="/reset-password" element={<ResetPassword />} />
+
+  {/* Protected routes */}
+  <Route path="/dashboard" element={<ProtectedRoute><WithNav><Dashboard /></WithNav></ProtectedRoute>} />
+  <Route path="/discover" element={<ProtectedRoute><WithNav><Discover /></WithNav></ProtectedRoute>} />
+  <Route path="/sessions" element={<ProtectedRoute><WithNav><Sessions /></WithNav></ProtectedRoute>} />
+  <Route path="/messages" element={<ProtectedRoute><WithNav><Messages /></WithNav></ProtectedRoute>} />
+  <Route path="/notifications" element={<ProtectedRoute><WithNav><Notifications /></WithNav></ProtectedRoute>} />
+  <Route path="/leaderboard" element={<ProtectedRoute><WithNav><Leaderboard /></WithNav></ProtectedRoute>} />
+  <Route path="/admin" element={<ProtectedRoute><WithNav><Admin /></WithNav></ProtectedRoute>} />
+  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
+  <Route path="*" element={<NotFound />} />
+</Routes>
+            {/* <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
@@ -63,10 +92,13 @@ function App() {
               <Route path="/leaderboard" element={<ProtectedRoute><WithNav><Leaderboard /></WithNav></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><WithNav><Admin /></WithNav></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              
+              <Routes>
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password/:token" element={<ResetPassword />} />
+              </Routes>
 
               <Route path="*" element={<NotFound />} />
-            </Routes>
+            </Routes> */}
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

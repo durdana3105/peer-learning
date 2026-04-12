@@ -1,0 +1,2 @@
+forgotPassword
+resetPassword
