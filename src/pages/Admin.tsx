@@ -80,7 +80,7 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
+    <div className="min-h-screen  py-8">
       <div className="container">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="font-heading text-3xl font-extrabold flex items-center gap-2">

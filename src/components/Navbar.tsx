@@ -6,7 +6,7 @@ import {
   Calendar, MessageCircle, Bell, Trophy, Shield, User
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-
+ 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -68,7 +68,7 @@ const Navbar = () => {
     : [{ to: "/", label: "Home", icon: BookOpen }];
 
   return (
-    <nav className="sticky top-0 z-50 border-b bg-white">
+   <nav className="bg-black text-white">
       <div className="flex h-16 items-center justify-between px-6">
 
         {/* Logo */}
@@ -112,6 +112,7 @@ const Navbar = () => {
               <Link to="/login">Log in</Link>
               <Link to="/signup">
                 <Button>Sign up</Button>
+                color: #18084d8c;
               </Link>
             </>
           )}

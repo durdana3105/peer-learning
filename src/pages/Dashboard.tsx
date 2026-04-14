@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { color, motion } from "framer-motion";
 import { Calendar, Trophy, TrendingUp, BookOpen, Star, Settings } from "lucide-react";
 import PeerCard from "@/components/PeerCard";
 import SessionCard from "@/components/SessionCard";
@@ -149,7 +149,7 @@ useEffect(() => {
     profile?.name || user?.user_metadata?.name || "Learner";
 
   return (
-    <div className="min-h-screen bg-background py-8">
+    <div className="min-h-screen  py-8">
       <div className="container">
         <motion.div
           initial={{ opacity: 0 }}
@@ -176,7 +176,9 @@ useEffect(() => {
 
         {/* Recommended */}
         <section className="mb-8">
-          <h2 className="text-xl font-bold mb-3">Recommended Peers</h2>
+          <h2 className="text-xl font-bold mb-3" style={{ color: '#fefafa8c' }}>
+            Recommended Peers
+          </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {recommendedPeers.map((p, i) => (

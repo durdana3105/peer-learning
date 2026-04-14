@@ -4,6 +4,24 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
 
+
+body {
+  background: linear-gradient(-45deg, #000000, #022c22, #064e3b);
+  background-size: 300% 300%;
+  animation: moveGradient 12s ease infinite;
+  color: white;
+}
+@keyframes moveGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
 @layer base {
   :root {
     --background: 80 30% 97%;
