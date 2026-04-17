@@ -58,11 +58,27 @@ const Signup = () => {
 
     setIsLoading(true);
 
-    // 🔐 Step 1: Auth signup
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+  const { data, error } = await supabase.auth.signUp({
+  email,
+  password,
+});
+
+console.log("SIGNUP DATA:", data);
+
+if (data.user) {
+  const { error: insertError } = await supabase.from("profiles").insert([
+    {
+      id: data.user.id,
+      email: data.user.email,
+      name:
+        data.user.user_metadata?.name ||
+        data.user.email.split("@")[0],
+      avatar_url: `https://api.dicebear.com/9.x/initials/svg?seed=${data.user.email}`,
+    },
+  ]);
+
+  console.log("INSERT ERROR:", insertError);
+}
 
     if (error) {
       setIsLoading(false);

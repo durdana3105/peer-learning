@@ -18,6 +18,25 @@ body::after {
   z-index: -1;
 }
 body {
+  background: black;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: transparent url("https://www.transparenttextures.com/patterns/stardust.png");
+  opacity: 0.3;
+  animation: moveStars 60s linear infinite;
+}
+
+@keyframes moveStars {
+  from { transform: translateY(0); }
+  to { transform: translateY(-1000px); }
+}
+body {
   background: linear-gradient(-45deg, #000000, #022c22, #064e3b);
   background-size: 300% 300%;
   animation: moveGradient 12s ease infinite;

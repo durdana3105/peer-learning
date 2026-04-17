@@ -1,14 +1,9 @@
 import { useEffect, useState } from "react";
-import { color, motion } from "framer-motion";
-import { Calendar, Trophy, TrendingUp, BookOpen, Star, Settings } from "lucide-react";
+import { motion } from "framer-motion";
 import PeerCard from "@/components/PeerCard";
 import SessionCard from "@/components/SessionCard";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 
 interface Profile {
   id: string;
@@ -34,18 +29,23 @@ const Dashboard = () => {
   const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
 
-  // ✅ Fetch profile + peers
+  // ✅ Fetch profile
   useEffect(() => {
     if (!user) return;
 
     const fetchProfile = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .single();
 
+      if (error) {
+        console.log("Profile error:", error);
+      }
+
       if (data) {
+        console.log("PROFILE NAME:", data.name);
         setProfile(data);
         fetchRecommendedPeers(data);
       }
@@ -113,22 +113,19 @@ const Dashboard = () => {
     setRecommendedPeers(mapped.slice(0, 3));
   };
 
-useEffect(() => {
-  const fetchSessions = async () => {
-    const { data, error } = await (supabase as any)
-  .from("sessions")
-  .select("*")
-  .eq("status", "upcoming");// make sure column exists
+  // ✅ Fetch sessions
+  useEffect(() => {
+    const fetchSessions = async () => {
+      const { data } = await supabase
+        .from("sessions")
+        .select("*")
+        .eq("status", "upcoming");
 
-    if (error) {
-      console.log("Error fetching sessions:", error);
-    } else {
       setUpcomingSessions(data || []);
-    }
-  };
+    };
 
-  fetchSessions();
-}, []);
+    fetchSessions();
+  }, []);
 
   // ✅ Fetch leaderboard
   useEffect(() => {
@@ -145,20 +142,36 @@ useEffect(() => {
     fetchLeaderboard();
   }, []);
 
+  // ✅ LOADING FIX (VERY IMPORTANT)
+ if (!user) {
+  return <div className="text-white p-6">Loading...</div>;
+}
+
+  // ✅ SAFE NAME FIX
   const displayName =
-    profile?.name || user?.user_metadata?.name || "Learner";
+    profile?.name?.trim() ||
+    user?.email?.split("@")[0] ||
+    "Learner";
 
   return (
-    <div className="min-h-screen  py-8">
+    <div className="min-h-screen py-8">
       <div className="container">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="mb-8 flex justify-between"
+          className="mb-10"
         >
           <h1 className="text-3xl font-bold">
-            Welcome back, {displayName.split(" ")[0]} 👋
+            Welcome back,
+            <span className="text-green-400 ml-2">
+              {displayName.split(" ")[0]}
+            </span>{" "}
+            👋
           </h1>
+
+          <p className="text-sm text-white/60 mt-2">
+            Ready to learn something new today?
+          </p>
         </motion.div>
 
         {/* Sessions */}
@@ -176,7 +189,7 @@ useEffect(() => {
 
         {/* Recommended */}
         <section className="mb-8">
-          <h2 className="text-xl font-bold mb-3" style={{ color: '#fefafa8c' }}>
+          <h2 className="text-xl font-bold mb-3 text-white/70">
             Recommended Peers
           </h2>
 
@@ -192,14 +205,34 @@ useEffect(() => {
           <h2 className="text-xl font-bold mb-3">Leaderboard</h2>
 
           {leaderboard.map((u, i) => (
-            <div key={u.id} className="flex gap-3 items-center">
-              <span>{i + 1}</span>
-              <img
-                src={u.avatar_url || "https://via.placeholder.com/40"}
-                className="w-8 h-8 rounded"
-              />
-              <p>{u.name}</p>
-              <span>{u.points || 0}</span>
+            <div
+              key={u.id}
+              className={`flex items-center justify-between p-3 mb-2 rounded-lg border ${
+                i === 0
+                  ? "bg-yellow-500/10 border-yellow-400/30"
+                  : i === 1
+                  ? "bg-gray-400/10 border-gray-300/20"
+                  : i === 2
+                  ? "bg-orange-500/10 border-orange-400/20"
+                  : "bg-white/5 border-white/10"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-white/60 w-5">
+                  #{i + 1}
+                </span>
+
+                <img
+                  src={u.avatar_url || "https://via.placeholder.com/40"}
+                  className="w-9 h-9 rounded-full"
+                />
+
+                <p className="font-medium">{u.name}</p>
+              </div>
+
+              <span className="text-sm text-white/70">
+                {u.points || 0} pts
+              </span>
             </div>
           ))}
         </section>

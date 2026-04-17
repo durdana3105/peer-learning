@@ -112,7 +112,7 @@ const Navbar = () => {
               <Link to="/login">Log in</Link>
               <Link to="/signup">
                 <Button>Sign up</Button>
-                color: #18084d8c;
+                
               </Link>
             </>
           )}
