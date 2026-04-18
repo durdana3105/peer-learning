@@ -24,11 +24,6 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Chatbot from "./components/Chatbot";
 
-<Routes>
-  <Route path="/forgot-password" element={<ForgotPassword />} />
-  <Route path="/reset-password/:token" element={<ResetPassword />} />
-</Routes>
-
 const queryClient = new QueryClient();
 
 const WithNav = ({ children }) => (
@@ -38,16 +33,51 @@ const WithNav = ({ children }) => (
   </>
 );
 
-
 function App() {
 
+  // ✅ Sparkle Effect
+  useEffect(() => {
+    const container = document.getElementById("sparkle-container");
+
+    if (!container) return;
+
+    const createSparkle = (x, y) => {
+      const sparkle = document.createElement("div");
+      sparkle.className = "sparkle";
+
+      sparkle.style.left = `${x}px`;
+      sparkle.style.top = `${y}px`;
+
+      container.appendChild(sparkle);
+
+      setTimeout(() => {
+        sparkle.remove();
+      }, 800);
+    };
+
+    const handleMouseMove = (e) => {
+      for (let i = 0; i < 2; i++) {
+        createSparkle(
+          e.clientX + Math.random() * 10 - 5,
+          e.clientY + Math.random() * 10 - 5
+        );
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, []);
+
+  // ✅ Supabase test
   useEffect(() => {
     const test = async () => {
       const { data, error } = await supabase.from("users").select("*");
       console.log("DATA:", data);
       console.log("ERROR:", error);
     };
-
     test();
   }, []);
 
@@ -59,7 +89,9 @@ function App() {
         <BrowserRouter>
           <AuthProvider>
 
-            {/* ✅ ROUTES */}
+            {/* ✨ Sparkle container MUST be inside return */}
+            <div id="sparkle-container"></div>
+
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
@@ -80,7 +112,6 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
 
-            {/* ✅ CHATBOT (GLOBAL) */}
             <Chatbot />
 
           </AuthProvider>
