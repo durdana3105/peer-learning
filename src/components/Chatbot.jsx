@@ -9,9 +9,9 @@ export default function Chatbot() {
 
   const chatEndRef = useRef(null);
 
-  const API_KEY = "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";
+  // ✅ use env variable
+const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 
-  // 🧠 System prompt
   const systemPrompt = {
     role: "system",
     content:
@@ -41,15 +41,18 @@ export default function Chatbot() {
     if (!input.trim()) return;
 
     const userMsg = { role: "user", text: input };
-    setMessages((prev) => [...prev, userMsg]);
+
+    // ✅ fix stale state
+    const updatedMessages = [...messages, userMsg];
+
+    setMessages(updatedMessages);
     setInput("");
     setLoading(true);
 
     await supabase.from("chat_messages").insert([userMsg]);
 
     try {
-      // 🧠 memory messages
-      const formattedMessages = messages.map((msg) => ({
+      const formattedMessages = updatedMessages.map((msg) => ({
         role: msg.role,
         content: msg.text,
       }));
@@ -64,32 +67,33 @@ export default function Chatbot() {
           },
           body: JSON.stringify({
             model: "openai/gpt-3.5-turbo",
-            messages: [systemPrompt, ...formattedMessages, { role: "user", content: input }],
+            messages: [...formattedMessages, systemPrompt],
           }),
         }
       );
 
       const data = await res.json();
-      console.log("AI:", data);
 
       const botReply =
         data?.choices?.[0]?.message?.content || "No response 😅";
 
-      const botMsg = { role: "bot", text: botReply };
+      const botMsg = { role: "assistant", text: botReply };
 
-      // ⚡ typing animation
+      // ✅ smoother typing (chunked)
       let currentText = "";
-      setMessages((prev) => [...prev, { role: "bot", text: "" }]);
+      const chunkSize = 3;
 
-      for (let i = 0; i < botReply.length; i++) {
-        currentText += botReply[i];
+      setMessages((prev) => [...prev, { role: "assistant", text: "" }]);
 
-        await new Promise((res) => setTimeout(res, 10));
+      for (let i = 0; i < botReply.length; i += chunkSize) {
+        currentText += botReply.slice(i, i + chunkSize);
+
+        await new Promise((res) => setTimeout(res, 20));
 
         setMessages((prev) => {
           const updated = [...prev];
           updated[updated.length - 1] = {
-            role: "bot",
+            role: "assistant",
             text: currentText,
           };
           return updated;
@@ -97,7 +101,6 @@ export default function Chatbot() {
       }
 
       await supabase.from("chat_messages").insert([botMsg]);
-
     } catch (err) {
       console.error("AI error:", err);
     }
@@ -105,14 +108,22 @@ export default function Chatbot() {
     setLoading(false);
   };
 
-  // 💻 Code formatting
+  // 💻 Code formatting (fixed)
   const formatMessage = (text) => {
     if (text.includes("```")) {
-      const code = text.split("```")[1];
-      return (
-        <pre className="bg-black text-green-400 p-2 rounded text-xs overflow-x-auto">
-          {code}
-        </pre>
+      const parts = text.split("```");
+
+      return parts.map((part, i) =>
+        i % 2 === 1 ? (
+          <pre
+            key={i}
+            className="bg-black text-green-400 p-2 rounded text-xs overflow-x-auto"
+          >
+            {part}
+          </pre>
+        ) : (
+          <span key={i}>{part}</span>
+        )
       );
     }
     return <span>{text}</span>;
@@ -164,21 +175,21 @@ export default function Chatbot() {
 
           {/* Input */}
           <div className="p-2 border-t border-gray-700 flex gap-2">
-  <input
-    className="flex-1 bg-gray-800 border border-gray-600 p-2 rounded text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-    value={input}
-    onChange={(e) => setInput(e.target.value)}
-    onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-    placeholder="Ask anything..."
-  />
+            <input
+              className="flex-1 bg-gray-800 border border-gray-600 p-2 rounded text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder="Ask anything..."
+            />
 
-  <button
-    onClick={sendMessage}
-    className="bg-blue-500 px-4 py-2 rounded text-white hover:bg-blue-600 transition"
-  >
-    ➤
-  </button>
-</div>
+            <button
+              onClick={sendMessage}
+              className="bg-blue-500 px-4 py-2 rounded text-white hover:bg-blue-600 transition"
+            >
+              ➤
+            </button>
+          </div>
         </div>
       )}
     </>

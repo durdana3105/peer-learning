@@ -1,141 +1,94 @@
+
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Save, Plus, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import Navbar from "@/components/Navbar";
+import { supabase } from "../lib/supabaseClient";
+import { useNavigate } from "react-router-dom";
+
+console.log("COMPONENT RENDERED");
+console.log("PROFILE FILE LOADED 🚀");
 
 const Profile = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [name, setName] = useState("");
-  const [bio, setBio] = useState("");
-  const [skillInput, setSkillInput] = useState("");
-  const [skills, setSkills] = useState<string[]>([]);
-  const [interestInput, setInterestInput] = useState("");
-  const [interests, setInterests] = useState<string[]>([]);
-  const [teachInput, setTeachInput] = useState("");
-  const [teachSubjects, setTeachSubjects] = useState<string[]>([]);
-  const [learnInput, setLearnInput] = useState("");
-  const [learnSubjects, setLearnSubjects] = useState<string[]>([]);
+  const [profile, setProfile] = useState(null);
+  const navigate = useNavigate(); // ✅ inside component
 
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("profiles").select("*").eq("id", user.id).single().then(({ data }) => {
-      if (data) {
-        setName(data.name || "");
-        setBio(data.bio || "");
-        setSkills(data.skills || []);
-        setInterests(data.interests || []);
-        setTeachSubjects(data.teach_subjects || []);
-        setLearnSubjects(data.learn_subjects || []);
-      }
-      setLoading(false);
-    });
-  }, [user]);
+ useEffect(() => {
+  const fetchProfile = async () => {
 
-  const addTag = (value: string, list: string[], setter: (v: string[]) => void, inputSetter: (v: string) => void) => {
-    const trimmed = value.trim();
-    if (trimmed && !list.includes(trimmed)) {
-      setter([...list, trimmed]);
+    const { data, error } = await supabase.auth.getSession();
+    console.log("SESSION:", data);
+
+    const user = data?.session?.user;
+
+    if (!user) {
+      console.log("❌ No user logged in");
+      return;
     }
-    inputSetter("");
-  };
 
-  const removeTag = (tag: string, list: string[], setter: (v: string[]) => void) => {
-    setter(list.filter((t) => t !== tag));
-  };
+    console.log("✅ USER ID:", user.id);
 
-  const handleSave = async () => {
-    if (!user) return;
-    setSaving(true);
-    const { error } = await supabase.from("profiles").update({
-      name, bio, skills, interests, teach_subjects: teachSubjects, learn_subjects: learnSubjects,
-    }).eq("id", user.id);
-    setSaving(false);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id);
+
+    console.log("PROFILE DATA:", profileData);
+    console.log("PROFILE ERROR:", profileError);
+
+    if (profileData && profileData.length > 0) {
+      setProfile(profileData[0]);
     } else {
-      toast({ title: "Profile saved!", description: "Your changes have been saved." });
+      console.log("❌ No profile found in DB");
     }
   };
 
-  const TagInput = ({ label, value, onChange, list, onAdd, onRemove, color }: {
-    label: string; value: string; onChange: (v: string) => void;
-    list: string[]; onAdd: () => void; onRemove: (t: string) => void; color: string;
-  }) => (
-    <div>
-      <Label>{label}</Label>
-      <div className="mt-1 flex gap-2">
-        <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={`Add ${label.toLowerCase()}...`}
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onAdd(); } }} />
-        <Button type="button" variant="outline" size="icon" onClick={onAdd}><Plus className="h-4 w-4" /></Button>
-      </div>
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {list.map((tag) => (
-          <Badge key={tag} variant="secondary" className={`${color} gap-1`}>
-            {tag}
-            <button onClick={() => onRemove(tag)}><X className="h-3 w-3" /></button>
-          </Badge>
-        ))}
-      </div>
-    </div>
-  );
+  fetchProfile();
+}, []);
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
+  if (!profile) {
+    return <div className="text-white p-6">Loading profile...</div>;
+  }
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-background py-8">
-        <div className="container max-w-2xl">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="font-heading text-3xl font-extrabold">Edit Profile ✏️</h1>
-            <p className="mt-1 text-muted-foreground">Tell peers about yourself.</p>
-          </motion.div>
+    <div className="min-h-screen bg-black text-white flex justify-center items-center">
+      <div className="bg-gray-900 p-6 rounded-xl w-[400px]">
 
-          <div className="mt-8 space-y-6 rounded-2xl border border-border bg-card p-6 shadow-card">
-            <div>
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1" />
-            </div>
-            <div>
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} rows={3} className="mt-1" placeholder="Tell us about yourself..." />
-            </div>
+        {/* Avatar */}
+        <div className="flex flex-col items-center">
+          <img
+            src={profile.avatar_url || "https://via.placeholder.com/100"}
+            alt="avatar"
+            className="w-24 h-24 rounded-full mb-4"
+          />
+          <h1 className="text-2xl font-bold">{profile.name}</h1>
+          <p className="text-gray-400">{profile.email}</p>
+        </div>
 
-            <TagInput label="Skills" value={skillInput} onChange={setSkillInput} list={skills}
-              onAdd={() => addTag(skillInput, skills, setSkills, setSkillInput)}
-              onRemove={(t) => removeTag(t, skills, setSkills)} color="" />
+        {/* Bio */}
+        <div className="mt-4">
+          <p className="text-sm">{profile.bio || "No bio added"}</p>
+        </div>
 
-            <TagInput label="Interests" value={interestInput} onChange={setInterestInput} list={interests}
-              onAdd={() => addTag(interestInput, interests, setInterests, setInterestInput)}
-              onRemove={(t) => removeTag(t, interests, setInterests)} color="" />
-
-            <TagInput label="Subjects You Teach" value={teachInput} onChange={setTeachInput} list={teachSubjects}
-              onAdd={() => addTag(teachInput, teachSubjects, setTeachSubjects, setTeachInput)}
-              onRemove={(t) => removeTag(t, teachSubjects, setTeachSubjects)} color="" />
-
-            <TagInput label="Subjects You Want to Learn" value={learnInput} onChange={setLearnInput} list={learnSubjects}
-              onAdd={() => addTag(learnInput, learnSubjects, setLearnSubjects, setLearnInput)}
-              onRemove={(t) => removeTag(t, learnSubjects, setLearnSubjects)} color="" />
-
-            <Button onClick={handleSave} disabled={saving} className="w-full bg-gradient-hero text-primary-foreground hover:opacity-90">
-              <Save className="mr-2 h-4 w-4" />
-              {saving ? "Saving..." : "Save Profile"}
-            </Button>
+        {/* Skills */}
+        <div className="mt-4">
+          <h2 className="font-semibold mb-2">Skills</h2>
+          <div className="flex flex-wrap gap-2">
+            {profile.skills?.map((skill, i) => (
+              <span key={i} className="bg-blue-600 px-3 py-1 rounded text-sm">
+                {skill}
+              </span>
+            ))}
           </div>
         </div>
+
+        {/* ✅ Edit Button */}
+        <button
+          onClick={() => navigate("/edit-profile")}
+          className="bg-blue-600 px-4 py-2 rounded mt-4 w-full"
+        >
+          Edit Profile
+        </button>
+
       </div>
-    </>
+    </div>
   );
 };
 
