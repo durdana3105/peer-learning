@@ -49,9 +49,9 @@ const Navbar = () => {
   }, []);
 
   // 🔥 Logout
- const handleLogout = async () => {
+const handleLogout = async () => {
   await supabase.auth.signOut();
-  window.location.href = "/";
+  window.location.replace("/login");
 };
 
   // 🔥 Navigation links
@@ -102,6 +102,7 @@ const Navbar = () => {
                   <span>{profileName || "Profile"}</span>
                 </div>
               </Link>
+              <button onClick={handleLogout}>Logout</button>
 
               <Button onClick={handleSignOut}>
                 <LogOut size={16} />
