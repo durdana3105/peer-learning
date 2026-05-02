@@ -51,7 +51,7 @@ const Navbar = () => {
   // 🔥 Logout
 const handleLogout = async () => {
   await supabase.auth.signOut();
-  window.location.replace("/login");
+  window.location.replace("/Login");
 };
 
   // 🔥 Navigation links
