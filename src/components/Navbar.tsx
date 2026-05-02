@@ -49,10 +49,10 @@ const Navbar = () => {
   }, []);
 
   // 🔥 Logout
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = "/login";
-  };
+ const handleLogout = async () => {
+  await supabase.auth.signOut();
+  window.location.href = "/";
+};
 
   // 🔥 Navigation links
   const navLinks = user
