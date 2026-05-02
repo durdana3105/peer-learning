@@ -19,11 +19,11 @@ const Profile = () => {
     const user = data?.session?.user;
 
     if (!user) {
-      console.log("❌ No user logged in");
+      console.log(" No user logged in");
       return;
     }
 
-    console.log("✅ USER ID:", user.id);
+    console.log(" USER ID:", user.id);
 
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
