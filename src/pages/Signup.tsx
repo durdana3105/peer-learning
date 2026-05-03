@@ -118,73 +118,117 @@ if (data.user) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-
+ if (loading) {
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
-      >
-        <div className="mb-8 text-center">
-          <Link to="/" className="flex items-center justify-center gap-2">
-            <BookOpen />
-            <span className="text-xl font-bold">PeerLearn</span>
-          </Link>
-          <h1 className="mt-4 text-2xl font-bold">Create your account</h1>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
-
-          <Input
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
-
-          <Input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          {errors.password && (
-            <p className="text-red-500 text-sm">{errors.password}</p>
-          )}
-
-          <Input
-            type="password"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-          {errors.confirmPassword && (
-            <p className="text-red-500 text-sm">
-              {errors.confirmPassword}
-            </p>
-          )}
-
-          <Button type="submit" disabled={isLoading} className="w-full">
-            {isLoading ? "Creating..." : "Sign Up"}
-          </Button>
-        </form>
-      </motion.div>
+    <div className="flex min-h-screen items-center justify-center bg-emerald-950">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-400 border-t-transparent" />
     </div>
   );
+}
+
+return (
+  <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-950 px-4 font-[Inter] text-emerald-100">
+
+    {/* Glow background */}
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,197,94,0.15),transparent)] pointer-events-none" />
+
+    <motion.div
+      initial={{ opacity: 0, y: 30, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.5 }}
+      className="relative w-full max-w-md backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 shadow-[0_0_40px_rgba(34,197,94,0.15)]"
+    >
+
+      {/* Logo */}
+      <div className="mb-8 text-center">
+        <Link to="/" className="flex items-center justify-center gap-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-green-400 to-emerald-500">
+            <BookOpen className="h-5 w-5 text-black" />
+          </div>
+          <span className="text-xl font-bold tracking-tight text-emerald-200">
+            PeerLearn
+          </span>
+        </Link>
+
+        <h1 className="mt-4 text-2xl font-semibold text-emerald-100">
+          Create your account
+        </h1>
+        <p className="text-sm text-emerald-300/60 mt-1">
+          Start your learning journey today
+        </p>
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+
+        {/* Name */}
+        <Input
+          placeholder="Full Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="bg-white/5 border border-white/10 text-emerald-100 placeholder:text-emerald-400/50 focus:border-green-400 focus:ring-1 focus:ring-green-400"
+        />
+        {errors.name && <p className="text-red-400 text-sm">{errors.name}</p>}
+
+        {/* Email */}
+        <Input
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="bg-white/5 border border-white/10 text-emerald-100 placeholder:text-emerald-400/50 focus:border-green-400 focus:ring-1 focus:ring-green-400"
+        />
+        {errors.email && <p className="text-red-400 text-sm">{errors.email}</p>}
+
+        {/* Password */}
+        <Input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="bg-white/5 border border-white/10 text-emerald-100 placeholder:text-emerald-400/50 focus:border-green-400"
+        />
+        {errors.password && (
+          <p className="text-red-400 text-sm">{errors.password}</p>
+        )}
+
+        {/* Confirm Password */}
+        <Input
+          type="password"
+          placeholder="Confirm Password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          className="bg-white/5 border border-white/10 text-emerald-100 placeholder:text-emerald-400/50 focus:border-green-400"
+        />
+        {errors.confirmPassword && (
+          <p className="text-red-400 text-sm">
+            {errors.confirmPassword}
+          </p>
+        )}
+
+        {/* Button */}
+        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-green-500 hover:bg-green-400 text-black font-semibold shadow-[0_0_15px_rgba(34,197,94,0.4)]"
+          >
+            {isLoading ? "Creating..." : "Sign Up"}
+          </Button>
+        </motion.div>
+
+      </form>
+
+      {/* Login redirect */}
+      <p className="mt-6 text-center text-sm text-emerald-300/70">
+        Already have an account?{" "}
+        <Link to="/login" className="text-green-400 hover:underline">
+          Log in
+        </Link>
+      </p>
+
+    </motion.div>
+  </div>
+);
 };
 
 export default Signup;

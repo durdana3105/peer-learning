@@ -161,7 +161,7 @@ const Dashboard = () => {
           animate={{ opacity: 1 }}
           className="mb-10"
         >
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-3xl font-bold text-emerald-200">
             Welcome back,
             <span className="text-green-400 ml-2">
               {displayName.split(" ")[0]}
@@ -169,14 +169,14 @@ const Dashboard = () => {
             👋
           </h1>
 
-          <p className="text-sm text-white/60 mt-2">
+         <p className="text-sm text-emerald-300/70 mt-2">
             Ready to learn something new today?
           </p>
         </motion.div>
 
         {/* Sessions */}
         <section className="mb-8">
-          <h2 className="text-xl font-bold mb-3">Upcoming Sessions</h2>
+         <h2 className="text-xl font-bold mb-3 text-emerald-200">Upcoming Sessions</h2>
 
           {upcomingSessions.length > 0 ? (
             upcomingSessions.map((s) => (
@@ -189,7 +189,7 @@ const Dashboard = () => {
 
         {/* Recommended */}
         <section className="mb-8">
-          <h2 className="text-xl font-bold mb-3 text-white/70">
+          <h2 className="text-xl font-bold mb-3 text-emerald-200">
             Recommended Peers
           </h2>
 
@@ -218,7 +218,7 @@ const Dashboard = () => {
               }`}
             >
               <div className="flex items-center gap-3">
-                <span className="text-sm text-white/60 w-5">
+                <span className="text-sm text-black/60 w-5">
                   #{i + 1}
                 </span>
 
