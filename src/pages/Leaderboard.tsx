@@ -4,7 +4,7 @@ import { Trophy, Medal, TrendingUp, Star, Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 
 interface LeaderboardEntry {
   id: string;
