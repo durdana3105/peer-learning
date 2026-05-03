@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import PeerCard from "@/components/PeerCard";
 import SessionCard from "@/components/SessionCard";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { Navigate } from "react-router-dom";
 
 interface Profile {
   id: string;
@@ -22,12 +23,18 @@ interface Profile {
 }
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [recommendedPeers, setRecommendedPeers] = useState<any[]>([]);
   const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
+
+  // 🔥 display name fix
+  const displayName =
+    profile?.name?.trim() ||
+    user?.email?.split("@")[0] ||
+    "Learner";
 
   // ✅ Fetch profile
   useEffect(() => {
@@ -40,12 +47,9 @@ const Dashboard = () => {
         .eq("id", user.id)
         .single();
 
-      if (error) {
-        console.log("Profile error:", error);
-      }
+      if (error) console.log(error);
 
       if (data) {
-        console.log("PROFILE NAME:", data.name);
         setProfile(data);
         fetchRecommendedPeers(data);
       }
@@ -142,121 +146,139 @@ const Dashboard = () => {
     fetchLeaderboard();
   }, []);
 
-  // ✅ LOADING FIX (VERY IMPORTANT)
+  // 🔥 FIXED LOADING
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-emerald-950">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-400 border-t-transparent" />
+      </div>
+    );
+  }
+
+  // 🔥 Redirect if not logged in
  if (!user) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-emerald-950">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-400 border-t-transparent" />
+    <div className="flex min-h-screen items-center justify-center bg-emerald-950 text-emerald-200">
+      Checking your session...
     </div>
   );
 }
 
-const displayName =
-  profile?.name?.trim() ||
-  user?.email?.split("@")[0] ||
-  "Learner";
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-black text-emerald-100 relative overflow-hidden">
 
-return (
-  <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-950 py-8 text-emerald-100">
+      {/* Glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(34,197,94,0.15),transparent)]" />
 
-    {/* Glow */}
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,197,94,0.15),transparent)] pointer-events-none" />
+      <div className="container py-8 space-y-8 relative z-10">
 
-    <div className="container space-y-8">
+        {/* HEADER */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+        >
+          <div>
+            <h1 className="text-3xl font-semibold">
+              Welcome back,
+              <span className="text-green-400 ml-2">
+                {displayName.split(" ")[0]}
+              </span> 👋
+            </h1>
 
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="mb-6"
-      >
-        <h1 className="text-3xl font-semibold text-emerald-200">
-          Welcome back,
-          <span className="text-green-400 ml-2">
-            {displayName.split(" ")[0]}
-          </span>{" "}
-          👋
-        </h1>
+            <p className="text-sm text-emerald-300/70 mt-1">
+              Your learning dashboard is ready
+            </p>
+          </div>
 
-        <p className="text-sm text-emerald-300/70 mt-2">
-          Ready to learn something new today?
-        </p>
-      </motion.div>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-5 py-2 rounded-xl bg-green-500 text-black font-medium shadow-[0_0_20px_rgba(34,197,94,0.4)]"
+          >
+            + Book Session
+          </motion.button>
+        </motion.div>
 
-      {/* Sessions */}
-      <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-5">
-        <h2 className="text-lg font-medium mb-4 text-emerald-200 flex items-center gap-2">
-          📅 Upcoming Sessions
-        </h2>
-
-        {upcomingSessions.length > 0 ? (
-          upcomingSessions.map((s) => (
-            <SessionCard key={s.id} session={s} />
-          ))
-        ) : (
-          <p className="text-emerald-300/60 text-sm">
-            No sessions yet
-          </p>
-        )}
-      </section>
-
-      {/* Recommended */}
-      <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-5">
-        <h2 className="text-lg font-medium mb-4 text-emerald-200 flex items-center gap-2">
-          👥 Recommended Peers
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {recommendedPeers.map((p, i) => (
-            <PeerCard key={p.id} peer={p} index={i} />
+        {/* STATS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { label: "Sessions", value: upcomingSessions.length },
+            { label: "Peers", value: recommendedPeers.length },
+            {
+              label: "Points",
+              value:
+                leaderboard.find((u) => u.id === user.id)?.points || 0,
+            },
+          ].map((stat, i) => (
+            <motion.div
+              key={i}
+              whileHover={{ scale: 1.05 }}
+              className="p-5 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 text-center"
+            >
+              <p className="text-sm text-emerald-300/70">{stat.label}</p>
+              <h3 className="text-2xl font-semibold text-green-400 mt-2">
+                {stat.value}
+              </h3>
+            </motion.div>
           ))}
         </div>
-      </section>
 
-      {/* Leaderboard */}
-      <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-5">
-        <h2 className="text-lg font-medium mb-4 text-emerald-200 flex items-center gap-2">
-          🏆 Leaderboard
-        </h2>
+        {/* MAIN */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {leaderboard.map((u, i) => (
-          <div
-            key={u.id}
-            className={`flex items-center justify-between p-3 mb-2 rounded-lg border transition ${
-              i === 0
-                ? "bg-yellow-500/10 border-yellow-400/30"
-                : i === 1
-                ? "bg-gray-400/10 border-gray-300/20"
-                : i === 2
-                ? "bg-orange-500/10 border-orange-400/20"
-                : "bg-white/5 border-white/10"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-emerald-300/60 w-5">
-                #{i + 1}
-              </span>
+          {/* LEFT */}
+          <div className="lg:col-span-2 space-y-6">
 
-              <img
-                src={u.avatar_url || "https://via.placeholder.com/40"}
-                className="w-9 h-9 rounded-full border border-white/10"
-              />
+            {/* Sessions */}
+            <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-5">
+              <h2 className="text-lg mb-4">📅 Upcoming Sessions</h2>
 
-              <p className="font-medium text-emerald-100">
-                {u.name}
-              </p>
-            </div>
+              {upcomingSessions.length > 0 ? (
+                upcomingSessions.map((s) => (
+                  <SessionCard key={s.id} session={s} />
+                ))
+              ) : (
+                <p className="text-emerald-300/60 text-center py-6">
+                  No sessions yet
+                </p>
+              )}
+            </section>
 
-            <span className="text-sm text-emerald-300/70">
-              {u.points || 0} pts
-            </span>
+            {/* Peers */}
+            <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-5">
+              <h2 className="text-lg mb-4">👥 Recommended Peers</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {recommendedPeers.map((p, i) => (
+                  <PeerCard key={p.id} peer={p} index={i} />
+                ))}
+              </div>
+            </section>
+
           </div>
-        ))}
-      </section>
 
+          {/* RIGHT */}
+          <div>
+            <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-5">
+              <h2 className="text-lg mb-4">🏆 Leaderboard</h2>
+
+              {leaderboard.map((u, i) => (
+                <div
+                  key={u.id}
+                  className="flex justify-between p-3 mb-2 rounded-lg bg-white/5"
+                >
+                  <span>#{i + 1} {u.name}</span>
+                  <span>{u.points || 0}</span>
+                </div>
+              ))}
+            </section>
+          </div>
+
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
 };
 
 export default Dashboard;
