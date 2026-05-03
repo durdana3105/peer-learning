@@ -104,7 +104,7 @@ const handleLogout = async () => {
               </Link>
               <button onClick={handleLogout}>Logout</button>
 
-              <Button onClick={handleSignOut}>
+              <Button onClick={handleLogout}>
                 <LogOut size={16} />
               </Button>
             </>
