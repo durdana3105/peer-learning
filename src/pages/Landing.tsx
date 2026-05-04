@@ -1,14 +1,9 @@
-import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, Users, Calendar, MessageCircle, Trophy, Sparkles, Star } from "lucide-react";
+import { motion, useScroll } from "framer-motion";
+import { ArrowRight, Users, Calendar, MessageCircle, Trophy, Sparkles, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import heroIllustration from "@/assets/hero-illustration.png";
-
-// Animation
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0 },
-};
 
 const features = [
   { icon: Users, title: "Smart Matching", description: "Perfect partner based on skills." },
@@ -21,175 +16,300 @@ const stats = [
   { value: "10K+", label: "Active Learners" },
   { value: "5K+", label: "Sessions Completed" },
   { value: "200+", label: "Subjects" },
-  { value: "4.8", label: "Avg Rating", icon: Star },
+  { value: "4.8", label: "Avg Rating" },
 ];
 
-const Landing = () => {
-  const { scrollY, scrollYProgress } = useScroll();
-  const y = useTransform(scrollY, [0, 500], [0, -120]);
+const faqs = [
+  { q: "Is PeerLearn free?", a: "Yes, core features are free for all users." },
+  { q: "Who can join?", a: "Students, developers, and anyone eager to learn." },
+  { q: "How does matching work?", a: "We match based on interests, skills, and goals." },
+];
+
+export default function Landing() {
+  const { scrollYProgress } = useScroll();
+  const [open, setOpen] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // ✅ Loader
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-[#020617]">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1.2, opacity: 1 }}
+          transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse" }}
+          className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-yellow-400 bg-clip-text text-transparent"
+        >
+          PeerLearn
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen text-emerald-100 relative overflow-hidden">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+      className="min-h-screen bg-gradient-to-br from-[#020617] via-[#031b14] to-[#020617]"
+    >
 
-      {/* 🔥 Cursor Glow */}
-      <motion.div
-        className="pointer-events-none fixed inset-0 z-0"
-        animate={{
-          background: [
-            "radial-gradient(600px at 20% 20%, rgba(34,197,94,0.15), transparent)",
-            "radial-gradient(600px at 80% 80%, rgba(34,197,94,0.15), transparent)",
-          ],
-        }}
-        transition={{ duration: 6, repeat: Infinity }}
-      />
+      {/* 🌟 Background Glow */}
+    <motion.div
+  className="absolute inset-0 pointer-events-none"
+  animate={{
+    background: [
+      "radial-gradient(600px at 20% 20%, rgba(16,185,129,0.15), transparent)",
+      "radial-gradient(600px at 80% 80%, rgba(250,204,21,0.15), transparent)"
+    ]
+  }}
+  transition={{ duration: 6, repeat: Infinity }}
+/>
 
-      {/* 📊 Scroll Progress */}
+      {/* ✨ Floating Particles */}
+      {[...Array(6)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="w-2 h-2 bg-emerald-400 rounded-full absolute opacity-20"
+          style={{
+            top: `${Math.random() * 100}%`,
+            left: `${Math.random() * 100}%`,
+          }}
+          animate={{ y: [0, -40, 0] }}
+          transition={{ duration: 5 + i, repeat: Infinity }}
+        />
+      ))}
+
+      {/* Scroll Bar */}
       <motion.div
         style={{ scaleX: scrollYProgress }}
-        className="fixed top-0 left-0 right-0 h-1 bg-green-400 origin-left z-50"
+        className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-yellow-400 origin-left z-50"
       />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden pb-16 pt-12 md:pt-20">
-        
-        {/* 💫 Particles */}
-        <div className="absolute inset-0">
-          {[...Array(6)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="w-2 h-2 bg-green-400 rounded-full opacity-30 absolute"
-              style={{
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-              }}
-              animate={{ y: [0, -50, 0] }}
-              transition={{ duration: 5 + i, repeat: Infinity }}
-            />
-          ))}
-        </div>
+      {/* HERO */}
+      <section className="container grid lg:grid-cols-2 gap-12 items-center py-20">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <p className="text-yellow-400 mb-3 flex items-center gap-2">
+            <Sparkles /> Learn together, grow together
+          </p>
 
-        <div className="container grid lg:grid-cols-2 gap-12 items-center relative z-10">
+          <h1 className="text-5xl font-extrabold leading-tight">
+            Everyone is a{" "}
+            <span className="bg-gradient-to-r from-emerald-400 via-yellow-300 to-emerald-500 bg-clip-text text-transparent">
+              teacher
+            </span>{" "}
+            and a{" "}
+            <span className="bg-gradient-to-r from-emerald-400 via-yellow-300 to-emerald-500 bg-clip-text text-transparent">
+              learner
+            </span>
+          </h1>
 
-          {/* LEFT */}
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.15 } } }}
-          >
-            <motion.div variants={fadeUp} className="mb-4 text-emerald-300">
-              <Sparkles className="inline h-4 w-4 mr-1" />
-              Learn together, grow together
-            </motion.div>
+          <p className="mt-4 text-emerald-300/70 max-w-md">
+            Learn, collaborate, and grow with peers in a beautiful learning ecosystem.
+          </p>
 
-            <motion.h1 variants={fadeUp} className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-emerald-200">
-              Everyone is a <span className="text-green-400">teacher</span><br />
-              and a <span className="text-green-400">learner</span>
-            </motion.h1>
-
-            <motion.p variants={fadeUp} className="mt-5 text-emerald-300/70 max-w-lg">
-              PeerLearn connects students to share knowledge and grow together.
-            </motion.p>
-
-            <motion.div variants={fadeUp} className="mt-8 flex gap-3">
-
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link to="/signup">
-                  <Button className="bg-green-500 text-black">
-                    Get Started <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </motion.div>
-
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link to="/discover">
-                  <Button variant="outline" className="text-emerald-200 border-emerald-400/30">
-                    Browse
-                  </Button>
-                </Link>
-              </motion.div>
-
-            </motion.div>
-          </motion.div>
-
-          {/* RIGHT IMAGE with PARALLAX */}
-          <motion.img
-            src={heroIllustration}
-            alt="hero"
-            className="w-full max-w-lg mx-auto"
-            style={{ y }}
-            animate={{ y: [0, -15, 0] }}
-            transition={{ duration: 4, repeat: Infinity }}
-          />
-
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="py-10 bg-emerald-900/20">
-        <div className="container grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {stats.map((stat) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
-              <span className="text-3xl font-bold text-emerald-200">{stat.value}</span>
-              <p className="text-emerald-300/70">{stat.label}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-20">
-        <div className="container grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((f) => (
-            <motion.div
-              key={f.title}
-              whileHover={{ rotateX: 10, rotateY: -10, scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 120 }}
-              className="p-6 rounded-xl bg-emerald-900/20 backdrop-blur-xl border border-white/10 hover:shadow-[0_0_25px_rgba(34,197,94,0.25)]"
-            >
-              <f.icon className="h-6 w-6 mb-3 text-green-400" />
-              <h3 className="font-bold text-emerald-200">{f.title}</h3>
-              <p className="text-sm text-emerald-300/70">{f.description}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* ⚠️ CTA + FOOTER UNCHANGED */}
-      <section className="py-20">
-        <div className="container">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-hero px-8 py-14 text-center md:px-16">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent)]" />
-            <div className="relative">
-              <h2 className="font-heading text-3xl font-extrabold text-primary-foreground md:text-4xl">
-                Ready to start learning?
-              </h2>
-              <p className="mx-auto mt-3 max-w-md text-primary-foreground/80">
-                Join thousands of students sharing knowledge and growing together.
-              </p>
-              <Link to="/signup">
-                <Button size="lg" className="mt-8 bg-card text-foreground text-base hover:bg-card/90">
-                  Join PeerLearn — It's Free
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
+          <div className="mt-6 flex gap-4">
+            <Link to="/signup">
+              <Button className="bg-yellow-400 text-black hover:scale-110 transition">
+                Get Started <ArrowRight />
+              </Button>
+            </Link>
           </div>
-        </div>
+        </motion.div>
+
+       <div className="relative">
+  <div className="absolute inset-0 bg-yellow-400/20 blur-3xl rounded-full" />
+  <img src={heroIllustration} className="relative z-10" />
+</div>
+
+
       </section>
+<div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent my-16" />
+      {/* STATS */}
+<section className="container grid grid-cols-2 md:grid-cols-4 gap-6 text-center py-10">
+  {stats.map((s, i) => (
+    <motion.div
+      key={i}
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ delay: i * 0.2 }}
+      viewport={{ once: true }}
+      whileHover={{ y: -8 }}
+      className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl 
+      shadow-[0_0_20px_rgba(16,185,129,0.08)] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] transition"
+    >
+      <h3 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-yellow-400 bg-clip-text text-transparent">
+        {s.value}
+      </h3>
+      <p className="text-emerald-300/70">{s.label}</p>
+    </motion.div>
+  ))}
+</section>
 
-      <footer className="border-t border-border py-8">
-        <div className="container text-center text-sm text-muted-foreground">
-          © 2026 PeerLearn. Made with ❤️
-        </div>
-      </footer>
+{/* DIVIDER */}
+<div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent my-16" />
 
+{/* REVIEWS */}
+<section className="container py-20">
+  <motion.h2
+    initial={{ opacity: 0, y: 30 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    className="text-3xl font-bold text-center mb-10"
+  >
+    Loved by Learners
+  </motion.h2>
+
+  <div className="grid md:grid-cols-3 gap-6">
+    {[
+      { name: "Aisha", text: "Helped me stay consistent every day. ☺️👌" },
+      { name: "Rahul", text: "Found amazing study partners.😍" },
+      { name: "John", text: "My coding improved 2x faster.🥺🙌" },
+    ].map((t, i) => (
+      <motion.div
+        key={i}
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ delay: i * 0.2 }}
+        viewport={{ once: true }}
+        whileHover={{ y: -8 }}
+        className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl
+        hover:shadow-[0_0_30px_rgba(255,255,255,0.15)] transition"
+      >
+        <p className="text-emerald-300/80">“{t.text}”</p>
+        <div className="mt-4 text-yellow-400 font-semibold">{t.name}</div>
+      </motion.div>
+    ))}
+  </div>
+</section>
+
+{/* DIVIDER */}
+<div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent my-16" />
+
+{/* FEATURES */}
+<section className="container grid md:grid-cols-2 lg:grid-cols-4 gap-6 py-20">
+  {features.map((f, i) => (
+    <motion.div
+      key={i}
+      initial={{ opacity: 0, y: 60 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ delay: i * 0.15 }}
+      viewport={{ once: true }}
+      whileHover={{ y: -10 }}
+      className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl
+      hover:shadow-[0_0_30px_rgba(250,204,21,0.2)] transition"
+    >
+      <f.icon className="text-yellow-400 mb-3" />
+      <h3 className="font-bold">{f.title}</h3>
+      <p className="text-sm text-emerald-300/70">{f.description}</p>
+    </motion.div>
+  ))}
+</section>
+
+{/* DIVIDER */}
+<div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent my-16" />
+
+{/* FAQ */}
+<section className="container py-20 max-w-3xl mx-auto">
+  <h2 className="text-3xl font-bold text-center mb-10">
+    Frequently Asked Questions
+  </h2>
+
+  {faqs.map((item, i) => (
+    <motion.div
+      key={i}
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="mb-4 border border-white/10 rounded-xl overflow-hidden backdrop-blur"
+    >
+      <button
+        onClick={() => setOpen(open === i ? null : i)}
+        className="w-full flex justify-between items-center p-4 bg-white/5 hover:bg-white/10 transition"
+      >
+        {item.q}
+        <ChevronDown />
+      </button>
+
+      {open === i && (
+        <div className="p-4 text-emerald-300/70">{item.a}</div>
+      )}
+    </motion.div>
+  ))}
+</section>
+
+{/* FOOTER / CTA */}
+<section className="container pb-20">
+  <motion.div
+    initial={{ opacity: 0, y: 40 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    whileHover={{ scale: 1.02 }}
+    className="relative p-10 rounded-3xl bg-[#020617] border border-white/20 backdrop-blur-xl text-center transition 
+    hover:shadow-[0_0_50px_rgba(255,255,255,0.25)]"
+  >
+
+    
+    
+
+    ✨ White glowing border
+    <motion.div
+      className="absolute inset-0 rounded-3xl pointer-events-none"
+      animate={{
+        boxShadow: [
+          "0 0 10px rgba(255,255,255,0.05)",
+          "0 0 30px rgba(255,255,255,0.25)",
+          "0 0 10px rgba(255,255,255,0.05)"
+        ]
+      }}
+      transition={{ duration: 2.5, repeat: Infinity }}
+    />
+
+    {/* 🌟 Title */}
+    <h3 className="text-lg font-semibold text-emerald-400 mb-2">
+      © 2026 PeerLearn
+    </h3>
+
+    <p className="text-emerald-300/60 mb-6">
+      Built with ❤️ for collaborative learning
+    </p>
+
+    {/* 🔗 Links */}
+    <div className="flex justify-center gap-6 mb-6 text-sm">
+      <a href="#features" className="hover:text-yellow-400 transition">
+        Features
+      </a>
+      <a href="#faq" className="hover:text-yellow-400 transition">
+        FAQ
+      </a>
+      <a href="#top" className="hover:text-yellow-400 transition">
+        Home
+      </a>
     </div>
-  );
-};
 
-export default Landing;
+    {/* 🌐 Social icons */}
+    <div className="flex justify-center gap-5">
+      {["🐦", "💼", "📸"].map((icon, i) => (
+        <motion.div
+          key={i}
+          whileHover={{ scale: 1.2, rotate: 8 }}
+          className="text-xl cursor-pointer"
+        >
+          {icon}
+        </motion.div>
+      ))}
+    </div>
+
+  </motion.div>
+</section>
+    </motion.div>
+  );
+}

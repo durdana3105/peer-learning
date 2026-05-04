@@ -54,7 +54,9 @@ body::before {
   filter: blur(1px);
   animation: sparkleFade 0.8s linear forwards;
 }
-
+html {
+  scroll-behavior: smooth;
+}
 /* ✨ Random glow colors */
 .sparkle:nth-child(3n) {
   background: #34d399; /* green */
