@@ -33,11 +33,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     init();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         if (!mounted) return;
 
         setSession(session);
         setUser(session?.user ?? null);
+
+        if (session?.user) {
+
+  const { data: existingProfile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", session.user.id)
+    .single();
+
+  if (!existingProfile) {
+
+    await supabase.from("profiles").insert({
+      id: session.user.id,
+      name:
+        session.user.user_metadata?.name ||
+        session.user.email?.split("@")[0] ||
+        "Learner",
+
+      email: session.user.email,
+
+      points: 0,
+      sessions_completed: 0,
+      rating: 0,
+
+      badges: [],
+      skills: [],
+      interests: [],
+      teach_subjects: [],
+      learn_subjects: [],
+
+      bio: "",
+    });
+  }
+}
         setLoading(false);
       }
     );

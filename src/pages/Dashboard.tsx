@@ -26,6 +26,16 @@ const Dashboard = () => {
   const { user, loading } = useAuth();
 
   const [profile, setProfile] = useState<Profile | null>(null);
+
+   const [currentTime, setCurrentTime] = useState(new Date());
+
+useEffect(() => {
+  const interval = setInterval(() => {
+    setCurrentTime(new Date());
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, []);
   const [recommendedPeers, setRecommendedPeers] = useState<any[]>([]);
   const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
@@ -64,7 +74,7 @@ const Dashboard = () => {
       .from("profiles")
       .select("*")
       .neq("id", user!.id)
-      .limit(6);
+      
 
     if (!data) return;
 
@@ -138,7 +148,7 @@ const Dashboard = () => {
         .from("profiles")
         .select("*")
         .order("points", { ascending: false })
-        .limit(5);
+        
 
       if (data) setLeaderboard(data);
     };
@@ -156,13 +166,16 @@ const Dashboard = () => {
   }
 
   // 🔥 Redirect if not logged in
- if (!user) {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-emerald-950 text-emerald-200">
-      Checking your session...
-    </div>
-  );
+
+  if (!user && !loading) {
+  return null;
 }
+const activities = [
+  `Joined ${upcomingSessions.length} Sessions`,
+  `Connected with ${recommendedPeers.length} Peers`,
+  `Earned ${profile?.points || 0} XP`,
+  `Completed ${profile?.sessions_completed || 0} Sessions`,
+];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-black text-emerald-100 relative overflow-hidden">
@@ -170,66 +183,125 @@ const Dashboard = () => {
       {/* Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(34,197,94,0.15),transparent)]" />
 
-      <div className="container py-8 space-y-8 relative z-10">
+      <div className="container mx-auto px-4 py-8 relative z-10">
 
         {/* HEADER */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-        >
-          <div>
-            <h1 className="text-3xl font-semibold">
-              Welcome back,
-              <span className="text-green-400 ml-2">
-                {displayName.split(" ")[0]}
-              </span> 👋
-            </h1>
+       {/* HERO */}
+<motion.section
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl p-8"
+>
+  <div className="absolute top-0 right-0 w-72 h-72 bg-green-500/10 blur-3xl rounded-full" />
 
-            <p className="text-sm text-emerald-300/70 mt-1">
-              Your learning dashboard is ready
-            </p>
-          </div>
+  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8 relative z-10">
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-5 py-2 rounded-xl bg-green-500 text-black font-medium shadow-[0_0_20px_rgba(34,197,94,0.4)]"
-          >
-            + Book Session
-          </motion.button>
-        </motion.div>
+    <div>
+      <h1 className="text-4xl font-bold leading-tight">
+        Welcome back,
+        <span className="text-green-400 ml-2">
+          {displayName.split(" ")[0]}
+        </span>
+        👋
+      </h1>
 
-        {/* STATS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { label: "Sessions", value: upcomingSessions.length },
-            { label: "Peers", value: recommendedPeers.length },
-            {
-              label: "Points",
-              value:
-                leaderboard.find((u) => u.id === user.id)?.points || 0,
-            },
-          ].map((stat, i) => (
-            <motion.div
-              key={i}
-              whileHover={{ scale: 1.05 }}
-              className="p-5 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 text-center"
-            >
-              <p className="text-sm text-emerald-300/70">{stat.label}</p>
-              <h3 className="text-2xl font-semibold text-green-400 mt-2">
-                {stat.value}
-              </h3>
-            </motion.div>
-          ))}
+      <p className="text-sm text-emerald-300/50 mt-2">
+  {currentTime.toLocaleTimeString()}
+</p>
+
+      <p className="text-emerald-300/70 mt-3 text-lg">
+        Continue your learning journey today.
+      </p>
+
+      <div className="flex gap-4 mt-6 flex-wrap">
+        <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+          🔥 {profile?.sessions_completed || 0} Day Streak
         </div>
 
+        <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+          ⚡ {profile?.points || 0} XP
+        </div>
+
+        <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+          🎯 {upcomingSessions.length || 0} Sessions
+        </div>
+      </div>
+    </div>
+
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className="px-6 py-3 rounded-2xl bg-gradient-to-r from-green-400 to-emerald-500 text-black font-semibold shadow-[0_0_30px_rgba(34,197,94,0.35)]"
+    >
+      + Start Learning
+    </motion.button>
+  </div>
+</motion.section>
+
+        {/* STATS */}
+        {/* QUICK STATS */}
+<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mt-8">
+
+  {[
+  {
+    label: "Sessions Joined",
+    value: upcomingSessions.length || 0,
+    icon: "📚",
+  },
+  {
+    label: "Study Hours",
+    value: `${(profile?.sessions_completed || 0) * 2}h`,
+    icon: "⏰",
+  },
+  {
+    label: "Global Rank",
+    value:
+      "#" +
+      (
+        leaderboard.findIndex((u) => u.id === user?.id) + 1 || 0
+      ),
+    icon: "🏆",
+  },
+  {
+    label: "Current Streak",
+    value: `${profile?.sessions_completed || 0} Days`,
+    icon: "🔥",
+  },
+].map((stat, i) => (
+    <motion.div
+      key={i}
+      whileHover={{
+        y: -5,
+        scale: 1.02,
+      }}
+      className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-6"
+    >
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition bg-gradient-to-br from-green-400/10 to-transparent" />
+
+      <div className="flex items-center justify-between relative z-10">
+        <div>
+          <p className="text-sm text-emerald-300/70">
+            {stat.label}
+          </p>
+
+          <h3 className="text-3xl font-bold mt-2 text-white">
+            {stat.value}
+          </h3>
+        </div>
+
+        <div className="text-4xl">
+          {stat.icon}
+        </div>
+      </div>
+    </motion.div>
+  ))}
+</div>
+
         {/* MAIN */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mt-8">
 
           {/* LEFT */}
-          <div className="lg:col-span-2 space-y-6">
-
+          <div className="xl:col-span-8 space-y-6">
             {/* Sessions */}
             <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-5">
               <h2 className="text-lg mb-4">📅 Upcoming Sessions</h2>
@@ -240,7 +312,7 @@ const Dashboard = () => {
                 ))
               ) : (
                 <p className="text-emerald-300/60 text-center py-6">
-                  No sessions yet
+                  No upcoming sessions available right now.
                 </p>
               )}
             </section>
@@ -259,21 +331,78 @@ const Dashboard = () => {
           </div>
 
           {/* RIGHT */}
-          <div>
-            <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-5">
-              <h2 className="text-lg mb-4">🏆 Leaderboard</h2>
+        <div className="xl:col-span-4 space-y-6">
 
-              {leaderboard.map((u, i) => (
-                <div
-                  key={u.id}
-                  className="flex justify-between p-3 mb-2 rounded-lg bg-white/5"
-                >
-                  <span>#{i + 1} {u.name}</span>
-                  <span>{u.points || 0}</span>
-                </div>
-              ))}
-            </section>
+  {/* Activity Feed */}
+  <section className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl p-6">
+    <h2 className="text-xl font-semibold mb-5">
+      ⚡ Activity Feed
+    </h2>
+
+    <div className="space-y-4">
+
+      {[
+        "Joined AI Session",
+        "Completed React Quiz",
+        "New Peer Request",
+        "Earned 50 XP",
+      ].map((activity, i) => (
+        <motion.div
+          key={i}
+          whileHover={{ x: 4 }}
+          className="flex items-center justify-between rounded-2xl bg-white/5 border border-white/5 p-4"
+        >
+          <div>
+            <p className="text-sm">{activity}</p>
+            <span className="text-xs text-emerald-300/50">
+              2 mins ago
+            </span>
           </div>
+
+          <div className="text-green-400">
+            ✔
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  </section>
+
+  {/* Leaderboard */}
+  <section className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl p-6">
+    <h2 className="text-xl font-semibold mb-5">
+      🏆 Leaderboard
+    </h2>
+
+    <div className="space-y-3">
+      {leaderboard.map((u, i) => (
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          key={u.id}
+          className="flex items-center justify-between rounded-2xl bg-white/5 border border-white/5 p-4"
+        >
+          <div>
+            <p className="font-medium">
+              #{i + 1} {u.name}
+            </p>
+
+            <span className="text-xs text-emerald-300/60">
+              Top Learner
+            </span>
+          </div>
+
+          <div className="text-green-400 font-bold">
+            {u.points || 0}
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  </section>
+
+</div>
+
+<div className="absolute top-20 left-20 w-72 h-72 bg-green-500/10 blur-3xl rounded-full" />
+
+<div className="absolute bottom-20 right-20 w-72 h-72 bg-emerald-400/10 blur-3xl rounded-full" />
 
         </div>
       </div>

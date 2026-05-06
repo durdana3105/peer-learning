@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 
 console.log("COMPONENT RENDERED");

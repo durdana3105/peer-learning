@@ -1,7 +1,15 @@
 import { motion } from "framer-motion";
-import { Star, BookOpen, GraduationCap } from "lucide-react";
+import {
+  Star,
+  BookOpen,
+  GraduationCap,
+  Trophy,
+  Flame,
+} from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+
 import type { User } from "@/data/mockData";
 
 interface PeerCardProps {
@@ -10,84 +18,166 @@ interface PeerCardProps {
   index?: number;
 }
 
-const PeerCard = ({ peer, onConnect, index = 0 }: PeerCardProps) => {
+const PeerCard = ({
+  peer,
+  onConnect,
+  index = 0,
+}: PeerCardProps) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.4 }}
-      className="group rounded-2xl border border-border bg-card p-5 shadow-card transition-all duration-300 hover:shadow-card-hover"
+      transition={{
+        delay: index * 0.1,
+        duration: 0.5,
+      }}
+      whileHover={{
+        y: -6,
+        scale: 1.01,
+      }}
+      className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl p-5 shadow-xl transition-all duration-300"
     >
-      <div className="flex items-start gap-4">
-        <img
-          src={peer.avatar}
-          alt={peer.name}
-          className="h-14 w-14 rounded-xl bg-muted"
-        />
+      {/* Glow Effect */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-500 bg-gradient-to-br from-green-400/10 via-transparent to-emerald-500/10" />
+
+      {/* Top Section */}
+      <div className="relative z-10 flex items-start gap-4">
+
+        {/* Avatar */}
+        <div className="relative">
+          <img
+            src={peer.avatar}
+            alt={peer.name}
+            className="h-16 w-16 rounded-2xl object-cover border border-white/10"
+          />
+
+          <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-green-400 border-2 border-black" />
+        </div>
+
+        {/* User Info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
-            <h3 className="font-heading text-lg font-bold text-card-foreground truncate">
+
+          <div className="flex items-center justify-between gap-2">
+
+            <h3 className="truncate text-lg font-bold text-white">
               {peer.name}
             </h3>
+
             {peer.matchScore && (
-              <span className="ml-2 shrink-0 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
-                {peer.matchScore}% match
+              <span className="shrink-0 rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-xs font-semibold text-green-400">
+                {peer.matchScore}% Match
               </span>
             )}
           </div>
-          <div className="mt-0.5 flex items-center gap-2 text-sm text-muted-foreground">
-            <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-            <span>{peer.rating}</span>
-            <span>·</span>
-            <span>{peer.sessionsCompleted} sessions</span>
+
+          {/* Rating + Sessions */}
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-emerald-300/70">
+
+            <div className="flex items-center gap-1">
+              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <span>{peer.rating || 0}</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Trophy className="h-4 w-4 text-green-400" />
+              <span>
+                {peer.sessionsCompleted || 0} Sessions
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Flame className="h-4 w-4 text-orange-400" />
+              <span>{peer.points || 0} XP</span>
+            </div>
+
           </div>
         </div>
       </div>
 
-      <p className="mt-3 text-sm text-muted-foreground line-clamp-2">{peer.bio}</p>
+      {/* Bio */}
+      <p className="relative z-10 mt-4 line-clamp-2 text-sm leading-relaxed text-emerald-200/70">
+        {peer.bio || "Passionate learner and collaborator."}
+      </p>
 
-      <div className="mt-3 space-y-2">
-        <div className="flex items-center gap-1.5">
-          <GraduationCap className="h-3.5 w-3.5 text-primary shrink-0" />
-          <span className="text-xs font-medium text-muted-foreground">Teaches:</span>
-          <div className="flex flex-wrap gap-1">
-            {peer.teachSubjects.slice(0, 3).map((s) => (
-              <Badge key={s} variant="secondary" className="text-[10px] px-1.5 py-0">
-                {s}
-              </Badge>
-            ))}
+      {/* Subjects */}
+      <div className="relative z-10 mt-5 space-y-3">
+
+        {/* Teach */}
+        <div className="flex items-start gap-2">
+          <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-green-400" />
+
+          <div>
+            <p className="text-xs font-medium text-emerald-300/60 mb-1">
+              Teaches
+            </p>
+
+            <div className="flex flex-wrap gap-1.5">
+              {peer.teachSubjects?.slice(0, 3).map((s) => (
+                <Badge
+                  key={s}
+                  className="rounded-full border border-green-500/20 bg-green-500/10 px-2 py-0.5 text-[10px] text-green-300 hover:bg-green-500/20"
+                >
+                  {s}
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <BookOpen className="h-3.5 w-3.5 text-accent shrink-0" />
-          <span className="text-xs font-medium text-muted-foreground">Learns:</span>
-          <div className="flex flex-wrap gap-1">
-            {peer.learnSubjects.slice(0, 3).map((s) => (
-              <Badge key={s} variant="outline" className="text-[10px] px-1.5 py-0">
-                {s}
-              </Badge>
-            ))}
+
+        {/* Learn */}
+        <div className="flex items-start gap-2">
+          <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+
+          <div>
+            <p className="text-xs font-medium text-emerald-300/60 mb-1">
+              Learning
+            </p>
+
+            <div className="flex flex-wrap gap-1.5">
+              {peer.learnSubjects?.slice(0, 3).map((s) => (
+                <Badge
+                  key={s}
+                  variant="outline"
+                  className="rounded-full border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-emerald-100"
+                >
+                  {s}
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      {peer.badges.length > 0 && (
-        <div className="mt-3 flex gap-1.5">
+      {/* Badges */}
+      {peer.badges?.length > 0 && (
+        <div className="relative z-10 mt-4 flex flex-wrap gap-2">
           {peer.badges.map((b) => (
-            <span key={b} className="text-xs">{b}</span>
+            <span
+              key={b}
+              className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-2 py-1 text-[10px] text-yellow-300"
+            >
+              {b}
+            </span>
           ))}
         </div>
       )}
 
-      <div className="mt-4 flex gap-2">
+      {/* Buttons */}
+      <div className="relative z-10 mt-6 flex gap-3">
+
         <Button
           size="sm"
-          className="flex-1 bg-gradient-hero text-primary-foreground hover:opacity-90"
           onClick={onConnect}
+          className="flex-1 rounded-xl bg-gradient-to-r from-green-400 to-emerald-500 font-semibold text-black hover:scale-[1.02] transition"
         >
           Connect
         </Button>
-        <Button size="sm" variant="outline" className="flex-1">
+
+        <Button
+          size="sm"
+          variant="outline"
+          className="flex-1 rounded-xl border-white/10 bg-white/5 hover:bg-white/10"
+        >
           View Profile
         </Button>
       </div>
