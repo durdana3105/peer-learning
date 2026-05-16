@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import PeerCard from "@/components/PeerCard";
 import SessionCard from "@/components/SessionCard";
+import RecommendedPeers from "@/components/RecommendedPeers";
 import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { getRecommendations } from "@/utils/recommender";
 
 interface Profile {
   id: string;
@@ -23,6 +26,7 @@ interface Profile {
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
+  console.log('User status:', { user, loading });
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -42,6 +46,30 @@ const Dashboard = () => {
     profile?.name?.trim() ||
     user?.email?.split("@")[0] ||
     "Learner";
+
+  // Recommended Peers
+  const fetchRecommendedPeers = async (myProfile: Profile) => {
+    if (!myProfile) return;
+
+    // Fetch all other profiles
+    const { data: allPeers } = await supabase
+      .from("profiles")
+      .select("*")
+      .neq("id", myProfile.id);
+
+    if (!allPeers) {
+      setRecommendedPeers([]);
+      return;
+    }
+
+    try {
+      // Utilize our Jaccard Similarity engine from utils/recommender
+      const recommendations = getRecommendations(myProfile, allPeers, 3);
+      setRecommendedPeers(recommendations);
+    } catch (err) {
+      console.error("Recommender Error:", err);
+    }
+  };
 
   // Fetch Profile
   useEffect(() => {
@@ -65,77 +93,32 @@ const Dashboard = () => {
     fetchProfile();
   }, [user]);
 
-  // Recommended Peers
-  const fetchRecommendedPeers = async (myProfile: Profile) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .neq("id", user!.id);
 
-    if (!data) return;
-
-    const myLearn = myProfile.learn_subjects || [];
-    const myTeach = myProfile.teach_subjects || [];
-    const myInterests = myProfile.interests || [];
-
-    const mapped = data.map((p) => {
-      const teachOverlap = myLearn.filter((s) =>
-        (p.teach_subjects || []).includes(s)
-      ).length;
-
-      const learnOverlap = myTeach.filter((s) =>
-        (p.learn_subjects || []).includes(s)
-      ).length;
-
-      const interestOverlap = myInterests.filter((s) =>
-        (p.interests || []).includes(s)
-      ).length;
-
-      const max = Math.max(
-        myLearn.length + myTeach.length + myInterests.length,
-        1
-      );
-
-      const matchScore = Math.round(
-        ((teachOverlap + learnOverlap + interestOverlap) / max) * 100
-      );
-
-      return {
-        id: p.id,
-        name: p.name || "User",
-        avatar:
-          p.avatar_url ||
-          `https://api.dicebear.com/9.x/avataaars/svg?seed=${p.name}`,
-        bio: p.bio || "",
-        skills: p.skills || [],
-        interests: p.interests || [],
-        teachSubjects: p.teach_subjects || [],
-        learnSubjects: p.learn_subjects || [],
-        rating: p.rating || 0,
-        sessionsCompleted: p.sessions_completed || 0,
-        points: p.points || 0,
-        badges: p.badges || [],
-        matchScore,
-      };
-    });
-
-    mapped.sort((a, b) => b.matchScore - a.matchScore);
-    setRecommendedPeers(mapped.slice(0, 3));
-  };
 
   // Sessions
   useEffect(() => {
-    const fetchSessions = async () => {
-      const { data } = await supabase
-        .from<any>("sessions")
-        .select("*")
-        .eq("status", "upcoming");
+    if (!user) return;
 
-      setUpcomingSessions(data || []);
+    const fetchSessions = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("sessions")
+          .select("*")
+          .eq("status", "upcoming");
+
+        if (error) {
+          console.error("Database Error fetching sessions:", error.message, error.details);
+        }
+
+        setUpcomingSessions(data || []);
+      } catch (err) {
+        console.error("Unexpected error fetching sessions:", err);
+        setUpcomingSessions([]);
+      }
     };
 
     fetchSessions();
-  }, []);
+  }, [user]);
 
   // Leaderboard
   useEffect(() => {
@@ -161,7 +144,7 @@ const Dashboard = () => {
   }
 
   if (!user && !loading) {
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -317,11 +300,7 @@ const Dashboard = () => {
                 👥 Recommended Peers
               </h2>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {recommendedPeers.map((p, i) => (
-                  <PeerCard key={p.id} peer={p} index={i} />
-                ))}
-              </div>
+              <RecommendedPeers peers={recommendedPeers} />
             </section>
           </div>
 

@@ -42,41 +42,26 @@ const WithNav = ({ children }: { children: React.ReactNode }) => (
   </>
 );
 
+import { useAuth } from "@/contexts/useAuth";
+
 function App() {
+  const [queryClient] = useState(() => new QueryClient());
+  const { user, loading } = useAuth();
 
-  // GLOBAL USER STATE
-  const [user, setUser] = useState<any>(null);
-
-  // FETCH USER ONLY ONCE
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      setUser(user);
-    };
-
-    getUser();
-  }, []);
-
-  // ✨ Sparkle Effect
-  useEffect(() => {
-
-    const container = document.getElementById("sparkle-container");
-
-    if (!container) return;
-
+    // 🌟 Make cursor sparkle effect
     const createSparkle = (x: number, y: number) => {
-
       const sparkle = document.createElement("div");
+      sparkle.className = "cursor-sparkle";
+      sparkle.style.left = `${x}px`;
+      sparkle.style.top = `${y}px`;
 
-      sparkle.className = "sparkle";
+      const colors = ["#22d3ee", "#3b82f6", "#6366f1", "#818cf8"];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      sparkle.style.background = randomColor;
+      sparkle.style.boxShadow = `0 0 10px ${randomColor}, 0 0 20px ${randomColor}`;
 
-      sparkle.style.left = x + "px";
-      sparkle.style.top = y + "px";
-
-      container.appendChild(sparkle);
+      document.getElementById("sparkle-container")?.appendChild(sparkle);
 
       setTimeout(() => {
         sparkle.remove();
@@ -84,9 +69,7 @@ function App() {
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-
       for (let i = 0; i < 2; i++) {
-
         createSparkle(
           e.clientX + Math.random() * 10 - 5,
           e.clientY + Math.random() * 10 - 5
@@ -95,16 +78,6 @@ function App() {
     };
 
     window.addEventListener("mousemove", handleMouseMove);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-    };
-
-  }, []);
-
-  // TEST SUPABASE
-  useEffect(() => {
-
     const test = async () => {
 
       const { data, error } = await supabase
