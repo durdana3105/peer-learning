@@ -26,7 +26,7 @@ const Signup = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
-  const { user, loading } = useAuth();
+  const { user, loading, signUp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -60,58 +60,9 @@ const Signup = () => {
 
     setIsLoading(true);
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        name,
-      },
-    },
-  });
+    const { error } = await signUp(email, password, name);
 
-console.log("SIGNUP DATA:", data);
-console.log("SIGNUP ERROR:", error);
-setIsLoading(false);
-
-/*if (data.user) {
-  const { error: insertError } = await supabase.from("profiles").insert([
-    {
-      id: data.user.id,
-      email: data.user.email,
-      name:
-        data.user.user_metadata?.name ||
-        data.user.email.split("@")[0],
-      avatar_url: `https://api.dicebear.com/9.x/initials/svg?seed=${data.user.email}`,
-    },
-  ]);
-
-  console.log("INSERT ERROR:", insertError);
-}*/
-
-
-  /*  if (error) {
-      setIsLoading(false);
-      toast({
-        title: "Signup failed",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
-    }
-*/
-    // 📦 Step 2: Insert into DB
-    /*const { error: dbError } = await supabase.from("users").insert([
-      {
-        id: data.user?.id,
-        name,
-        email,
-        skills: "",
-        learning_goals: "",
-      },
-    ]);*/
-
-    
+    setIsLoading(false);
 
     if (error) {
       toast({

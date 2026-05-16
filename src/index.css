@@ -1,10 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
-
-/* body::after {
+body::after {
   content: "";
   position: fixed;
   inset: 0;
@@ -30,7 +29,7 @@ body::before {
   background: transparent url("https://www.transparenttextures.com/patterns/stardust.png");
   opacity: 0.3;
   animation: moveStars 60s linear infinite;
-} */
+}
 /* ✨ Sparkle container */
 #sparkle-container {
   position: fixed;
@@ -79,7 +78,7 @@ html {
   }
 }
 /* ✨ Sprinkles / Floating Particles */
-body::after {
+/* body::after {
   content: "";
   position: fixed;
   inset: 0;
@@ -104,18 +103,18 @@ body::after {
   to {
     transform: translateY(-300px);
   }
-}
+} */
 
 @keyframes moveStars {
   from { transform: translateY(0); }
   to { transform: translateY(-1000px); }
 }
-body {
+/* body {
   background: linear-gradient(-45deg, #000000, #022c22, #064e3b);
   background-size: 300% 300%;
   animation: moveGradient 12s ease infinite;
   color: white;
-}
+} */
 @keyframes moveGradient {
   0% {
     background-position: 0% 50%;
