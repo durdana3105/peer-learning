@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,54 +18,81 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * Ensures user profile exists in database without overwriting existing data
+   */
+  const ensureProfileExists = useCallback(async (user: User) => {
+    try {
+      const profileData = {
+        id: user.id,
+        name: user.user_metadata?.name || user.email?.split("@")[0] || "Learner",
+        email: user.email,
+        points: 0,
+        sessions_completed: 0,
+        rating: 0,
+        badges: [],
+        skills: [],
+        interests: [],
+        teach_subjects: [],
+        learn_subjects: [],
+        bio: "",
+      };
+
+      // { ignoreDuplicates: true } prevents resetting user data to 0 on login
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(profileData, { onConflict: "id", ignoreDuplicates: true });
+
+      if (error) {
+        console.error("Profile creation/upsert failed:", error.message);
+      }
+    } catch (err) {
+      console.error("Unexpected error while creating profile:", err);
+    }
+  }, []);
+
   useEffect(() => {
     let mounted = true;
 
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!mounted) return;
+    const initializeSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
 
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    };
-
-    init();
-
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+        if (error) throw error;
         if (!mounted) return;
 
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
+          await ensureProfileExists(session.user);
+        }
+      } catch (err) {
+        console.error("Unexpected session initialization error:", err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
 
-  const { data: existingProfile } = await supabase
-  .from("profiles")
-  .select("*")
-  .eq("email", session.user.email)
-  .maybeSingle();
+    initializeSession();
 
-  if (!existingProfile) {
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (!mounted) return;
 
-    await supabase.from("profiles").insert({
-  name:
-    session.user.user_metadata?.name ||
-    session.user.email?.split("@")[0] ||
-    "Learner",
+        try {
+          setSession(session);
+          setUser(session?.user ?? null);
 
-email: session.user.email || "",
-
-  skills: [],
-
-  bio: "",
-
-  avatar_url: `https://api.dicebear.com/9.x/initials/svg?seed=${session.user.email}`,
-});
-  }
-}
-        setLoading(false);
+          // only attempt to ensure profile on initial login to prevent redundant network calls.
+          if (session?.user && _event === "SIGNED_IN") {
+            await ensureProfileExists(session.user);
+          }
+        } catch (err) {
+          console.error("Auth state change error:", err);
+        } finally {
+          if (mounted) setLoading(false);
+        }
       }
     );
 
@@ -73,32 +100,49 @@ email: session.user.email || "",
       mounted = false;
       listener.subscription.unsubscribe();
     };
-  }, []);
+  }, [ensureProfileExists]);
 
   const signUp = async (email: string, password: string, name: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { name },
-        emailRedirectTo: window.location.origin,
-      },
-    });
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name },
+          emailRedirectTo: `${window.location.origin}/`
+        },
+      });
 
-    return { error: error as Error | null };
+      if (error) throw error;
+      return { error: null };
+    } catch (err) {
+      console.error("Sign up error:", err);
+      return { error: err as Error };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    return { error: error as Error | null };
+      if (error) throw error;
+      return { error: null };
+    } catch (err) {
+      console.error("Sign in error:", err);
+      return { error: err as Error };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (err) {
+      console.error("Sign out error:", err);
+    }
   };
 
   return (
