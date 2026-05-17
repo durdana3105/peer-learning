@@ -18,6 +18,7 @@ import Dashboard from "./pages/Dashboard";
 import Discover from "./pages/Discover";
 import Sessions from "./pages/Sessions";
 import Messages from "./pages/Messages";
+import Chat from "./pages/Chat";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
@@ -208,6 +209,17 @@ function App() {
                   <ProtectedRoute>
                     <WithNav>
                       <Messages user={user} />
+                    </WithNav>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/chat"
+                element={
+                  <ProtectedRoute>
+                    <WithNav>
+                      <Chat />
                     </WithNav>
                   </ProtectedRoute>
                 }
