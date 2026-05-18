@@ -1,45 +1,24 @@
-import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/useAuth";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-const [user, setUser] = useState<any>(null);
-const [loading, setLoading] = useState(true);
+  const { user, loading } = useAuth();
 
-useEffect(() => {
-// 🔥 Get current session
-supabase.auth.getSession().then(({ data }) => {
-setUser(data.session?.user ?? null);
-setLoading(false);
-});
-
-
-// 🔥 Listen to auth changes (VERY IMPORTANT)
-const { data: listener } = supabase.auth.onAuthStateChange(
-  (_event, session) => {
-    setUser(session?.user ?? null);
+  // ⏳ Loading
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-emerald-950">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-400 border-t-transparent" />
+      </div>
+    );
   }
-);
 
-return () => {
-  listener.subscription.unsubscribe();
-};
+  // 🔐 Not logged in → redirect safely
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
-
-}, []);
-
-// ⏳ Loading
-if (loading) {
-return ( <div className="flex min-h-screen items-center justify-center"> <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /> </div>
-);
-}
-
-// 🔐 Not logged in → redirect safely
-if (!user) {
-return <Navigate to="/login" replace />;
-}
-
-return <>{children}</>;
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;

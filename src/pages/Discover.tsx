@@ -71,7 +71,7 @@ const Discover = () => {
 
         // CURRENT USER
         const { data: current } = await supabase
-          .from("users")
+          .from("profiles")
           .select("*")
           .eq("id", user.id)
           .single();
@@ -80,7 +80,7 @@ const Discover = () => {
 
         // ALL USERS
         const { data: allUsers } = await supabase
-          .from("users")
+          .from("profiles")
           .select("*");
 
         setUsers(allUsers || []);

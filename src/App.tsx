@@ -51,11 +51,22 @@ function App() {
   // FETCH USER ONLY ONCE
   useEffect(() => {
     const getUser = async () => {
+      const demoSessionStr = localStorage.getItem("peerlearn-demo-session");
+      if (demoSessionStr) {
+        try {
+          const parsed = JSON.parse(demoSessionStr);
+          setUser(parsed.user);
+          return;
+        } catch (e) {
+          console.warn("Failed to load demo session from App state:", e);
+        }
+      }
+
       const {
-        data: { user },
+        data: { user: supabaseUser },
       } = await supabase.auth.getUser();
 
-      setUser(user);
+      setUser(supabaseUser);
     };
 
     getUser();

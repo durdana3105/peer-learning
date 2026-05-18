@@ -23,7 +23,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
 
-  const { user, loading } = useAuth();
+  const { user, loading, signIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -45,10 +45,7 @@ const Login = () => {
 
     setIsLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await signIn(email, password);
 
     setIsLoading(false);
 
@@ -61,6 +58,27 @@ const Login = () => {
     } else {
       toast({
         title: "Welcome back 🎉",
+      });
+      navigate("/dashboard");
+    }
+  };
+
+  // ✅ Quick Demo login
+  const handleDemoLogin = async () => {
+    setIsLoading(true);
+    const { error } = await signIn("demo@peerlearn.com", "demo123");
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: "Demo login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Welcome to PeerLearn Demo! 🎉",
+        description: "Logged in as Demo Student. No confirmation email needed.",
       });
       navigate("/dashboard");
     }
@@ -186,6 +204,15 @@ const Login = () => {
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </motion.div>
+
+          {/* Quick Demo Login */}
+          <Button
+            type="button"
+            onClick={handleDemoLogin}
+            className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold shadow-[0_0_15px_rgba(34,211,238,0.4)]"
+          >
+            ✨ Quick Demo Login
+          </Button>
 
           {/* Google */}
           <Button

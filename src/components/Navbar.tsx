@@ -43,7 +43,7 @@ const Navbar = () => {
       if (currentUser) {
 
         const { data: profile } = await supabase
-          .from("users")
+          .from("profiles")
           .select("name")
           .eq("id", currentUser.id)
           .single();
