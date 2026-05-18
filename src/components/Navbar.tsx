@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/features/notifications/NotificationBell";
+
 
 import {
   Menu,
@@ -17,64 +19,42 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/useAuth";
 
 const Navbar = () => {
 
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const [profileName, setProfileName] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const { user } = useAuth();
 
   const location = useLocation();
 
-  // AUTH
   useEffect(() => {
-
-    const fetchUser = async () => {
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      const currentUser = session?.user ?? null;
-
-      setUser(currentUser);
-
-      if (currentUser) {
+    const fetchProfile = async () => {
+      if (!user) {
+        setProfileName("");
+        setIsAdmin(false);
+        return;
+      }
 
         const { data: profile } = await supabase
           .from("profiles")
           .select("name")
-          .eq("id", currentUser.id)
+          .eq("id", user.id)
           .single();
 
         if (profile) {
           setProfileName(profile.name);
         }
 
-       setIsAdmin(false);
-      }
+      setIsAdmin(false);
     };
 
-    fetchUser();
+    fetchProfile();
+  }, [user]);
 
-    // LIVE AUTH LISTENER
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-
-      setUser(session?.user ?? null);
-
-      if (!session?.user) {
-        setProfileName("");
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-
-  }, []);
+  if (location.pathname === "/") return null;
 
   // LOGOUT
   const handleLogout = async () => {
@@ -98,13 +78,18 @@ const Navbar = () => {
           icon: Compass,
         },
         {
+          to: "/resources",
+          label: "Resources",
+          icon: BookOpen,
+        },
+        {
           to: "/sessions",
           label: "Sessions",
           icon: Calendar,
         },
         {
-          to: "/messages",
-          label: "Messages",
+          to: "/chat",
+          label: "Chat",
           icon: MessageCircle,
         },
         {
@@ -198,6 +183,8 @@ const Navbar = () => {
           {user ? (
 
             <>
+              <NotificationBell userId={user.id} />
+
               {/* PROFILE */}
               <Link to="/profile">
 
@@ -310,14 +297,23 @@ const Navbar = () => {
 
             {user ? (
 
-              <Button
-                onClick={handleLogout}
-                className="mt-3 rounded-xl bg-red-500 hover:bg-red-600"
-              >
+              <>
+                <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
+                  <span className="text-sm font-medium text-gray-300">
+                    Notifications
+                  </span>
+                  <NotificationBell userId={user.id} />
+                </div>
 
-                Logout
+                <Button
+                  onClick={handleLogout}
+                  className="mt-3 rounded-xl bg-red-500 hover:bg-red-600"
+                >
 
-              </Button>
+                  Logout
+
+                </Button>
+              </>
 
             ) : (
 

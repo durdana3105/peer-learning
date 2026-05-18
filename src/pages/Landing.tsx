@@ -109,8 +109,7 @@ export default function Landing() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
-      className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#020617] via-[#071127] to-[#020B1F] text-white"
-    >
+className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#020617] via-[#071127] to-[#020B1F] text-white"    >
       {/* Animated Background */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
 
@@ -157,15 +156,10 @@ export default function Landing() {
         />
       ))}
 
-      {/* Scroll Progress */}
-      <motion.div
-        style={{ scaleX: scrollYProgress }}
-        className="fixed left-0 right-0 top-0 z-50 h-1 origin-left bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500"
-      />
+      
 
       {/* Navbar */}
-      <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-[#020617]/70 backdrop-blur-2xl">
-        <div className="container mx-auto flex items-center justify-between px-6 py-5">
+<nav className="sticky top-0 z-[100] w-full border-b border-cyan-400/10 bg-[#020617]/95 backdrop-blur-3xl shadow-[0_0_20px_rgba(34,211,238,0.08)]">        <div className="container mx-auto flex items-center justify-between px-6 py-5">
           <div className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-2xl font-black text-transparent">
             PeerLearn
           </div>
@@ -206,12 +200,14 @@ export default function Landing() {
       </nav>
 
       {/* Hero */}
-      <section className="container relative grid items-center gap-16 px-6 pb-24 pt-32 lg:grid-cols-2">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
+
+      <section className="container relative grid items-center gap-16 px-6 pb-24 pt-24 lg:grid-cols-2">
+
+  <motion.div
+    initial={{ opacity: 0, y: 40 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.8 }}
+  >
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-5 py-2 text-sm text-cyan-300 backdrop-blur-xl">
             <Sparkles size={16} />
             Student Powered Learning Ecosystem

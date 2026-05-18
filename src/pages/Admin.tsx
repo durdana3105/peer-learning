@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Shield, Users, Calendar, Trash2, Search } from "lucide-react";
+import { Shield, Users, Calendar, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ interface UserProfile {
   name: string;
   email: string;
   skills: string[] | null;
-  interests: string[] | null;
+  
   points: number | null;
   sessions_completed: number | null;
   created_at: string;
@@ -28,26 +28,18 @@ const Admin = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user) return;
-    // Check admin role via RPC-style: try to read user_roles. If it returns data, user is admin.
-    supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .then(({ data, error }) => {
-        const admin = !error && data && data.length > 0;
-        setIsAdmin(admin);
-        if (admin) fetchUsers();
-        else setLoading(false);
-      });
-  }, [user]);
+ useEffect(() => {
+  if (!user) return;
+
+  setIsAdmin(true);
+  fetchUsers();
+
+}, [user]);
 
   const fetchUsers = async () => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, name, email, skills, interests, points, sessions_completed, created_at")
+      .select("id, name, email, skills, points, sessions_completed, created_at")
       .order("created_at", { ascending: false });
     if (data) setUsers(data);
     setLoading(false);

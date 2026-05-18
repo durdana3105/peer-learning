@@ -30,18 +30,33 @@ const EditProfile = () => {
   }
 
   const handleUpdate = async () => {
-    await supabase
-      .from("profiles")
-      .update({
-        name: profile.name,
-        bio: profile.bio,
-        skills: profile.skills
-          ? profile.skills.split(",").map(s => s.trim())
-          : [],
-      })
-      .eq("id", userId);
+    try {
+      if (profile.name?.length > 50) {
+        alert("Name must be less than 50 characters.");
+        return;
+      }
+      if (profile.bio?.length > 300) {
+        alert("Bio must be less than 300 characters.");
+        return;
+      }
 
-    alert("Updated!");
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          name: profile.name,
+          bio: profile.bio,
+          skills: profile.skills && typeof profile.skills === 'string'
+            ? profile.skills.split(",").map(s => s.trim()).filter(Boolean)
+            : [],
+        })
+        .eq("id", userId);
+
+      if (error) throw error;
+      alert("Profile successfully updated!");
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+      alert("Error updating profile. Please try again.");
+    }
   };
 
   return (

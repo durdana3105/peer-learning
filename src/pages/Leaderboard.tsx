@@ -4,11 +4,18 @@ import {
   Trophy,
   Medal,
   Flame,
+  Star,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/useAuth";
+
+import {
+  calculateLevel,
+  calculateProgress,
+  getBadgeByXP,
+} from "@/lib/gamification";
 
 interface LeaderboardEntry {
   id: string;
@@ -19,6 +26,7 @@ interface LeaderboardEntry {
   streak: number;
   sessions_joined: number;
   badges: string[];
+  updated_at?: string;
 }
 
 const Leaderboard = () => {
@@ -32,13 +40,51 @@ const Leaderboard = () => {
   // FETCH LEADERBOARD
   const fetchLeaderboard = async () => {
 
-    const { data, error } = await supabase
-      .from("leaderboard")
-      .select("*")
-      .order("xp", { ascending: false });
+    setLoading(true);
+
+    let query = supabase
+      .from("leaderboard" as any)
+      .select("*");
+
+    if (filter === "Weekly") {
+
+      const lastWeek = new Date();
+
+      lastWeek.setDate(lastWeek.getDate() - 7);
+
+      query = query.gte(
+        "updated_at",
+        lastWeek.toISOString()
+      );
+    }
+
+    if (filter === "Monthly") {
+
+      const lastMonth = new Date();
+
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+      query = query.gte(
+        "updated_at",
+        lastMonth.toISOString()
+      );
+    }
+
+    const { data, error } = await query.order("xp", {
+      ascending: false,
+    });
 
     if (!error && data) {
-      setEntries(data as LeaderboardEntry[]);
+
+      const updatedData = data.map((entry: any) => ({
+        ...entry,
+        badges:
+          entry.badges && entry.badges.length > 0
+            ? entry.badges
+            : [getBadgeByXP(entry.xp)],
+      }));
+
+      setEntries(updatedData as LeaderboardEntry[]);
     }
 
     setLoading(false);
@@ -50,40 +96,44 @@ const Leaderboard = () => {
     if (!user) return;
 
     const { data: existingUser } = await supabase
-      .from("leaderboard")
+      .from("leaderboard" as any)
       .select("*")
       .eq("user_id", user.id)
       .single();
 
     if (!existingUser) {
 
-      await supabase.from("leaderboard").insert({
+      await supabase.from("leaderboard" as any).insert({
         user_id: user.id,
+
         username:
           user.user_metadata?.name ||
           user.email?.split("@")[0] ||
           "Anonymous",
 
-        avatar_url: user.user_metadata?.avatar_url || null,
+        avatar_url:
+          user.user_metadata?.avatar_url || null,
 
         xp: 0,
-        streak: 0,
+        streak: 1,
         sessions_joined: 0,
-        badges: ["New Learner"],
+        badges: ["Beginner"],
       });
     }
   };
 
+  // INIT
   useEffect(() => {
 
     const init = async () => {
+
       await ensureUserExists();
       await fetchLeaderboard();
     };
 
     init();
 
-  }, [user]);
+  }, [user, filter]);
 
   // REALTIME
   useEffect(() => {
@@ -110,15 +160,20 @@ const Leaderboard = () => {
   }, []);
 
   const myRank =
-    entries.findIndex((e) => e.user_id === user?.id) + 1;
+    entries.findIndex(
+      (e) => e.user_id === user?.id
+    ) + 1;
 
   const myEntry =
-    entries.find((e) => e.user_id === user?.id);
+    entries.find(
+      (e) => e.user_id === user?.id
+    );
 
   // LOADING
   if (loading) {
 
     return (
+
       <div className="flex min-h-screen items-center justify-center bg-[#050816]">
 
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-cyan-400 border-t-transparent" />
@@ -168,7 +223,7 @@ const Leaderboard = () => {
         </motion.div>
 
         {/* STATS */}
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
+        <div className="mt-12 grid gap-5 md:grid-cols-4">
 
           <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl shadow-2xl">
 
@@ -202,6 +257,18 @@ const Leaderboard = () => {
 
             <h2 className="mt-3 text-4xl font-bold text-blue-400">
               #{myRank || "-"}
+            </h2>
+
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl shadow-2xl">
+
+            <p className="text-sm text-gray-400">
+              Your Level
+            </p>
+
+            <h2 className="mt-3 text-4xl font-bold text-pink-400">
+              {calculateLevel(myEntry?.xp || 0)}
             </h2>
 
           </div>
@@ -396,6 +463,12 @@ const Leaderboard = () => {
 
                     )}
 
+                    <Badge className="bg-pink-500/20 text-pink-300 border border-pink-500/20">
+
+                      Level {calculateLevel(entry.xp)}
+
+                    </Badge>
+
                   </div>
 
                   <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-gray-400">
@@ -409,17 +482,30 @@ const Leaderboard = () => {
                   </div>
 
                   {/* XP BAR */}
-                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                  <div className="mt-4">
 
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"
-                      style={{
-                        width: `${Math.min(
-                          (entry.xp / 2000) * 100,
-                          100
-                        )}%`,
-                      }}
-                    />
+                    <div className="mb-2 flex items-center justify-between text-xs text-gray-400">
+
+                      <span>
+                        XP Progress
+                      </span>
+
+                      <span>
+                        {calculateProgress(entry.xp)}/100
+                      </span>
+
+                    </div>
+
+                    <div className="h-2 overflow-hidden rounded-full bg-white/10">
+
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"
+                        style={{
+                          width: `${calculateProgress(entry.xp)}%`,
+                        }}
+                      />
+
+                    </div>
 
                   </div>
 
@@ -432,6 +518,8 @@ const Leaderboard = () => {
                         key={badge}
                         className="border border-cyan-500/20 bg-cyan-500/10 text-cyan-300"
                       >
+
+                        <Star className="mr-1 h-3 w-3" />
 
                         {badge}
 
