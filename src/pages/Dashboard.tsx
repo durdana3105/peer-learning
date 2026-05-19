@@ -319,7 +319,7 @@ const Dashboard = () => {
           <div className="space-y-6 xl:col-span-8">
 
             {/* Sessions */}
-            <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
+            <section className="rounded-3xl border border-white/10 bg-slate-900/40 p-6 backdrop-blur-2xl">
               <h2 className="mb-5 text-xl font-semibold">
                 📅 Upcoming Sessions
               </h2>
