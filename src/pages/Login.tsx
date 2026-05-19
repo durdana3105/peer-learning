@@ -1,3 +1,4 @@
+import { supabase, supabaseMisconfigured } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -72,21 +73,31 @@ const Login = () => {
   };
 
   const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
-      },
+  if (supabaseMisconfigured) {
+    toast({
+      title: "Not configured",
+      description:
+        "Supabase environment variables are not set. Ask the project owner to configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
+      variant: "destructive",
     });
+    return;
+  }
 
-    if (error) {
-      toast({
-        title: "Google login failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/dashboard`,
+    },
+  });
+
+  if (error) {
+    toast({
+      title: "Google login failed",
+      description: error.message,
+      variant: "destructive",
+    });
+  }
+};
 
   if (loading) {
     return (

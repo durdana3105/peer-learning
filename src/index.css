@@ -4,6 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 /* body::after {
   content: "";
   position: fixed;

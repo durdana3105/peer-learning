@@ -282,7 +282,7 @@ const Navbar = () => {
         {/* MOBILE BUTTON */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="rounded-lg border border-white/10 bg-white/5 p-2 text-white md:hidden"
+          className="rounded-lg border border-white/10 bg-white/5 p-3 text-white md:hidden active:scale-95"
         >
 
           {mobileOpen ? <X /> : <Menu />}
@@ -307,7 +307,7 @@ const Navbar = () => {
                   key={link.to}
                   to={link.to}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-xl bg-white/5 px-4 py-3 text-gray-300 transition hover:bg-white/10 hover:text-white"
+                  className="flex items-center gap-3 rounded-xl bg-white/5 px-3 py-4 text-base text-gray-300 transition hover:bg-white/10 hover:text-white"
                 >
 
                   <Icon size={18} />

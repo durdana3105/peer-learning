@@ -159,7 +159,7 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
       
 
       {/* Navbar */}
-<nav className="sticky top-0 z-[100] w-full border-b border-cyan-400/10 bg-[#020617]/95 backdrop-blur-3xl shadow-[0_0_20px_rgba(34,211,238,0.08)]">        <div className="container mx-auto flex items-center justify-between px-6 py-5">
+<nav className="fixed top-0 z-[1000] w-full border-b border-cyan-400/10 bg-[#020617]/95 backdrop-blur-3xl shadow-[0_0_20px_rgba(34,211,238,0.08)]">        <div className="container mx-auto flex items-center justify-between px-6 py-5">
           <div className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-2xl font-black text-transparent">
             PeerLearn
           </div>
@@ -200,6 +200,12 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
       </nav>
 
       {/* Hero */}
+      <section className="container relative grid items-center gap-16 px-6 pb-24 pt-24 lg:grid-cols-2">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
 
       <section className="container relative grid items-center gap-16 px-6 pb-24 pt-24 lg:grid-cols-2">
 
@@ -313,7 +319,7 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
       </section>
 
       {/* Stats */}
-      <section className="container grid grid-cols-2 gap-6 px-6 py-10 text-center md:grid-cols-4">
+      <section className="container mx-auto mt-20 grid grid-cols-2 gap-6 px-6 py-10 text-center md:grid-cols-4">
         {stats.map((s, i) => (
           <motion.div
             key={i}
@@ -324,9 +330,13 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
             whileHover={{ y: -8 }}
             className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-2xl transition-all duration-300 hover:border-cyan-400/30 hover:shadow-[0_0_50px_rgba(34,211,238,0.2)]"
           >
-            <h3 className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-4xl font-black text-transparent">
-              {s.value}
-            </h3>
+            <h3 className="text-4xl font-black">
+  <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+    {s.value.replace('+', '')}
+  </span>
+  <span className="text-cyan-400">+</span>
+</h3>
+
 
             <p className="mt-3 text-slate-300/70">{s.label}</p>
           </motion.div>
@@ -339,7 +349,7 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center text-5xl font-black tracking-tight"
+          className="text-center text-3xl sm:text-4xl md:text-5xl font-black tracking-tight"
         >
           How
           <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
