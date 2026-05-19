@@ -206,14 +206,6 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-
-      <section className="container relative grid items-center gap-16 px-6 pb-24 pt-24 lg:grid-cols-2">
-
-  <motion.div
-    initial={{ opacity: 0, y: 40 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.8 }}
-  >
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-5 py-2 text-sm text-cyan-300 backdrop-blur-xl">
             <Sparkles size={16} />
             Student Powered Learning Ecosystem
