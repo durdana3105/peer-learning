@@ -6,7 +6,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { AuthProvider } from "@/contexts/AuthContext";
+import { RoleProvider } from "@/contexts/RoleContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import ProtectedMentorRoute from "@/components/ProtectedMentorRoute";
 
 import Navbar from "./components/Navbar";
 import Chatbot from "./components/Chatbot";
@@ -16,12 +19,15 @@ import Room from "./components/Room";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
+import MentorDashboard from "./pages/MentorDashboard";
+import LearnerDashboard from "./pages/LearnerDashboard";
 import Discover from "./pages/Discover";
 import Sessions from "./pages/Sessions";
 import Messages from "./pages/Messages";
 import Chat from "./pages/Chat";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Onboarding from "./pages/Onboarding";
 import Profile from "./pages/Profile";
 import EditProfile from "./pages/EditProfile";
 import Notifications from "./pages/Notifications";
@@ -34,6 +40,7 @@ import FloatingAI from "./components/FloatingAI";
 import ContributorDashboard from "./pages/ContributorDashboard";
 const ResourceHub = React.lazy(() => import("@/pages/ResourceHub"));
 
+import { supabase } from "@/integrations/supabase/client";
 import BecomeMentor from "./pages/BecomeMentor";
 import { useAuth } from "@/contexts/useAuth";
 
@@ -103,6 +110,10 @@ function App() {
 
         <BrowserRouter>
 
+          <AuthProvider>
+
+            <RoleProvider>
+
             <div id="sparkle-container"></div>
 
             <Routes>
@@ -120,6 +131,8 @@ function App() {
               <Route path="/login" element={<Login />} />
 
               <Route path="/signup" element={<Signup />} />
+
+              <Route path="/onboarding" element={<Onboarding />} />
 
               <Route path="/ai" element={<AIPage />} />
 
@@ -139,6 +152,26 @@ function App() {
                   <ProtectedRoute>
                     <WithNav>
                       <Dashboard />
+                    </WithNav>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/mentor-dashboard"
+                element={
+                  <ProtectedMentorRoute>
+                    <WithNav>
+                      <MentorDashboard />
+                    </WithNav>
+                  </ProtectedMentorRoute>
+                }
+              />
+              <Route
+                path="/learner-dashboard"
+                element={
+                  <ProtectedRoute>
+                    <WithNav>
+                      <LearnerDashboard />
                     </WithNav>
                   </ProtectedRoute>
                 }
@@ -289,6 +322,10 @@ function App() {
             </Routes>
 
             <Chatbot />
+
+            </RoleProvider>
+
+          </AuthProvider>
 
           <FloatingAI />
 

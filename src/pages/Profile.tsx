@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 
+import { Camera, Save, Sparkles, User, Flame, Zap, Trophy } from "lucide-react";
+
 import {
-  Camera,
-  Save,
-  Sparkles,
-  User,
-  Flame,
-  Zap,
-} from "lucide-react";
+  calculateLevel,
+  getBadgeByXP,
+  getAchievements,
+} from "../lib/gamification";
 
 const avatars = [
   "https://api.dicebear.com/7.x/adventurer/svg?seed=Alex",
@@ -21,49 +20,46 @@ const avatars = [
 ];
 
 const EditProfile = () => {
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [profile, setProfile] =
-    useState<any>({
-      name: "",
-      bio: "",
-      skills: "",
-      avatar_url: "",
-      streak: 0,
-      xp: 0,
-    });
+  const [profile, setProfile] = useState<any>({
+    name: "",
+    bio: "",
+    skills: "",
+    avatar_url: "",
+    streak: 0,
+    xp: 0,
+    level: 1,
+    badge: "",
+    achievements: [],
+  });
 
   // FETCH PROFILE
   useEffect(() => {
     const fetchProfile = async () => {
-      const { data } =
-        await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
 
       const user = data?.session?.user;
 
       if (!user) return;
 
-      const { data: profileData } =
-        await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
 
       if (profileData) {
         setProfile({
           name: profileData.name || "",
           bio: profileData.bio || "",
-          skills:
-            profileData.skills?.join(", ") ||
-            "",
-          avatar_url:
-            profileData.avatar_url ||
-            avatars[0],
-          streak:
-            profileData.streak || 0,
+          skills: profileData.skills?.join(", ") || "",
+          avatar_url: profileData.avatar_url || avatars[0],
+          streak: profileData.streak || 0,
           xp: profileData.xp || 0,
+          level: calculateLevel(profileData.xp || 0),
+          badge: getBadgeByXP(profileData.xp || 0),
+          achievements: getAchievements(profileData.xp || 0),
         });
       }
     };
@@ -75,8 +71,7 @@ const EditProfile = () => {
   const handleSave = async () => {
     setLoading(true);
 
-    const { data } =
-      await supabase.auth.getSession();
+    const { data } = await supabase.auth.getSession();
 
     const user = data?.session?.user;
 
@@ -88,12 +83,9 @@ const EditProfile = () => {
         name: profile.name,
         bio: profile.bio,
 
-        skills: profile.skills
-          .split(",")
-          .map((s: string) => s.trim()),
+        skills: profile.skills.split(",").map((s: string) => s.trim()),
 
-        avatar_url:
-          profile.avatar_url,
+        avatar_url: profile.avatar_url,
 
         streak: profile.streak,
 
@@ -104,22 +96,18 @@ const EditProfile = () => {
     setLoading(false);
 
     if (!error) {
-      alert(
-        "Profile Updated Successfully 🚀"
-      );
+      alert("Profile Updated Successfully 🚀");
     }
   };
 
   return (
     <div className="min-h-screen bg-[#020617] text-white overflow-hidden">
-      
       {/* BACKGROUND GLOW */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500/20 blur-[120px] rounded-full" />
 
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/20 blur-[120px] rounded-full" />
 
       <div className="relative z-10 flex justify-center items-center min-h-screen p-6">
-
         <motion.div
           initial={{
             opacity: 0,
@@ -131,7 +119,6 @@ const EditProfile = () => {
           }}
           className="w-full max-w-4xl rounded-[36px] border border-white/10 bg-white/5 backdrop-blur-2xl p-8"
         >
-          
           {/* HEADER */}
           <div className="mb-10">
             <div className="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-400/20 text-cyan-300 px-4 py-2 rounded-full mb-4">
@@ -139,9 +126,7 @@ const EditProfile = () => {
               Personalize Your Profile
             </div>
 
-            <h1 className="text-5xl font-bold mb-3">
-              Edit Profile
-            </h1>
+            <h1 className="text-5xl font-bold mb-3">Edit Profile</h1>
 
             <p className="text-gray-400 text-lg">
               Build your learning identity 🚀
@@ -150,10 +135,7 @@ const EditProfile = () => {
 
           {/* AVATAR */}
           <div className="mb-12">
-
-            <h2 className="text-2xl font-bold mb-6">
-              Choose Your Avatar
-            </h2>
+            <h2 className="text-2xl font-bold mb-6">Choose Your Avatar</h2>
 
             {/* CURRENT AVATAR */}
             <div className="flex justify-center mb-8">
@@ -165,10 +147,7 @@ const EditProfile = () => {
                 />
 
                 <div className="absolute bottom-2 right-2 bg-cyan-400 p-3 rounded-full">
-                  <Camera
-                    size={20}
-                    className="text-black"
-                  />
+                  <Camera size={20} className="text-black" />
                 </div>
               </div>
             </div>
@@ -202,8 +181,7 @@ const EditProfile = () => {
                     className="w-20 h-20 rounded-full object-cover"
                   />
 
-                  {profile.avatar_url ===
-                    avatar && (
+                  {profile.avatar_url === avatar && (
                     <div className="absolute inset-0 rounded-full border-4 border-cyan-400 animate-pulse" />
                   )}
                 </motion.button>
@@ -213,7 +191,6 @@ const EditProfile = () => {
 
           {/* FORM */}
           <div className="grid md:grid-cols-2 gap-6">
-
             {/* NAME */}
             <div>
               <label className="block text-sm text-gray-400 mb-2">
@@ -243,9 +220,7 @@ const EditProfile = () => {
 
             {/* SKILLS */}
             <div>
-              <label className="block text-sm text-gray-400 mb-2">
-                Skills
-              </label>
+              <label className="block text-sm text-gray-400 mb-2">Skills</label>
 
               <input
                 type="text"
@@ -268,9 +243,7 @@ const EditProfile = () => {
 
           {/* BIO */}
           <div className="mt-6">
-            <label className="block text-sm text-gray-400 mb-2">
-              Bio
-            </label>
+            <label className="block text-sm text-gray-400 mb-2">Bio</label>
 
             <textarea
               rows={5}
@@ -288,7 +261,6 @@ const EditProfile = () => {
 
           {/* DYNAMIC STATS */}
           <div className="grid md:grid-cols-2 gap-5 mt-10">
-
             {/* STREAK */}
             <motion.div
               whileHover={{
@@ -299,9 +271,7 @@ const EditProfile = () => {
               <div className="flex items-center gap-3 mb-3">
                 <Flame className="text-orange-400" />
 
-                <h2 className="font-bold text-lg">
-                  Current Streak
-                </h2>
+                <h2 className="font-bold text-lg">Current Streak</h2>
               </div>
 
               <p className="text-4xl font-bold">
@@ -323,18 +293,39 @@ const EditProfile = () => {
               <div className="flex items-center gap-3 mb-3">
                 <Zap className="text-cyan-400" />
 
-                <h2 className="font-bold text-lg">
-                  Total XP
-                </h2>
+                <h2 className="font-bold text-lg">Total XP</h2>
               </div>
 
-              <p className="text-4xl font-bold">
-                {profile.xp || 0} XP ⚡
-              </p>
+              <p className="text-4xl font-bold">{profile.xp || 0} XP ⚡</p>
 
               <p className="text-sm text-gray-400 mt-2">
                 Earn XP by joining sessions
               </p>
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.03 }}
+              className="rounded-3xl border border-yellow-400/10 bg-yellow-500/5 p-6"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <Trophy className="text-yellow-400" />
+
+                <h2 className="font-bold text-lg">Achievements</h2>
+              </div>
+
+              <p className="text-2xl font-bold">Level {profile.level}</p>
+
+              <p className="mt-2">Badge: {profile.badge}</p>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {profile.achievements?.map((a: string, i: number) => (
+                  <span
+                    key={i}
+                    className="px-3 py-1 rounded-full bg-cyan-500/20 text-sm"
+                  >
+                    {a}
+                  </span>
+                ))}
+              </div>
             </motion.div>
           </div>
 
@@ -346,9 +337,7 @@ const EditProfile = () => {
           >
             <Save size={20} />
 
-            {loading
-              ? "Saving..."
-              : "Save Profile"}
+            {loading ? "Saving..." : "Save Profile"}
           </button>
         </motion.div>
       </div>

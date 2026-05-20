@@ -109,7 +109,8 @@ export default function Landing() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
-className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#020617] via-[#071127] to-[#020B1F] text-white"    >
+      className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#020617] via-[#071127] to-[#020B1F] text-white"
+    >
       {/* Animated Background */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
 
@@ -156,10 +157,10 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
         />
       ))}
 
-      
-
       {/* Navbar */}
-<nav className="fixed top-0 z-[1000] w-full border-b border-cyan-400/10 bg-[#020617]/95 backdrop-blur-3xl shadow-[0_0_20px_rgba(34,211,238,0.08)]">        <div className="container mx-auto flex items-center justify-between px-6 py-5">
+      <nav className="fixed top-0 z-[1000] w-full border-b border-cyan-400/10 bg-[#020617]/95 backdrop-blur-3xl shadow-[0_0_20px_rgba(34,211,238,0.08)]">
+        {" "}
+        <div className="container mx-auto flex items-center justify-between px-6 py-5">
           <div className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-2xl font-black text-transparent">
             PeerLearn
           </div>
@@ -171,13 +172,15 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
             <a href="#community" className="transition hover:text-cyan-400">
               Communities
             </a>
-            <a href="/contributor-dashboard" className="transition hover:text-cyan-400">
+            <a
+              href="/contributor-dashboard"
+              className="transition hover:text-cyan-400"
+            >
               Contributor Dashboard
             </a>
             <a href="#faq" className="transition hover:text-cyan-400">
               FAQ
             </a>
-            
           </div>
 
           <div className="flex items-center gap-4">
@@ -200,6 +203,13 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
       </nav>
 
       {/* Hero */}
+      {/* <section className="container relative grid items-center gap-16 px-6 pb-24 pt-24 lg:grid-cols-2">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        > */}
+
       <section className="container relative grid items-center gap-16 px-6 pb-24 pt-24 lg:grid-cols-2">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
@@ -214,21 +224,23 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
           <h1 className="text-5xl font-black leading-tight tracking-tight md:text-7xl">
             Learn From
             <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-500 bg-clip-text text-transparent">
-              {' '}Seniors
+              {" "}
+              Seniors
             </span>
             .
             <br />
             Grow With
             <span className="bg-gradient-to-r from-blue-400 via-cyan-300 to-sky-500 bg-clip-text text-transparent">
-              {' '}Peers
+              {" "}
+              Peers
             </span>
             .
           </h1>
 
           <p className="mt-8 max-w-2xl text-lg leading-8 text-slate-300/80 md:text-xl">
-            Join live mentorship sessions, build projects with classmates,
-            solve doubts instantly, and become part of a futuristic
-            collaborative learning community.
+            Join live mentorship sessions, build projects with classmates, solve
+            doubts instantly, and become part of a futuristic collaborative
+            learning community.
           </p>
 
           <div className="mt-10 flex flex-wrap gap-5">
@@ -238,17 +250,17 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-<Link to="/become-mentor">
-  <Button
-    variant="outline"
-    className="rounded-2xl border border-cyan-400/40 bg-white/5 px-8 py-7 text-base font-semibold text-cyan-300 backdrop-blur-xl transition-all duration-300 hover:bg-cyan-400/10 hover:scale-105"
-  >
-    Become a Mentor.
-  </Button>
-</Link>
-</div>
+            <Link to="/become-mentor">
+              <Button
+                variant="outline"
+                className="rounded-2xl border border-cyan-400/40 bg-white/5 px-8 py-7 text-base font-semibold text-cyan-300 backdrop-blur-xl transition-all duration-300 hover:bg-cyan-400/10 hover:scale-105"
+              >
+                Become a Mentor.
+              </Button>
+            </Link>
+          </div>
 
-<div className="mt-12 flex flex-wrap gap-4">
+          <div className="mt-12 flex flex-wrap gap-4">
             {[
               "🔥 120 students joined today",
               "🎥 12 live sessions running",
@@ -323,12 +335,11 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
             className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-2xl transition-all duration-300 hover:border-cyan-400/30 hover:shadow-[0_0_50px_rgba(34,211,238,0.2)]"
           >
             <h3 className="text-4xl font-black">
-  <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-    {s.value.replace('+', '')}
-  </span>
-  <span className="text-cyan-400">+</span>
-</h3>
-
+              <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                {s.value.replace("+", "")}
+              </span>
+              <span className="text-cyan-400">+</span>
+            </h3>
 
             <p className="mt-3 text-slate-300/70">{s.label}</p>
           </motion.div>
@@ -345,7 +356,8 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
         >
           How
           <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-            {' '}PeerLearn
+            {" "}
+            PeerLearn
           </span>
           Works
         </motion.h2>
@@ -379,9 +391,7 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
               </div>
 
               <h3 className="text-2xl font-bold">{step.title}</h3>
-              <p className="mt-4 leading-7 text-slate-300/70">
-                {step.desc}
-              </p>
+              <p className="mt-4 leading-7 text-slate-300/70">{step.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -562,13 +572,13 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
             </Button>
 
             <Link to="/become-mentor">
-  <Button
-    variant="outline"
-    className="rounded-2xl border border-cyan-400/40 bg-white/5 px-8 py-7 text-base font-semibold text-cyan-300 backdrop-blur-xl transition-all duration-300 hover:bg-cyan-400/10 hover:scale-105"
-  >
-    Become a Mentor
-  </Button>
-</Link>
+              <Button
+                variant="outline"
+                className="rounded-2xl border border-cyan-400/40 bg-white/5 px-8 py-7 text-base font-semibold text-cyan-300 backdrop-blur-xl transition-all duration-300 hover:bg-cyan-400/10 hover:scale-105"
+              >
+                Become a Mentor
+              </Button>
+            </Link>
           </div>
         </motion.div>
       </section>
@@ -626,9 +636,7 @@ className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#0206
             </a>
           </div>
 
-          <div className="text-slate-500">
-            © 2026 PeerLearn
-          </div>
+          <div className="text-slate-500">© 2026 PeerLearn</div>
         </div>
       </footer>
     </motion.div>

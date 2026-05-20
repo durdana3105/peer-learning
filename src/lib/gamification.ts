@@ -7,11 +7,23 @@ export const calculateProgress = (xp: number) => {
 };
 
 export const getBadgeByXP = (xp: number) => {
-  if (xp >= 2000) return "Legend";
-  if (xp >= 1000) return "Master";
-  if (xp >= 500) return "Expert";
-  if (xp >= 200) return "Intermediate";
-  return "Beginner";
+  if (xp >= 5000) return "🏆 Grandmaster";
+  if (xp >= 2000) return "👑 Legend";
+  if (xp >= 1000) return "🔥 Master";
+  if (xp >= 500) return "⭐ Expert";
+  if (xp >= 200) return "🚀 Intermediate";
+  return "🌱 Beginner";
+};
+
+export const getAchievements = (xp: number) => {
+  const achievements = [];
+
+  if (xp >= 50) achievements.push("First Steps");
+  if (xp >= 200) achievements.push("Active Learner");
+  if (xp >= 500) achievements.push("Knowledge Explorer");
+  if (xp >= 1000) achievements.push("Community Mentor");
+
+  return achievements;
 };
 
 export const getXPForActivity = (activity: string) => {

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 // ✅ Proper TypeScript type
 type FormErrors = {
@@ -115,7 +115,7 @@ const Signup = () => {
       description: "Welcome 🎉",
     });
 
-    navigate("/dashboard");
+    navigate("/onboarding");
   };
 
   if (loading) {

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import PeerCard from "@/components/PeerCard";
 import SessionCard from "@/components/SessionCard";
 import { useAuth } from "@/contexts/useAuth";
+import { useRole } from "@/contexts/RoleContext";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Profile {
@@ -23,6 +25,8 @@ interface Profile {
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
+  const { currentMode } = useRole();
+  const navigate = useNavigate();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -166,6 +170,36 @@ const Dashboard = () => {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#020617] via-[#020B1F] to-[#050014] text-white">
+      {currentMode === 'mentor' && (
+        <div className="mb-4 rounded-lg bg-emerald-500/10 border border-emerald-400/20 px-4 py-2 text-sm text-emerald-300">
+          You are viewing in <span className="font-semibold">Mentor Mode</span>
+        </div>
+      )}
+      {currentMode === 'learner' && (
+        <div className="mb-4 rounded-lg bg-blue-500/10 border border-blue-400/20 px-4 py-2 text-sm text-blue-300">
+          You are viewing in <span className="font-semibold">Learner Mode</span>
+        </div>
+      )}
+      <div className="mb-6 flex gap-3">
+        {currentMode === 'mentor' && (
+          <button
+            type="button"
+            onClick={() => navigate('/mentor-dashboard')}
+            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-emerald-400"
+          >
+            Go to Mentor Dashboard
+          </button>
+        )}
+        {currentMode === 'learner' && (
+          <button
+            type="button"
+            onClick={() => navigate('/learner-dashboard')}
+            className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-400"
+          >
+            Go to Learner Dashboard
+          </button>
+        )}
+      </div>
 
       {/* Background Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.12),transparent)]" />
