@@ -120,40 +120,40 @@ const Signup = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-emerald-950">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-400 border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-cyan-400 border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-950 px-4 font-[Inter] text-emerald-100">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-[#0b1329] to-background px-4 font-[Inter] text-slate-100">
 
       {/* Glow background */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,197,94,0.15),transparent)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(var(--theme-color-1),0.15),transparent)] pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="relative w-full max-w-md backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 shadow-[0_0_40px_rgba(34,197,94,0.15)]"
+        className="relative w-full max-w-md backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 shadow-[0_0_40px_rgba(var(--theme-color-1),0.15)]"
       >
 
         {/* Logo */}
         <div className="mb-8 text-center">
           <Link to="/" className="flex items-center justify-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-green-400 to-emerald-500">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500">
               <BookOpen className="h-5 w-5 text-black" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-emerald-200">
+            <span className="text-xl font-bold tracking-tight text-slate-200">
               PeerLearn
             </span>
           </Link>
 
-          <h1 className="mt-4 text-2xl font-semibold text-emerald-100">
+          <h1 className="mt-4 text-2xl font-semibold text-slate-100">
             Create your account
           </h1>
-          <p className="text-sm text-emerald-300/60 mt-1">
+          <p className="text-sm text-slate-300/60 mt-1">
             Start your learning journey today
           </p>
         </div>
@@ -166,7 +166,7 @@ const Signup = () => {
             placeholder="Full Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="bg-white/5 border border-white/10 text-emerald-100 placeholder:text-emerald-400/50 focus:border-green-400 focus:ring-1 focus:ring-green-400"
+            className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
           />
           {errors.name && <p className="text-red-400 text-sm">{errors.name}</p>}
 
@@ -175,7 +175,7 @@ const Signup = () => {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="bg-white/5 border border-white/10 text-emerald-100 placeholder:text-emerald-400/50 focus:border-green-400 focus:ring-1 focus:ring-green-400"
+            className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
           />
           {errors.email && <p className="text-red-400 text-sm">{errors.email}</p>}
 
@@ -186,12 +186,12 @@ const Signup = () => {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="bg-white/5 border border-white/10 text-emerald-100 placeholder:text-emerald-400/50 focus:border-green-400"
+              className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400/50 focus:border-cyan-400"
             />
 
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-300"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300"
               onClick={() => setShowPassword(!showPassword)}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -206,12 +206,12 @@ const Signup = () => {
               placeholder="Confirm Password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="bg-white/5 border border-white/10 text-emerald-100 placeholder:text-emerald-400/50 focus:border-green-400"
+              className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400/50 focus:border-cyan-400"
             />
 
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-300"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300"
               onClick={() =>
                 setShowConfirmPassword(!showConfirmPassword)
               }
@@ -230,7 +230,7 @@ const Signup = () => {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-green-500 hover:bg-green-400 text-black font-semibold shadow-[0_0_15px_rgba(34,197,94,0.4)]"
+              className="w-full bg-cyan-400 hover:bg-cyan-300 text-black font-semibold shadow-[0_0_15px_rgba(var(--theme-color-1),0.4)]"
             >
               {isLoading ? "Creating..." : "Sign Up"}
             </Button>
@@ -239,9 +239,9 @@ const Signup = () => {
         </form>
 
         {/* Login redirect */}
-        <p className="mt-6 text-center text-sm text-emerald-300/70">
+        <p className="mt-6 text-center text-sm text-slate-300/70">
           Already have an account?{" "}
-          <Link to="/login" className="text-green-400 hover:underline">
+          <Link to="/login" className="text-cyan-400 hover:underline">
             Log in
           </Link>
         </p>

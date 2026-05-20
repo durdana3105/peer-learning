@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 import { useAuth } from "@/contexts/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+
 
 type Errors = {
   email?: string;

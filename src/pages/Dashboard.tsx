@@ -6,6 +6,7 @@ import SessionCard from "@/components/SessionCard";
 import { useAuth } from "@/contexts/useAuth";
 import { useRole } from "@/contexts/RoleContext";
 import { supabase } from "@/integrations/supabase/client";
+import AnalyticsCharts from "@/components/AnalyticsCharts";
 
 interface Profile {
   id: string;
@@ -22,6 +23,13 @@ interface Profile {
   points: number | null;
   badges: string[] | null;
 }
+interface Session {
+  id: string;
+  status: string;
+  title?: string;
+  date?: string;
+}
+
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
@@ -56,44 +64,51 @@ const Dashboard = () => {
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .single();
+        .single<Profile>();   // 👈 tell TS this is a single Profile row
 
-      if (error) console.log(error);
+      if (error) {
+        console.error(error);
+        return;
+      }
 
       if (data) {
-        setProfile(data);
-        fetchRecommendedPeers(data);
+        setProfile(data);              // TS now knows `data` is Profile
+        fetchRecommendedPeers(data);   // safe to pass
       }
     };
+
+
 
     fetchProfile();
   }, [user]);
 
   // Recommended Peers
   const fetchRecommendedPeers = async (myProfile: Profile) => {
-    const { data } = await supabase
+    if (!user?.id) return;
+
+    const { data, error } = await supabase
       .from("profiles")
       .select("*")
-      .neq("id", user!.id);
+      .neq("id", user.id)
+      .returns<Profile[]>();
 
-    if (!data) return;
+    if (error || !data) return;
 
-    const myLearn = myProfile.learn_subjects || [];
-    const myTeach = myProfile.teach_subjects || [];
-    const myInterests = myProfile.interests || [];
+    const peers = data || [];
 
-    const mapped = data.map((p) => {
-      const teachOverlap = myLearn.filter((s) =>
-        (p.teach_subjects || []).includes(s)
-      ).length;
+    const myLearn = myProfile.learn_subjects ?? [];
+    const myTeach = myProfile.teach_subjects ?? [];
+    const myInterests = myProfile.interests ?? [];
 
-      const learnOverlap = myTeach.filter((s) =>
-        (p.learn_subjects || []).includes(s)
-      ).length;
+    const mapped = peers.map((p) => {
 
-      const interestOverlap = myInterests.filter((s) =>
-        (p.interests || []).includes(s)
-      ).length;
+      const teach = p.teach_subjects ?? [];
+      const learn = p.learn_subjects ?? [];
+      const interests = p.interests ?? [];
+
+      const teachOverlap = myLearn.filter((s) => teach.includes(s)).length;
+      const learnOverlap = myTeach.filter((s) => learn.includes(s)).length;
+      const interestOverlap = myInterests.filter((s) => interests.includes(s)).length;
 
       const max = Math.max(
         myLearn.length + myTeach.length + myInterests.length,
@@ -111,14 +126,14 @@ const Dashboard = () => {
           p.avatar_url ||
           `https://api.dicebear.com/9.x/avataaars/svg?seed=${p.name}`,
         bio: p.bio || "",
-        skills: p.skills || [],
-        interests: p.interests || [],
-        teachSubjects: p.teach_subjects || [],
-        learnSubjects: p.learn_subjects || [],
-        rating: p.rating || 0,
-        sessionsCompleted: p.sessions_completed || 0,
-        points: p.points || 0,
-        badges: p.badges || [],
+        skills: p.skills ?? [],
+        interests: interests,
+        teachSubjects: teach,
+        learnSubjects: learn,
+        rating: p.rating ?? 0,
+        sessionsCompleted: p.sessions_completed ?? 0,
+        points: p.points ?? 0,
+        badges: p.badges ?? [],
         matchScore,
       };
     });
@@ -130,16 +145,22 @@ const Dashboard = () => {
   // Sessions
   useEffect(() => {
     const fetchSessions = async () => {
-      const { data } = await supabase
-        .from<any>("sessions")
+      const { data, error } = await supabase
+        .from("sessions")
         .select("*")
         .eq("status", "upcoming");
 
-      setUpcomingSessions(data || []);
+      if (error || !data) {
+        setUpcomingSessions([]);
+        return;
+      }
+
+      setUpcomingSessions(data);
     };
 
     fetchSessions();
   }, []);
+
 
   // Leaderboard
   useEffect(() => {
@@ -321,6 +342,9 @@ const Dashboard = () => {
             </motion.div>
           ))}
         </div>
+        {/* Analytics */}
+        <AnalyticsCharts profile={profile} sessions={upcomingSessions} />
+
 
         {/* MAIN */}
         <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-12">
@@ -329,7 +353,7 @@ const Dashboard = () => {
           <div className="space-y-6 xl:col-span-8">
 
             {/* Sessions */}
-            <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
+            <section className="rounded-3xl border border-white/10 bg-slate-900/40 p-6 backdrop-blur-2xl">
               <h2 className="mb-5 text-xl font-semibold">
                 📅 Upcoming Sessions
               </h2>

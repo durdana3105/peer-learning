@@ -112,7 +112,7 @@ body::after {
   to { transform: translateY(-1000px); }
 }
 body {
-  background: linear-gradient(-45deg, #000000, #022c22, #064e3b);
+  background: linear-gradient(-45deg, hsl(var(--background)), hsl(var(--card)), hsl(var(--background)));
   background-size: 300% 300%;
   animation: moveGradient 12s ease infinite;
   color: white;
@@ -130,6 +130,9 @@ body {
 }
 @layer base {
   :root {
+    --theme-color-1: 34 211 238;
+    --theme-color-2: 59 130 246;
+
     --background: 80 30% 97%;
     --foreground: 220 25% 12%;
 
@@ -182,6 +185,9 @@ body {
   }
 
   .dark {
+    --theme-color-1: 34 211 238;
+    --theme-color-2: 59 130 246;
+
     --background: 221 20% 8%;
     --foreground: 210 20% 95%;
 
@@ -191,7 +197,7 @@ body {
     --popover: 220 18% 12%;
     --popover-foreground: 210 20% 95%;
 
-    --primary: 152 55% 48%;
+    --primary: 222 47% 11%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 38 80% 55%;
@@ -209,6 +215,101 @@ body {
     --border: 220 15% 20%;
     --input: 220 15% 20%;
     --ring: 152 55% 48%;
+  }
+
+  .theme-default {
+    --theme-color-1: 34 211 238;
+    --theme-color-2: 59 130 246;
+    --background: 222 47% 4%;
+    --foreground: 210 20% 95%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 20% 95%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 20% 95%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 190 90% 50%;
+    --accent-foreground: 0 0% 100%;
+    --border: 222 30% 12%;
+    --input: 222 30% 12%;
+    --ring: 199 89% 48%;
+    --gradient-hero: linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(190, 90%, 50%) 100%);
+  }
+
+  .theme-purple {
+    --theme-color-1: 168 85 247;
+    --theme-color-2: 236 72 153;
+    --background: 262 30% 6%;
+    --foreground: 262 10% 95%;
+    --card: 262 25% 10%;
+    --card-foreground: 262 10% 95%;
+    --popover: 262 25% 10%;
+    --popover-foreground: 262 10% 95%;
+    --primary: 270 70% 60%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 290 80% 55%;
+    --accent-foreground: 0 0% 100%;
+    --border: 262 20% 15%;
+    --input: 262 20% 15%;
+    --ring: 270 70% 60%;
+    --gradient-hero: linear-gradient(135deg, hsl(270, 70%, 60%) 0%, hsl(290, 80%, 55%) 100%);
+  }
+
+  .theme-blue {
+    --theme-color-1: 14 165 233;
+    --theme-color-2: 20 184 166;
+    --background: 215 35% 6%;
+    --foreground: 215 10% 95%;
+    --card: 215 30% 10%;
+    --card-foreground: 215 10% 95%;
+    --popover: 215 30% 10%;
+    --popover-foreground: 215 10% 95%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 190 90% 50%;
+    --accent-foreground: 0 0% 100%;
+    --border: 215 20% 15%;
+    --input: 215 20% 15%;
+    --ring: 199 89% 48%;
+    --gradient-hero: linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(190, 90%, 50%) 100%);
+  }
+
+  .theme-green {
+    --theme-color-1: 34 197 94;
+    --theme-color-2: 16 185 129;
+    --background: 145 35% 4%;
+    --foreground: 145 10% 95%;
+    --card: 145 30% 8%;
+    --card-foreground: 145 10% 95%;
+    --popover: 145 30% 8%;
+    --popover-foreground: 145 10% 95%;
+    --primary: 142 70% 45%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 150 80% 40%;
+    --accent-foreground: 0 0% 100%;
+    --border: 145 20% 14%;
+    --input: 145 20% 14%;
+    --ring: 142 70% 45%;
+    --gradient-hero: linear-gradient(135deg, hsl(142, 70%, 45%) 0%, hsl(150, 80%, 40%) 100%);
+  }
+
+  .theme-orange {
+    --theme-color-1: 249 115 22;
+    --theme-color-2: 234 179 8;
+    --background: 25 35% 5%;
+    --foreground: 25 10% 95%;
+    --card: 25 30% 9%;
+    --card-foreground: 25 10% 95%;
+    --popover: 25 30% 9%;
+    --popover-foreground: 25 10% 95%;
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 38 95% 55%;
+    --accent-foreground: 0 0% 100%;
+    --border: 25 20% 14%;
+    --input: 25 20% 14%;
+    --ring: 24 95% 53%;
+    --gradient-hero: linear-gradient(135deg, hsl(24, 95%, 53%) 0%, hsl(38, 95%, 55%) 100%);
   }
 }
 

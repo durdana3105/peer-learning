@@ -2,7 +2,17 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { useRole } from "@/contexts/RoleContext";
+import { useAuth } from "@/contexts/useAuth";
+import { useTheme } from "@/contexts/ThemeContext";
 import { NotificationBell } from "@/features/notifications/NotificationBell";
 
 
@@ -17,6 +27,7 @@ import {
   MessageCircle,
   Trophy,
   Shield,
+  Moon,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +39,7 @@ const Navbar = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const { currentMode, setMode, isDualRole } = useRole();
   const { user } = useAuth();
+  const { setTheme } = useTheme();
 
   const location = useLocation();
 
@@ -180,6 +192,42 @@ const Navbar = () => {
 
         {/* RIGHT SECTION */}
         <div className="hidden items-center gap-4 md:flex">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-xl text-white hover:bg-white/10"
+                title="Theme: Dark (Default)"
+              >
+                <Moon className="h-5 w-5 text-cyan-400" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={8} className="z-[1001] bg-[#0b1329] border-white/10 text-white min-w-[12rem]">
+              <DropdownMenuLabel className="text-gray-400 font-semibold text-xs px-2 py-1">Select Theme</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("default")}>
+                <span className="h-2 w-2 rounded-full bg-cyan-400" />
+                <span className="text-cyan-400 font-medium">Default</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("purple")}>
+                <span className="h-2 w-2 rounded-full bg-purple-500" />
+                <span className="text-purple-400 font-medium">Purple Galaxy</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("blue")}>
+                <span className="h-2 w-2 rounded-full bg-blue-500" />
+                <span className="text-blue-400 font-medium">Ocean Blue</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("green")}>
+                <span className="h-2 w-2 rounded-full bg-green-500" />
+                <span className="text-green-400 font-medium">Neon Green</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("orange")}>
+                <span className="h-2 w-2 rounded-full bg-orange-500" />
+                <span className="text-orange-400 font-medium">Sunset Orange</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {user ? (
 
@@ -317,6 +365,16 @@ const Navbar = () => {
                 </Link>
               );
             })}
+
+            <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
+              <span className="text-sm font-medium text-gray-300">
+                Theme
+              </span>
+              <div className="flex items-center gap-2 text-cyan-400 text-sm">
+                <Moon size={16} />
+                <span>Dark</span>
+              </div>
+            </div>
 
             {user ? (
 
