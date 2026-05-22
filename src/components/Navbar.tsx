@@ -28,6 +28,7 @@ import {
   Trophy,
   Shield,
   Moon,
+  Users,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -125,6 +126,26 @@ const Navbar = () => {
           to: "/",
           label: "Home",
           icon: BookOpen,
+        },
+        {
+          to: "/#features",
+          label: "Features",
+          icon: Compass,
+        },
+        {
+          to: "/#community",
+          label: "Communities",
+          icon: Users,
+        },
+        {
+          to: "/contributor-dashboard",
+          label: "Contributor Dashboard",
+          icon: LayoutDashboard,
+        },
+        {
+          to: "/#faq",
+          label: "FAQ",
+          icon: MessageCircle,
         },
       ];
 
@@ -313,7 +334,7 @@ const Navbar = () => {
 
               <Link to="/signup">
 
-                <Button className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:opacity-90">
+                <Button className="rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:opacity-90">
 
                   Sign Up
 
@@ -410,7 +431,7 @@ const Navbar = () => {
 
                 <Link to="/signup">
 
-                  <Button className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600">
+                  <Button className="w-full rounded-xl bg-gradient-to-r from-green-500 to-emerald-600">
 
                     Sign Up
 
