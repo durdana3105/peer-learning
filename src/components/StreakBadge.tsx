@@ -10,30 +10,36 @@ import {
 export default function StreakBadge() {
   const [streak, setStreak] = useState<number | null>(null);
   const [xp, setXp] = useState<number>(0);
+  const [dailyXP, setDailyXP] = useState<number>(50);
   const [showModal, setShowModal] = useState(false);
   const [restorationMsg, setRestorationMsg] = useState("");
   const [canRestore, setCanRestore] = useState(false);
 
   useEffect(() => {
-    const { streak: newStreak, xpEarned } = updateDailyStreak();
-    const data = getStreakData();
+    const init = async () => {
+      const { streak: newStreak, xpEarned } = await updateDailyStreak();
+      const data = await getStreakData();
 
-    setStreak(newStreak);
-    setXp(data.totalXP);
-    setCanRestore(data.canRestore);
+      setStreak(newStreak);
+      setXp(data.totalXP);
+      setDailyXP(data.dailyXP);
+      setCanRestore(data.canRestore);
 
-    if (xpEarned > 0) {
-      setRestorationMsg(`+${xpEarned} XP earned! 🎉`);
-      setTimeout(() => setRestorationMsg(""), 3000);
-    }
+      if (xpEarned > 0) {
+        setRestorationMsg(`+${xpEarned} XP earned! 🎉`);
+        setTimeout(() => setRestorationMsg(""), 3000);
+      }
+    };
+
+    init();
   }, []);
 
-  const handleRestore = () => {
-    const result = restoreStreak();
+  const handleRestore = async () => {
+    const result = await restoreStreak();
     setRestorationMsg(result.message);
     if (result.success) {
-      setStreak(result.newStreak || streak);
-      const data = getStreakData();
+      setStreak(result.newStreak ?? streak);
+      const data = await getStreakData();
       setXp(data.totalXP);
       setCanRestore(false);
     }
@@ -104,15 +110,11 @@ export default function StreakBadge() {
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="rounded-lg bg-white/5 p-4 text-center">
                   <p className="text-xs text-slate-300">Total XP</p>
-                  <p className="mt-2 text-2xl font-bold text-cyan-300">
-                    {xp}
-                  </p>
+                  <p className="mt-2 text-2xl font-bold text-cyan-300">{xp}</p>
                 </div>
                 <div className="rounded-lg bg-white/5 p-4 text-center">
                   <p className="text-xs text-slate-300">Daily XP</p>
-                  <p className="mt-2 text-2xl font-bold text-blue-300">
-                    +{getStreakData().dailyXP}
-                  </p>
+                  <p className="mt-2 text-2xl font-bold text-blue-300">+{dailyXP}</p>
                 </div>
               </div>
 

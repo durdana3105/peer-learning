@@ -76,6 +76,10 @@ export type Database = {
           teach_subjects: string[] | null
           learn_subjects: string[] | null
           updated_at: string | null
+          streak: number
+          last_active: string | null
+          restoration_used_today: boolean
+          restoration_date: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -96,6 +100,10 @@ export type Database = {
           teach_subjects?: string[] | null
           learn_subjects?: string[] | null
           updated_at?: string | null
+          streak?: number
+          last_active?: string | null
+          restoration_used_today?: boolean
+          restoration_date?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -116,6 +124,10 @@ export type Database = {
           teach_subjects?: string[] | null
           learn_subjects?: string[] | null
           updated_at?: string | null
+          streak?: number
+          last_active?: string | null
+          restoration_used_today?: boolean
+          restoration_date?: string | null
         }
         Relationships: []
       }

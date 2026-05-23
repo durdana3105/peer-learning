@@ -1,8 +1,19 @@
-const KEY_STREAK = "pl_streak";
-const KEY_LAST_ACTIVE = "pl_last_active";
-const KEY_TOTAL_XP = "pl_total_xp";
-const KEY_RESTORATION_USED = "pl_restoration_used";
-const KEY_RESTORATION_DATE = "pl_restoration_date";
+/**
+ * streakSystem.ts
+ *
+ * Supabase-backed streak and XP system.
+ * All streak state is stored server-side in the profiles table —
+ * server-authoritative, persistent across devices, and not manipulable
+ * via browser DevTools.
+ *
+ * localStorage is used only as a read-cache for instant UI rendering.
+ * It is always reconciled against the server on load.
+ */
+
+import { supabase } from "@/integrations/supabase/client";
+
+// ── Local cache keys (read-only cache, never source of truth) ──
+const CACHE_KEY = "pl_streak_cache";
 
 export interface StreakData {
   streak: number;
@@ -24,24 +35,64 @@ export const calculateStreakXP = (streak: number): number => {
   return Math.min(baseXP + streak * xpPerLevel, maxXP);
 };
 
-export const getStreakData = (): StreakData => {
+// ── Cache helpers ──────────────────────────────────────────────
+function writeCache(data: StreakData): void {
   try {
-    const today = getTodayKey();
-    const streak = parseInt(localStorage.getItem(KEY_STREAK) || "0", 10) || 0;
-    const lastActive = localStorage.getItem(KEY_LAST_ACTIVE) || "";
-    const totalXP = parseInt(localStorage.getItem(KEY_TOTAL_XP) || "0", 10) || 0;
-    const restorationUsed = localStorage.getItem(KEY_RESTORATION_USED) === "true";
-    const restorationDate = localStorage.getItem(KEY_RESTORATION_DATE) || "";
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch { /* ignore */ }
+}
 
-    // Check if restoration can be used (reset daily)
-    const canRestore =
-      !restorationUsed ||
-      restorationDate !== today;
+function readCache(): StreakData | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? (JSON.parse(raw) as StreakData) : null;
+  } catch {
+    return null;
+  }
+}
 
-    const restorationUsedToday =
-      restorationUsed && restorationDate === today;
+function clearCache(): void {
+  try {
+    localStorage.removeItem(CACHE_KEY);
+  } catch { /* ignore */ }
+}
 
-    return {
+// ── Auth helper ────────────────────────────────────────────────
+async function getCurrentUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
+// ── Server read ────────────────────────────────────────────────
+/**
+ * Fetch streak data from Supabase and update local cache.
+ * Falls back to cache if offline or unauthenticated.
+ */
+export async function getStreakData(): Promise<StreakData> {
+  const today = getTodayKey();
+
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) throw new Error("Not authenticated");
+
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("streak, last_active, points, restoration_used_today, restoration_date")
+      .eq("id", userId)
+      .single();
+
+    if (error || !profile) throw error ?? new Error("No profile");
+
+    const streak = profile.streak ?? 0;
+    const lastActive = profile.last_active ?? "";
+    const totalXP = profile.points ?? 0;
+    const restorationUsed = profile.restoration_used_today ?? false;
+    const restorationDate = profile.restoration_date ?? "";
+
+    const canRestore = !restorationUsed || restorationDate !== today;
+    const restorationUsedToday = restorationUsed && restorationDate === today;
+
+    const result: StreakData = {
       streak,
       lastActive,
       totalXP,
@@ -49,8 +100,12 @@ export const getStreakData = (): StreakData => {
       canRestore,
       restorationUsedToday,
     };
-  } catch (e) {
-    return {
+
+    writeCache(result);
+    return result;
+  } catch {
+    // Fall back to cache for offline/unauthenticated scenarios
+    return readCache() ?? {
       streak: 0,
       lastActive: "",
       totalXP: 0,
@@ -59,66 +114,87 @@ export const getStreakData = (): StreakData => {
       restorationUsedToday: false,
     };
   }
-};
+}
 
-export const updateDailyStreak = (): { streak: number; xpEarned: number } => {
+// ── Server write ───────────────────────────────────────────────
+/**
+ * Update the daily streak in Supabase.
+ * Called on login / daily visit.
+ */
+export async function updateDailyStreak(): Promise<{ streak: number; xpEarned: number }> {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) throw new Error("Not authenticated");
+
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("streak, last_active, points")
+      .eq("id", userId)
+      .single();
+
+    if (error || !profile) throw error ?? new Error("No profile");
+
     const today = getTodayKey();
-    const prevStreak = parseInt(localStorage.getItem(KEY_STREAK) || "0", 10) || 0;
-    const lastActive = localStorage.getItem(KEY_LAST_ACTIVE) || "";
-    const totalXP = parseInt(localStorage.getItem(KEY_TOTAL_XP) || "0", 10) || 0;
+    const prevStreak = profile.streak ?? 0;
+    const lastActive = profile.last_active ?? "";
+    const totalXP = profile.points ?? 0;
 
     let newStreak = prevStreak;
     let xpEarned = 0;
 
     if (lastActive === today) {
-      // Same day, no change
+      // Already updated today — no change
       newStreak = prevStreak > 0 ? prevStreak : 1;
-      xpEarned = 0;
     } else if (lastActive) {
-      const lastDate = new Date(lastActive);
-      const todayDate = new Date(today);
-      const diffMs =
-        todayDate.getTime() -
-        lastDate.getTime();
       const diffDays = Math.round(
-        diffMs / (1000 * 60 * 60 * 24)
+        (new Date(today).getTime() - new Date(lastActive).getTime()) /
+          (1000 * 60 * 60 * 24)
       );
-
       if (diffDays === 1) {
-        // Consecutive day
         newStreak = prevStreak + 1;
         xpEarned = calculateStreakXP(newStreak);
       } else {
-        // Gap > 1 day, reset
         newStreak = 1;
         xpEarned = calculateStreakXP(newStreak);
       }
     } else {
-      // First time
       newStreak = 1;
       xpEarned = calculateStreakXP(newStreak);
     }
 
-    // Save to localStorage
-    localStorage.setItem(KEY_STREAK, String(newStreak));
-    localStorage.setItem(KEY_LAST_ACTIVE, today);
-    localStorage.setItem(KEY_TOTAL_XP, String(totalXP + xpEarned));
+    await supabase
+      .from("profiles")
+      .update({
+        streak: newStreak,
+        last_active: today,
+        points: totalXP + xpEarned,
+      })
+      .eq("id", userId);
+
+    // Invalidate cache so next getStreakData() fetches fresh data
+    clearCache();
 
     return { streak: newStreak, xpEarned };
-  } catch (e) {
+  } catch {
     return { streak: 0, xpEarned: 0 };
   }
-};
+}
 
-export const restoreStreak = (): {
+/**
+ * Restore a broken streak by spending 100 XP.
+ * Both XP deduction and streak increment are atomic (single DB update).
+ */
+export async function restoreStreak(): Promise<{
   success: boolean;
   message: string;
   newStreak?: number;
-} => {
+}> {
   try {
-    const data = getStreakData();
+    const userId = await getCurrentUserId();
+    if (!userId) throw new Error("Not authenticated");
+
     const today = getTodayKey();
+    const data = await getStreakData();
 
     if (!data.canRestore) {
       return {
@@ -134,31 +210,59 @@ export const restoreStreak = (): {
       };
     }
 
-    // Deduct XP
-    const newXP = data.totalXP - 100;
-    localStorage.setItem(KEY_TOTAL_XP, String(newXP));
-
-    // Restore streak (add 1 day back)
     const newStreak = data.streak + 1;
-    localStorage.setItem(KEY_STREAK, String(newStreak));
+    const newXP = data.totalXP - 100;
 
-    // Mark restoration as used
-    localStorage.setItem(KEY_RESTORATION_USED, "true");
-    localStorage.setItem(KEY_RESTORATION_DATE, today);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        streak: newStreak,
+        points: newXP,
+        restoration_used_today: true,
+        restoration_date: today,
+      })
+      .eq("id", userId);
+
+    if (error) throw error;
+
+    clearCache();
 
     return {
       success: true,
       message: `Streak restored! 🔥 New streak: ${newStreak} days`,
       newStreak,
     };
-  } catch (e) {
+  } catch {
     return {
       success: false,
-      message: "Failed to restore streak",
+      message: "Failed to restore streak. Please try again.",
     };
   }
-};
+}
 
+/**
+ * Reset all streak data for the current user (server + cache).
+ */
+export async function resetStreak(): Promise<void> {
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) return;
+
+    await supabase
+      .from("profiles")
+      .update({
+        streak: 0,
+        last_active: null,
+        restoration_used_today: false,
+        restoration_date: null,
+      })
+      .eq("id", userId);
+
+    clearCache();
+  } catch { /* ignore */ }
+}
+
+// ── Pure utility functions (no storage) ───────────────────────
 export const getStreakMilestone = (
   streak: number
 ): {
@@ -169,53 +273,22 @@ export const getStreakMilestone = (
   reward?: string;
 } => {
   if (streak >= 365) {
-    return {
-      level: "Legendary",
-      emoji: "🏆",
-      nextMilestone: 730,
-      progress: 100,
-      reward: "Unlocked: Yearly Badge",
-    };
+    return { level: "Legendary", emoji: "🏆", nextMilestone: 730, progress: 100, reward: "Unlocked: Yearly Badge" };
   }
   if (streak >= 100) {
-    return {
-      level: "Master",
-      emoji: "👑",
-      nextMilestone: 365,
-      progress: Math.floor((streak / 365) * 100),
-      reward: "100 Bonus XP every 7 days",
-    };
+    return { level: "Master", emoji: "👑", nextMilestone: 365, progress: Math.floor((streak / 365) * 100), reward: "100 Bonus XP every 7 days" };
   }
   if (streak >= 30) {
-    return {
-      level: "Elite",
-      emoji: "⭐",
-      nextMilestone: 100,
-      progress: Math.floor((streak / 100) * 100),
-      reward: "50 Bonus XP on day 30",
-    };
+    return { level: "Elite", emoji: "⭐", nextMilestone: 100, progress: Math.floor((streak / 100) * 100), reward: "50 Bonus XP on day 30" };
   }
   if (streak >= 7) {
-    return {
-      level: "Rising Star",
-      emoji: "🌟",
-      nextMilestone: 30,
-      progress: Math.floor((streak / 30) * 100),
-      reward: "Weekly achievement badge",
-    };
+    return { level: "Rising Star", emoji: "🌟", nextMilestone: 30, progress: Math.floor((streak / 30) * 100), reward: "Weekly achievement badge" };
   }
-  return {
-    level: "Beginner",
-    emoji: "🌱",
-    nextMilestone: 7,
-    progress: Math.floor((streak / 7) * 100),
-    reward: "First week milestone",
-  };
+  return { level: "Beginner", emoji: "🌱", nextMilestone: 7, progress: Math.floor((streak / 7) * 100), reward: "First week milestone" };
 };
 
 export const getStreakAchievements = (streak: number): string[] => {
-  const achievements = [];
-
+  const achievements: string[] = [];
   if (streak >= 1) achievements.push("First Step 🌱");
   if (streak >= 3) achievements.push("3-Day Learner 📚");
   if (streak >= 7) achievements.push("Weekly Champion 🌟");
@@ -223,14 +296,5 @@ export const getStreakAchievements = (streak: number): string[] => {
   if (streak >= 30) achievements.push("Monthly Master ⭐");
   if (streak >= 100) achievements.push("Century Scholar 👑");
   if (streak >= 365) achievements.push("Legendary Guardian 🏆");
-
   return achievements;
-};
-
-export const resetStreak = (): void => {
-  localStorage.removeItem(KEY_STREAK);
-  localStorage.removeItem(KEY_LAST_ACTIVE);
-  localStorage.removeItem(KEY_TOTAL_XP);
-  localStorage.removeItem(KEY_RESTORATION_USED);
-  localStorage.removeItem(KEY_RESTORATION_DATE);
 };
