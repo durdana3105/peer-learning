@@ -5,6 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
   base: "/", // 👈 ADD THIS
+  envPrefix: ["VITE_", "NEXT_PUBLIC_"],
 
   server: {
     host: "::",

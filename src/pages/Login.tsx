@@ -77,7 +77,7 @@ const Login = () => {
     toast({
       title: "Not configured",
       description:
-        "Supabase environment variables are not set. Ask the project owner to configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
+        "Supabase environment variables are not set. Configure VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY or NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.",
       variant: "destructive",
     });
     return;

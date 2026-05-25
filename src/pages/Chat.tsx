@@ -11,6 +11,22 @@ type Profile = {
   avatar_url?: string | null;
 };
 
+type UserRow = Profile;
+
+const mergeUsers = (profiles: Profile[], users: UserRow[]) => {
+  const map = new Map<string, Profile>();
+
+  for (const user of users) {
+    map.set(user.id, user);
+  }
+
+  for (const profile of profiles) {
+    map.set(profile.id, profile);
+  }
+
+  return Array.from(map.values());
+};
+
 type ChatMessage = {
   id: string;
   sender_id: string | null;
@@ -66,21 +82,70 @@ const Chat = () => {
     const loadUsers = async () => {
       setLoadingUsers(true);
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id,name,email,avatar_url")
-        .neq("id", currentUser.id)
-        .order("name", { ascending: true });
+      const [{ data: profileData }, { data: userData }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("*")
+          .neq("id", currentUser.id)
+          .order("name", { ascending: true }),
+        supabase
+          .from("users")
+          .select("*")
+          .neq("id", currentUser.id)
+          .order("name", { ascending: true }),
+      ]);
 
-      if (!error && data) {
-        setUsers(data);
-        setSelectedUser((current) => current ?? data[0] ?? null);
-      }
+      const mergedUsers = mergeUsers(
+        (profileData ?? []) as Profile[],
+        (userData ?? []) as UserRow[]
+      );
+
+      setUsers(mergedUsers);
+      setSelectedUser((current) => current ?? mergedUsers[0] ?? null);
 
       setLoadingUsers(false);
     };
 
     loadUsers();
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    const profilesChannel = supabase
+      .channel("chat-profiles-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "profiles",
+        },
+        () => {
+          void supabase
+            .from("profiles")
+            .select("*")
+            .neq("id", currentUser.id)
+            .order("name", { ascending: true })
+            .then(({ data: profileData }) => {
+              void supabase
+                .from("users")
+                .select("*")
+                .neq("id", currentUser.id)
+                .order("name", { ascending: true })
+                .then(({ data: userData }) => {
+                  setUsers(
+                    mergeUsers((profileData ?? []) as Profile[], (userData ?? []) as UserRow[])
+                  );
+                });
+            });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profilesChannel);
+    };
   }, [currentUser?.id]);
 
   useEffect(() => {
