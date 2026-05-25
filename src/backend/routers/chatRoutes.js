@@ -1,5 +1,6 @@
 import express from "express";
 import OpenAI from "openai";
+import { requireAuth } from "../middlewares/requireAuth.js";
 
 const router = express.Router();
 
@@ -15,13 +16,49 @@ const openrouter = new OpenAI({
   },
 });
 
-router.post("/chat", async (req, res) => {
+// Allowed models. Requests specifying any other model are rejected to
+// prevent cost escalation via expensive third-party models.
+const ALLOWED_MODELS = new Set([
+  "openai/gpt-3.5-turbo",
+  "openai/gpt-4o-mini",
+]);
+
+// Server-side cap on tokens per request, regardless of what the caller sends.
+const MAX_TOKENS_CAP = 512;
+
+// Simple in-memory rate limiter: max 20 requests per authenticated user per minute.
+const requestCounts = new Map();
+
+const rateLimiter = (req, res, next) => {
+  const userId = req.user.id;
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  const maxRequests = 20;
+
+  const entry = requestCounts.get(userId);
+
+  if (!entry || now - entry.windowStart >= windowMs) {
+    requestCounts.set(userId, { count: 1, windowStart: now });
+    return next();
+  }
+
+  if (entry.count >= maxRequests) {
+    return res.status(429).json({
+      error: "Too many requests. Please wait before sending more messages.",
+    });
+  }
+
+  entry.count += 1;
+  next();
+};
+
+router.post("/chat", requireAuth, rateLimiter, async (req, res) => {
   try {
     const {
       messages,
       systemPrompt,
       model = "openai/gpt-3.5-turbo",
-      max_tokens = 512,
+      max_tokens,
       temperature = 0.7,
     } = req.body;
 
@@ -44,6 +81,17 @@ router.post("/chat", async (req, res) => {
         .json({ error: "Each message must have a role (user|assistant|system) and a string content field." });
     }
 
+    // Reject unknown models to prevent cost escalation.
+    if (!ALLOWED_MODELS.has(model)) {
+      return res.status(400).json({ error: "Requested model is not allowed." });
+    }
+
+    // Cap token count server-side regardless of caller input.
+    const safeMaxTokens = Math.min(
+      typeof max_tokens === "number" ? max_tokens : MAX_TOKENS_CAP,
+      MAX_TOKENS_CAP
+    );
+
     const chatMessages = systemPrompt
       ? [{ role: "system", content: String(systemPrompt) }, ...messages]
       : messages;
@@ -51,7 +99,7 @@ router.post("/chat", async (req, res) => {
     const response = await openrouter.chat.completions.create({
       model,
       messages: chatMessages,
-      max_tokens,
+      max_tokens: safeMaxTokens,
       temperature,
     });
 
