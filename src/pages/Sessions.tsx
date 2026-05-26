@@ -9,10 +9,12 @@ import {
   Send,
   Search,
   Sparkles,
+  Video,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
+import VideoRoom from "@/components/VideoRoom";
 
 const tabs = [
   "Upcoming",
@@ -38,6 +40,8 @@ const Sessions = () => {
   const [message, setMessage] = useState("");
 
   const [search, setSearch] = useState("");
+
+  const [isVideoActive, setIsVideoActive] = useState(false);
 
   const messagesEndRef = useRef<any>(null);
 
@@ -238,6 +242,13 @@ const Sessions = () => {
             </div>
 
             {/* SESSIONS */}
+            {isVideoActive && selectedSession ? (
+              <VideoRoom 
+                roomName={selectedSession.id} 
+                userName={user?.user_metadata?.full_name || "Anonymous Learner"} 
+                onLeave={() => setIsVideoActive(false)} 
+              />
+            ) : (
             <div className="grid gap-5">
               {filteredSessions.length > 0 ? (
                 filteredSessions.map((s) => (
@@ -342,24 +353,44 @@ const Sessions = () => {
                 </div>
               )}
             </div>
+            )}
           </div>
 
           {/* RIGHT SIDE CHAT */}
           <div className="bg-white/5 border border-white/10 backdrop-blur-2xl rounded-3xl p-5 flex flex-col h-[750px]">
 
             {/* CHAT HEADER */}
-            <div className="pb-5 border-b border-white/10">
-              <h2 className="text-2xl font-bold mb-2">
-                Session Chat 💬
-              </h2>
+            <div className="pb-5 border-b border-white/10 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold mb-2">
+                  Session Chat 💬
+                </h2>
 
-              <p className="text-gray-400 text-sm">
-                {selectedSession?.title}
-              </p>
+                <p className="text-gray-400 text-sm">
+                  {selectedSession?.title}
+                </p>
 
-              <div className="mt-3 inline-flex items-center gap-2 bg-green-500/10 border border-green-400/20 text-green-300 px-3 py-1 rounded-full text-sm">
-                🟢 42 learners online
+                <div className="mt-3 inline-flex items-center gap-2 bg-green-500/10 border border-green-400/20 text-green-300 px-3 py-1 rounded-full text-sm">
+                  🟢 42 learners online
+                </div>
               </div>
+              
+              {selectedSession && !isVideoActive && (
+                <button 
+                  onClick={() => setIsVideoActive(true)}
+                  className="flex items-center gap-2 bg-gradient-to-r from-cyan-400 to-purple-500 text-black px-4 py-2 rounded-2xl font-bold hover:opacity-90 transition"
+                >
+                  <Video size={18} /> Join Video
+                </button>
+              )}
+              {selectedSession && isVideoActive && (
+                <button 
+                  onClick={() => setIsVideoActive(false)}
+                  className="flex items-center gap-2 bg-white/10 border border-white/10 text-white px-4 py-2 rounded-2xl font-bold hover:bg-white/20 transition"
+                >
+                  Leave Video
+                </button>
+              )}
             </div>
 
             {/* MESSAGES */}

@@ -6,8 +6,10 @@ import {
   restoreStreak,
   getStreakMilestone,
 } from "@/lib/streakSystem";
+import { useAuth } from "@/contexts/useAuth";
 
 export default function StreakBadge() {
+  const { user } = useAuth();
   const [streak, setStreak] = useState<number | null>(null);
   const [xp, setXp] = useState<number>(0);
   const [dailyXP, setDailyXP] = useState<number>(50);
@@ -16,6 +18,11 @@ export default function StreakBadge() {
   const [canRestore, setCanRestore] = useState(false);
 
   useEffect(() => {
+    if (!user) {
+      setStreak(null);
+      return;
+    }
+
     const init = async () => {
       const { streak: newStreak, xpEarned } = await updateDailyStreak();
       const data = await getStreakData();
@@ -32,7 +39,7 @@ export default function StreakBadge() {
     };
 
     init();
-  }, []);
+  }, [user]);
 
   const handleRestore = async () => {
     const result = await restoreStreak();
@@ -46,7 +53,7 @@ export default function StreakBadge() {
     setTimeout(() => setRestorationMsg(""), 4000);
   };
 
-  if (streak === null) return null;
+  if (!user || streak === null) return null;
 
   const milestone = getStreakMilestone(streak);
 
@@ -56,7 +63,7 @@ export default function StreakBadge() {
         onClick={() => setShowModal(true)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="fixed right-6 top-20 z-[2000] rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-2 text-black shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+        className="fixed right-4 top-[4.5rem] z-[999] rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 px-3 py-1.5 sm:px-4 sm:py-2 text-black shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
       >
         <div className="flex items-center gap-2">
           <span className="text-lg">🔥</span>
@@ -81,7 +88,7 @@ export default function StreakBadge() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-96 rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-[#0b1329] to-[#071127] p-8 shadow-2xl"
+              className="w-[calc(100vw-2rem)] max-w-sm sm:max-w-md rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-[#0b1329] to-[#071127] p-6 sm:p-8 shadow-2xl mx-4"
             >
               <div className="mb-6 text-center">
                 <h2 className="text-4xl font-bold text-white">

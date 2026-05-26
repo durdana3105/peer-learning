@@ -20,12 +20,16 @@ export default function Chatbot() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ✅ Load chats
+  // Load only the current user's chat messages
   useEffect(() => {
     const loadChats = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
       const { data } = await supabase
         .from("chat_messages")
         .select("*")
+        .eq("user_id", session.user.id)
         .order("created_at", { ascending: true });
 
       if (data) setMessages(data);
@@ -33,13 +37,18 @@ export default function Chatbot() {
     loadChats();
   }, []);
 
-  // 🔥 SEND MESSAGE
+  // SEND MESSAGE
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMsg = { role: "user", text: input };
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
 
-    // ✅ fix stale state
+    const userId = session.user.id;
+
+    // Store user_id so each message is scoped to the authenticated user.
+    const userMsg = { role: "user", text: input, user_id: userId };
+
     const updatedMessages = [...messages, userMsg];
 
     setMessages(updatedMessages);
@@ -55,10 +64,12 @@ export default function Chatbot() {
       }));
 
       // Route the request through the backend so the API key stays server-side.
+      // Include the session token so the backend can authenticate the request.
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           messages: formattedMessages,
@@ -71,9 +82,9 @@ export default function Chatbot() {
 
       const botReply = data?.reply || "No response 😅";
 
-      const botMsg = { role: "assistant", text: botReply };
+      const botMsg = { role: "assistant", text: botReply, user_id: userId };
 
-      // ✅ smoother typing (chunked)
+      // Smoother typing effect (chunked rendering)
       let currentText = "";
       const chunkSize = 3;
 
@@ -82,7 +93,7 @@ export default function Chatbot() {
       for (let i = 0; i < botReply.length; i += chunkSize) {
         currentText += botReply.slice(i, i + chunkSize);
 
-        await new Promise((res) => setTimeout(res, 20));
+        await new Promise((resolve) => setTimeout(resolve, 20));
 
         setMessages((prev) => {
           const updated = [...prev];

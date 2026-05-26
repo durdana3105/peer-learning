@@ -66,7 +66,7 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
   const handleDelete = async () => {
     setIsDeleting(true);
 
-    const result = await deleteResource(resource.id, resource.file_url);
+    const result = await deleteResource(resource.id);
     setIsDeleting(false);
 
     if (!result.success) {

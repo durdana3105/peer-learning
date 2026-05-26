@@ -12,6 +12,8 @@ import {
   Bot,
   Flame,
   Moon,
+  Menu,
+  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -89,11 +91,12 @@ export default function Landing() {
 
   const [open, setOpen] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-<<<<<<< HEAD
-=======
+
   
 
->>>>>>> 926703eeea800c3052b8d802a0736c4be3c3e8a4
+
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
   const [showBackToTop, setShowBackToTop] = useState(false); 
   const [streak, setStreak] = useState<number | null>(null);
 
@@ -237,84 +240,116 @@ const scrollToTop = () => {
 
       {/* Navbar */}
       <nav className="fixed top-0 z-[1000] w-full border-b border-cyan-400/10 bg-[#020617]/95 backdrop-blur-3xl shadow-[0_0_20px_rgba(34,211,238,0.08)]">
-        {" "}
-        <div className="container mx-auto flex items-center justify-between px-6 py-5">
+        <div className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6 md:py-5">
+          {/* Logo */}
           <div className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-2xl font-black text-transparent">
             PeerLearn
           </div>
 
+          {/* Desktop Nav Links */}
           <div className="hidden items-center gap-8 text-sm text-slate-300 md:flex">
-            <a href="#features" className="transition hover:text-cyan-400">
-              Features
-            </a>
-            <a href="#community" className="transition hover:text-cyan-400">
-              Communities
-            </a>
-            <a
-              href="/contributor-dashboard"
-              className="transition hover:text-cyan-400"
-            >
-              Contributor Dashboard
-            </a>
-            <a href="#faq" className="transition hover:text-cyan-400">
-              FAQ
-            </a>
+            <a href="#features" className="transition hover:text-cyan-400">Features</a>
+            <a href="#community" className="transition hover:text-cyan-400">Communities</a>
+            <a href="/contributor-dashboard" className="transition hover:text-cyan-400">Contributor Dashboard</a>
+            <a href="#faq" className="transition hover:text-cyan-400">FAQ</a>
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* Desktop Right Actions */}
+          <div className="hidden items-center gap-3 md:flex">
             <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-xl text-slate-300 hover:text-cyan-400"
-                title="Theme: Dark (Default)"
-              >
-                <Moon className="h-5 w-5 text-cyan-400" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" sideOffset={8} className="z-[1001] bg-[#0b1329] border-white/10 text-white min-w-[12rem]">
-              <DropdownMenuLabel className="text-gray-400 font-semibold text-xs px-2 py-1">Select Theme</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("default")}>
-                <span className="h-2 w-2 rounded-full bg-cyan-400" />
-                <span className="text-cyan-400 font-medium">Default</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("purple")}>
-                <span className="h-2 w-2 rounded-full bg-purple-500" />
-                <span className="text-purple-400 font-medium">Purple Galaxy</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("blue")}>
-                <span className="h-2 w-2 rounded-full bg-blue-500" />
-                <span className="text-blue-400 font-medium">Ocean Blue</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("green")}>
-                <span className="h-2 w-2 rounded-full bg-green-500" />
-                <span className="text-green-400 font-medium">Neon Green</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("orange")}>
-                <span className="h-2 w-2 rounded-full bg-orange-500" />
-                <span className="text-orange-400 font-medium">Sunset Orange</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-slate-300 hover:text-black" title="Theme">
+                  <Moon className="h-5 w-5 text-white-400 hover:text-black" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" sideOffset={8} className="z-[1001] bg-[#0b1329] border-white/10 text-white min-w-[12rem]">
+                <DropdownMenuLabel className="text-gray-400 font-semibold text-xs px-2 py-1">Select Theme</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("default")}><span className="h-2 w-2 rounded-full bg-cyan-400" /><span className="text-cyan-400 font-medium">Default</span></DropdownMenuItem>
+                <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("purple")}><span className="h-2 w-2 rounded-full bg-purple-500" /><span className="text-purple-400 font-medium">Purple Galaxy</span></DropdownMenuItem>
+                <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("blue")}><span className="h-2 w-2 rounded-full bg-blue-500" /><span className="text-blue-400 font-medium">Ocean Blue</span></DropdownMenuItem>
+                <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("green")}><span className="h-2 w-2 rounded-full bg-green-500" /><span className="text-green-400 font-medium">Neon Green</span></DropdownMenuItem>
+                <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("orange")}><span className="h-2 w-2 rounded-full bg-orange-500" /><span className="text-orange-400 font-medium">Sunset Orange</span></DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Link to="/login">
-              <Button
-                variant="ghost"
-                className="text-slate-300 hover:text-cyan-400"
-              >
-                Login
-              </Button>
+              <Button variant="ghost" className="text-slate-300 hover:text-black">Login</Button>
             </Link>
-
             <Link to="/signup">
               <Button className="rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black hover:scale-105 transition-all duration-300">
                 Get Started
               </Button>
             </Link>
           </div>
+
+          {/* Mobile: Login + Hamburger */}
+          <div className="flex items-center gap-2 md:hidden">
+            <Link to="/login">
+              <Button variant="ghost" size="sm" className="text-slate-300 hover:text-cyan-400 px-3 text-sm">
+                Login
+              </Button>
+            </Link>
+            <button
+              onClick={() => setMobileNavOpen(!mobileNavOpen)}
+              className="rounded-lg border border-white/10 bg-white/5 p-2 text-white active:scale-95"
+              aria-label="Toggle menu"
+            >
+              {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Dropdown Menu */}
+        {mobileNavOpen && (
+          <div className="border-t border-white/10 bg-[#020617] px-4 py-4 md:hidden">
+            <div className="flex flex-col gap-2">
+              {[
+                { href: "#features", label: "Features" },
+                { href: "#community", label: "Communities" },
+                { href: "/contributor-dashboard", label: "Contributor Dashboard" },
+                { href: "#faq", label: "FAQ" },
+              ].map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileNavOpen(false)}
+                  className="rounded-xl bg-white/5 px-4 py-3 text-sm text-slate-300 transition hover:bg-white/10 hover:text-cyan-400"
+                >
+                  {item.label}
+                </a>
+              ))}
+
+              {/* Theme Selector */}
+              <div className="rounded-xl bg-white/5 px-4 py-3">
+                <p className="mb-2 text-xs font-semibold text-gray-400">Select Theme</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { key: "default", label: "Default", color: "bg-cyan-400", text: "text-cyan-400" },
+                    { key: "purple", label: "Purple Galaxy", color: "bg-purple-500", text: "text-purple-400" },
+                    { key: "blue", label: "Ocean Blue", color: "bg-blue-500", text: "text-blue-400" },
+                    { key: "green", label: "Neon Green", color: "bg-green-500", text: "text-green-400" },
+                    { key: "orange", label: "Sunset Orange", color: "bg-orange-500", text: "text-orange-400" },
+                  ].map((t) => (
+                    <button
+                      key={t.key}
+                      onClick={() => { setTheme(t.key as Parameters<typeof setTheme>[0]); setMobileNavOpen(false); }}
+                      className="flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-1.5 text-xs transition hover:bg-white/10"
+                    >
+                      <span className={`h-2 w-2 rounded-full ${t.color}`} />
+                      <span className={t.text}>{t.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Link to="/signup" onClick={() => setMobileNavOpen(false)}>
+                <Button className="mt-2 w-full rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-bold">
+                  Get Started
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Hero */}
@@ -325,7 +360,7 @@ const scrollToTop = () => {
           transition={{ duration: 0.8 }}
         > */}
 
-      <section className="container relative grid items-center gap-16 px-6 pb-24 pt-24 lg:grid-cols-2">
+      <section className="container relative grid items-center gap-10 px-4 pb-24 pt-28 sm:px-6 lg:gap-16 lg:grid-cols-2">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
@@ -397,34 +432,36 @@ const scrollToTop = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="relative"
+          className="relative mt-4 lg:mt-0"
         >
           <div className="absolute inset-0 rounded-full bg-cyan-500/20 blur-3xl" />
 
           <img
             src={heroIllustration}
             alt="hero"
-            className="relative z-10 drop-shadow-[0_0_60px_rgba(34,211,238,0.2)]"
+            className="relative z-10 w-full drop-shadow-[0_0_60px_rgba(34,211,238,0.2)]"
           />
 
+          {/* Streak Card — overlaps image top-left on desktop, flows below on mobile */}
           <motion.div
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 4, repeat: Infinity }}
-            className="absolute -left-8 top-10 rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-2xl"
+            className="z-15 mt-4 inline-flex rounded-3xl border border-white/10 bg-white/10 p-4 backdrop-blur-2xl lg:absolute lg:-left-8 lg:top-5 lg:mt-0"
           >
-              <div className="flex items-center gap-3">
-                <Flame className="text-cyan-400" />
-                <div>
-                  <p className="text-sm text-slate-300">Your Streak</p>
-                  <h4 className="text-xl font-bold">{streak === null ? "—" : `${streak} Days 🔥`}</h4>
-                </div>
+            <div className="flex items-center gap-3">
+              <Flame className="text-cyan-400" />
+              <div>
+                <p className="text-sm text-slate-300">Your Streak</p>
+                <h4 className="text-xl font-bold">{streak === null ? "—" : `learning Days 🔥`}</h4>
               </div>
+            </div>
           </motion.div>
 
+          {/* AI Card — overlaps image bottom-right on desktop, beside streak on mobile */}
           <motion.div
             animate={{ y: [0, 12, 0] }}
             transition={{ duration: 5, repeat: Infinity }}
-            className="absolute bottom-10 right-0 rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-2xl"
+            className="z-20 ml-3 mt-3 inline-flex rounded-3xl border border-white/10 bg-white/10 p-4 backdrop-blur-2xl lg:absolute lg:bottom-5 lg:right-0 lg:ml-0 lg:mt-0"
           >
             <div className="flex items-center gap-3">
               <Brain className="text-cyan-400" />

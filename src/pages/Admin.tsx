@@ -3,11 +3,13 @@ import { motion } from "framer-motion";
 import { Shield, Users, Calendar, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 interface UserProfile {
   id: string;
@@ -63,7 +65,7 @@ const Admin = () => {
       // Verify admin role server-side using the has_role security-definer function.
       // Querying user_roles directly would rely on RLS side-effects for a security
       // decision; the RPC call is explicit and cannot be bypassed by the client.
-      const { data, error } = await supabase.rpc("has_role", {
+      const { data, error } = await (supabase as any).rpc("has_role", {
         _user_id: user.id,
         _role: "admin",
       });
@@ -85,7 +87,7 @@ const Admin = () => {
     // Call the admin_get_all_profiles RPC instead of querying profiles directly.
     // The function is SECURITY DEFINER and enforces admin role server-side,
     // so a non-admin who somehow bypasses the client check still gets no data.
-    const { data } = await supabase.rpc("admin_get_all_profiles");
+    const { data } = await (supabase as any).rpc("admin_get_all_profiles");
     if (data) {
       setUsers(data);
       // Calculate active users (active in the last 24 hours)
@@ -132,6 +134,17 @@ const Admin = () => {
     }).length;
   };
 >>>>>>> 926703eeea800c3052b8d802a0736c4be3c3e8a4
+
+  return userList.filter(u => {
+    if (!u.last_active_at) return false;
+    const lastActive = new Date(u.last_active_at);
+    return lastActive >= oneDayAgo;
+  }).length;
+};
+
+    return userList.filter((u) => u.last_active_at && new Date(u.last_active_at) >= oneDayAgo).length;
+  };
+
 
   const filteredUsers = users.filter(
     (u) =>
