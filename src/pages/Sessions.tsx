@@ -10,12 +10,15 @@ import {
   Search,
   Sparkles,
   Video,
+  Plus,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 import VideoRoom from "@/components/VideoRoom";
 import { useAwardXP } from "@/hooks/useAwardXP";
+import { CreateSessionDialog } from "@/components/CreateSessionDialog";
+import { generateICS } from "@/utils/calendar";
 
 const tabs = [
   "Upcoming",
@@ -209,23 +212,36 @@ const Sessions = () => {
           />
         </div>
 
-        {/* TABS */}
-        <div className="flex gap-4 mb-10 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() =>
-                setSelectedTab(tab)
-              }
-              className={`px-6 py-3 rounded-2xl transition-all whitespace-nowrap ${
-                selectedTab === tab
-                  ? "bg-gradient-to-r from-cyan-400 to-purple-500 text-black font-bold shadow-lg shadow-cyan-500/20"
-                  : "bg-white/5 border border-white/10 hover:bg-white/10"
-              }`}
-            >
-              {tab}
+        {/* TABS & CREATE SESSION */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-10">
+          <div className="flex gap-4 overflow-x-auto">
+            {tabs.map((tab) => (
+              <button
+                key={tab}
+                onClick={() =>
+                  setSelectedTab(tab)
+                }
+                className={`px-6 py-3 rounded-2xl transition-all whitespace-nowrap ${
+                  selectedTab === tab
+                    ? "bg-gradient-to-r from-cyan-400 to-purple-500 text-black font-bold shadow-lg shadow-cyan-500/20"
+                    : "bg-white/5 border border-white/10 hover:bg-white/10"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          <CreateSessionDialog
+            onSessionCreated={() => {
+              window.location.reload();
+            }}
+          >
+            <button className="flex items-center gap-2 bg-gradient-to-r from-cyan-400 to-purple-500 text-black px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition">
+              <Plus size={20} />
+              Create Session
             </button>
-          ))}
+          </CreateSessionDialog>
         </div>
 
         {/* CONTENT */}
@@ -332,10 +348,28 @@ const Sessions = () => {
                       )}
                     </div>
 
-                    {/* BUTTON */}
-                    <button className="w-full bg-gradient-to-r from-cyan-400 to-purple-500 text-black py-3 rounded-2xl font-bold hover:opacity-90 transition">
-                      Join Session
-                    </button>
+                    {/* BUTTONS */}
+                    <div className="flex gap-3">
+                      <button className="flex-1 bg-gradient-to-r from-cyan-400 to-purple-500 text-black py-3 rounded-2xl font-bold hover:opacity-90 transition">
+                        Join Session
+                      </button>
+                      
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          generateICS(
+                            s.title || "Peer Learning Session",
+                            s.description || "Join us for a collaborative learning session.",
+                            s.scheduled_at ? new Date(s.scheduled_at) : new Date(),
+                            1
+                          );
+                        }}
+                        className="bg-white/10 border border-white/10 hover:bg-white/20 p-3 rounded-2xl transition text-white"
+                        title="Add to Calendar"
+                      >
+                        <Calendar size={24} />
+                      </button>
+                    </div>
                   </motion.div>
                 ))
               ) : (

@@ -6,27 +6,48 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 
 interface UserProfile {
   id: string;
   name: string;
   email: string;
   skills: string[] | null;
-
   points: number | null;
   sessions_completed: number | null;
   created_at: string;
   last_active_at: string | null;
 }
 
+type AdminRpcClient = {
+  rpc(
+    fn: "admin_get_all_profiles"
+  ): Promise<{ data: UserProfile[] | null; error: unknown }>;
+  rpc(
+    fn: "has_role",
+    args: { _user_id: string; _role: string }
+  ): Promise<{ data: boolean | null; error: unknown }>;
+};
+
+const adminSupabase = supabase as unknown as AdminRpcClient;
+
+const calculateActiveTodayCount = (userList: UserProfile[]): number => {
+  const now = new Date();
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  return userList.filter((profile) => {
+    if (!profile.last_active_at) {
+      return false;
+    }
+
+    return new Date(profile.last_active_at) >= oneDayAgo;
+  }).length;
+};
+
 const Admin = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [search, setSearch] = useState("");
@@ -34,38 +55,26 @@ const Admin = () => {
   const [activeTodayCount, setActiveTodayCount] = useState(0);
 
   useEffect(() => {
-<<<<<<< HEAD
+    const fetchUsers = async () => {
+      try {
+        const { data } = await adminSupabase.rpc("admin_get_all_profiles");
+        if (data) {
+          setUsers(data);
+          setActiveTodayCount(calculateActiveTodayCount(data));
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const checkAdmin = async () => {
       if (!user) {
-=======
-    if (!user) return;
-
-    checkAdminRole();
-  }, [user]);
-
-  const checkAdminRole = async () => {
-    try {
-      // Query user_roles table to check if user has admin role
-      const { data: adminRole, error } = await (supabase as any)
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .single();
-
-      if (error && error.code !== "PGRST116") {
-        // PGRST116 = no rows found, which is expected for non-admin users
-        console.error("Error checking admin role:", error);
->>>>>>> 926703eeea800c3052b8d802a0736c4be3c3e8a4
         setIsAdmin(false);
         setLoading(false);
         return;
       }
 
-      // Verify admin role server-side using the has_role security-definer function.
-      // Querying user_roles directly would rely on RLS side-effects for a security
-      // decision; the RPC call is explicit and cannot be bypassed by the client.
-      const { data, error } = await (supabase as any).rpc("has_role", {
+      const { data, error } = await adminSupabase.rpc("has_role", {
         _user_id: user.id,
         _role: "admin",
       });
@@ -82,74 +91,10 @@ const Admin = () => {
     checkAdmin();
   }, [user]);
 
-  const fetchUsers = async () => {
-<<<<<<< HEAD
-    // Call the admin_get_all_profiles RPC instead of querying profiles directly.
-    // The function is SECURITY DEFINER and enforces admin role server-side,
-    // so a non-admin who somehow bypasses the client check still gets no data.
-    const { data } = await (supabase as any).rpc("admin_get_all_profiles");
-    if (data) {
-      setUsers(data);
-      // Calculate active users (active in the last 24 hours)
-      const activeCount = calculateActiveTodayCount(data);
-      setActiveTodayCount(activeCount);
-=======
-    try {
-      const { data } = await (supabase as any)
-        .from("profiles")
-        .select(
-          "id, name, email, skills, points, sessions_completed, created_at, last_active_at",
-        )
-        .order("created_at", { ascending: false });
-      if (data) {
-        const usersData = data as UserProfile[];
-        setUsers(usersData);
-        // Calculate active users (active in the last 24 hours)
-        const activeCount = calculateActiveTodayCount(usersData);
-        setActiveTodayCount(activeCount);
-      }
-    } catch (err) {
-      console.error("Error fetching users:", err);
-      toast({
-        title: "Error",
-        description: "Failed to load users data",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
->>>>>>> 926703eeea800c3052b8d802a0736c4be3c3e8a4
-    }
-  };
-
-  const calculateActiveTodayCount = (userList: UserProfile[]): number => {
-    const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-<<<<<<< HEAD
-=======
-
-    return userList.filter((u) => {
-      if (!u.last_active_at) return false;
-      const lastActive = new Date(u.last_active_at);
-      return lastActive >= oneDayAgo;
-    }).length;
-  };
->>>>>>> 926703eeea800c3052b8d802a0736c4be3c3e8a4
-
-  return userList.filter(u => {
-    if (!u.last_active_at) return false;
-    const lastActive = new Date(u.last_active_at);
-    return lastActive >= oneDayAgo;
-  }).length;
-};
-
-    return userList.filter((u) => u.last_active_at && new Date(u.last_active_at) >= oneDayAgo).length;
-  };
-
-
   const filteredUsers = users.filter(
     (u) =>
       u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase()),
+      u.email.toLowerCase().includes(search.toLowerCase())
   );
 
   if (loading) {
@@ -184,13 +129,13 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen  py-8">
+    <div className="min-h-screen py-8">
       <div className="container">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="font-heading text-3xl font-extrabold flex items-center gap-2">
+          <h1 className="flex items-center gap-2 font-heading text-3xl font-extrabold">
             <Shield className="h-8 w-8 text-primary" /> Admin Panel
           </h1>
           <p className="mt-1 text-muted-foreground">
@@ -198,7 +143,6 @@ const Admin = () => {
           </p>
         </motion.div>
 
-        {/* Stats */}
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
           {[
             { label: "Total Users", value: users.length, icon: Users },
@@ -212,7 +156,7 @@ const Admin = () => {
               label: "Avg Points",
               value: Math.round(
                 users.reduce((a, u) => a + (u.points || 0), 0) /
-                  (users.length || 1),
+                  (users.length || 1)
               ),
               icon: Shield,
             },
@@ -256,11 +200,11 @@ const Admin = () => {
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-hero text-sm font-bold text-primary-foreground">
                     {u.name.charAt(0).toUpperCase()}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-heading text-sm font-bold truncate">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-heading text-sm font-bold">
                       {u.name}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="truncate text-xs text-muted-foreground">
                       {u.email}
                     </p>
                   </div>
@@ -271,7 +215,7 @@ const Admin = () => {
                       </Badge>
                     ))}
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="shrink-0 text-right">
                     <p className="text-sm font-bold text-primary">
                       {u.points || 0} pts
                     </p>

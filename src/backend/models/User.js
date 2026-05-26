@@ -30,6 +30,41 @@ const userSchema = new mongoose.Schema(
     resetPasswordExpire: {
       type: Date,
     },
+    // 📚 Study Partner Matching Fields
+    skills: {
+      type: [String],
+      default: [],
+    },
+
+    interests: {
+      type: [String],
+      default: [],
+    },
+
+    learningGoals: {
+      type: [String],
+      default: [],
+    },
+
+    availability: {
+      type: String,
+      default: "",
+    },
+
+    learningStyle: {
+      type: String,
+      default: "",
+    },
+
+    preferredLanguage: {
+      type: String,
+      default: "English",
+    },
+
+    timezone: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,

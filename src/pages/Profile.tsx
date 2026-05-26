@@ -46,11 +46,13 @@ const EditProfile = () => {
 
       if (!user) return;
 
-      const { data: profileData } = await supabase
+      const { data: rawProfileData } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .single();
+
+      const profileData = rawProfileData as any;
 
       if (profileData) {
         setProfile({
@@ -59,10 +61,10 @@ const EditProfile = () => {
           skills: profileData.skills?.join(", ") || "",
           avatar_url: profileData.avatar_url || avatars[0],
           streak: profileData.streak || 0,
-          xp: profileData.xp || 0,
-          level: calculateLevel(profileData.xp || 0),
-          badge: getBadgeByXP(profileData.xp || 0),
-          achievements: getAchievements(profileData.xp || 0),
+          xp: profileData.points || 0,
+          level: calculateLevel(profileData.points || 0),
+          badge: getBadgeByXP(profileData.points || 0),
+          achievements: getAchievements(profileData.points || 0),
         });
       }
     };
@@ -85,14 +87,8 @@ const EditProfile = () => {
       .update({
         name: profile.name,
         bio: profile.bio,
-
         skills: profile.skills.split(",").map((s: string) => s.trim()),
-
         avatar_url: profile.avatar_url,
-
-        streak: profile.streak,
-
-        xp: profile.xp,
       })
       .eq("id", user.id);
 

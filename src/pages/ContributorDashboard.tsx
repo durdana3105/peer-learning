@@ -37,11 +37,9 @@ function ContributorDashboard() {
 
         const contributorsData = await contributorsRes.json();
 
-        const totalContributions = contributorsData.reduce(
-          (acc: number, contributor: any) =>
-            acc + contributor.contributions,
-          0
-        );
+        const totalContributions = Array.isArray(contributorsData)
+        ? contributorsData.reduce((acc: number, contributor: any) => acc + contributor.contributions, 0)
+        : 0;
 
         // Pull Requests
         const prsRes = await fetch(
@@ -72,7 +70,7 @@ function ContributorDashboard() {
           },
           {
             title: "Contributors",
-            value: contributorsData.length || 0,
+            value: Array.isArray(contributorsData) ? contributorsData.length : 0,
           },
         ]);
       } catch (error) {

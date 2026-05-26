@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Bot, Send, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const AIPage = () => {
   const [messages, setMessages] = useState<any[]>([
@@ -37,43 +38,11 @@ const AIPage = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          method: "POST",
+      const { data, error } = await supabase.functions.invoke("ai-chat", {
+        body: { prompt }
+      });
 
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-
-            "Content-Type":
-              "application/json",
-
-            "HTTP-Referer":
-              "http://localhost:5173",
-
-            "X-Title":
-              "Peer Learning AI",
-          },
-
-          body: JSON.stringify({
-          model:
-"openai/gpt-3.5-turbo",
-
-            messages: [
-              {
-                role: "user",
-                content: prompt,
-              },
-            ],
-
-            max_tokens: 150,
-
-            temperature: 0.7,
-          }),
-        }
-      );
-
-      const data = await response.json();
+      if (error) throw error;
 
       console.log("AI RESPONSE:", data);
 
