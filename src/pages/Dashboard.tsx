@@ -23,6 +23,10 @@ interface Profile {
   sessions_completed: number | null;
   points: number | null;
   badges: string[] | null;
+  learning_style: string | null;
+  availability: string | null;
+  preferred_language: string | null;
+  timezone: string | null;
 }
 interface Session {
   id: string;
@@ -110,14 +114,43 @@ const Dashboard = () => {
       const teachOverlap = myLearn.filter((s) => teach.includes(s)).length;
       const learnOverlap = myTeach.filter((s) => learn.includes(s)).length;
       const interestOverlap = myInterests.filter((s) => interests.includes(s)).length;
+      const learningStyleMatch =
+        myProfile.learning_style &&
+        p.learning_style &&
+        myProfile.learning_style === p.learning_style
+          ? 15
+          : 0;
+
+      const languageMatch =
+        myProfile.preferred_language &&
+        p.preferred_language &&
+        myProfile.preferred_language === p.preferred_language
+          ? 10
+          : 0;
+
+      const timezoneMatch =
+        myProfile.timezone &&
+        p.timezone &&
+        myProfile.timezone === p.timezone
+          ? 10
+          : 0;
 
       const max = Math.max(
         myLearn.length + myTeach.length + myInterests.length,
         1
       );
 
-      const matchScore = Math.round(
-        ((teachOverlap + learnOverlap + interestOverlap) / max) * 100
+      const baseScore =
+        ((teachOverlap + learnOverlap + interestOverlap) / max) * 65;
+
+      const matchScore = Math.min(
+        Math.round(
+          baseScore +
+            learningStyleMatch +
+            languageMatch +
+            timezoneMatch
+        ),
+        100
       );
 
       return {
@@ -378,7 +411,47 @@ const Dashboard = () => {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {recommendedPeers.map((p, i) => (
-                  <PeerCard key={p.id} peer={p} index={i} />
+                  <div
+                      key={p.id}
+                      className="rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-slate-900/70 to-slate-800/40 p-5 backdrop-blur-xl"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-white">
+                          {p.name}
+                        </h3>
+
+                        <div className="rounded-full bg-cyan-500/20 px-3 py-1 text-sm font-semibold text-cyan-300">
+                         {p.matchScore}% •{" "}
+                          {p.matchScore >= 90
+                            ? "Perfect Match"
+                            : p.matchScore >= 70
+                            ? "Strong Match"
+                            : p.matchScore >= 50
+                            ? "Good Match"
+                            : "Compatible"}
+                        </div>
+                      </div>
+
+                      <p className="mt-2 text-sm text-slate-400">
+                        🤖 Smart AI matching based on skills, learning goals,
+                        interests, timezone compatibility, and learning style.
+                      </p>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {p.skills?.slice(0, 4).map((skill: string, idx: number) => (
+                          <span
+                            key={idx}
+                            className="rounded-full bg-purple-500/20 px-3 py-1 text-xs text-purple-300"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+
+                      <button className="mt-5 w-full rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-3 font-semibold text-slate-900 transition hover:scale-[1.02]">
+                        Connect with Peer
+                      </button>
+                    </div>
                 ))}
               </div>
             </section>

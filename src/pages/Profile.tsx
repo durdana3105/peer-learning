@@ -44,11 +44,13 @@ const EditProfile = () => {
 
       if (!user) return;
 
-      const { data: profileData } = await supabase
+      const { data: rawProfileData } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .single();
+
+      const profileData = rawProfileData as any;
 
       if (profileData) {
         setProfile({
@@ -83,14 +85,8 @@ const EditProfile = () => {
       .update({
         name: profile.name,
         bio: profile.bio,
-
         skills: profile.skills.split(",").map((s: string) => s.trim()),
-
         avatar_url: profile.avatar_url,
-
-        streak: profile.streak,
-
-        xp: profile.xp,
       })
       .eq("id", user.id);
 

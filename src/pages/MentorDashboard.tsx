@@ -1,5 +1,6 @@
 import { useRole } from "@/contexts/RoleContext";
 import { useAuth } from "@/contexts/useAuth";
+import { Link } from "react-router-dom";
 
 const MentorDashboard = () => {
   const { user } = useAuth();
@@ -15,6 +16,13 @@ const MentorDashboard = () => {
     <div className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100">
       <div className="mx-auto max-w-6xl space-y-8">
         <div className="space-y-2">
+          <Link
+  to="/"
+  className="inline-block rounded-md bg-emerald-600 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-500"
+>
+  ← Back 
+</Link>
+
           <p className="text-sm text-emerald-300">
             Current mode: {currentMode}
           </p>
