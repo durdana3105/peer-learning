@@ -62,21 +62,33 @@ export default function Chatbot() {
         role: msg.role,
         content: msg.text,
       }));
+      const res = await fetch("/api/ai/ask", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${session.access_token}`, // still pass session for user auth
+  },
+  body: JSON.stringify({
+    messages: formattedMessages,
+    systemPrompt: systemPrompt.content,
+    model: "openai/gpt-4", 
+  }),
+});
 
       // Route the request through the backend so the API key stays server-side.
       // Include the session token so the backend can authenticate the request.
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          messages: formattedMessages,
-          systemPrompt: systemPrompt.content,
-          model: "openai/gpt-3.5-turbo",
-        }),
-      });
+      // const res = await fetch("/api/chat", {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     Authorization: `Bearer ${session.access_token}`,
+      //   },
+      //   body: JSON.stringify({
+      //     messages: formattedMessages,
+      //     systemPrompt: systemPrompt.content,
+      //     model: "openai/gpt-3.5-turbo",
+      //   }),
+      // });
 
       const data = await res.json();
 

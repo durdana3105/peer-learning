@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => ({
     // OpenRouter API key stays on the server and is never included in the bundle.
     proxy: {
       "/api": {
-        target: "http://localhost:3001",
+        target: "http://localhost:5000",
         changeOrigin: true,
       },
     },
