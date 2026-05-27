@@ -126,8 +126,7 @@ const Discover = () => {
       .map((u) => ({
         ...u,
         score: getMatchScore(u),
-      }))
-      .filter((u) => u.score > 0);
+      }));
 
     // SEARCH
     if (search) {
@@ -149,6 +148,12 @@ const Discover = () => {
           ?.toLowerCase()
           .includes(selectedFilter.toLowerCase())
       );
+    }
+
+    // DEFAULT BUBBLE
+    // If no search and no filter are active, only show recommended peers (score > 0)
+    if (!search && selectedFilter === "All") {
+      matched = matched.filter((u) => u.score > 0);
     }
 
     matched.sort((a, b) => b.score - a.score);
