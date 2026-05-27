@@ -14,17 +14,11 @@ const isMisconfigured =
 
 export const supabaseMisconfigured = isMisconfigured;
 
-
 console.log(SUPABASE_URL);
 console.log(SUPABASE_PUBLISHABLE_KEY);
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
 export const supabase = createClient<Database>(
   isMisconfigured ? "https://placeholder.supabase.co" : SUPABASE_URL,
   isMisconfigured ? "placeholder-key" : SUPABASE_PUBLISHABLE_KEY,
@@ -34,5 +28,5 @@ export const supabase = createClient<Database>(
       persistSession: true,
       autoRefreshToken: true,
     },
-  }
+  },
 );

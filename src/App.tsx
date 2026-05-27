@@ -36,6 +36,8 @@ const ResourceHub = React.lazy(() => import("@/pages/ResourceHub"));
 
 import BecomeMentor from "./pages/BecomeMentor";
 import { useAuth } from "@/contexts/useAuth";
+import CreateSession from "./pages/createSession";
+import SessionDetail from "./pages/SessionDetail";
 
 const queryClient = new QueryClient();
 
@@ -47,18 +49,15 @@ const WithNav = ({ children }: { children: React.ReactNode }) => (
 );
 
 function App() {
-
   const { user } = useAuth();
 
   // ✨ Sparkle Effect
   useEffect(() => {
-
     const container = document.getElementById("sparkle-container");
 
     if (!container) return;
 
     const createSparkle = (x: number, y: number) => {
-
       const sparkle = document.createElement("div");
 
       sparkle.className = "sparkle";
@@ -74,12 +73,10 @@ function App() {
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-
       for (let i = 0; i < 2; i++) {
-
         createSparkle(
           e.clientX + Math.random() * 10 - 5,
-          e.clientY + Math.random() * 10 - 5
+          e.clientY + Math.random() * 10 - 5,
         );
       }
     };
@@ -89,213 +86,197 @@ function App() {
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
     };
-
   }, []);
 
   return (
-
     <QueryClientProvider client={queryClient}>
-
       <TooltipProvider>
-
         <Toaster />
         <Sonner />
 
         <BrowserRouter>
+          <div id="sparkle-container"></div>
 
-            <div id="sparkle-container"></div>
+          <Routes>
+            <Route
+              path="/"
+              element={user ? <Navigate to="/dashboard" replace /> : <Index />}
+            />
+            <Route path="/login" element={<Login />} />
 
-            <Routes>
+            <Route path="/signup" element={<Signup />} />
 
-<Route
-  path="/"
-  element={
-    user ? (
-      <Navigate to="/dashboard" replace />
-    ) : (
-      <Index />
-    )
-  }
-/>
-              <Route path="/login" element={<Login />} />
+            <Route path="/ai" element={<AIPage />} />
 
-              <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
-              <Route path="/ai" element={<AIPage />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
-              <Route
-                path="/forgot-password"
-                element={<ForgotPassword />}
-              />
+            <Route path="/create-session" element={<CreateSession />} />
 
-              <Route
-                path="/reset-password"
-                element={<ResetPassword />}
-              />
+            <Route path="/sessions/:id" element={<SessionDetail />} />
 
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <WithNav>
-                      <Dashboard />
-                    </WithNav>
-                  </ProtectedRoute>
-                }
-              />
+            <Route path="/sessions" element={<Sessions />} />
 
-              <Route
-                path="/rooms"
-                element={
-                  <ProtectedRoute>
-                    <WithNav>
-                      <StudyRooms />
-                    </WithNav>
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <WithNav>
+                    <Dashboard />
+                  </WithNav>
+                </ProtectedRoute>
+              }
+            />
 
-              <Route
-                path="/rooms/:id"
-                element={
-                  <ProtectedRoute>
-                    <WithNav>
-                      <Room />
-                    </WithNav>
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/rooms"
+              element={
+                <ProtectedRoute>
+                  <WithNav>
+                    <StudyRooms />
+                  </WithNav>
+                </ProtectedRoute>
+              }
+            />
 
-              <Route path="/become-mentor" element={<BecomeMentor />} />
+            <Route
+              path="/rooms/:id"
+              element={
+                <ProtectedRoute>
+                  <WithNav>
+                    <Room />
+                  </WithNav>
+                </ProtectedRoute>
+              }
+            />
 
-              <Route
-                path="/discover"
-                element={
-                  <ProtectedRoute>
-                    <WithNav>
-                      <Discover />
-                    </WithNav>
-                  </ProtectedRoute>
-                }
-              />
+            <Route path="/become-mentor" element={<BecomeMentor />} />
 
-              <Route
-                path="/sessions"
-                element={
-                  <ProtectedRoute>
-                    <WithNav>
-                      <Sessions />
-                    </WithNav>
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/discover"
+              element={
+                <ProtectedRoute>
+                  <WithNav>
+                    <Discover />
+                  </WithNav>
+                </ProtectedRoute>
+              }
+            />
 
-              {/* UPDATED MESSAGES ROUTE */}
-              <Route
-                path="/messages"
-                element={
-                  <ProtectedRoute>
-                    <WithNav>
-                      <Messages user={user} />
-                    </WithNav>
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/sessions"
+              element={
+                <ProtectedRoute>
+                  <WithNav>
+                    <Sessions />
+                  </WithNav>
+                </ProtectedRoute>
+              }
+            />
 
-              <Route
-                path="/chat"
-                element={
-                  <ProtectedRoute>
-                    <WithNav>
-                      <Chat />
-                    </WithNav>
-                  </ProtectedRoute>
-                }
-              />
+            {/* UPDATED MESSAGES ROUTE */}
+            <Route
+              path="/messages"
+              element={
+                <ProtectedRoute>
+                  <WithNav>
+                    <Messages user={user} />
+                  </WithNav>
+                </ProtectedRoute>
+              }
+            />
 
-              <Route
-                path="/notifications"
-                element={
-                  <ProtectedRoute>
-                    <WithNav>
-                      <Notifications />
-                    </WithNav>
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/chat"
+              element={
+                <ProtectedRoute>
+                  <WithNav>
+                    <Chat />
+                  </WithNav>
+                </ProtectedRoute>
+              }
+            />
 
-              <Route
-                path="/leaderboard"
-                element={
-                  <ProtectedRoute>
-                    <WithNav>
-                      <Leaderboard />
-                    </WithNav>
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <WithNav>
+                    <Notifications />
+                  </WithNav>
+                </ProtectedRoute>
+              }
+            />
 
-              <Route
-                path="/resources"
-                element={
-                  <ProtectedRoute>
-                    <WithNav>
-                      <ResourceHub />
-                    </WithNav>
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/leaderboard"
+              element={
+                <ProtectedRoute>
+                  <WithNav>
+                    <Leaderboard />
+                  </WithNav>
+                </ProtectedRoute>
+              }
+            />
 
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute>
-                    <WithNav>
-                      <Admin />
-                    </WithNav>
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/resources"
+              element={
+                <ProtectedRoute>
+                  <WithNav>
+                    <ResourceHub />
+                  </WithNav>
+                </ProtectedRoute>
+              }
+            />
 
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <WithNav>
+                    <Admin />
+                  </WithNav>
+                </ProtectedRoute>
+              }
+            />
 
-              <Route
-                path="/edit-profile"
-                element={
-                  <ProtectedRoute>
-                    <EditProfile />
-                  </ProtectedRoute>
-                }
-              />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
 
-              <Route path="*" element={<NotFound />} />
+            <Route
+              path="/edit-profile"
+              element={
+                <ProtectedRoute>
+                  <EditProfile />
+                </ProtectedRoute>
+              }
+            />
 
-              <Route
-                path="/contributor-dashboard"
-                element={
-                    <WithNav>
-                      <ContributorDashboard />
-                    </WithNav>
-                }
-              />
+            <Route path="*" element={<NotFound />} />
 
-            </Routes>
+            <Route
+              path="/contributor-dashboard"
+              element={
+                <WithNav>
+                  <ContributorDashboard />
+                </WithNav>
+              }
+            />
+          </Routes>
 
-            <Chatbot />
+          <Chatbot />
 
           <FloatingAI />
-
         </BrowserRouter>
-
       </TooltipProvider>
-
     </QueryClientProvider>
   );
 }

@@ -1,4 +1,7 @@
-import { supabase, supabaseMisconfigured } from "@/integrations/supabase/client";
+import {
+  supabase,
+  supabaseMisconfigured,
+} from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -53,6 +56,7 @@ const Login = () => {
       email,
       password,
     });
+    console.log("LOGIN ERROR:", error);
 
     setIsLoading(false);
 
@@ -72,31 +76,31 @@ const Login = () => {
   };
 
   const handleGoogleLogin = async () => {
-  if (supabaseMisconfigured) {
-    toast({
-      title: "Not configured",
-      description:
-        "Supabase environment variables are not set. Ask the project owner to configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
-      variant: "destructive",
-    });
-    return;
-  }
+    if (supabaseMisconfigured) {
+      toast({
+        title: "Not configured",
+        description:
+          "Supabase environment variables are not set. Ask the project owner to configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${window.location.origin}/dashboard`,
-    },
-  });
-
-  if (error) {
-    toast({
-      title: "Google login failed",
-      description: error.message,
-      variant: "destructive",
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
     });
-  }
-};
+
+    if (error) {
+      toast({
+        title: "Google login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -108,7 +112,6 @@ const Login = () => {
 
   return (
     <div className="relative flex min-h-screen overflow-hidden bg-[#020817] text-white">
-
       {/* GRID BACKGROUND */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
 
@@ -124,7 +127,6 @@ const Login = () => {
           transition={{ duration: 0.8 }}
           className="max-w-xl"
         >
-
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-5 py-2 text-cyan-300">
             ✨ Student Powered Learning Ecosystem
           </div>
@@ -144,9 +146,9 @@ const Login = () => {
           </h1>
 
           <p className="mt-6 text-lg text-slate-300 leading-relaxed">
-            Join live mentorship sessions, collaborate with classmates,
-            solve doubts instantly, and become part of a futuristic
-            collaborative learning community.
+            Join live mentorship sessions, collaborate with classmates, solve
+            doubts instantly, and become part of a futuristic collaborative
+            learning community.
           </p>
 
           <div className="mt-8 flex gap-4">
@@ -180,18 +182,15 @@ const Login = () => {
 
       {/* RIGHT LOGIN CARD */}
       <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12 relative z-10">
-
         <motion.div
           initial={{ opacity: 0, y: 40, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.6 }}
           className="w-full max-w-md rounded-3xl border border-cyan-400/10 bg-white/5 p-8 backdrop-blur-2xl shadow-[0_0_50px_rgba(34,211,238,0.15)]"
         >
-
           {/* LOGO */}
           <div className="mb-8 text-center">
             <Link to="/" className="inline-flex items-center gap-3">
-
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 shadow-[0_0_20px_rgba(34,211,238,0.5)]">
                 <BookOpen className="h-6 w-6 text-black" />
               </div>
@@ -201,9 +200,7 @@ const Login = () => {
               </span>
             </Link>
 
-            <h2 className="mt-8 text-3xl font-bold text-white">
-              Welcome Back
-            </h2>
+            <h2 className="mt-8 text-3xl font-bold text-white">Welcome Back</h2>
 
             <p className="mt-2 text-slate-400">
               Continue your futuristic learning journey
@@ -212,7 +209,6 @@ const Login = () => {
 
           {/* FORM */}
           <form onSubmit={handleSubmit} className="space-y-5">
-
             <div>
               <Input
                 placeholder="Email Address"
@@ -222,9 +218,7 @@ const Login = () => {
               />
 
               {errors.email && (
-                <p className="mt-2 text-sm text-red-400">
-                  {errors.email}
-                </p>
+                <p className="mt-2 text-sm text-red-400">{errors.email}</p>
               )}
             </div>
 
@@ -247,9 +241,7 @@ const Login = () => {
             </div>
 
             {errors.password && (
-              <p className="text-sm text-red-400">
-                {errors.password}
-              </p>
+              <p className="text-sm text-red-400">{errors.password}</p>
             )}
 
             <div className="flex items-center justify-between">
@@ -259,9 +251,7 @@ const Login = () => {
                   onCheckedChange={(c) => setRememberMe(!!c)}
                 />
 
-                <Label className="text-slate-300">
-                  Remember me
-                </Label>
+                <Label className="text-slate-300">Remember me</Label>
               </div>
 
               <Link
@@ -273,10 +263,7 @@ const Login = () => {
             </div>
 
             {/* LOGIN BUTTON */}
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button
                 type="submit"
                 disabled={isLoading}
@@ -300,7 +287,6 @@ const Login = () => {
                 alt="google"
                 className="mr-2 h-5 w-5"
               />
-
               Continue with Google
             </Button>
           </form>

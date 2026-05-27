@@ -1,437 +1,349 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
+import { Calendar, Clock, Users, Send, Plus, Search } from "lucide-react";
 
-import {
-  Calendar,
-  Users,
-  Clock,
-  Flame,
-  Send,
-  Search,
-  Sparkles,
-} from "lucide-react";
-
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 
-const tabs = [
-  "Upcoming",
-  "Joined",
-  "Completed",
-];
+const tabs = ["Upcoming", "Joined", "Completed"];
 
 const Sessions = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [sessions, setSessions] = useState<any[]>([]);
-  const [filteredSessions, setFilteredSessions] =
-    useState<any[]>([]);
+  const [filteredSessions, setFilteredSessions] = useState<any[]>([]);
+  const [selectedSession, setSelectedSession] = useState<any>(null);
 
   const [messages, setMessages] = useState<any[]>([]);
-
-  const [selectedTab, setSelectedTab] =
-    useState("Upcoming");
-
-  const [selectedSession, setSelectedSession] =
-    useState<any>(null);
-
   const [message, setMessage] = useState("");
 
   const [search, setSearch] = useState("");
+  const [selectedTab, setSelectedTab] = useState("Upcoming");
+
+  const [showCreate, setShowCreate] = useState(false);
 
   const messagesEndRef = useRef<any>(null);
 
-  // FETCH SESSIONS
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    timing: "",
+    duration: "",
+    seats: 20,
+  });
+
+  // ---------------- FETCH SESSIONS ----------------
+
+  const fetchSessions = async () => {
+    const { data, error } = await supabase
+      .from("sessions")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.log(error);
+      return;
+    }
+
+    setSessions(data || []);
+
+    if (data?.length) {
+      setSelectedSession(data[0]);
+    }
+  };
+
   useEffect(() => {
-    const fetchSessions = async () => {
-      const { data, error } = await (supabase as any)
-        .from("sessions")
-        .select("*")
-        .order("created_at", {
-          ascending: false,
-        });
-
-      if (error) {
-        console.log(error);
-      } else {
-        setSessions(data);
-
-        if (data.length > 0) {
-          setSelectedSession(data[0]);
-        }
-      }
-    };
-
     fetchSessions();
   }, []);
 
-  // FILTER SESSIONS
-  useEffect(() => {
-    let filtered = sessions;
+  // ---------------- FILTER ----------------
 
-    // TAB FILTER
-    filtered = filtered.filter(
-      (s) =>
-        s.status?.toLowerCase() ===
-        selectedTab.toLowerCase()
+  useEffect(() => {
+    let filtered = sessions.filter(
+      (s) => s.status?.toLowerCase() === selectedTab.toLowerCase(),
     );
 
-    // SEARCH
     if (search) {
-      filtered = filtered.filter(
-        (s) =>
-          s.title
-            ?.toLowerCase()
-            .includes(search.toLowerCase()) ||
-          s.tags
-            ?.join(" ")
-            .toLowerCase()
-            .includes(search.toLowerCase())
+      filtered = filtered.filter((s) =>
+        s.title?.toLowerCase().includes(search.toLowerCase()),
       );
     }
 
     setFilteredSessions(filtered);
   }, [sessions, selectedTab, search]);
 
-  // FETCH MESSAGES
+  // ---------------- CREATE SESSION ----------------
+
+  const createSession = async () => {
+    const { error } = await supabase.from("sessions").insert({
+      ...form,
+      mentor: user?.email,
+      participants: 0,
+      status: "Upcoming",
+    });
+
+    if (error) {
+      console.log(error);
+      return;
+    }
+
+    setShowCreate(false);
+    fetchSessions();
+  };
+
+  // ---------------- JOIN SESSION ----------------
+
+  const joinSession = async (session: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!user) {
+      alert("Login first");
+      return;
+    }
+
+    if (session.participants >= session.seats) {
+      alert("Session full");
+      return;
+    }
+
+    const { error } = await supabase.from("session_participants").insert({
+      session_id: session.id,
+      user_id: user.id,
+    });
+
+    if (error) {
+      alert("Already joined");
+      return;
+    }
+
+    await supabase
+      .from("sessions")
+      .update({
+        participants: session.participants + 1,
+      })
+      .eq("id", session.id);
+
+    fetchSessions();
+
+    alert("Joined 🚀");
+  };
+
+  // ---------------- CHAT ----------------
+
   useEffect(() => {
     if (!selectedSession) return;
 
     const fetchMessages = async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from("messages")
         .select("*")
         .eq("session_id", selectedSession.id)
-        .order("created_at", {
-          ascending: true,
-        });
+        .order("created_at", { ascending: true });
 
       setMessages(data || []);
     };
 
     fetchMessages();
-
-    // REALTIME
-    const channel = supabase
-      .channel("realtime-messages")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-        },
-        (payload: any) => {
-          if (
-            payload.new.session_id ===
-            selectedSession.id
-          ) {
-            setMessages((prev) => [
-              ...prev,
-              payload.new,
-            ]);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [selectedSession]);
 
-  // AUTO SCROLL
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth",
     });
   }, [messages]);
 
-  // SEND MESSAGE
   const sendMessage = async () => {
     if (!message.trim()) return;
 
-    await (supabase as any)
-      .from("messages")
-      .insert({
-        session_id: selectedSession.id,
-        user_id: user?.id,
-        username:
-          user?.user_metadata?.full_name ||
-          "Anonymous",
-        message,
-      });
+    await supabase.from("messages").insert({
+      session_id: selectedSession.id,
+      user_id: user?.id,
+      username: user?.email,
+      message,
+    });
 
     setMessage("");
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white overflow-hidden">
-      
-      {/* BACKGROUND */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500/20 blur-[120px] rounded-full" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/20 blur-[120px] rounded-full" />
+    <div className="min-h-screen bg-slate-950 text-white p-8">
+      {/* HEADER */}
 
-      <div className="relative z-10 p-6">
+      <div className="flex justify-between mb-8">
+        <h1 className="text-4xl font-bold">Sessions</h1>
 
-        {/* HEADER */}
-        <div className="mb-10">
-          <h1 className="text-4xl font-bold mb-2">
-            Sessions
-          </h1>
+        <button
+          onClick={() => setShowCreate(true)}
+          className="bg-cyan-500 p-3 rounded"
+        >
+          <Plus />
+        </button>
+      </div>
 
-          <p className="text-gray-400">
-            Join collaborative learning sessions 🚀
-          </p>
-        </div>
+      {/* SEARCH */}
 
-        {/* SEARCH */}
-        <div className="relative mb-6">
-          <Search
-            className="absolute left-5 top-4 text-gray-400"
-            size={20}
+      <div className="relative mb-6">
+        <Search className="absolute left-4 top-4" />
+
+        <input
+          placeholder="Search session..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full p-3 pl-12 bg-black rounded"
+        />
+      </div>
+
+      {/* CREATE */}
+
+      {showCreate && (
+        <div className="bg-white/5 p-6 rounded mb-6">
+          <input
+            placeholder="Title"
+            className="w-full p-3 mb-3 bg-black"
+            onChange={(e) =>
+              setForm({
+                ...form,
+                title: e.target.value,
+              })
+            }
+          />
+
+          <textarea
+            placeholder="Description"
+            className="w-full p-3 mb-3 bg-black"
+            onChange={(e) =>
+              setForm({
+                ...form,
+                description: e.target.value,
+              })
+            }
           />
 
           <input
-            type="text"
-            placeholder="Search sessions..."
-            value={search}
+            type="datetime-local"
             onChange={(e) =>
-              setSearch(e.target.value)
+              setForm({
+                ...form,
+                timing: e.target.value,
+              })
             }
-            className="w-full bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl py-4 pl-14 pr-4 outline-none focus:border-cyan-400 transition"
           />
-        </div>
 
-        {/* TABS */}
-        <div className="flex gap-4 mb-10 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() =>
-                setSelectedTab(tab)
-              }
-              className={`px-6 py-3 rounded-2xl transition-all whitespace-nowrap ${
-                selectedTab === tab
-                  ? "bg-gradient-to-r from-cyan-400 to-purple-500 text-black font-bold shadow-lg shadow-cyan-500/20"
-                  : "bg-white/5 border border-white/10 hover:bg-white/10"
-              }`}
+          <input
+            placeholder="Duration"
+            onChange={(e) =>
+              setForm({
+                ...form,
+                duration: e.target.value,
+              })
+            }
+          />
+
+          <input
+            type="number"
+            placeholder="Seats"
+            onChange={(e) =>
+              setForm({
+                ...form,
+                seats: Number(e.target.value),
+              })
+            }
+          />
+
+          <button
+            onClick={createSession}
+            className="mt-4 bg-green-500 px-4 py-2 rounded"
+          >
+            Create Session
+          </button>
+        </div>
+      )}
+
+      {/* TABS */}
+
+      <div className="flex gap-4 mb-8">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setSelectedTab(tab)}
+            className="bg-white/10 px-4 py-2 rounded"
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* SESSION LIST */}
+
+        <div className="lg:col-span-2">
+          {filteredSessions.map((session) => (
+            <motion.div
+              key={session.id}
+              whileHover={{ scale: 1.02 }}
+              onClick={() => navigate(`/sessions/${session.id}`)}
+              className="bg-white/5 p-6 rounded mb-5 cursor-pointer"
             >
-              {tab}
-            </button>
+              <h2 className="text-2xl">{session.title}</h2>
+
+              <p>{session.description}</p>
+
+              <div className="flex gap-5 mt-4">
+                <span className="flex gap-2">
+                  <Calendar size={18} />
+                  {session.timing}
+                </span>
+
+                <span className="flex gap-2">
+                  <Clock size={18} />
+                  {session.duration}
+                </span>
+
+                <span className="flex gap-2">
+                  <Users size={18} />
+                  {session.participants}/{session.seats}
+                </span>
+              </div>
+
+              <button
+                onClick={(e) => joinSession(session, e)}
+                className="mt-4 bg-cyan-500 px-4 py-2 rounded"
+              >
+                Join Session
+              </button>
+            </motion.div>
           ))}
         </div>
 
-        {/* CONTENT */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        {/* CHAT */}
 
-          {/* LEFT SIDE */}
-          <div className="lg:col-span-2">
+        <div className="bg-white/5 p-5 rounded">
+          <h2 className="text-xl mb-5">Session Chat</h2>
 
-            {/* TITLE */}
-            <div className="flex items-center gap-2 mb-6">
-              <Flame className="text-orange-400" />
+          <div className="h-96 overflow-auto">
+            {messages.map((m) => (
+              <div key={m.id} className="mb-4">
+                <b>{m.username}</b>
 
-              <h2 className="text-2xl font-bold">
-                Live Learning Sessions
-              </h2>
-            </div>
+                <p>{m.message}</p>
+              </div>
+            ))}
 
-            {/* SESSIONS */}
-            <div className="grid gap-5">
-              {filteredSessions.length > 0 ? (
-                filteredSessions.map((s) => (
-                  <motion.div
-                    whileHover={{
-                      scale: 1.02,
-                    }}
-                    key={s.id}
-                    onClick={() =>
-                      setSelectedSession(s)
-                    }
-                    className={`cursor-pointer rounded-3xl p-6 border backdrop-blur-xl transition-all ${
-                      selectedSession?.id === s.id
-                        ? "border-cyan-400 bg-cyan-500/10"
-                        : "border-white/10 bg-white/5 hover:border-cyan-400/30"
-                    }`}
-                  >
-                    {/* LIVE BADGE */}
-                    {s.is_live && (
-                      <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-400/20 text-red-400 px-3 py-1 rounded-full text-sm mb-4">
-                        🔴 LIVE NOW
-                      </div>
-                    )}
-
-                    {/* TITLE */}
-                    <h2 className="text-2xl font-bold mb-3">
-                      {s.title}
-                    </h2>
-
-                    {/* DESCRIPTION */}
-                    <p className="text-gray-300 mb-5">
-                      {s.description}
-                    </p>
-
-                    {/* DETAILS */}
-                    <div className="flex flex-wrap gap-5 text-sm text-gray-400 mb-5">
-
-                      <div className="flex items-center gap-2">
-                        <Calendar size={16} />
-                        {s.timing || "Today"}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Users size={16} />
-                        {s.participants || 0} learners
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Clock size={16} />
-                        {s.duration || "1 Hour"}
-                      </div>
-                    </div>
-
-                    {/* MENTOR */}
-                    <div className="mb-5">
-                      <p className="text-gray-400 text-sm">
-                        Mentor
-                      </p>
-
-                      <p className="font-semibold">
-                        {s.mentor || "Sarah"}
-                      </p>
-                    </div>
-
-                    {/* TAGS */}
-                    <div className="flex flex-wrap gap-2 mb-5">
-                      {s.tags?.map(
-                        (
-                          tag: string,
-                          index: number
-                        ) => (
-                          <span
-                            key={index}
-                            className="bg-cyan-500/10 border border-cyan-400/20 text-cyan-300 px-3 py-1 rounded-full text-sm"
-                          >
-                            {tag}
-                          </span>
-                        )
-                      )}
-                    </div>
-
-                    {/* BUTTON */}
-                    <button className="w-full bg-gradient-to-r from-cyan-400 to-purple-500 text-black py-3 rounded-2xl font-bold hover:opacity-90 transition">
-                      Join Session
-                    </button>
-                  </motion.div>
-                ))
-              ) : (
-                <div className="text-center py-20 border border-white/10 rounded-3xl bg-white/5">
-                  <Sparkles
-                    className="mx-auto text-gray-500 mb-4"
-                    size={50}
-                  />
-
-                  <h2 className="text-2xl font-bold mb-2">
-                    No Sessions Found
-                  </h2>
-
-                  <p className="text-gray-400">
-                    Try another tab or search.
-                  </p>
-                </div>
-              )}
-            </div>
+            <div ref={messagesEndRef} />
           </div>
 
-          {/* RIGHT SIDE CHAT */}
-          <div className="bg-white/5 border border-white/10 backdrop-blur-2xl rounded-3xl p-5 flex flex-col h-[750px]">
+          <div className="flex mt-4">
+            <input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="flex-1 bg-black p-3"
+            />
 
-            {/* CHAT HEADER */}
-            <div className="pb-5 border-b border-white/10">
-              <h2 className="text-2xl font-bold mb-2">
-                Session Chat 💬
-              </h2>
-
-              <p className="text-gray-400 text-sm">
-                {selectedSession?.title}
-              </p>
-
-              <div className="mt-3 inline-flex items-center gap-2 bg-green-500/10 border border-green-400/20 text-green-300 px-3 py-1 rounded-full text-sm">
-                🟢 42 learners online
-              </div>
-            </div>
-
-            {/* MESSAGES */}
-            <div className="flex-1 overflow-y-auto py-5 space-y-4">
-              {messages.map((msg, index) => {
-                const isCurrentUser =
-                  msg.user_id === user?.id;
-
-                return (
-                  <div
-                    key={index}
-                    className={`flex ${
-                      isCurrentUser
-                        ? "justify-end"
-                        : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[80%] px-4 py-3 rounded-2xl ${
-                        isCurrentUser
-                          ? "bg-gradient-to-r from-cyan-400 to-purple-500 text-black"
-                          : "bg-white/10"
-                      }`}
-                    >
-                      {!isCurrentUser && (
-                        <p className="text-xs text-cyan-300 mb-1">
-                          {msg.username}
-                        </p>
-                      )}
-
-                      <p>{msg.message}</p>
-
-                      <p className="text-[10px] opacity-70 mt-2">
-                        {new Date(
-                          msg.created_at
-                        ).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* INPUT */}
-            <div className="pt-4 border-t border-white/10 flex gap-3">
-              <input
-                type="text"
-                placeholder="Type a message..."
-                value={message}
-                onChange={(e) =>
-                  setMessage(e.target.value)
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    sendMessage();
-                  }
-                }}
-                className="flex-1 bg-white/10 border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-cyan-400"
-              />
-
-              <button
-                onClick={sendMessage}
-                className="bg-gradient-to-r from-cyan-400 to-purple-500 text-black p-4 rounded-2xl hover:opacity-90 transition"
-              >
-                <Send size={20} />
-              </button>
-            </div>
+            <button onClick={sendMessage} className="bg-cyan-500 px-4">
+              <Send />
+            </button>
           </div>
         </div>
       </div>
