@@ -71,7 +71,7 @@ const Discover = () => {
 
         // CURRENT USER
         const { data: current } = await supabase
-          .from("users")
+          .from("profiles")
           .select("*")
           .eq("id", user.id)
           .single();
@@ -80,7 +80,7 @@ const Discover = () => {
 
         // ALL USERS
         const { data: allUsers } = await supabase
-          .from("users")
+          .from("profiles")
           .select("*");
 
         setUsers(allUsers || []);
@@ -98,19 +98,13 @@ const Discover = () => {
   const getMatchScore = (user: any) => {
     if (!currentUser) return 0;
 
-    const userSkills =
-      user.skills
-        ?.split(",")
-        .map((s: string) =>
-          s.trim().toLowerCase()
-        ) || [];
+    const userSkills = Array.isArray(user.skills)
+      ? user.skills.map((s: string) => s.toLowerCase())
+      : (user.skills?.split(",") || []).map((s: string) => s.trim().toLowerCase());
 
-    const myGoals =
-      currentUser.learning_goals
-        ?.split(",")
-        .map((s: string) =>
-          s.trim().toLowerCase()
-        ) || [];
+    const myGoals = Array.isArray(currentUser.learning_goals)
+      ? currentUser.learning_goals.map((s: string) => s.toLowerCase())
+      : (currentUser.learning_goals?.split(",") || []).map((s: string) => s.trim().toLowerCase());
 
     return userSkills.filter((skill: string) =>
       myGoals.includes(skill)
@@ -358,21 +352,19 @@ const Discover = () => {
 
                 {/* SKILLS */}
                 <div className="flex flex-wrap gap-2 mb-5">
-                  {u.skills
-                    ?.split(",")
-                    .map(
-                      (
-                        skill: string,
-                        index: number
-                      ) => (
-                        <span
-                          key={index}
-                          className="bg-cyan-500/10 border border-cyan-400/10 text-cyan-300 px-3 py-1 rounded-full text-sm"
-                        >
-                          {skill}
-                        </span>
-                      )
-                    )}
+                  {(Array.isArray(u.skills) ? u.skills : (u.skills?.split(",") || [])).map(
+                    (
+                      skill: string,
+                      index: number
+                    ) => (
+                      <span
+                        key={index}
+                        className="bg-cyan-500/10 border border-cyan-400/10 text-cyan-300 px-3 py-1 rounded-full text-sm"
+                      >
+                        {typeof skill === 'string' ? skill.trim() : skill}
+                      </span>
+                    )
+                  )}
                 </div>
 
                 {/* GOALS */}

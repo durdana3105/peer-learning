@@ -21,19 +21,19 @@ export const useAwardXP = () => {
       // Fetch current profile to get current XP
       const { data: profileData, error: fetchError } = await (supabase as any)
         .from("profiles")
-        .select("xp")
+        .select("points")
         .eq("id", user.id)
         .single();
 
       if (fetchError) throw fetchError;
 
-      const currentXP = profileData.xp || 0;
+      const currentXP = profileData.points || 0;
       const newXP = currentXP + xpToAward;
 
       // Update the profile with new XP
       const { error: updateError } = await (supabase as any)
         .from("profiles")
-        .update({ xp: newXP })
+        .update({ points: newXP })
         .eq("id", user.id);
 
       if (updateError) throw updateError;

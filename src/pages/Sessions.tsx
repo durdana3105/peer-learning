@@ -158,7 +158,7 @@ const Sessions = () => {
 
   // SEND MESSAGE
   const sendMessage = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || !selectedSession) return;
 
     await (supabase as any)
       .from("messages")
@@ -394,9 +394,10 @@ const Sessions = () => {
 
           {/* RIGHT SIDE CHAT */}
           <div className="bg-white/5 border border-white/10 backdrop-blur-2xl rounded-3xl p-5 flex flex-col h-[750px]">
-
-            {/* CHAT HEADER */}
-            <div className="pb-5 border-b border-white/10 flex items-center justify-between">
+            {selectedSession ? (
+              <>
+                {/* CHAT HEADER */}
+                <div className="pb-5 border-b border-white/10 flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold mb-2">
                   Session Chat 💬
@@ -502,6 +503,13 @@ const Sessions = () => {
                 <Send size={20} />
               </button>
             </div>
+            </>
+            ) : (
+              <div className="flex flex-1 items-center justify-center text-gray-500 flex-col gap-3">
+                <Sparkles size={40} className="text-cyan-500/30" />
+                <p>Select or create a session to join the chat</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
