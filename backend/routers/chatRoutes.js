@@ -62,8 +62,7 @@ const rateLimiter = (req, res, next) => {
   entry.count += 1;
   next();
 };
-// requireAuth, rateLimiter,
-router.post("/chat",  async (req, res) => {
+router.post("/chat", requireAuth, rateLimiter, async (req, res) => {
   try {
     const {
       messages,
