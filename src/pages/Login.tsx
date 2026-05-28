@@ -73,31 +73,31 @@ const Login = () => {
   };
 
   const handleGoogleLogin = async () => {
-  if (supabaseMisconfigured) {
-    toast({
-      title: "Not configured",
-      description:
-        "Supabase environment variables are not set. Configure VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY or NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.",
-      variant: "destructive",
-    });
-    return;
-  }
+    if (supabaseMisconfigured) {
+      toast({
+        title: "Not configured",
+        description:
+          "Supabase environment variables are not set. Configure VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY or NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${window.location.origin}/dashboard`,
-    },
-  });
-
-  if (error) {
-    toast({
-      title: "Google login failed",
-      description: error.message,
-      variant: "destructive",
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
     });
-  }
-};
+
+    if (error) {
+      toast({
+        title: "Google login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -125,7 +125,6 @@ const Login = () => {
           transition={{ duration: 0.8 }}
           className="max-w-xl"
         >
-
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-5 py-2 text-cyan-300">
             ✨ Student Powered Learning Ecosystem
           </div>
@@ -188,7 +187,14 @@ const Login = () => {
           transition={{ duration: 0.6 }}
           className="w-full max-w-md rounded-3xl border border-cyan-400/10 bg-white/5 p-8 backdrop-blur-2xl shadow-[0_0_50px_rgba(34,211,238,0.15)]"
         >
-
+          <div className="mb-7 text-cyan-400">
+            <Link
+              to="/"
+              className="cursor-pointer"
+            >
+              ← Back to Home
+            </Link>
+          </div>
           {/* LOGO */}
           <div className="mb-8 text-center">
             <Link to="/" className="inline-flex items-center gap-3">

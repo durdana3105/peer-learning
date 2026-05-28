@@ -138,7 +138,14 @@ const Signup = () => {
         transition={{ duration: 0.5 }}
         className="relative w-full max-w-md backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 shadow-[0_0_40px_rgba(var(--theme-color-1),0.15)]"
       >
-
+        <div className="mb-7 text-cyan-400">
+            <Link
+              to="/"
+              className="cursor-pointer"
+            >
+              ← Back to Home
+            </Link>
+          </div>
         {/* Logo */}
         <div className="mb-8 text-center">
           <Link to="/" className="flex items-center justify-center gap-2">
