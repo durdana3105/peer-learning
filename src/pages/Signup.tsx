@@ -131,12 +131,66 @@ const Signup = () => {
 
       {/* Glow background */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(var(--theme-color-1),0.15),transparent)] pointer-events-none" />
+      
+      {/* LEFT SIDE */}
+      <div className="hidden lg:flex w-1/2 relative items-center justify-center p-16 z-10">
+        <motion.div
+          initial={{ opacity: 0, x: -40 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8 }}
+          className="max-w-xl"
+        >
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-5 py-2 text-cyan-300">
+            ✨ Student Powered Learning Ecosystem
+          </div>
 
+          <h1 className="text-6xl font-extrabold leading-tight">
+            Learn From
+            <br />
+            <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+              Seniors.
+            </span>
+            <br />
+            Grow With
+            <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+              {" "}
+              Peers.
+            </span>
+          </h1>
+
+          <p className="mt-6 text-lg text-slate-300 leading-relaxed">
+            Join live mentorship sessions, collaborate with classmates,
+            solve doubts instantly, and become part of a futuristic
+            collaborative learning community.
+          </p>
+
+          <div className="mt-10 flex flex-wrap gap-4">
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
+              🎥 Learn together
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
+              🛡️ Build your Future
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
+              💬 Ask, share, learn
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
+              🔥 Active community
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* RIGHT SIDE */}
+      <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12 relative z-10">
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="relative w-full max-w-md backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 shadow-[0_0_40px_rgba(var(--theme-color-1),0.15)]"
+        className="w-full max-w-md rounded-3xl border border-cyan-400/10 bg-white/5 p-8 backdrop-blur-2xl shadow-[0_0_50px_rgba(34,211,238,0.15)]"
       >
         <div className="mb-7 text-cyan-400">
             <Link
@@ -254,6 +308,7 @@ const Signup = () => {
         </p>
 
       </motion.div>
+      </div>
     </div>
   );
 };
