@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/useAuth";
 import VideoRoom from "@/components/VideoRoom";
 import { useAwardXP } from "@/hooks/useAwardXP";
 import { CreateSessionDialog } from "@/components/CreateSessionDialog";
+import { MarkdownRenderer } from "../components/MarkdownRenderer";
 import { generateICS } from "@/utils/calendar";
 
 const tabs = [
@@ -91,35 +92,6 @@ const [summaryLoading, setSummaryLoading] =
     };
 
     fetchSessions();
-  }, []);
-
-  // USER ACTIVITY TRACKER
-  useEffect(() => {
-    let idleTimer: any;
-
-    const handleActivity = () => {
-      setUserStatus("Active");
-
-      clearTimeout(idleTimer);
-
-      idleTimer = setTimeout(() => {
-        setUserStatus("Idle");
-      }, 15000);
-    };
-
-    window.addEventListener("mousemove", handleActivity);
-    window.addEventListener("keydown", handleActivity);
-    window.addEventListener("click", handleActivity);
-
-    handleActivity();
-
-    return () => {
-      clearTimeout(idleTimer);
-
-      window.removeEventListener("mousemove", handleActivity);
-      window.removeEventListener("keydown", handleActivity);
-      window.removeEventListener("click", handleActivity);
-    };
   }, []);
 
   // FILTER SESSIONS
@@ -245,23 +217,22 @@ const [summaryLoading, setSummaryLoading] =
   }, [messages]);
 
   // USER ACTIVITY TRACKER
-  useEffect(() => {
-    let idleTimer: ReturnType<typeof setTimeout>;
-    let throttleTimer: ReturnType<typeof setTimeout>;
-    let lastMove = 0;
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const lastMoveRef = useRef(0);
 
+  useEffect(() => {
     const handleActivity = () => {
       setUserStatus("Active");
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = setTimeout(() => {
         setUserStatus("Idle");
       }, 15000);
     };
 
     const throttledMove = (e: MouseEvent) => {
       const now = Date.now();
-      if (now - lastMove < 200) return;
-      lastMove = now;
+      if (now - lastMoveRef.current < 200) return;
+      lastMoveRef.current = now;
       handleActivity();
     };
 
@@ -272,8 +243,7 @@ const [summaryLoading, setSummaryLoading] =
     handleActivity();
 
     return () => {
-      clearTimeout(idleTimer);
-      clearTimeout(throttleTimer);
+      clearTimeout(idleTimerRef.current);
       window.removeEventListener("mousemove", throttledMove);
       window.removeEventListener("keydown", handleActivity);
       window.removeEventListener("click", handleActivity);
@@ -490,9 +460,9 @@ const [summaryLoading, setSummaryLoading] =
                     </h2>
 
                     {/* DESCRIPTION */}
-                    <p className="text-gray-300 mb-5">
-                      {s.description}
-                    </p>
+                    <div className="text-gray-300 mb-5">
+                      <MarkdownRenderer content={s.description || ""} />
+                    </div>
 
                     {/* DETAILS */}
                     <div className="flex flex-wrap gap-5 text-sm text-gray-400 mb-5">

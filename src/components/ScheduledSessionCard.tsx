@@ -9,6 +9,7 @@ import {
   msUntilJoinWindow,
 } from "@/hooks/useSessionStatus";
 import { generateICS } from "@/utils/calendar";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 
 // ── Status pill ───────────────────────────────────────────────
 const STATUS_STYLES: Record<string, string> = {
@@ -127,9 +128,9 @@ export function ScheduledSessionCard({
 
       {/* Description */}
       {session.description && (
-        <p className="text-gray-300 text-sm mb-4 line-clamp-2">
-          {session.description}
-        </p>
+        <div className="text-gray-300 text-sm mb-4 line-clamp-2">
+          <MarkdownRenderer content={session.description} />
+        </div>
       )}
 
       {/* Meta row */}

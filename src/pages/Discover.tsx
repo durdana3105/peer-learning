@@ -52,16 +52,22 @@ const Discover = () => {
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
-  const [selectedFilter, setSelectedFilter] =
-    useState("All");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState("All");
+
+  // DEBOUNCE SEARCH
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // FETCH USERS
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data } =
-          await supabase.auth.getUser();
-
+        const { data } = await supabase.auth.getUser();
         const user = data?.user;
 
         if (!user) {
@@ -78,10 +84,28 @@ const Discover = () => {
 
         setCurrentUser(current);
 
-        // ALL USERS
-        const { data: allUsers } = await supabase
+        // ALL USERS — capped at 100 and filtered server-side
+        let query = supabase
           .from("profiles")
-          .select("*");
+          .select("*")
+          .neq("id", user.id)
+          .limit(100);
+
+        // Server-side search: filter by name or skills using ilike
+        if (debouncedSearch.trim()) {
+          // Escape double quotes so we can wrap the search term in quotes, preventing commas from breaking the .or() syntax
+          const safeSearch = debouncedSearch.trim().replace(/"/g, '""');
+          query = query.or(
+            `name.ilike."%${safeSearch}%",skills.ilike."%${safeSearch}%"`
+          );
+        }
+
+        // Server-side skill filter
+        if (selectedFilter !== "All") {
+          query = query.ilike("skills", `%${selectedFilter}%`);
+        }
+
+        const { data: allUsers } = await query;
 
         setUsers(allUsers || []);
       } catch (err) {
@@ -92,7 +116,7 @@ const Discover = () => {
     };
 
     fetchData();
-  }, []);
+  }, [debouncedSearch, selectedFilter]);
 
   // MATCH SCORE
   const getMatchScore = (user: any) => {
@@ -111,12 +135,11 @@ const Discover = () => {
     ).length;
   };
 
-  // FILTER USERS
+  // FILTER & SCORE USERS (client-side match scoring only)
   useEffect(() => {
     if (!currentUser) return;
 
-    let matched = users
-      .filter((u) => u.id !== currentUser.id)
+    const matched = users
       .map((u) => ({
         ...u,
         score: getMatchScore(u),
@@ -156,7 +179,7 @@ const Discover = () => {
     matched.sort((a, b) => b.score - a.score);
 
     setFilteredUsers(matched);
-  }, [users, search, selectedFilter, currentUser]);
+  }, [users, currentUser]);
 
   return (
     <div className="min-h-screen bg-[#020617] text-white overflow-hidden">

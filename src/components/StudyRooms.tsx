@@ -8,6 +8,7 @@ export default function StudyRooms() {
   const navigate = useNavigate(); // Added for routing
   const [rooms, setRooms] = useState<any[]>([]);
   const [newTopic, setNewTopic] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Fetch rooms when the page loads and listen for real-time updates
@@ -46,7 +47,7 @@ export default function StudyRooms() {
     setLoading(true);
     const { error } = await supabase
       .from('study_rooms' as any) // Added 'as any' here too
-      .insert([{ topic: newTopic, created_by: user.id }]);
+      .insert([{ topic: newTopic, created_by: user.id, is_private: isPrivate }]);
       
     if (!error) {
       setNewTopic(''); // Clear the input field on success
@@ -77,6 +78,15 @@ export default function StudyRooms() {
               className="flex-1 bg-slate-950 border border-slate-800 text-white p-3 rounded-lg focus:outline-none focus:border-blue-500 transition"
               onKeyDown={(e) => e.key === 'Enter' && handleCreateRoom()}
             />
+            <label className="flex items-center gap-2 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                checked={isPrivate}
+                onChange={(e) => setIsPrivate(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900"
+              />
+              Private Room
+            </label>
             <button 
               onClick={handleCreateRoom}
               disabled={loading || !newTopic.trim()}
@@ -99,7 +109,14 @@ export default function StudyRooms() {
               rooms.map((room) => (
                 <div key={room.id} className="p-5 bg-slate-900 border border-slate-800 rounded-xl hover:border-slate-700 transition group flex justify-between items-center">
                   <div>
-                    <h3 className="font-medium text-lg text-white group-hover:text-blue-400 transition">{room.topic}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-lg text-white group-hover:text-blue-400 transition">{room.topic}</h3>
+                      {room.is_private && (
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+                          Private
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-slate-500 mt-1">
                       Created {new Date(room.created_at).toLocaleDateString()}
                     </p>

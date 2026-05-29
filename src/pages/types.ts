@@ -142,7 +142,7 @@ export type Database = {
           /** status values: 'scheduled' | 'live' | 'ended' */
           status: string
           student_id: string | null
-          teacher_id: string | null
+          mentor_id: string | null
           title: string | null
           tags: string[] | null
         }
@@ -154,7 +154,7 @@ export type Database = {
           duration_minutes?: number
           status?: string
           student_id?: string | null
-          teacher_id?: string | null
+          mentor_id?: string | null
           title?: string | null
           tags?: string[] | null
         }
@@ -166,7 +166,7 @@ export type Database = {
           duration_minutes?: number
           status?: string
           student_id?: string | null
-          teacher_id?: string | null
+          mentor_id?: string | null
           title?: string | null
           tags?: string[] | null
         }

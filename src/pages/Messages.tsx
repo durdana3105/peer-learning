@@ -265,12 +265,14 @@ const Messages = ({ user }: MessagesProps) => {
             .from("profiles")
             .select("*")
             .neq("id", currentUserId)
-            .order("name", { ascending: true }),
+            .order("name", { ascending: true })
+            .limit(100),
           supabase
             .from("users")
             .select("*")
             .neq("id", currentUserId)
-            .order("name", { ascending: true }),
+            .order("name", { ascending: true })
+            .limit(100),
         ]);
 
       const mergedUsers = mergeProfiles(
@@ -316,12 +318,14 @@ const Messages = ({ user }: MessagesProps) => {
             .select("*")
             .neq("id", currentUserId)
             .order("name", { ascending: true })
+            .limit(100)
             .then(({ data: profileData }) => {
               void supabase
                 .from("users")
                 .select("*")
                 .neq("id", currentUserId)
                 .order("name", { ascending: true })
+                .limit(100)
                 .then(({ data: userData }) => {
                   setProfiles(
                     mergeProfiles(

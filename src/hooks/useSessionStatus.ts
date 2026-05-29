@@ -8,7 +8,7 @@ export interface ScheduledSession {
   scheduled_at: string | null;
   duration_minutes: number;
   status: string;
-  teacher_id: string | null;
+  mentor_id: string | null;
   student_id: string | null;
   tags: string[] | null;
   created_at: string;

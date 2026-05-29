@@ -1,6 +1,6 @@
 
 -- Create profiles table
-CREATE TABLE public.profiles (
+CREATE TABLE if not exists public.profiles (
   id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   name TEXT NOT NULL DEFAULT '',
   email TEXT NOT NULL DEFAULT '',

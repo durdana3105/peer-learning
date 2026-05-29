@@ -129,7 +129,7 @@ export function CreateSessionDialog({
         scheduled_at: scheduledAt.toISOString(),
         duration_minutes: durationMinutes,
         status: "scheduled",
-        teacher_id: user.id,
+        mentor_id: user.id,
       });
 
       if (error) throw error;

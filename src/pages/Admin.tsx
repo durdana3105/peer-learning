@@ -3,11 +3,8 @@ import { motion } from "framer-motion";
 import { Shield, Users, Calendar, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useNavigate } from "react-router-dom";
 
 interface UserProfile {
   id: string;
@@ -46,9 +43,6 @@ const calculateActiveTodayCount = (userList: UserProfile[]): number => {
 };
 
 const Admin = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -67,29 +61,9 @@ const Admin = () => {
       }
     };
 
-    const checkAdmin = async () => {
-      if (!user) {
-        setIsAdmin(false);
-        setLoading(false);
-        return;
-      }
+    fetchUsers();
+  }, []);
 
-      const { data, error } = await adminSupabase.rpc("has_role", {
-        _user_id: user.id,
-        _role: "admin",
-      });
-
-      if (!error && data === true) {
-        setIsAdmin(true);
-        fetchUsers();
-      } else {
-        setIsAdmin(false);
-        setLoading(false);
-      }
-    };
-
-    checkAdmin();
-  }, [user]);
 
   const filteredUsers = users.filter(
     (u) =>
@@ -101,29 +75,6 @@ const Admin = () => {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <Shield className="mx-auto h-16 w-16 text-destructive opacity-50" />
-          <h2 className="mt-4 font-heading text-2xl font-bold">
-            Access Denied
-          </h2>
-          <p className="mt-2 text-muted-foreground">
-            You don't have admin privileges to view this page.
-          </p>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => navigate("/dashboard")}
-          >
-            Go to Dashboard
-          </Button>
-        </div>
       </div>
     );
   }

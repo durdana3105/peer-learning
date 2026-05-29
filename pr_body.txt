@@ -1,0 +1,11 @@
+### Description
+Added a public feature roadmap categorizing features into Completed, In Progress, and Planned with estimated milestones.
+
+### Fixes
+Fixes #273
+
+### Type of change
+- [x] Documentation Update
+
+### GSSoC 2026
+This PR is submitted as part of GSSoC 2026.

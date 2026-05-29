@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Trophy,
@@ -36,14 +36,46 @@ const Leaderboard = () => {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All Time");
+  const [myRank, setMyRank] = useState<number>(0);
+  const [myEntry, setMyEntry] = useState<LeaderboardEntry | null>(null);
+  const [totalLearners, setTotalLearners] = useState<number>(0);
 
   // FETCH LEADERBOARD
   const fetchLeaderboard = async () => {
 
     setLoading(true);
 
-    const { data, error } = await (supabase as any)
-      .rpc("get_leaderboard", { _timeframe: filter });
+    let query = supabase
+      .from("leaderboard" as any)
+      .select("*");
+
+    if (filter === "Weekly") {
+
+      const lastWeek = new Date();
+
+      lastWeek.setDate(lastWeek.getDate() - 7);
+
+      query = query.gte(
+        "updated_at",
+        lastWeek.toISOString()
+      );
+    }
+
+    if (filter === "Monthly") {
+
+      const lastMonth = new Date();
+
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+      query = query.gte(
+        "updated_at",
+        lastMonth.toISOString()
+      );
+    }
+
+    const { data, error } = await query
+      .order("xp", { ascending: false })
+      .limit(50);
 
     if (!error && data) {
 
@@ -56,6 +88,46 @@ const Leaderboard = () => {
       }));
 
       setEntries(updatedData as LeaderboardEntry[]);
+    }
+
+    // Fetch total learner count efficiently (head-only count)
+    const { count } = await supabase
+      .from("leaderboard" as any)
+      .select("*", { count: "exact", head: true });
+
+    setTotalLearners(count || 0);
+
+    // Fetch current user's rank separately so it's always accurate
+    if (user) {
+      // Get the current user's entry
+      const { data: myData } = await supabase
+        .from("leaderboard" as any)
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (myData) {
+        const enrichedEntry = {
+          ...myData,
+          badges:
+            myData.badges && myData.badges.length > 0
+              ? myData.badges
+              : [getBadgeByXP(myData.xp)],
+        } as LeaderboardEntry;
+
+        setMyEntry(enrichedEntry);
+
+        // Fetch user's exact rank via RPC to avoid pulling data
+        const { data: rpcRank } = await supabase.rpc("get_user_rank", {
+          p_user_id: user.id,
+          p_filter: filter,
+        });
+
+        setMyRank(rpcRank || 0);
+      } else {
+        setMyEntry(null);
+        setMyRank(0);
+      }
     }
 
     setLoading(false);
@@ -100,6 +172,13 @@ const Leaderboard = () => {
   }, [user, filter]);
 
   // REALTIME
+  // We use a ref so the realtime listener always calls the latest fetchLeaderboard, 
+  // preventing stale closures (where filter = "All Time" and user = null) from overwriting rank.
+  const fetchRef = useRef(fetchLeaderboard);
+  useEffect(() => {
+    fetchRef.current = fetchLeaderboard;
+  }, [fetchLeaderboard]);
+
   useEffect(() => {
 
     const channel = supabase
@@ -112,7 +191,7 @@ const Leaderboard = () => {
           table: "leaderboard",
         },
         () => {
-          fetchLeaderboard();
+          fetchRef.current();
         }
       )
       .subscribe();
@@ -123,15 +202,7 @@ const Leaderboard = () => {
 
   }, []);
 
-  const myRank =
-    entries.findIndex(
-      (e) => e.user_id === user?.id
-    ) + 1;
-
-  const myEntry =
-    entries.find(
-      (e) => e.user_id === user?.id
-    );
+  // myRank and myEntry are now fetched as state from the server
 
   // LOADING
   if (loading) {
@@ -196,7 +267,7 @@ const Leaderboard = () => {
             </p>
 
             <h2 className="mt-3 text-4xl font-bold text-cyan-400">
-              {entries.length}
+              {totalLearners}
             </h2>
 
           </div>

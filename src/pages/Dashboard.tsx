@@ -96,6 +96,7 @@ const Dashboard = () => {
       .from("profiles")
       .select("*")
       .neq("id", user.id)
+      .limit(100)
       .returns<Profile[]>();
 
     if (error || !data) return;
@@ -196,20 +197,31 @@ const Dashboard = () => {
     fetchSessions();
   }, []);
 
+  const [globalRank, setGlobalRank] = useState<number>(0);
 
   // Leaderboard
   useEffect(() => {
-    const fetchLeaderboard = async () => {
+    const fetchLeaderboardData = async () => {
+      // 1. Fetch top 5 for the mini-leaderboard
       const { data } = await supabase
         .from("profiles")
         .select("*")
-        .order("points", { ascending: false });
+        .order("points", { ascending: false })
+        .limit(5);
 
       if (data) setLeaderboard(data);
+
+      // 2. Fetch true exact rank via RPC to avoid memory leaks
+      if (user?.id) {
+        const { data: rankData } = await supabase.rpc("get_user_rank", {
+          p_user_id: user.id,
+        });
+        setGlobalRank(rankData || 0);
+      }
     };
 
-    fetchLeaderboard();
-  }, []);
+    fetchLeaderboardData();
+  }, [user]);
 
   // Loading
   if (loading) {
@@ -342,7 +354,7 @@ const Dashboard = () => {
                 value:
                   "#" +
                   (
-                    leaderboard.findIndex((u) => u.id === user?.id) + 1 || 0
+                    globalRank || 0
                   ),
                 icon: "🏆",
               },

@@ -85,9 +85,18 @@ const validateMentorship = () => {
   return formData.mentorship_types.length > 0;
 };
   const handleSubmit = async () => {
-    try {
-      setLoading(true);
+    setLoading(true);
 
+<<<<<<< HEAD
+    let isTimeout = false;
+    const timeout = setTimeout(() => {
+      isTimeout = true;
+      setLoading(false);
+      alert("Submission timed out. Please check your network and try again.");
+    }, 10_000);
+
+    try {
+=======
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
@@ -95,6 +104,7 @@ const validateMentorship = () => {
         return;
       }
 
+>>>>>>> main
       const { error } = await supabase
         .from("mentors")
         .insert([
@@ -110,17 +120,29 @@ const validateMentorship = () => {
           },
         ]);
 
+      if (isTimeout) return;
+      clearTimeout(timeout);
+
       if (error) {
         console.error(error);
+<<<<<<< HEAD
+        alert("Something went wrong: " + error.message);
+=======
         setError("Something went wrong!");
+>>>>>>> main
         return;
       }
 
       setStep(4);
     } catch (err) {
+      if (isTimeout) return;
+      clearTimeout(timeout);
       console.error(err);
+      alert("Something went wrong. Please try again.");
     } finally {
-      setLoading(false);
+      if (!isTimeout) {
+        setLoading(false);
+      }
     }
   };
 

@@ -19,6 +19,60 @@ A modern peer-to-peer learning platform where students can connect, collaborate,
 
 ---
 
+## 📑 Table of Contents
+
+<!-- toc -->
+
+- [✨ Features](#%E2%9C%A8-features)
+  * [🔐 Authentication System](#%F0%9F%94%90-authentication-system)
+  * [👤 User Profiles](#%F0%9F%91%A4-user-profiles)
+  * [🔍 Peer Discovery](#%F0%9F%94%8D-peer-discovery)
+  * [📚 Learning Sessions](#%F0%9F%93%9A-learning-sessions)
+  * [💬 Real-Time Chat](#%F0%9F%92%AC-real-time-chat)
+  * [🤖 AI-Powered Assistance](#%F0%9F%A4%96-ai-powered-assistance)
+  * [🏆 Leaderboard System](#%F0%9F%8F%86-leaderboard-system)
+  * [📊 Personalized Dashboard](#%F0%9F%93%8A-personalized-dashboard)
+  * [⚡ Modern Responsive UI](#%E2%9A%A1-modern-responsive-ui)
+- [📸 Screenshots](#%F0%9F%93%B8-screenshots)
+- [📸 Application Preview](#%F0%9F%93%B8-application-preview)
+  * [🏠 Home Page](#%F0%9F%8F%A0-home-page)
+  * [🔐 Authentication](#%F0%9F%94%90-authentication)
+  * [👨‍🏫 Become a Mentor](#%F0%9F%91%A8%E2%80%8D%F0%9F%8F%AB-become-a-mentor)
+  * [🤖 AI Assistant](#%F0%9F%A4%96-ai-assistant)
+  * [Demo Video](#demo-video)
+- [🧠 Problem Statement](#%F0%9F%A7%A0-problem-statement)
+- [🛠️ Tech Stack](#%F0%9F%9B%A0%EF%B8%8F-tech-stack)
+- [🎨 Frontend](#%F0%9F%8E%A8-frontend)
+- [⚙️ Backend](#%E2%9A%99%EF%B8%8F-backend)
+- [🔐 Authentication](#%F0%9F%94%90-authentication-1)
+- [🚀 Deployment](#%F0%9F%9A%80-deployment)
+- [🏗️ System Architecture](#%F0%9F%8F%97%EF%B8%8F-system-architecture)
+- [📂 Project Structure](#%F0%9F%93%82-project-structure)
+    + [📝 Where to add new features?](#%F0%9F%93%9D-where-to-add-new-features)
+- [⚙️ Installation & Setup](#%E2%9A%99%EF%B8%8F-installation--setup)
+  * [1️⃣ Clone the Repository](#1%EF%B8%8F%E2%83%A3-clone-the-repository)
+  * [2️⃣ Navigate to Project Directory](#2%EF%B8%8F%E2%83%A3-navigate-to-project-directory)
+  * [3️⃣ Install Dependencies](#3%EF%B8%8F%E2%83%A3-install-dependencies)
+  * [4️⃣ Configure Environment Variables](#4%EF%B8%8F%E2%83%A3-configure-environment-variables)
+  * [5️⃣ Start Development Server](#5%EF%B8%8F%E2%83%A3-start-development-server)
+  * [📚 Technical Documentation](#%F0%9F%93%9A-technical-documentation)
+- [🚀 Deployment](#%F0%9F%9A%80-deployment-1)
+    + [Build Command](#build-command)
+- [🛠️ Troubleshooting](#%F0%9F%9B%A0%EF%B8%8F-troubleshooting)
+- [🌟 Future Enhancements](#%F0%9F%8C%9F-future-enhancements)
+- [🤝 Contributing](#%F0%9F%A4%9D-contributing)
+  * [Steps to Contribute](#steps-to-contribute)
+- [💖 Contributors](#%F0%9F%92%96-contributors)
+- [👩‍💻 Author](#%F0%9F%91%A9%E2%80%8D%F0%9F%92%BB-author)
+  * [Durdana Sultana](#durdana-sultana)
+- [⭐ Support](#%E2%AD%90-support)
+- [📜 License](#%F0%9F%93%9C-license)
+  * [🌟 Empowering Students Through Collaborative Learning 🌟](#%F0%9F%8C%9F-empowering-students-through-collaborative-learning-%F0%9F%8C%9F)
+
+<!-- tocstop -->
+
+---
+
 # ✨ Features
 
 ## 🔐 Authentication System
@@ -128,27 +182,78 @@ The **Peer Learning Platform** solves this challenge by enabling students to con
 
 ---
 
+# 🏗️ System Architecture
+
+```mermaid
+graph TD
+    subgraph Client [Client Side]
+        UI[React Frontend]
+    end
+
+    subgraph SupabasePlatform [Supabase Platform]
+        Auth[Authentication]
+        DB[(PostgreSQL Database)]
+        Realtime[Real-Time Chat System]
+    end
+
+    subgraph NodeBackend [Custom Backend]
+        AIAssistant[AI Integration API]
+    end
+
+    subgraph ExternalServices [External Services]
+        OpenRouter[OpenRouter / OpenAI API]
+    end
+
+    UI <-->|JWT Auth & User Sessions| Auth
+    UI <-->|CRUD Operations| DB
+    UI <-->|WebSockets| Realtime
+    UI -->|Ask AI / Summarize| AIAssistant
+    
+    AIAssistant -->|Verify Token| Auth
+    AIAssistant <-->|Generate Text| OpenRouter
+```
+
+- **React Frontend**: The client-side application built with React, TypeScript, and Tailwind CSS. Provides the UI for users to interact with the platform.
+- **Supabase Backend**: Handles core backend services.
+  - **Authentication Flow**: Manages user signup, login, and secure sessions via Supabase Auth.
+  - **PostgreSQL Database**: Stores user profiles, learning sessions, and messages securely.
+  - **Real-Time Chat System**: Uses Supabase Realtime for instant messaging and live typing indicators.
+- **AI Assistant Integration**: A custom Node.js/Express server connects to external AI APIs (OpenRouter) to provide smart recommendations and learning support securely.
+
+---
+
 # 📂 Project Structure
 
 ```bash
 peer-learning-platform/
 │
-├── public/
+├── public/               # Static assets (images, icons, etc.)
 │
-├── src/
-│   ├── components/
-│   ├── pages/
-│   ├── hooks/
-│   ├── integrations/
-│   ├── services/
-│   ├── utils/
-│   └── App.tsx
+├── src/                  # Main application source code
+│   ├── components/       # Reusable UI components (buttons, cards, forms)
+│   ├── pages/            # Application routes and views (Home, Profile, Chat)
+│   ├── hooks/            # Custom React hooks for state and side effects
+│   ├── integrations/     # Third-party integrations (Supabase, external APIs)
+│   ├── services/         # API calls and business logic
+│   ├── utils/            # Helper functions and utilities
+│   └── App.tsx           # Main application entry point and routing
 │
-├── package.json
-├── tailwind.config.js
-├── tsconfig.json
-└── README.md
+├── backend/              # Custom Node.js Express server
+│   ├── controllers/      # Request handlers (e.g., aiController)
+│   ├── routers/          # API route definitions
+│   └── server.js         # Backend entry point
+│
+├── package.json          # Project dependencies and npm scripts
+├── tailwind.config.js    # Tailwind CSS configuration
+├── tsconfig.json         # TypeScript compiler configuration
+└── README.md             # Project documentation
 ```
+
+### 📝 Where to add new features?
+- **New UI Element**: Add a reusable component in `src/components/`.
+- **New Page/Route**: Create a new view in `src/pages/` and add it to the router in `App.tsx`.
+- **New Database Query**: Add the Supabase logic inside `src/integrations/supabase/` or `src/services/`.
+- **New Backend API**: Define the route in `backend/routers/` and handle logic in `backend/controllers/`.
 
 ---
 
@@ -197,6 +302,13 @@ npm run dev
 
 ---
 
+## 📚 Technical Documentation
+For deeper technical insights, please refer to our dedicated documentation:
+- [🗄️ Database Architecture & Schema](./docs/database.md)
+- [🔌 API Documentation](./docs/api.md)
+
+---
+
 # 🚀 Deployment
 
 This project can be easily deployed on:
@@ -213,15 +325,31 @@ npm run build
 
 ---
 
-# 🌟 Future Enhancements
+# 🛠️ Troubleshooting
 
-- 🎥 Video Calling Integration
-- 📅 Session Scheduling
-- 🧠 AI-based Peer Recommendations
-- 🔔 Real-time Notifications
-- 🌍 Multi-language Support
-- 📱 Dedicated Mobile App
-- 🧑‍🏫 Mentor Matching System
+If you encounter issues during setup, installation, or configuration, please refer to our [Troubleshooting Guide](TROUBLESHOOTING.md) for solutions to common problems.
+
+---
+
+# 🗺️ Feature Roadmap
+
+Our development roadmap is structured to provide clear visibility into the project's priorities and progress. 
+
+### Completed ✅
+- **🔐 Secure Authentication**: Email/Password and OAuth integration.
+- **📚 Real-Time Chat & Study Sessions**: Live messaging and collaborative learning environments.
+- **🏆 Gamification System**: XP, levels, leaderboards, and streak counts.
+
+### In Progress 🚧
+- **📅 Session Scheduling**: Plan study sessions ahead of time. (Target: Q3)
+- **🧠 AI-based Peer Recommendations**: Smart matching system for peers. (Target: Q3)
+
+### Planned 📌
+- **🎥 Video Calling Integration**: Seamless face-to-face peer collaboration. (Target: Q4)
+- **🔔 Real-time Notifications**: Alerts for new messages and upcoming sessions. (Target: Q4)
+- **🧑‍🏫 Mentor Matching System**: Dedicated workflows for connecting students with mentors. (Target: Q1 2027)
+- **🌍 Multi-language Support**: Expanding accessibility for a global audience. (Target: Q1 2027)
+- **📱 Dedicated Mobile App**: Native applications for iOS and Android. (Target: 2027)
 
 ---
 

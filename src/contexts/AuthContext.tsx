@@ -116,15 +116,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
 
           if (session?.user) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("is_mentor, is_learner")
-              .eq("id", session.user.id)
-              .single();
+            setTimeout(async () => {
+              try {
+                const { data: profile } = await supabase
+                  .from("profiles")
+                  .select("is_mentor, is_learner")
+                  .eq("id", session.user.id)
+                  .single();
 
-            setNeedsOnboarding(
-              profile?.is_mentor === false && profile?.is_learner === false
-            );
+                if (mounted) {
+                  setNeedsOnboarding(
+                    profile?.is_mentor === false && profile?.is_learner === false
+                  );
+                }
+              } catch (err) {
+                console.error("Failed to check onboarding profile:", err);
+              }
+            }, 0);
           } else {
             setNeedsOnboarding(false);
           }
