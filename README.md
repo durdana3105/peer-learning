@@ -263,15 +263,25 @@ npm run build
 
 ---
 
-# 🌟 Future Enhancements
+# 🗺️ Feature Roadmap
 
-- 🎥 Video Calling Integration
-- 📅 Session Scheduling
-- 🧠 AI-based Peer Recommendations
-- 🔔 Real-time Notifications
-- 🌍 Multi-language Support
-- 📱 Dedicated Mobile App
-- 🧑‍🏫 Mentor Matching System
+Our development roadmap is structured to provide clear visibility into the project's priorities and progress. 
+
+### Completed ✅
+- **🔐 Secure Authentication**: Email/Password and OAuth integration.
+- **📚 Real-Time Chat & Study Sessions**: Live messaging and collaborative learning environments.
+- **🏆 Gamification System**: XP, levels, leaderboards, and streak counts.
+
+### In Progress 🚧
+- **📅 Session Scheduling**: Plan study sessions ahead of time. (Target: Q3)
+- **🧠 AI-based Peer Recommendations**: Smart matching system for peers. (Target: Q3)
+
+### Planned 📌
+- **🎥 Video Calling Integration**: Seamless face-to-face peer collaboration. (Target: Q4)
+- **🔔 Real-time Notifications**: Alerts for new messages and upcoming sessions. (Target: Q4)
+- **🧑‍🏫 Mentor Matching System**: Dedicated workflows for connecting students with mentors. (Target: Q1 2027)
+- **🌍 Multi-language Support**: Expanding accessibility for a global audience. (Target: Q1 2027)
+- **📱 Dedicated Mobile App**: Native applications for iOS and Android. (Target: 2027)
 
 ---
 
