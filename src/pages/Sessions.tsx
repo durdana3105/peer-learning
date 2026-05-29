@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/useAuth";
 import VideoRoom from "@/components/VideoRoom";
 import { useAwardXP } from "@/hooks/useAwardXP";
 import { CreateSessionDialog } from "@/components/CreateSessionDialog";
+import { MarkdownRenderer } from "../components/MarkdownRenderer";
 import { generateICS } from "@/utils/calendar";
 
 const tabs = [
@@ -459,9 +460,9 @@ const [summaryLoading, setSummaryLoading] =
                     </h2>
 
                     {/* DESCRIPTION */}
-                    <p className="text-gray-300 mb-5">
-                      {s.description}
-                    </p>
+                    <div className="text-gray-300 mb-5">
+                      <MarkdownRenderer content={s.description || ""} />
+                    </div>
 
                     {/* DETAILS */}
                     <div className="flex flex-wrap gap-5 text-sm text-gray-400 mb-5">

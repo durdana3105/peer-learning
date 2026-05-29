@@ -3,6 +3,7 @@ import { ArrowLeft, MessageCircle, Search, Send } from "lucide-react";
 
 import { AuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 type Profile = {
   id: string;
@@ -472,7 +473,7 @@ const Chat = () => {
                               : "rounded-bl-md border border-white/10 bg-white/10 text-white"
                           }`}
                         >
-                          <p className="whitespace-pre-wrap break-words text-sm leading-6">{body}</p>
+                          <MarkdownRenderer content={body} className="whitespace-pre-wrap break-words text-sm leading-6" />
                           <p className={`mt-1 text-[11px] ${isMine ? "text-slate-700" : "text-slate-400"}`}>
                             {message.created_at
                               ? new Date(message.created_at).toLocaleTimeString([], {

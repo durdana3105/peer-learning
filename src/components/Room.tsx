@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/useAuth';
+import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 
 export default function Room() {
   const { id } = useParams();
@@ -149,7 +150,7 @@ export default function Room() {
                           ? 'bg-blue-600 text-white rounded-br-sm' 
                           : 'bg-slate-800 text-slate-200 rounded-bl-sm border border-slate-700'
                       }`}>
-                        {msg.content}
+                        <MarkdownRenderer content={msg.content} />
                       </div>
                     </div>
                   )
