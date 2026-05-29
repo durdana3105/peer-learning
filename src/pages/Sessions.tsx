@@ -49,7 +49,10 @@ const Sessions = () => {
 
   const [userStatus, setUserStatus] = useState("Active");
   
-  const [isTyping, setIsTyping] = useState(false);
+  const [typingUser, setTypingUser] = useState<string | null>(null);
+  const [participantCount, setParticipantCount] = useState(1);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const channelRef = useRef<any>(null);
 
   const [search, setSearch] = useState("");
 
@@ -140,62 +143,74 @@ const [summaryLoading, setSummaryLoading] =
 
     fetchMessages();
 
-    setActivities((prev) => [
-        {
-          id: Date.now(),
-          text: `${user?.user_metadata?.full_name || "Someone"} joined the session`,
-          time: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+    // REALTIME ROOM CHANNEL
+    const roomChannel = supabase.channel(`room:${selectedSession.id}`, {
+      config: {
+        presence: {
+          key: user?.id || 'anonymous',
         },
-        ...prev,
-      ]);
+      },
+    });
 
-    // REALTIME
-    const channel = supabase
-      .channel("realtime-messages")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-        },
-        (payload: any) => {
-          if (
-            payload.new.session_id ===
-            selectedSession.id
-          ) {
-            setMessages((prev) => [
-              ...prev,
-              payload.new,
-            ]);
-          }
+    channelRef.current = roomChannel;
+
+    roomChannel
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload: any) => {
+        if (payload.new.session_id === selectedSession.id) {
+          setMessages((prev) => [...prev, payload.new]);
         }
-      )
-      .subscribe();
+      })
+      .on("presence", { event: "sync" }, () => {
+        const state = roomChannel.presenceState();
+        setParticipantCount(Math.max(1, Object.keys(state).length));
+      })
+      .on("broadcast", { event: "typing" }, ({ payload }) => {
+        if (payload.user === (user?.user_metadata?.full_name || "Someone")) return;
+        setTypingUser(payload.user);
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
+      })
+      .on("broadcast", { event: "activity" }, ({ payload }) => {
+        setActivities((prev) => [payload, ...prev]);
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await roomChannel.track({ online_at: new Date().toISOString() });
+          
+          roomChannel.send({
+            type: "broadcast",
+            event: "activity",
+            payload: {
+              id: Date.now(),
+              text: `${user?.user_metadata?.full_name || "Someone"} joined the session`,
+              time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            },
+          });
+        }
+      });
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(roomChannel);
     };
-  }, [selectedSession]);
+  }, [selectedSession, user]);
 
   // STUDY TIMER
     useEffect(() => {
+      if (!selectedSession) return;
       const timer = setInterval(() => {
-        setStudyTime((prev) => {
-          if (prev <= 0) {
-            clearInterval(timer);
-            return 0;
-          }
+        const start = new Date(selectedSession.start_time || selectedSession.created_at).getTime();
+        const elapsed = Math.floor((Date.now() - start) / 1000);
+        const remaining = Math.max(0, 3600 - elapsed);
+        
+        setStudyTime(remaining);
 
-          return prev - 1;
-        });
+        if (remaining <= 0) {
+          clearInterval(timer);
+        }
       }, 1000);
 
       return () => clearInterval(timer);
-    }, []);
+    }, [selectedSession]);
 
     const formatTime = (time: number) => {
       const hours = Math.floor(time / 3600);
@@ -254,42 +269,31 @@ const [summaryLoading, setSummaryLoading] =
   const sendMessage = async () => {
     if (!message.trim() || !selectedSession) return;
 
-    setActivities((prev) => [
-        {
-          id: Date.now(),
-          text: `${user?.user_metadata?.full_name || "Someone"} is participating in discussion`,
-          time: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        },
-        ...prev,
-      ]);
+    const msgText = message;
+    setMessage("");
+
+    const activity = {
+      id: Date.now(),
+      text: `${user?.user_metadata?.full_name || "Someone"} sent a message`,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: "broadcast",
+        event: "activity",
+        payload: activity,
+      });
+    }
 
     await (supabase as any)
       .from("messages")
       .insert({
         session_id: selectedSession.id,
         user_id: user?.id,
-        username:
-          user?.user_metadata?.full_name ||
-          "Anonymous",
-        message,
+        username: user?.user_metadata?.full_name || "Anonymous",
+        message: msgText,
       });
-
-    setMessage("");
-    
-   setActivities((prev) => [
-      {
-        id: Date.now(),
-        text: `${user?.user_metadata?.full_name || "Someone"} sent a message`,
-        time: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      },
-      ...prev,
-    ]);
   };
 
   return (
@@ -575,7 +579,7 @@ const [summaryLoading, setSummaryLoading] =
                 <div className="flex flex-wrap gap-3">
 
                 <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-400/20 text-green-300 px-3 py-1 rounded-full text-sm w-fit">
-                  🟢 42 learners online
+                  🟢 {participantCount} learner{participantCount !== 1 ? 's' : ''} online
                 </div>
 
                 <div
@@ -697,9 +701,9 @@ const [summaryLoading, setSummaryLoading] =
 
 
            {/* TYPING INDICATOR */}
-            {isTyping && (
+            {typingUser && (
               <div className="mb-4 bg-cyan-500/10 border border-cyan-400/20 text-cyan-300 px-4 py-3 rounded-2xl text-sm animate-pulse">
-                Someone is typing in the collaborative session...
+                {typingUser} is typing...
               </div>
             )}
      
@@ -750,9 +754,16 @@ const [summaryLoading, setSummaryLoading] =
                 type="text"
                 placeholder="Type a message..."
                 value={message}
-                onChange={(e) =>
-                  setMessage(e.target.value)
-                }
+                onChange={(e) => {
+                  setMessage(e.target.value);
+                  if (channelRef.current) {
+                    channelRef.current.send({
+                      type: "broadcast",
+                      event: "typing",
+                      payload: { user: user?.user_metadata?.full_name || "Someone" },
+                    });
+                  }
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     sendMessage();
