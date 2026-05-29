@@ -1,11 +1,12 @@
 import { createContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  needsOnboarding: boolean;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -17,6 +18,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   /**
    * Ensures user profile exists in database without overwriting existing data
@@ -30,6 +32,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         id: u.id,
         name: u.user_metadata?.name || u.email?.split("@")[0] || "Learner",
         email: u.email,
+        id: user.id,
+        is_mentor: false,
+        is_learner: false,
+        name: user.user_metadata?.name || user.email?.split("@")[0] || "Learner",
+        email: user.email,
         points: 0,
         sessions_completed: 0,
         rating: 0,
@@ -91,7 +98,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
 
         if (session?.user) {
-          ensureProfileExists(session.user);
+          await ensureProfileExists(session.user);
+
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("is_mentor, is_learner")
+            .eq("id", session.user.id)
+            .single();
+
+          setNeedsOnboarding(
+            profile?.is_mentor === false && profile?.is_learner === false
+          );
+        } else {
+          setNeedsOnboarding(false);
         }
       } catch (err) {
         console.error("Unexpected session initialization error:", err);
@@ -105,7 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initializeSession();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         if (!mounted) return;
 
         try {
@@ -127,6 +146,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 ensureProfileExists(session.user);
               }, 0);
             }
+          }
+
+          if (session?.user) {
+            setTimeout(async () => {
+              try {
+                const { data: profile } = await supabase
+                  .from("profiles")
+                  .select("is_mentor, is_learner")
+                  .eq("id", session.user.id)
+                  .single();
+
+                if (mounted) {
+                  setNeedsOnboarding(
+                    profile?.is_mentor === false && profile?.is_learner === false
+                  );
+                }
+              } catch (err) {
+                console.error("Failed to check onboarding profile:", err);
+              }
+            }, 0);
+          } else {
+            setNeedsOnboarding(false);
           }
         } catch (err) {
           console.error("Auth state change error:", err);
@@ -215,7 +256,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ session, user, loading, needsOnboarding, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

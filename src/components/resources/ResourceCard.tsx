@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState } from "react";
+import { memo, useContext, useMemo, useState } from "react";
 import { Archive, Code, Download, FileText, Loader2, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -66,7 +66,7 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
   const handleDelete = async () => {
     setIsDeleting(true);
 
-    const result = await deleteResource(resource.id, resource.file_url);
+    const result = await deleteResource(resource.id);
     setIsDeleting(false);
 
     if (!result.success) {
@@ -141,4 +141,4 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
   );
 };
 
-export default ResourceCard;
+export default memo(ResourceCard);

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -8,9 +8,6 @@ export default function Chatbot() {
   const [loading, setLoading] = useState(false);
 
   const chatEndRef = useRef(null);
-
-  // ✅ use env variable
-const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 
   const systemPrompt = {
     role: "system",
@@ -23,12 +20,16 @@ const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ✅ Load chats
+  // Load only the current user's chat messages
   useEffect(() => {
     const loadChats = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
       const { data } = await supabase
         .from("chat_messages")
         .select("*")
+        .eq("user_id", session.user.id)
         .order("created_at", { ascending: true });
 
       if (data) setMessages(data);
@@ -36,13 +37,18 @@ const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
     loadChats();
   }, []);
 
-  // 🔥 SEND MESSAGE
+  // SEND MESSAGE
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMsg = { role: "user", text: input };
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
 
-    // ✅ fix stale state
+    const userId = session.user.id;
+
+    // Store user_id so each message is scoped to the authenticated user.
+    const userMsg = { role: "user", text: input, user_id: userId };
+
     const updatedMessages = [...messages, userMsg];
 
     setMessages(updatedMessages);
@@ -56,30 +62,41 @@ const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
         role: msg.role,
         content: msg.text,
       }));
+      const res = await fetch("/api/ai/ask", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${session.access_token}`, // still pass session for user auth
+  },
+  body: JSON.stringify({
+    messages: formattedMessages,
+    systemPrompt: systemPrompt.content,
+    model: "openai/gpt-4", 
+  }),
+});
 
-      const res = await fetch(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "openai/gpt-3.5-turbo",
-            messages: [...formattedMessages, systemPrompt],
-          }),
-        }
-      );
+      // Route the request through the backend so the API key stays server-side.
+      // Include the session token so the backend can authenticate the request.
+      // const res = await fetch("/api/chat", {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     Authorization: `Bearer ${session.access_token}`,
+      //   },
+      //   body: JSON.stringify({
+      //     messages: formattedMessages,
+      //     systemPrompt: systemPrompt.content,
+      //     model: "openai/gpt-3.5-turbo",
+      //   }),
+      // });
 
       const data = await res.json();
 
-      const botReply =
-        data?.choices?.[0]?.message?.content || "No response 😅";
+      const botReply = data?.reply || "No response 😅";
 
-      const botMsg = { role: "assistant", text: botReply };
+      const botMsg = { role: "assistant", text: botReply, user_id: userId };
 
-      // ✅ smoother typing (chunked)
+      // Smoother typing effect (chunked rendering)
       let currentText = "";
       const chunkSize = 3;
 
@@ -88,7 +105,7 @@ const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
       for (let i = 0; i < botReply.length; i += chunkSize) {
         currentText += botReply.slice(i, i + chunkSize);
 
-        await new Promise((res) => setTimeout(res, 20));
+        await new Promise((resolve) => setTimeout(resolve, 20));
 
         setMessages((prev) => {
           const updated = [...prev];

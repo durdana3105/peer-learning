@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 
+import { Camera, Save, Sparkles, User, Flame, Zap, Trophy, Lock } from "lucide-react";
+import StreakStats from "@/components/StreakStats";
+
 import {
-  Camera,
-  Save,
-  Sparkles,
-  User,
-  Flame,
-  Zap,
-} from "lucide-react";
+  calculateLevel,
+  getBadgeByXP,
+  getAchievements,
+  ALL_BADGES,
+  ALL_ACHIEVEMENTS
+} from "../lib/gamification";
 
 const avatars = [
   "https://api.dicebear.com/7.x/adventurer/svg?seed=Alex",
@@ -21,49 +23,48 @@ const avatars = [
 ];
 
 const EditProfile = () => {
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [profile, setProfile] =
-    useState<any>({
-      name: "",
-      bio: "",
-      skills: "",
-      avatar_url: "",
-      streak: 0,
-      xp: 0,
-    });
+  const [profile, setProfile] = useState<any>({
+    name: "",
+    bio: "",
+    skills: "",
+    avatar_url: "",
+    streak: 0,
+    xp: 0,
+    level: 1,
+    badge: "",
+    achievements: [],
+  });
 
   // FETCH PROFILE
   useEffect(() => {
     const fetchProfile = async () => {
-      const { data } =
-        await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
 
       const user = data?.session?.user;
 
       if (!user) return;
 
-      const { data: profileData } =
-        await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
+      const { data: rawProfileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      const profileData = rawProfileData as any;
 
       if (profileData) {
         setProfile({
           name: profileData.name || "",
           bio: profileData.bio || "",
-          skills:
-            profileData.skills?.join(", ") ||
-            "",
-          avatar_url:
-            profileData.avatar_url ||
-            avatars[0],
-          streak:
-            profileData.streak || 0,
-          xp: profileData.xp || 0,
+          skills: profileData.skills?.join(", ") || "",
+          avatar_url: profileData.avatar_url || avatars[0],
+          streak: profileData.streak || 0,
+          xp: profileData.points || 0,
+          level: calculateLevel(profileData.points || 0),
+          badge: getBadgeByXP(profileData.points || 0),
+          achievements: getAchievements(profileData.points || 0),
         });
       }
     };
@@ -75,8 +76,7 @@ const EditProfile = () => {
   const handleSave = async () => {
     setLoading(true);
 
-    const { data } =
-      await supabase.auth.getSession();
+    const { data } = await supabase.auth.getSession();
 
     const user = data?.session?.user;
 
@@ -87,39 +87,26 @@ const EditProfile = () => {
       .update({
         name: profile.name,
         bio: profile.bio,
-
-        skills: profile.skills
-          .split(",")
-          .map((s: string) => s.trim()),
-
-        avatar_url:
-          profile.avatar_url,
-
-        streak: profile.streak,
-
-        xp: profile.xp,
+        skills: Array.isArray(profile.skills) ? profile.skills : profile.skills.split(",").map((s: string) => s.trim()),
+        avatar_url: profile.avatar_url,
       })
       .eq("id", user.id);
 
     setLoading(false);
 
     if (!error) {
-      alert(
-        "Profile Updated Successfully 🚀"
-      );
+      alert("Profile Updated Successfully 🚀");
     }
   };
 
   return (
     <div className="min-h-screen bg-[#020617] text-white overflow-hidden">
-      
       {/* BACKGROUND GLOW */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500/20 blur-[120px] rounded-full" />
 
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/20 blur-[120px] rounded-full" />
 
       <div className="relative z-10 flex justify-center items-center min-h-screen p-6">
-
         <motion.div
           initial={{
             opacity: 0,
@@ -131,7 +118,6 @@ const EditProfile = () => {
           }}
           className="w-full max-w-4xl rounded-[36px] border border-white/10 bg-white/5 backdrop-blur-2xl p-8"
         >
-          
           {/* HEADER */}
           <div className="mb-10">
             <div className="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-400/20 text-cyan-300 px-4 py-2 rounded-full mb-4">
@@ -139,9 +125,7 @@ const EditProfile = () => {
               Personalize Your Profile
             </div>
 
-            <h1 className="text-5xl font-bold mb-3">
-              Edit Profile
-            </h1>
+            <h1 className="text-5xl font-bold mb-3">Edit Profile</h1>
 
             <p className="text-gray-400 text-lg">
               Build your learning identity 🚀
@@ -150,10 +134,7 @@ const EditProfile = () => {
 
           {/* AVATAR */}
           <div className="mb-12">
-
-            <h2 className="text-2xl font-bold mb-6">
-              Choose Your Avatar
-            </h2>
+            <h2 className="text-2xl font-bold mb-6">Choose Your Avatar</h2>
 
             {/* CURRENT AVATAR */}
             <div className="flex justify-center mb-8">
@@ -165,10 +146,7 @@ const EditProfile = () => {
                 />
 
                 <div className="absolute bottom-2 right-2 bg-cyan-400 p-3 rounded-full">
-                  <Camera
-                    size={20}
-                    className="text-black"
-                  />
+                  <Camera size={20} className="text-black" />
                 </div>
               </div>
             </div>
@@ -202,8 +180,7 @@ const EditProfile = () => {
                     className="w-20 h-20 rounded-full object-cover"
                   />
 
-                  {profile.avatar_url ===
-                    avatar && (
+                  {profile.avatar_url === avatar && (
                     <div className="absolute inset-0 rounded-full border-4 border-cyan-400 animate-pulse" />
                   )}
                 </motion.button>
@@ -213,7 +190,6 @@ const EditProfile = () => {
 
           {/* FORM */}
           <div className="grid md:grid-cols-2 gap-6">
-
             {/* NAME */}
             <div>
               <label className="block text-sm text-gray-400 mb-2">
@@ -243,9 +219,7 @@ const EditProfile = () => {
 
             {/* SKILLS */}
             <div>
-              <label className="block text-sm text-gray-400 mb-2">
-                Skills
-              </label>
+              <label className="block text-sm text-gray-400 mb-2">Skills</label>
 
               <input
                 type="text"
@@ -268,9 +242,7 @@ const EditProfile = () => {
 
           {/* BIO */}
           <div className="mt-6">
-            <label className="block text-sm text-gray-400 mb-2">
-              Bio
-            </label>
+            <label className="block text-sm text-gray-400 mb-2">Bio</label>
 
             <textarea
               rows={5}
@@ -288,54 +260,117 @@ const EditProfile = () => {
 
           {/* DYNAMIC STATS */}
           <div className="grid md:grid-cols-2 gap-5 mt-10">
-
-            {/* STREAK */}
-            <motion.div
-              whileHover={{
-                scale: 1.03,
-              }}
-              className="rounded-3xl border border-orange-400/10 bg-orange-500/5 p-6"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <Flame className="text-orange-400" />
-
-                <h2 className="font-bold text-lg">
-                  Current Streak
-                </h2>
-              </div>
-
-              <p className="text-4xl font-bold">
-                {profile.streak || 0} Days 🔥
-              </p>
-
-              <p className="text-sm text-gray-400 mt-2">
-                Keep learning daily to increase streak
-              </p>
-            </motion.div>
+            {/* STREAK STATS COMPONENT */}
+            <div className="md:col-span-1">
+              <StreakStats />
+            </div>
 
             {/* XP */}
             <motion.div
               whileHover={{
                 scale: 1.03,
               }}
-              className="rounded-3xl border border-cyan-400/10 bg-cyan-500/5 p-6"
+              className="rounded-3xl border border-cyan-400/10 bg-cyan-500/5 p-6 md:col-span-1"
             >
               <div className="flex items-center gap-3 mb-3">
                 <Zap className="text-cyan-400" />
-
-                <h2 className="font-bold text-lg">
-                  Total XP
-                </h2>
+                <h2 className="font-bold text-lg">Total XP</h2>
               </div>
-
-              <p className="text-4xl font-bold">
-                {profile.xp || 0} XP ⚡
-              </p>
-
+              <p className="text-4xl font-bold">{profile.xp || 0} XP ⚡</p>
               <p className="text-sm text-gray-400 mt-2">
                 Earn XP by joining sessions
               </p>
+              <div className="mt-6 pt-6 border-t border-cyan-400/10">
+                <p className="text-sm text-gray-400 mb-1">Current Level</p>
+                <p className="text-2xl font-bold text-cyan-300">Level {profile.level}</p>
+              </div>
             </motion.div>
+          </div>
+
+          {/* TROPHY ROOM */}
+          <div className="mt-12">
+            <div className="flex items-center gap-3 mb-6">
+              <Trophy className="text-yellow-400" size={28} />
+              <h2 className="text-3xl font-bold">Trophy Room</h2>
+            </div>
+            
+            <div className="space-y-10">
+              {/* BADGES */}
+              <div>
+                <h3 className="text-xl font-semibold mb-4 text-gray-300">Milestone Badges</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {ALL_BADGES.map((badge) => {
+                    const isUnlocked = profile.xp >= badge.xpRequired;
+                    return (
+                      <motion.div
+                        key={badge.id}
+                        whileHover={isUnlocked ? { scale: 1.05 } : {}}
+                        className={`relative overflow-hidden rounded-2xl p-5 border transition-all ${
+                          isUnlocked 
+                            ? "bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.15)]" 
+                            : "bg-white/5 border-white/5 opacity-60 grayscale"
+                        }`}
+                      >
+                        {!isUnlocked && (
+                          <div className="absolute top-3 right-3 text-gray-500">
+                            <Lock size={16} />
+                          </div>
+                        )}
+                        <div className="text-4xl mb-3">{badge.name.split(' ')[0]}</div>
+                        <h4 className={`font-bold ${isUnlocked ? "text-yellow-400" : "text-gray-400"}`}>
+                          {badge.name.substring(badge.name.indexOf(' ') + 1)}
+                        </h4>
+                        <p className="text-xs text-gray-400 mt-1">{badge.description}</p>
+                        
+                        {/* Progress Bar for Locked */}
+                        {!isUnlocked && (
+                          <div className="mt-3">
+                            <div className="w-full bg-black/50 rounded-full h-1.5 mb-1 overflow-hidden">
+                              <div 
+                                className="bg-gray-500 h-1.5 rounded-full" 
+                                style={{ width: `${Math.min(100, (profile.xp / badge.xpRequired) * 100)}%` }}
+                              />
+                            </div>
+                            <p className="text-[10px] text-right text-gray-500">{profile.xp} / {badge.xpRequired} XP</p>
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ACHIEVEMENTS */}
+              <div>
+                <h3 className="text-xl font-semibold mb-4 text-gray-300">Achievements</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {ALL_ACHIEVEMENTS.map((achievement) => {
+                    const isUnlocked = profile.xp >= achievement.xpRequired;
+                    return (
+                      <motion.div
+                        key={achievement.id}
+                        whileHover={isUnlocked ? { y: -5 } : {}}
+                        className={`rounded-2xl p-4 border flex flex-col items-center text-center transition-all ${
+                          isUnlocked 
+                            ? "bg-cyan-500/10 border-cyan-400/30 shadow-[0_0_15px_rgba(34,211,238,0.1)]" 
+                            : "bg-white/5 border-white/5 opacity-50 grayscale"
+                        }`}
+                      >
+                        <div className="text-3xl mb-2">{achievement.icon}</div>
+                        <h4 className={`font-bold text-sm ${isUnlocked ? "text-cyan-300" : "text-gray-500"}`}>
+                          {achievement.name}
+                        </h4>
+                        {!isUnlocked && (
+                          <div className="flex items-center gap-1 mt-2 text-[10px] text-gray-500 bg-black/30 px-2 py-1 rounded-md">
+                            <Lock size={10} /> {achievement.xpRequired} XP
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* SAVE BUTTON */}
@@ -346,9 +381,7 @@ const EditProfile = () => {
           >
             <Save size={20} />
 
-            {loading
-              ? "Saving..."
-              : "Save Profile"}
+            {loading ? "Saving..." : "Save Profile"}
           </button>
         </motion.div>
       </div>

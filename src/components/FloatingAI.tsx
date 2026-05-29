@@ -41,45 +41,20 @@ const FloatingAI = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          method: "POST",
-
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-
-            "Content-Type":
-              "application/json",
-
-            "HTTP-Referer":
-              "http://localhost:5173",
-
-            "X-Title":
-              "Peer Learning AI",
-          },
-
-          body: JSON.stringify({
-            model:
-              "openai/gpt-3.5-turbo",
-
-            messages: [
-              {
-                role: "user",
-                content: prompt,
-              },
-            ],
-
-            max_tokens: 150,
-
-            temperature: 0.7,
-          }),
-        }
-      );
+      // Route the request through the backend so the API key stays server-side.
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 150,
+          temperature: 0.7,
+        }),
+      });
 
       const data = await response.json();
-
-      console.log(data);
 
       // ERROR HANDLING
       if (data.error) {
@@ -87,8 +62,7 @@ const FloatingAI = () => {
           ...prev,
           {
             role: "assistant",
-            content:
-              data.error.message,
+            content: data.error,
           },
         ]);
 
@@ -97,10 +71,7 @@ const FloatingAI = () => {
         return;
       }
 
-      const aiReply =
-        data?.choices?.[0]?.message
-          ?.content ||
-        "AI could not respond 😔";
+      const aiReply = data?.reply || "AI could not respond 😔";
 
       // AI MESSAGE
       setMessages((prev) => [

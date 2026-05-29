@@ -1,34 +1,14 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 export const rewardXP = async (
   userId: string,
   amount: number
 ) => {
-  const { data } = await supabase
-    .from("leaderboard")
-    .select("*")
-    .eq("user_id", userId)
-    .single();
-
-  if (!data) return;
-
-  const updatedXP = data.xp + amount;
-
-  await supabase
-    .from("leaderboard")
-    .update({
-      xp: updatedXP,
-      badges: [getBadge(updatedXP)],
-    })
-    .eq("user_id", userId);
+  // Delegate to the increment_user_xp RPC which performs a single atomic
+  // UPDATE, eliminating the read-modify-write race where two concurrent
+  // award events both read the same stale XP value and one write clobbers
+  // the other (see issue #143). auth.uid() inside the RPC enforces that
+  // users can only increment their own XP.
+  await (supabase as any).rpc("increment_user_xp", { _amount: amount });
 };
 
-const getBadge = (xp: number) => {
-  if (xp >= 2000) return "Legend";
-  if (xp >= 1000) return "Master";
-  if (xp >= 500) return "Pro";
-  if (xp >= 200) return "Advanced";
-  if (xp >= 50) return "Learner";
-
-  return "Beginner";
-};

@@ -23,7 +23,7 @@ function Leaderboard() {
       </h2>
 
       <div className="space-y-5">
-        {contributors.slice(0, 5).map((user, index) => (
+        {(Array.isArray(contributors) ? contributors.slice(0, 5) : []).map((user, index) => (
           <div
             key={user.login}
             className="flex items-center justify-between bg-zinc-800/70 rounded-2xl px-5 py-5 border border-zinc-700 hover:border-cyan-500/30 transition-all"

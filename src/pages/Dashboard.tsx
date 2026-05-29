@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import PeerCard from "@/components/PeerCard";
+import RecommendationPanel from "@/components/recommendations/RecommendationPanel";
 import SessionCard from "@/components/SessionCard";
+import StreakStats from "@/components/StreakStats";
 import { useAuth } from "@/contexts/useAuth";
+import { useRole } from "@/contexts/RoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import RecommendationSection from "@/components/RecommendationSection";
+import AnalyticsCharts from "@/components/AnalyticsCharts";
 
 interface Profile {
   id: string;
@@ -20,10 +25,23 @@ interface Profile {
   sessions_completed: number | null;
   points: number | null;
   badges: string[] | null;
+  learning_style: string | null;
+  availability: string | null;
+  preferred_language: string | null;
+  timezone: string | null;
 }
+interface Session {
+  id: string;
+  status: string;
+  title?: string;
+  date?: string;
+}
+
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
+  const { currentMode } = useRole();
+  const navigate = useNavigate();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -81,45 +99,93 @@ const Dashboard = () => {
         }
       } catch (err) {
         console.error("Profile retrieval error:", err);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single<Profile>();   // 👈 tell TS this is a single Profile row
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      if (data) {
+        setProfile(data);              // TS now knows `data` is Profile
+        fetchRecommendedPeers(data);   // safe to pass
       }
     };
+
+
 
     fetchProfile();
   }, [user]);
 
   // Recommended Peers
   const fetchRecommendedPeers = async (myProfile: Profile) => {
-    const { data } = await supabase
+    if (!user?.id) return;
+
+    const { data, error } = await supabase
       .from("profiles")
       .select("*")
-      .neq("id", user!.id);
+      .neq("id", user.id)
+      .limit(100)
+      .returns<Profile[]>();
 
-    if (!data) return;
+    if (error || !data) return;
 
-    const myLearn = myProfile.learn_subjects || [];
-    const myTeach = myProfile.teach_subjects || [];
-    const myInterests = myProfile.interests || [];
+    const peers = data || [];
 
-    const mapped = data.map((p) => {
-      const teachOverlap = myLearn.filter((s) =>
-        (p.teach_subjects || []).includes(s)
-      ).length;
+    const myLearn = myProfile.learn_subjects ?? [];
+    const myTeach = myProfile.teach_subjects ?? [];
+    const myInterests = myProfile.interests ?? [];
 
-      const learnOverlap = myTeach.filter((s) =>
-        (p.learn_subjects || []).includes(s)
-      ).length;
+    const mapped = peers.map((p) => {
 
-      const interestOverlap = myInterests.filter((s) =>
-        (p.interests || []).includes(s)
-      ).length;
+      const teach = p.teach_subjects ?? [];
+      const learn = p.learn_subjects ?? [];
+      const interests = p.interests ?? [];
+
+      const teachOverlap = myLearn.filter((s) => teach.includes(s)).length;
+      const learnOverlap = myTeach.filter((s) => learn.includes(s)).length;
+      const interestOverlap = myInterests.filter((s) => interests.includes(s)).length;
+      const learningStyleMatch =
+        myProfile.learning_style &&
+        p.learning_style &&
+        myProfile.learning_style === p.learning_style
+          ? 15
+          : 0;
+
+      const languageMatch =
+        myProfile.preferred_language &&
+        p.preferred_language &&
+        myProfile.preferred_language === p.preferred_language
+          ? 10
+          : 0;
+
+      const timezoneMatch =
+        myProfile.timezone &&
+        p.timezone &&
+        myProfile.timezone === p.timezone
+          ? 10
+          : 0;
 
       const max = Math.max(
         myLearn.length + myTeach.length + myInterests.length,
         1
       );
 
-      const matchScore = Math.round(
-        ((teachOverlap + learnOverlap + interestOverlap) / max) * 100
+      const baseScore =
+        ((teachOverlap + learnOverlap + interestOverlap) / max) * 65;
+
+      const matchScore = Math.min(
+        Math.round(
+          baseScore +
+            learningStyleMatch +
+            languageMatch +
+            timezoneMatch
+        ),
+        100
       );
 
       return {
@@ -129,14 +195,14 @@ const Dashboard = () => {
           p.avatar_url ||
           `https://api.dicebear.com/9.x/avataaars/svg?seed=${p.name}`,
         bio: p.bio || "",
-        skills: p.skills || [],
-        interests: p.interests || [],
-        teachSubjects: p.teach_subjects || [],
-        learnSubjects: p.learn_subjects || [],
-        rating: p.rating || 0,
-        sessionsCompleted: p.sessions_completed || 0,
-        points: p.points || 0,
-        badges: p.badges || [],
+        skills: p.skills ?? [],
+        interests: interests,
+        teachSubjects: teach,
+        learnSubjects: learn,
+        rating: p.rating ?? 0,
+        sessionsCompleted: p.sessions_completed ?? 0,
+        points: p.points ?? 0,
+        badges: p.badges ?? [],
         matchScore,
       };
     });
@@ -187,10 +253,23 @@ const Dashboard = () => {
           }
         ]);
       }
+      const { data, error } = await supabase
+        .from("sessions")
+        .select("*")
+        .eq("status", "upcoming");
+
+      if (error || !data) {
+        setUpcomingSessions([]);
+        return;
+      }
+
+      setUpcomingSessions(data);
     };
 
     fetchSessions();
   }, []);
+
+  const [globalRank, setGlobalRank] = useState<number>(0);
 
   // Leaderboard
   useEffect(() => {
@@ -213,11 +292,27 @@ const Dashboard = () => {
           { id: "3", name: "Alex Rivera", points: 980 },
           { id: "00000000-0000-0000-0000-000000000000", name: "Demo Student (You)", points: 480 }
         ]);
+    const fetchLeaderboardData = async () => {
+      // 1. Fetch top 5 for the mini-leaderboard
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("points", { ascending: false })
+        .limit(5);
+
+      if (data) setLeaderboard(data);
+
+      // 2. Fetch true exact rank via RPC to avoid memory leaks
+      if (user?.id) {
+        const { data: rankData } = await supabase.rpc("get_user_rank", {
+          p_user_id: user.id,
+        });
+        setGlobalRank(rankData || 0);
       }
     };
 
-    fetchLeaderboard();
-  }, []);
+    fetchLeaderboardData();
+  }, [user]);
 
   // Loading
   if (loading) {
@@ -234,6 +329,36 @@ const Dashboard = () => {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#020617] via-[#020B1F] to-[#050014] text-white">
+      {currentMode === 'mentor' && (
+        <div className="mb-4 rounded-lg bg-emerald-500/10 border border-emerald-400/20 px-4 py-2 text-sm text-emerald-300">
+          You are viewing in <span className="font-semibold">Mentor Mode</span>
+        </div>
+      )}
+      {currentMode === 'learner' && (
+        <div className="mb-4 rounded-lg bg-blue-500/10 border border-blue-400/20 px-4 py-2 text-sm text-blue-300">
+          You are viewing in <span className="font-semibold">Learner Mode</span>
+        </div>
+      )}
+      <div className="mb-6 flex gap-3">
+        {currentMode === 'mentor' && (
+          <button
+            type="button"
+            onClick={() => navigate('/mentor-dashboard')}
+            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-emerald-400"
+          >
+            Go to Mentor Dashboard
+          </button>
+        )}
+        {currentMode === 'learner' && (
+          <button
+            type="button"
+            onClick={() => navigate('/learner-dashboard')}
+            className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-400"
+          >
+            Go to Learner Dashboard
+          </button>
+        )}
+      </div>
 
       {/* Background Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.12),transparent)]" />
@@ -298,63 +423,68 @@ const Dashboard = () => {
         </motion.section>
 
         {/* STATS */}
-        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3 xl:grid-cols-4">
+          <div className="md:col-span-1 xl:col-span-1">
+            <StreakStats />
+          </div>
 
-          {[
-            {
-              label: "Sessions Joined",
-              value: upcomingSessions.length || 0,
-              icon: "📚",
-            },
-            {
-              label: "Study Hours",
-              value: `${(profile?.sessions_completed || 0) * 2}h`,
-              icon: "⏰",
-            },
-            {
-              label: "Global Rank",
-              value:
-                "#" +
-                (
-                  leaderboard.findIndex((u) => u.id === user?.id) + 1 || 0
-                ),
-              icon: "🏆",
-            },
-            {
-              label: "Current Streak",
-              value: `${profile?.sessions_completed || 0} Days`,
-              icon: "🔥",
-            },
-          ].map((stat, i) => (
-            <motion.div
-              key={i}
-              whileHover={{
-                y: -5,
-                scale: 1.02,
-              }}
-              className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 to-purple-500/10 opacity-0 transition group-hover:opacity-100" />
+          <div className="md:col-span-2 xl:col-span-3 space-y-6">
+            {[
+              {
+                label: "Sessions Joined",
+                value: upcomingSessions.length || 0,
+                icon: "📚",
+              },
+              {
+                label: "Study Hours",
+                value: `${(profile?.sessions_completed || 0) * 2}h`,
+                icon: "⏰",
+              },
+              {
+                label: "Global Rank",
+                value:
+                  "#" +
+                  (
+                    globalRank || 0
+                  ),
+                icon: "🏆",
+              },
+            ].map((stat, i) => (
+              <motion.div
+                key={i}
+                whileHover={{
+                  y: -5,
+                  scale: 1.02,
+                }}
+                className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 to-purple-500/10 opacity-0 transition group-hover:opacity-100" />
 
-              <div className="relative z-10 flex items-center justify-between">
+                <div className="relative z-10 flex items-center justify-between">
 
-                <div>
-                  <p className="text-sm text-slate-400">
-                    {stat.label}
-                  </p>
+                  <div>
+                    <p className="text-sm text-slate-400">
+                      {stat.label}
+                    </p>
 
-                  <h3 className="mt-2 text-3xl font-black text-white">
-                    {stat.value}
-                  </h3>
+                    <h3 className="mt-2 text-3xl font-black text-white">
+                      {stat.value}
+                    </h3>
+                  </div>
+
+                  <div className="text-4xl">
+                    {stat.icon}
+                  </div>
                 </div>
-
-                <div className="text-4xl">
-                  {stat.icon}
-                </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
+          </div>
         </div>
+        {/* Analytics */}
+        <AnalyticsCharts profile={profile} sessions={upcomingSessions} />
+
+        <RecommendationPanel profile={profile} sessions={upcomingSessions} />
+
 
         {/* AI PERSONALIZED RECOMMENDATIONS */}
         <div className="mt-8">
@@ -368,7 +498,7 @@ const Dashboard = () => {
           <div className="space-y-6 xl:col-span-8">
 
             {/* Sessions */}
-            <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
+            <section className="rounded-3xl border border-white/10 bg-slate-900/40 p-6 backdrop-blur-2xl">
               <h2 className="mb-5 text-xl font-semibold">
                 📅 Upcoming Sessions
               </h2>
@@ -392,7 +522,47 @@ const Dashboard = () => {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {recommendedPeers.map((p, i) => (
-                  <PeerCard key={p.id} peer={p} index={i} />
+                  <div
+                      key={p.id}
+                      className="rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-slate-900/70 to-slate-800/40 p-5 backdrop-blur-xl"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-white">
+                          {p.name}
+                        </h3>
+
+                        <div className="rounded-full bg-cyan-500/20 px-3 py-1 text-sm font-semibold text-cyan-300">
+                         {p.matchScore}% •{" "}
+                          {p.matchScore >= 90
+                            ? "Perfect Match"
+                            : p.matchScore >= 70
+                            ? "Strong Match"
+                            : p.matchScore >= 50
+                            ? "Good Match"
+                            : "Compatible"}
+                        </div>
+                      </div>
+
+                      <p className="mt-2 text-sm text-slate-400">
+                        🤖 Smart AI matching based on skills, learning goals,
+                        interests, timezone compatibility, and learning style.
+                      </p>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {p.skills?.slice(0, 4).map((skill: string, idx: number) => (
+                          <span
+                            key={idx}
+                            className="rounded-full bg-purple-500/20 px-3 py-1 text-xs text-purple-300"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+
+                      <button className="mt-5 w-full rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-3 font-semibold text-slate-900 transition hover:scale-[1.02]">
+                        Connect with Peer
+                      </button>
+                    </div>
                 ))}
               </div>
             </section>

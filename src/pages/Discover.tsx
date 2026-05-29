@@ -10,7 +10,7 @@ import {
   Zap,
 } from "lucide-react";
 
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 const filters = [
   "All",
@@ -52,16 +52,22 @@ const Discover = () => {
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
-  const [selectedFilter, setSelectedFilter] =
-    useState("All");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState("All");
+
+  // DEBOUNCE SEARCH
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // FETCH USERS
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data } =
-          await supabase.auth.getUser();
-
+        const { data } = await supabase.auth.getUser();
         const user = data?.user;
 
         if (!user) {
@@ -82,6 +88,28 @@ const Discover = () => {
         const { data: allUsers } = await supabase
           .from("profiles")
           .select("*");
+        // ALL USERS — capped at 100 and filtered server-side
+        let query = supabase
+          .from("profiles")
+          .select("*")
+          .neq("id", user.id)
+          .limit(100);
+
+        // Server-side search: filter by name or skills using ilike
+        if (debouncedSearch.trim()) {
+          // Escape double quotes so we can wrap the search term in quotes, preventing commas from breaking the .or() syntax
+          const safeSearch = debouncedSearch.trim().replace(/"/g, '""');
+          query = query.or(
+            `name.ilike."%${safeSearch}%",skills.ilike."%${safeSearch}%"`
+          );
+        }
+
+        // Server-side skill filter
+        if (selectedFilter !== "All") {
+          query = query.ilike("skills", `%${selectedFilter}%`);
+        }
+
+        const { data: allUsers } = await query;
 
         setUsers(allUsers || []);
       } catch (err) {
@@ -92,69 +120,70 @@ const Discover = () => {
     };
 
     fetchData();
-  }, []);
+  }, [debouncedSearch, selectedFilter]);
 
   // MATCH SCORE
   const getMatchScore = (user: any) => {
     if (!currentUser) return 0;
 
-    const userSkills =
-      user.skills
-        ?.split(",")
-        .map((s: string) =>
-          s.trim().toLowerCase()
-        ) || [];
+    const userSkills = Array.isArray(user.skills)
+      ? user.skills.map((s: string) => s.toLowerCase())
+      : (user.skills?.split(",") || []).map((s: string) => s.trim().toLowerCase());
 
-    const myGoals =
-      currentUser.learning_goals
-        ?.split(",")
-        .map((s: string) =>
-          s.trim().toLowerCase()
-        ) || [];
+    const myGoals = Array.isArray(currentUser.learning_goals)
+      ? currentUser.learning_goals.map((s: string) => s.toLowerCase())
+      : (currentUser.learning_goals?.split(",") || []).map((s: string) => s.trim().toLowerCase());
 
     return userSkills.filter((skill: string) =>
       myGoals.includes(skill)
     ).length;
   };
 
-  // FILTER USERS
+  // FILTER & SCORE USERS (client-side match scoring only)
   useEffect(() => {
     if (!currentUser) return;
 
-    let matched = users
-      .filter((u) => u.id !== currentUser.id)
+    const matched = users
       .map((u) => ({
         ...u,
         score: getMatchScore(u),
-      }))
-      .filter((u) => u.score > 0);
+      }));
 
     // SEARCH
     if (search) {
-      matched = matched.filter(
-        (u) =>
-          u.name
-            ?.toLowerCase()
-            .includes(search.toLowerCase()) ||
-          u.skills
-            ?.toLowerCase()
-            .includes(search.toLowerCase())
-      );
+      matched = matched.filter((u) => {
+        const skillsStr = Array.isArray(u.skills)
+          ? u.skills.join(" ").toLowerCase()
+          : (u.skills || "").toLowerCase();
+        return (
+          u.name?.toLowerCase().includes(search.toLowerCase()) ||
+          skillsStr.includes(search.toLowerCase())
+        );
+      });
     }
 
     // FILTERS
     if (selectedFilter !== "All") {
-      matched = matched.filter((u) =>
-        u.skills
-          ?.toLowerCase()
-          .includes(selectedFilter.toLowerCase())
-      );
+      matched = matched.filter((u) => {
+        const skillsList = Array.isArray(u.skills)
+          ? u.skills.map((s: string) => s.toLowerCase())
+          : (u.skills?.split(",") || []).map((s: string) => s.trim().toLowerCase());
+        return skillsList.some((skill: string) =>
+          skill.includes(selectedFilter.toLowerCase())
+        );
+      });
+    }
+
+    // DEFAULT BUBBLE
+    // If no search and no filter are active, only show recommended peers (score > 0)
+    if (!search && selectedFilter === "All") {
+      matched = matched.filter((u) => u.score > 0);
     }
 
     matched.sort((a, b) => b.score - a.score);
 
     setFilteredUsers(matched);
-  }, [users, search, selectedFilter, currentUser]);
+  }, [users, currentUser]);
 
   return (
     <div className="min-h-screen bg-[#020617] text-white overflow-hidden">
@@ -353,21 +382,19 @@ const Discover = () => {
 
                 {/* SKILLS */}
                 <div className="flex flex-wrap gap-2 mb-5">
-                  {u.skills
-                    ?.split(",")
-                    .map(
-                      (
-                        skill: string,
-                        index: number
-                      ) => (
-                        <span
-                          key={index}
-                          className="bg-cyan-500/10 border border-cyan-400/10 text-cyan-300 px-3 py-1 rounded-full text-sm"
-                        >
-                          {skill}
-                        </span>
-                      )
-                    )}
+                  {(Array.isArray(u.skills) ? u.skills : (u.skills?.split(",") || [])).map(
+                    (
+                      skill: string,
+                      index: number
+                    ) => (
+                      <span
+                        key={index}
+                        className="bg-cyan-500/10 border border-cyan-400/10 text-cyan-300 px-3 py-1 rounded-full text-sm"
+                      >
+                        {typeof skill === 'string' ? skill.trim() : skill}
+                      </span>
+                    )
+                  )}
                 </div>
 
                 {/* GOALS */}

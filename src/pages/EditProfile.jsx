@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 const EditProfile = () => {
   const [profile, setProfile] = useState(null);
@@ -45,9 +45,9 @@ const EditProfile = () => {
         .update({
           name: profile.name,
           bio: profile.bio,
-          skills: profile.skills && typeof profile.skills === 'string'
+          skills: Array.isArray(profile.skills) ? profile.skills : (profile.skills && typeof profile.skills === 'string'
             ? profile.skills.split(",").map(s => s.trim()).filter(Boolean)
-            : [],
+            : []),
         })
         .eq("id", userId);
 

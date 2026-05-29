@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -9,8 +9,10 @@ const ForgotPassword = () => {
     e.preventDefault();
 
     try {
+      // Use window.location.origin so the reset link works in every environment
+      // (localhost, staging, production) without any code change.
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: "http://localhost:5173/reset-password",
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) {

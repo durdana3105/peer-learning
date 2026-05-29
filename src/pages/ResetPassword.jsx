@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const ResetPassword = () => {
-  const { token } = useParams();
   const navigate = useNavigate();
 
   const [password, setPassword] = useState("");
@@ -12,28 +12,24 @@ const ResetPassword = () => {
     e.preventDefault();
 
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/reset-password/${token}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ password }),
-        }
-      );
+      // Supabase embeds the recovery token in the URL hash when the user
+      // clicks the reset link (e.g. /reset-password#access_token=...&type=recovery).
+      // The Supabase JS client detects the hash on page load and creates a
+      // short-lived recovery session automatically. Calling updateUser here
+      // uses that session to set the new password without needing to extract
+      // or forward any token manually.
+      const { error } = await supabase.auth.updateUser({ password });
 
-      const data = await res.json();
-      setMessage(data.message);
-
-      // Redirect after success
-      if (res.ok) {
+      if (error) {
+        setMessage(error.message);
+      } else {
+        setMessage("Password updated successfully! Redirecting to login...");
         setTimeout(() => {
           navigate("/login");
         }, 2000);
       }
     } catch (error) {
-      setMessage("Something went wrong");
+      setMessage("Something went wrong. Please request a new reset link.");
     }
   };
 

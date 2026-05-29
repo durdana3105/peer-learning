@@ -29,9 +29,20 @@ export const uploadResource = async (
   file: File,
   title: string,
   description: string,
-  tags: string[],
-  userId: string
+  tags: string[]
 ): Promise<UploadResourceResult> => {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in to upload a resource.",
+    };
+  }
+
+  const userId = user.id;
   const fileType = getFileExtension(file.name);
 
   if (!ALLOWED_FILE_TYPES.has(fileType)) {

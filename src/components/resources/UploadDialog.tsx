@@ -90,8 +90,7 @@ const UploadDialog = ({ open, onOpenChange, onSuccess }: UploadDialogProps) => {
       file,
       title.trim(),
       description.trim(),
-      parsedTags,
-      currentUser.id
+      parsedTags
     );
 
     setIsUploading(false);

@@ -1,7 +1,19 @@
+
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { useRole } from "@/contexts/RoleContext";
+import { useAuth } from "@/contexts/useAuth";
+import { useTheme } from "@/contexts/ThemeContext";
 import { NotificationBell } from "@/features/notifications/NotificationBell";
 
 
@@ -16,17 +28,21 @@ import {
   MessageCircle,
   Trophy,
   Shield,
+  Moon,
+  Users,
+  BriefcaseBusiness,
 } from "lucide-react";
 
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/contexts/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const Navbar = () => {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const { currentMode, setMode, isDualRole } = useRole();
   const { user } = useAuth();
+  const { setTheme } = useTheme();
 
   const location = useLocation();
 
@@ -54,7 +70,6 @@ const Navbar = () => {
     fetchProfile();
   }, [user]);
 
-  if (location.pathname === "/") return null;
 
   // LOGOUT
   const handleLogout = async () => {
@@ -64,7 +79,7 @@ const Navbar = () => {
     window.location.href = "/";
   };
 
-  // NAVIGATION LINKS
+  // NAVIGATION LINKS (Fixed navbar navigation and mismatched CTA color on Contributor Dashboard #65)
   const navLinks = user
     ? [
         {
@@ -97,6 +112,11 @@ const Navbar = () => {
           label: "Ranks",
           icon: Trophy,
         },
+        {
+          to: "/portfolio",
+          label: "Portfolio",
+          icon: BriefcaseBusiness,
+        },
         ...(isAdmin
           ? [
               {
@@ -112,6 +132,26 @@ const Navbar = () => {
           to: "/",
           label: "Home",
           icon: BookOpen,
+        },
+        {
+          to: "/#features",
+          label: "Features",
+          icon: Compass,
+        },
+        {
+          to: "/#community",
+          label: "Communities",
+          icon: Users,
+        },
+        {
+          to: "/contributor-dashboard",
+          label: "Contributor Dashboard",
+          icon: LayoutDashboard,
+        },
+        {
+          to: "/#faq",
+          label: "FAQ",
+          icon: MessageCircle,
         },
       ];
 
@@ -179,10 +219,68 @@ const Navbar = () => {
 
         {/* RIGHT SECTION */}
         <div className="hidden items-center gap-4 md:flex">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-xl text-white hover:bg-white/10"
+                title="Theme: Dark (Default)"
+              >
+                <Moon className="h-5 w-5 text-cyan-400" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={8} className="z-[1001] bg-[#0b1329] border-white/10 text-white min-w-[12rem]">
+              <DropdownMenuLabel className="text-gray-400 font-semibold text-xs px-2 py-1">Select Theme</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("default")}>
+                <span className="h-2 w-2 rounded-full bg-cyan-400" />
+                <span className="text-cyan-400 font-medium">Default</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("purple")}>
+                <span className="h-2 w-2 rounded-full bg-purple-500" />
+                <span className="text-purple-400 font-medium">Purple Galaxy</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("blue")}>
+                <span className="h-2 w-2 rounded-full bg-blue-500" />
+                <span className="text-blue-400 font-medium">Ocean Blue</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("green")}>
+                <span className="h-2 w-2 rounded-full bg-green-500" />
+                <span className="text-green-400 font-medium">Neon Green</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("orange")}>
+                <span className="h-2 w-2 rounded-full bg-orange-500" />
+                <span className="text-orange-400 font-medium">Sunset Orange</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {user ? (
 
             <>
+              {isDualRole && (
+                <div className="flex rounded-full border border-white/20 p-0.5 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setMode("learner")}
+                    className={currentMode === "learner"
+                      ? "bg-emerald-500 text-slate-950 rounded-full px-3 py-1 font-medium"
+                      : "text-slate-300 px-3 py-1 hover:text-white"}
+                  >
+                    Learner
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode("mentor")}
+                    className={currentMode === "mentor"
+                      ? "bg-emerald-500 text-slate-950 rounded-full px-3 py-1 font-medium"
+                      : "text-slate-300 px-3 py-1 hover:text-white"}
+                  >
+                    Mentor
+                  </button>
+                </div>
+              )}
               <NotificationBell userId={user.id} />
 
               {/* PROFILE */}
@@ -242,7 +340,8 @@ const Navbar = () => {
 
               <Link to="/signup">
 
-                <Button className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:opacity-90">
+                {/* Sign Up CTA button themed with green/dark accents to maintain brand consistency */}
+                <Button className="rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:opacity-90">
 
                   Sign Up
 
@@ -259,7 +358,7 @@ const Navbar = () => {
         {/* MOBILE BUTTON */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="rounded-lg border border-white/10 bg-white/5 p-2 text-white md:hidden"
+          className="rounded-lg border border-white/10 bg-white/5 p-3 text-white md:hidden active:scale-95"
         >
 
           {mobileOpen ? <X /> : <Menu />}
@@ -284,7 +383,7 @@ const Navbar = () => {
                   key={link.to}
                   to={link.to}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-xl bg-white/5 px-4 py-3 text-gray-300 transition hover:bg-white/10 hover:text-white"
+                  className="flex items-center gap-3 rounded-xl bg-white/5 px-3 py-4 text-base text-gray-300 transition hover:bg-white/10 hover:text-white"
                 >
 
                   <Icon size={18} />
@@ -294,6 +393,16 @@ const Navbar = () => {
                 </Link>
               );
             })}
+
+            <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
+              <span className="text-sm font-medium text-gray-300">
+                Theme
+              </span>
+              <div className="flex items-center gap-2 text-cyan-400 text-sm">
+                <Moon size={16} />
+                <span>Dark</span>
+              </div>
+            </div>
 
             {user ? (
 
@@ -329,7 +438,7 @@ const Navbar = () => {
 
                 <Link to="/signup">
 
-                  <Button className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600">
+                  <Button className="w-full rounded-xl bg-gradient-to-r from-green-500 to-emerald-600">
 
                     Sign Up
 
@@ -352,3 +461,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+

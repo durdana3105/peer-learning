@@ -67,6 +67,25 @@ begin
 end;
 $$ language plpgsql security definer set search_path = public;
 
+-- Backfill profiles and users for accounts that already exist in auth.users.
+insert into public.profiles (
+  id,
+  name,
+  email,
+  avatar_url
+)
+select
+  au.id,
+  coalesce(au.raw_user_meta_data->>'name', au.raw_user_meta_data->>'full_name', split_part(coalesce(au.email, ''), '@', 1), ''),
+  coalesce(au.email, ''),
+  coalesce(au.raw_user_meta_data->>'avatar_url', '')
+from auth.users au
+on conflict (id) do update
+set
+  name = excluded.name,
+  email = excluded.email,
+  avatar_url = excluded.avatar_url;
+
 -- Backfill users for accounts that already exist in auth/profiles.
 insert into public.users (id, name, email, avatar_url, bio)
 select id, name, email, coalesce(avatar_url, ''), coalesce(bio, '')
@@ -216,29 +235,34 @@ with check (
 );
 
 -- Harden leaderboard from the older migration.
-alter table public.leaderboard enable row level security;
+do $$
+begin
+  if to_regclass('public.leaderboard') is not null then
+    alter table public.leaderboard enable row level security;
 
-drop policy if exists "Authenticated users can view leaderboard" on public.leaderboard;
-create policy "Authenticated users can view leaderboard"
-on public.leaderboard
-for select
-to authenticated
-using (true);
+    drop policy if exists "Authenticated users can view leaderboard" on public.leaderboard;
+    create policy "Authenticated users can view leaderboard"
+    on public.leaderboard
+    for select
+    to authenticated
+    using (true);
 
-drop policy if exists "Users can insert own leaderboard row" on public.leaderboard;
-create policy "Users can insert own leaderboard row"
-on public.leaderboard
-for insert
-to authenticated
-with check (user_id = auth.uid());
+    drop policy if exists "Users can insert own leaderboard row" on public.leaderboard;
+    create policy "Users can insert own leaderboard row"
+    on public.leaderboard
+    for insert
+    to authenticated
+    with check (user_id = auth.uid());
 
-drop policy if exists "Users can update own leaderboard row" on public.leaderboard;
-create policy "Users can update own leaderboard row"
-on public.leaderboard
-for update
-to authenticated
-using (user_id = auth.uid())
-with check (user_id = auth.uid());
+    drop policy if exists "Users can update own leaderboard row" on public.leaderboard;
+    create policy "Users can update own leaderboard row"
+    on public.leaderboard
+    for update
+    to authenticated
+    using (user_id = auth.uid())
+    with check (user_id = auth.uid());
+  end if;
+end $$;
 
 -- Smart Notification System.
 do $$

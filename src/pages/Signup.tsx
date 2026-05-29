@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
 
 // ✅ Proper TypeScript type
 type FormErrors = {
@@ -56,6 +55,7 @@ const Signup = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!validate()) return;
 
     setIsLoading(true);
@@ -64,189 +64,232 @@ const Signup = () => {
 
     setIsLoading(false);
 
-    /*if (data.user) {
-      const { error: insertError } = await supabase.from("profiles").insert([
-        {
-          id: data.user.id,
-          email: data.user.email,
-          name:
-            data.user.user_metadata?.name ||
-            data.user.email.split("@")[0],
-          avatar_url: `https://api.dicebear.com/9.x/initials/svg?seed=${data.user.email}`,
-        },
-      ]);
-    
-      console.log("INSERT ERROR:", insertError);
-    }*/
-
-
-    /*  if (error) {
-        setIsLoading(false);
-        toast({
-          title: "Signup failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
-  */
-    // 📦 Step 2: Insert into DB
-    /*const { error: dbError } = await supabase.from("users").insert([
-      {
-        id: data.user?.id,
-        name,
-        email,
-        skills: "",
-        learning_goals: "",
-      },
-    ]);*/
-
+    // Handle signup errors
     if (error) {
       toast({
         title: "Signup failed",
         description: error.message,
         variant: "destructive",
       });
+
       return;
     }
 
+    // Successful signup
     toast({
       title: "Account created!",
-      description: "Welcome 🎉",
+      description:
+        "Please check your email and verify your account before logging in.",
     });
 
-    navigate("/dashboard");
+    // Redirect user to login page
+    navigate("/login");
   };
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-emerald-950">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-400 border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-cyan-400 border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-950 px-4 font-[Inter] text-emerald-100">
-
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-[#0b1329] to-background px-4 font-[Inter] text-slate-100">
+      
       {/* Glow background */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,197,94,0.15),transparent)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(var(--theme-color-1),0.15),transparent)] pointer-events-none" />
+      
+      {/* LEFT SIDE */}
+      <div className="hidden lg:flex w-1/2 relative items-center justify-center p-16 z-10">
+        <motion.div
+          initial={{ opacity: 0, x: -40 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8 }}
+          className="max-w-xl"
+        >
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-5 py-2 text-cyan-300">
+            ✨ Student Powered Learning Ecosystem
+          </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="relative w-full max-w-md backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 shadow-[0_0_40px_rgba(34,197,94,0.15)]"
-      >
-
-        {/* Logo */}
-        <div className="mb-8 text-center">
-          <Link to="/" className="flex items-center justify-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-green-400 to-emerald-500">
-              <BookOpen className="h-5 w-5 text-black" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-emerald-200">
-              PeerLearn
+          <h1 className="text-6xl font-extrabold leading-tight">
+            Learn From
+            <br />
+            <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+              Seniors.
             </span>
-          </Link>
-
-          <h1 className="mt-4 text-2xl font-semibold text-emerald-100">
-            Create your account
+            <br />
+            Grow With
+            <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+              {" "}
+              Peers.
+            </span>
           </h1>
-          <p className="text-sm text-emerald-300/60 mt-1">
-            Start your learning journey today
+
+          <p className="mt-6 text-lg text-slate-300 leading-relaxed">
+            Join live mentorship sessions, collaborate with classmates,
+            solve doubts instantly, and become part of a futuristic
+            collaborative learning community.
           </p>
-        </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="mt-10 flex flex-wrap gap-4">
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
+              🎥 Learn together
+            </div>
 
-          {/* Name */}
-          <Input
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="bg-white/5 border border-white/10 text-emerald-100 placeholder:text-emerald-400/50 focus:border-green-400 focus:ring-1 focus:ring-green-400"
-          />
-          {errors.name && <p className="text-red-400 text-sm">{errors.name}</p>}
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
+              🛡️ Build your Future
+            </div>
 
-          {/* Email */}
-          <Input
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="bg-white/5 border border-white/10 text-emerald-100 placeholder:text-emerald-400/50 focus:border-green-400 focus:ring-1 focus:ring-green-400"
-          />
-          {errors.email && <p className="text-red-400 text-sm">{errors.email}</p>}
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
+              💬 Ask, share, learn
+            </div>
 
-          {/* Password */}
-          <div className="relative">
-            <Input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="bg-white/5 border border-white/10 text-emerald-100 placeholder:text-emerald-400/50 focus:border-green-400"
-            />
-
-            <button
-              type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-300"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
+              🔥 Active community
+            </div>
           </div>
-          {errors.password && <p className="text-red-400 text-sm">{errors.password}</p>}
+        </motion.div>
+      </div>
 
-          {/* Confirm Password */}
-          <div className="relative">
-            <Input
-              type={showConfirmPassword ? "text" : "password"}
-              placeholder="Confirm Password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="bg-white/5 border border-white/10 text-emerald-100 placeholder:text-emerald-400/50 focus:border-green-400"
-            />
-
-            <button
-              type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-300"
-              onClick={() =>
-                setShowConfirmPassword(!showConfirmPassword)
-              }
-            >
-              {showConfirmPassword ? (
-                <EyeOff size={16} />
-              ) : (
-                <Eye size={16} />
-              )}
-            </button>
+      {/* RIGHT SIDE */}
+      <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md rounded-3xl border border-cyan-400/10 bg-white/5 p-8 backdrop-blur-2xl shadow-[0_0_50px_rgba(34,211,238,0.15)]"
+        >
+          <div className="mb-7 text-cyan-400">
+            <Link to="/" className="cursor-pointer">
+              ← Back to Home
+            </Link>
           </div>
-          {errors.confirmPassword && <p className="text-red-400 text-sm">{errors.confirmPassword}</p>}
 
-          {/* Button */}
-          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-green-500 hover:bg-green-400 text-black font-semibold shadow-[0_0_15px_rgba(34,197,94,0.4)]"
+          {/* Logo */}
+          <div className="mb-8 text-center">
+            <Link to="/" className="flex items-center justify-center gap-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500">
+                <BookOpen className="h-5 w-5 text-black" />
+              </div>
+
+              <span className="text-xl font-bold tracking-tight text-slate-200">
+                PeerLearn
+              </span>
+            </Link>
+
+            <h1 className="mt-4 text-2xl font-semibold text-slate-100">
+              Create your account
+            </h1>
+
+            <p className="text-sm text-slate-300/60 mt-1">
+              Start your learning journey today
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+
+            {/* Name */}
+            <Input
+              placeholder="Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+            />
+            {errors.name && (
+              <p className="text-red-400 text-sm">{errors.name}</p>
+            )}
+
+            {/* Email */}
+            <Input
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400/50 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+            />
+            {errors.email && (
+              <p className="text-red-400 text-sm">{errors.email}</p>
+            )}
+
+            {/* Password */}
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400/50 focus:border-cyan-400"
+              />
+
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+
+            {errors.password && (
+              <p className="text-red-400 text-sm">{errors.password}</p>
+            )}
+
+            {/* Confirm Password */}
+            <div className="relative">
+              <Input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400/50 focus:border-cyan-400"
+              />
+
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300"
+                onClick={() =>
+                  setShowConfirmPassword(!showConfirmPassword)
+                }
+              >
+                {showConfirmPassword ? (
+                  <EyeOff size={16} />
+                ) : (
+                  <Eye size={16} />
+                )}
+              </button>
+            </div>
+
+            {errors.confirmPassword && (
+              <p className="text-red-400 text-sm">
+                {errors.confirmPassword}
+              </p>
+            )}
+
+            {/* Button */}
+            <motion.div
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
             >
-              {isLoading ? "Creating..." : "Sign Up"}
-            </Button>
-          </motion.div>
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-cyan-400 hover:bg-cyan-300 text-black font-semibold shadow-[0_0_15px_rgba(var(--theme-color-1),0.4)]"
+              >
+                {isLoading ? "Creating..." : "Sign Up"}
+              </Button>
+            </motion.div>
+          </form>
 
-        </form>
-
-        {/* Login redirect */}
-        <p className="mt-6 text-center text-sm text-emerald-300/70">
-          Already have an account?{" "}
-          <Link to="/login" className="text-green-400 hover:underline">
-            Log in
-          </Link>
-        </p>
-
-      </motion.div>
+          {/* Login redirect */}
+          <p className="mt-6 text-center text-sm text-slate-300/70">
+            Already have an account?{" "}
+            <Link to="/login" className="text-cyan-400 hover:underline">
+              Log in
+            </Link>
+          </p>
+        </motion.div>
+      </div>
     </div>
   );
 };

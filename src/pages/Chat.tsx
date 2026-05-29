@@ -3,12 +3,29 @@ import { ArrowLeft, MessageCircle, Search, Send } from "lucide-react";
 
 import { AuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 type Profile = {
   id: string;
   name: string | null;
   email: string | null;
   avatar_url?: string | null;
+};
+
+type UserRow = Profile;
+
+const mergeUsers = (profiles: Profile[], users: UserRow[]) => {
+  const map = new Map<string, Profile>();
+
+  for (const user of users) {
+    map.set(user.id, user);
+  }
+
+  for (const profile of profiles) {
+    map.set(profile.id, profile);
+  }
+
+  return Array.from(map.values());
 };
 
 type ChatMessage = {
@@ -66,21 +83,74 @@ const Chat = () => {
     const loadUsers = async () => {
       setLoadingUsers(true);
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id,name,email,avatar_url")
-        .neq("id", currentUser.id)
-        .order("name", { ascending: true });
+      const [{ data: profileData }, { data: userData }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("*")
+          .neq("id", currentUser.id)
+          .order("name", { ascending: true })
+          .limit(100),
+        supabase
+          .from("users")
+          .select("*")
+          .neq("id", currentUser.id)
+          .order("name", { ascending: true })
+          .limit(100),
+      ]);
 
-      if (!error && data) {
-        setUsers(data);
-        setSelectedUser((current) => current ?? data[0] ?? null);
-      }
+      const mergedUsers = mergeUsers(
+        (profileData ?? []) as Profile[],
+        (userData ?? []) as UserRow[]
+      );
+
+      setUsers(mergedUsers);
+      setSelectedUser((current) => current ?? mergedUsers[0] ?? null);
 
       setLoadingUsers(false);
     };
 
     loadUsers();
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    const profilesChannel = supabase
+      .channel("chat-profiles-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "profiles",
+        },
+        (payload) => {
+          if (payload.eventType === "DELETE") {
+            setUsers((prev) => prev.filter((u) => u.id !== payload.old.id));
+            return;
+          }
+
+          const updatedProfile = payload.new as Profile;
+          if (updatedProfile.id === currentUser.id) return;
+
+          setUsers((prev) => {
+            const index = prev.findIndex((u) => u.id === updatedProfile.id);
+            if (index !== -1) {
+              const newUsers = [...prev];
+              newUsers[index] = { ...newUsers[index], ...updatedProfile };
+              return newUsers.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+            } else {
+              const newUsers = [...prev, updatedProfile];
+              return newUsers.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+            }
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(profilesChannel);
+    };
   }, [currentUser?.id]);
 
   useEffect(() => {
@@ -138,6 +208,25 @@ const Chat = () => {
 
     loadMessages();
 
+    const handleNewMessage = (payload: any) => {
+      const nextMessage = payload.new as ChatMessage;
+      const belongsToOpenChat =
+        (nextMessage.sender_id === currentUser.id &&
+          nextMessage.receiver_id === selectedUser.id) ||
+        (nextMessage.sender_id === selectedUser.id &&
+          nextMessage.receiver_id === currentUser.id);
+
+      if (!belongsToOpenChat) return;
+
+      setMessages((previous) => {
+        if (previous.some((message) => message.id === nextMessage.id)) {
+          return previous;
+        }
+
+        return [...previous, nextMessage];
+      });
+    };
+
     const messageChannel = supabase
       .channel(`chat-messages-${currentUser.id}-${selectedUser.id}`)
       .on(
@@ -146,31 +235,33 @@ const Chat = () => {
           event: "INSERT",
           schema: "public",
           table: "messages",
+          filter: `receiver_id=eq.${currentUser.id}`,
         },
-        (payload) => {
-          const nextMessage = payload.new as ChatMessage;
-          const belongsToOpenChat =
-            (nextMessage.sender_id === currentUser.id &&
-              nextMessage.receiver_id === selectedUser.id) ||
-            (nextMessage.sender_id === selectedUser.id &&
-              nextMessage.receiver_id === currentUser.id);
-
-          if (!belongsToOpenChat) return;
-
-          setMessages((previous) => {
-            if (previous.some((message) => message.id === nextMessage.id)) {
-              return previous;
-            }
-
-            return [...previous, nextMessage];
-          });
-        }
+        handleNewMessage
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `sender_id=eq.${currentUser.id}`,
+        },
+        handleNewMessage
       )
       .subscribe();
 
+    let lastTypingUpdate = 0;
+
     const typingChannel = supabase
-      .channel(`chat-typing-${[currentUser.id, selectedUser.id].sort().join("-")}`)
+      .channel(`chat-typing-${[currentUser.id, selectedUser.id].sort().join("-")}`, {
+        config: { private: true },
+      })
       .on("broadcast", { event: "typing" }, ({ payload }) => {
+        const now = Date.now();
+        if (now - lastTypingUpdate < 300) return; // Drop excessive messages to prevent DoS
+        lastTypingUpdate = now;
+
         if (payload.senderId !== selectedUser.id) return;
 
         setTypingUserId(payload.isTyping ? payload.senderId : null);
@@ -201,7 +292,9 @@ const Chat = () => {
     if (!currentUser?.id || !selectedUser?.id) return;
 
     await supabase
-      .channel(`chat-typing-${[currentUser.id, selectedUser.id].sort().join("-")}`)
+      .channel(`chat-typing-${[currentUser.id, selectedUser.id].sort().join("-")}`, {
+        config: { private: true },
+      })
       .send({
         type: "broadcast",
         event: "typing",
@@ -252,11 +345,11 @@ const Chat = () => {
     }
   };
 
-  const selectUser = (user: Profile) => {
+  const selectUser = useCallback((user: Profile) => {
     setSelectedUser(user);
     setShowConversationList(false);
     setTypingUserId(null);
-  };
+  }, []);
 
   if (!currentUser) {
     return (
@@ -403,7 +496,7 @@ const Chat = () => {
                               : "rounded-bl-md border border-white/10 bg-white/10 text-white"
                           }`}
                         >
-                          <p className="whitespace-pre-wrap break-words text-sm leading-6">{body}</p>
+                          <MarkdownRenderer content={body} className="whitespace-pre-wrap break-words text-sm leading-6" />
                           <p className={`mt-1 text-[11px] ${isMine ? "text-slate-700" : "text-slate-400"}`}>
                             {message.created_at
                               ? new Date(message.created_at).toLocaleTimeString([], {

@@ -5,12 +5,21 @@ import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
   base: "/", // 👈 ADD THIS
+  envPrefix: ["VITE_", "NEXT_PUBLIC_"],
 
   server: {
     host: "::",
     port: 8080,
     hmr: {
       overlay: false,
+    },
+    // Forward /api requests to the Express backend during development so the
+    // OpenRouter API key stays on the server and is never included in the bundle.
+    proxy: {
+      "/api": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+      },
     },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
