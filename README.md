@@ -54,6 +54,7 @@ A modern peer-to-peer learning platform where students can connect, collaborate,
   * [3️⃣ Install Dependencies](#3%EF%B8%8F%E2%83%A3-install-dependencies)
   * [4️⃣ Configure Environment Variables](#4%EF%B8%8F%E2%83%A3-configure-environment-variables)
   * [5️⃣ Start Development Server](#5%EF%B8%8F%E2%83%A3-start-development-server)
+  * [📚 Technical Documentation](#%F0%9F%93%9A-technical-documentation)
 - [🚀 Deployment](#%F0%9F%9A%80-deployment-1)
     + [Build Command](#build-command)
 - [🛠️ Troubleshooting](#%F0%9F%9B%A0%EF%B8%8F-troubleshooting)
@@ -286,6 +287,13 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```bash
 npm run dev
 ```
+
+---
+
+## 📚 Technical Documentation
+For deeper technical insights, please refer to our dedicated documentation:
+- [🗄️ Database Architecture & Schema](./docs/database.md)
+- [🔌 API Documentation](./docs/api.md)
 
 ---
 
