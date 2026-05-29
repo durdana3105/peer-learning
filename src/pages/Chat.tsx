@@ -254,7 +254,9 @@ const Chat = () => {
     let lastTypingUpdate = 0;
 
     const typingChannel = supabase
-      .channel(`chat-typing-${[currentUser.id, selectedUser.id].sort().join("-")}`)
+      .channel(`chat-typing-${[currentUser.id, selectedUser.id].sort().join("-")}`, {
+        config: { private: true },
+      })
       .on("broadcast", { event: "typing" }, ({ payload }) => {
         const now = Date.now();
         if (now - lastTypingUpdate < 300) return; // Drop excessive messages to prevent DoS
@@ -290,7 +292,9 @@ const Chat = () => {
     if (!currentUser?.id || !selectedUser?.id) return;
 
     await supabase
-      .channel(`chat-typing-${[currentUser.id, selectedUser.id].sort().join("-")}`)
+      .channel(`chat-typing-${[currentUser.id, selectedUser.id].sort().join("-")}`, {
+        config: { private: true },
+      })
       .send({
         type: "broadcast",
         event: "typing",
