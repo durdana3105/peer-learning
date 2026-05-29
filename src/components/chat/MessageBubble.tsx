@@ -1,4 +1,4 @@
-import React from "react";
+import { memo } from "react";
 
 interface MessageBubbleProps {
   text: string;
@@ -6,11 +6,11 @@ interface MessageBubbleProps {
   time: string;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({
+const MessageBubble = ({
   text,
   sender,
   time,
-}) => {
+}: MessageBubbleProps) => {
   const isUser = sender === "user";
 
   return (
@@ -29,4 +29,4 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   );
 };
 
-export default MessageBubble;
+export default memo(MessageBubble);

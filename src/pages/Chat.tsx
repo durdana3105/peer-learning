@@ -321,11 +321,11 @@ const Chat = () => {
     }
   };
 
-  const selectUser = (user: Profile) => {
+  const selectUser = useCallback((user: Profile) => {
     setSelectedUser(user);
     setShowConversationList(false);
     setTypingUserId(null);
-  };
+  }, []);
 
   if (!currentUser) {
     return (

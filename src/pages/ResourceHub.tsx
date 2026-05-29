@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState } from "react";
+import { useCallback, useContext, useMemo, useState } from "react";
 import { Filter, Upload } from "lucide-react";
 
 import FilterSidebar from "@/components/resources/FilterSidebar";
@@ -6,6 +6,7 @@ import ResourceCard from "@/components/resources/ResourceCard";
 import UploadDialog from "@/components/resources/UploadDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ErrorBanner } from "@/components/ui/error-banner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AuthContext } from "@/contexts/AuthContext";
@@ -36,11 +37,11 @@ const ResourceHub = () => {
     return resources.filter((resource) => ["py", "js", "ts"].includes(resource.file_type));
   }, [resources, selectedType]);
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     setSearch("");
     setSelectedTags([]);
     setSelectedType("all");
-  };
+  }, []);
 
   const sidebar = (
     <FilterSidebar
@@ -119,11 +120,12 @@ const ResourceHub = () => {
 
           <section className="lg:col-span-3">
             {error ? (
-              <Card>
-                <CardContent className="p-6">
-                  <p className="text-sm font-medium text-destructive">{error}</p>
-                </CardContent>
-              </Card>
+              <ErrorBanner
+                title="Could not load resources"
+                description={error}
+                actionLabel="Try again"
+                onAction={refetch}
+              />
             ) : loading ? (
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{renderSkeletons()}</div>
             ) : displayedResources.length === 0 ? (
