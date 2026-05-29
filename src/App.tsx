@@ -51,12 +51,16 @@ const ResourceHub = React.lazy(() => import("@/pages/ResourceHub"));
 
 const queryClient = new QueryClient();
 
-const WithNav = ({ children }: { children: React.ReactNode }) => (
-  <>
-    <Navbar />
-    {children}
-  </>
-);
+const WithNav = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuth();
+  return (
+    <>
+      <Navbar />
+      {user && <StreakBadge />}
+      {children}
+    </>
+  );
+};
 
 function AppContent() {
   const { user } = useAuth();
@@ -92,7 +96,7 @@ function AppContent() {
   return (
     <>
       <div id="sparkle-container"></div>
-      <StreakBadge />
+
 
       <Suspense fallback={<div>Loading...</div>}>
         <Routes>
