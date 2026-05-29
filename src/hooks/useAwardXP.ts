@@ -18,33 +18,22 @@ export const useAwardXP = () => {
 
       const xpToAward = getXPForActivity(activity);
 
-      // Fetch current profile to get current XP
-      const { data: profileData, error: fetchError } = await (supabase as any)
-        .from("profiles")
-        .select("points")
-        .eq("id", user.id)
-        .single();
+      // Securely delegate to the ledger-backed RPC function.
+      // This completely solves the race condition and updates both the profiles
+      // and leaderboard tables atomically.
+      const { error: rpcError } = await (supabase as any).rpc("increment_user_xp", { _amount: xpToAward });
 
-      if (fetchError) throw fetchError;
+      if (rpcError) throw rpcError;
 
-      const currentXP = profileData.points || 0;
-      const newXP = currentXP + xpToAward;
-
-      // Update the profile with new XP
-      const { error: updateError } = await (supabase as any)
-        .from("profiles")
-        .update({ points: newXP })
-        .eq("id", user.id);
-
-      if (updateError) throw updateError;
-
-      return { newXP, awarded: xpToAward };
+      // We don't have the exact newXP immediately due to the atomic void RPC, 
+      // but the UI queries will be invalidated and refetched automatically.
+      return { awarded: xpToAward };
     },
     onSuccess: (data) => {
-      // Invalidate queries if there are any fetching profiles, e.g. "profile"
+      // Invalidate both profile and leaderboard queries to instantly sync UI
       queryClient.invalidateQueries({ queryKey: ["profile"] });
-      // We can also trigger a toast here if a toast library is available
-      console.log(`Awarded ${data.awarded} XP! Total XP: ${data.newXP}`);
+      queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+      console.log(`Awarded ${data.awarded} XP!`);
     },
     onError: (error) => {
       console.error("Failed to award XP:", error);
