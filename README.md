@@ -19,6 +19,56 @@ A modern peer-to-peer learning platform where students can connect, collaborate,
 
 ---
 
+## 📑 Table of Contents
+
+<!-- toc -->
+
+- [✨ Features](#%E2%9C%A8-features)
+  * [🔐 Authentication System](#%F0%9F%94%90-authentication-system)
+  * [👤 User Profiles](#%F0%9F%91%A4-user-profiles)
+  * [🔍 Peer Discovery](#%F0%9F%94%8D-peer-discovery)
+  * [📚 Learning Sessions](#%F0%9F%93%9A-learning-sessions)
+  * [💬 Real-Time Chat](#%F0%9F%92%AC-real-time-chat)
+  * [🤖 AI-Powered Assistance](#%F0%9F%A4%96-ai-powered-assistance)
+  * [🏆 Leaderboard System](#%F0%9F%8F%86-leaderboard-system)
+  * [📊 Personalized Dashboard](#%F0%9F%93%8A-personalized-dashboard)
+  * [⚡ Modern Responsive UI](#%E2%9A%A1-modern-responsive-ui)
+- [📸 Screenshots](#%F0%9F%93%B8-screenshots)
+- [📸 Application Preview](#%F0%9F%93%B8-application-preview)
+  * [🏠 Home Page](#%F0%9F%8F%A0-home-page)
+  * [🔐 Authentication](#%F0%9F%94%90-authentication)
+  * [👨‍🏫 Become a Mentor](#%F0%9F%91%A8%E2%80%8D%F0%9F%8F%AB-become-a-mentor)
+  * [🤖 AI Assistant](#%F0%9F%A4%96-ai-assistant)
+  * [Demo Video](#demo-video)
+- [🧠 Problem Statement](#%F0%9F%A7%A0-problem-statement)
+- [🛠️ Tech Stack](#%F0%9F%9B%A0%EF%B8%8F-tech-stack)
+- [🎨 Frontend](#%F0%9F%8E%A8-frontend)
+- [⚙️ Backend](#%E2%9A%99%EF%B8%8F-backend)
+- [🔐 Authentication](#%F0%9F%94%90-authentication-1)
+- [🚀 Deployment](#%F0%9F%9A%80-deployment)
+- [📂 Project Structure](#%F0%9F%93%82-project-structure)
+- [⚙️ Installation & Setup](#%E2%9A%99%EF%B8%8F-installation--setup)
+  * [1️⃣ Clone the Repository](#1%EF%B8%8F%E2%83%A3-clone-the-repository)
+  * [2️⃣ Navigate to Project Directory](#2%EF%B8%8F%E2%83%A3-navigate-to-project-directory)
+  * [3️⃣ Install Dependencies](#3%EF%B8%8F%E2%83%A3-install-dependencies)
+  * [4️⃣ Configure Environment Variables](#4%EF%B8%8F%E2%83%A3-configure-environment-variables)
+  * [5️⃣ Start Development Server](#5%EF%B8%8F%E2%83%A3-start-development-server)
+- [🚀 Deployment](#%F0%9F%9A%80-deployment-1)
+    + [Build Command](#build-command)
+- [🌟 Future Enhancements](#%F0%9F%8C%9F-future-enhancements)
+- [🤝 Contributing](#%F0%9F%A4%9D-contributing)
+  * [Steps to Contribute](#steps-to-contribute)
+- [💖 Contributors](#%F0%9F%92%96-contributors)
+- [👩‍💻 Author](#%F0%9F%91%A9%E2%80%8D%F0%9F%92%BB-author)
+  * [Durdana Sultana](#durdana-sultana)
+- [⭐ Support](#%E2%AD%90-support)
+- [📜 License](#%F0%9F%93%9C-license)
+  * [🌟 Empowering Students Through Collaborative Learning 🌟](#%F0%9F%8C%9F-empowering-students-through-collaborative-learning-%F0%9F%8C%9F)
+
+<!-- tocstop -->
+
+---
+
 # ✨ Features
 
 ## 🔐 Authentication System
