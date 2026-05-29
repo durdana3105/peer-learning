@@ -23,9 +23,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   /**
    * Ensures user profile exists in database without overwriting existing data
    */
-  const ensureProfileExists = useCallback(async (user: User) => {
+  const ensureProfileExists = useCallback(async (u: User) => {
+    // Skip DB profile updates if using demo account to prevent schema error spam
+    if (u.id === "00000000-0000-0000-0000-000000000000") return;
+
     try {
       const profileData = {
+        id: u.id,
+        name: u.user_metadata?.name || u.email?.split("@")[0] || "Learner",
+        email: u.email,
         id: user.id,
         is_mentor: false,
         is_learner: false,
@@ -42,7 +48,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         bio: "",
       };
 
-      // { ignoreDuplicates: true } prevents resetting user data to 0 on login
       const { error } = await supabase
         .from("profiles")
         .upsert(profileData, { onConflict: "id", ignoreDuplicates: true });
@@ -65,6 +70,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const initializeSession = async () => {
       try {
+        // 1. Check local storage for mock demo session
+        const demoSessionStr = localStorage.getItem("peerlearn-demo-session");
+        if (demoSessionStr) {
+          try {
+            const parsed = JSON.parse(demoSessionStr);
+            if (mounted) {
+              setSession(parsed);
+              setUser(parsed.user);
+              setLoading(false);
+              return;
+            }
+          } catch (e) {
+            console.warn("Failed to parse demo session, clearing:", e);
+            localStorage.removeItem("peerlearn-demo-session");
+          }
+        }
+
+        // 2. Fallback to real Supabase session
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) throw error;
@@ -105,14 +128,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!mounted) return;
 
         try {
-          setSession(session);
-          setUser(session?.user ?? null);
-          setLoading(false);
+          // If we have a demo session, don't let real auth events clear it unless it's a signed out event
+          if (_event === "SIGNED_OUT") {
+            localStorage.removeItem("peerlearn-demo-session");
+            setSession(null);
+            setUser(null);
+          } else {
+            const demoSessionStr = localStorage.getItem("peerlearn-demo-session");
+            if (demoSessionStr) return; // Keep demo session active
 
-          if (session?.user && _event === "SIGNED_IN") {
-            setTimeout(() => {
-              ensureProfileExists(session.user);
-            }, 0);
+            setSession(session);
+            setUser(session?.user ?? null);
+            setLoading(false);
+
+            if (session?.user && _event === "SIGNED_IN") {
+              setTimeout(() => {
+                ensureProfileExists(session.user);
+              }, 0);
+            }
           }
 
           if (session?.user) {
@@ -171,6 +204,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
+    // 1. Mock demo account bypass
+    if (email === "demo@peerlearn.com" && password === "demo123") {
+      const dummyUser = {
+        id: "00000000-0000-0000-0000-000000000000",
+        email: "demo@peerlearn.com",
+        user_metadata: { name: "Demo Student" },
+        app_metadata: { provider: "email" },
+        aud: "authenticated",
+        created_at: new Date().toISOString(),
+      };
+      const dummySession = {
+        access_token: "dummy-token",
+        token_type: "bearer",
+        expires_in: 3600,
+        refresh_token: "dummy-refresh-token",
+        user: dummyUser,
+      };
+      localStorage.setItem("peerlearn-demo-session", JSON.stringify(dummySession));
+      setSession(dummySession as any);
+      setUser(dummyUser as any);
+      return { error: null };
+    }
+
+    // 2. Real Supabase auth
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -187,10 +244,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
+      localStorage.removeItem("peerlearn-demo-session");
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
     } catch (err) {
       console.error("Sign out error:", err);
+    } finally {
+      setSession(null);
+      setUser(null);
     }
   };
 

@@ -84,6 +84,10 @@ const Discover = () => {
 
         setCurrentUser(current);
 
+        // ALL USERS
+        const { data: allUsers } = await supabase
+          .from("profiles")
+          .select("*");
         // ALL USERS — capped at 100 and filtered server-side
         let query = supabase
           .from("profiles")

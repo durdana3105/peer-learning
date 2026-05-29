@@ -26,7 +26,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
 
-  const { user, loading } = useAuth();
+  const { user, loading, signIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -50,10 +50,7 @@ const Login = () => {
 
     setIsLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await signIn(email, password);
 
     setIsLoading(false);
 
@@ -68,6 +65,27 @@ const Login = () => {
         title: "Welcome back 🚀",
       });
 
+      navigate("/dashboard");
+    }
+  };
+
+  // ✅ Quick Demo login
+  const handleDemoLogin = async () => {
+    setIsLoading(true);
+    const { error } = await signIn("demo@peerlearn.com", "demo123");
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: "Demo login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Welcome to PeerLearn Demo! 🎉",
+        description: "Logged in as Demo Student. No confirmation email needed.",
+      });
       navigate("/dashboard");
     }
   };
@@ -292,6 +310,20 @@ const Login = () => {
                 {isLoading ? "Logging in..." : "Log In"}
 
                 <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </motion.div>
+
+            {/* DEMO LOGIN BUTTON */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Button
+                type="button"
+                onClick={handleDemoLogin}
+                className="h-12 w-full rounded-xl bg-gradient-to-r from-emerald-400 to-green-500 text-black font-extrabold shadow-[0_0_20px_rgba(16,185,129,0.35)] hover:opacity-90 flex items-center justify-center gap-2"
+              >
+                ✨ Quick Demo Login
               </Button>
             </motion.div>
 
