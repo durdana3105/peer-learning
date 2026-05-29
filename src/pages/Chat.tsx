@@ -237,9 +237,15 @@ const Chat = () => {
       )
       .subscribe();
 
+    let lastTypingUpdate = 0;
+
     const typingChannel = supabase
       .channel(`chat-typing-${[currentUser.id, selectedUser.id].sort().join("-")}`)
       .on("broadcast", { event: "typing" }, ({ payload }) => {
+        const now = Date.now();
+        if (now - lastTypingUpdate < 300) return; // Drop excessive messages to prevent DoS
+        lastTypingUpdate = now;
+
         if (payload.senderId !== selectedUser.id) return;
 
         setTypingUserId(payload.isTyping ? payload.senderId : null);
