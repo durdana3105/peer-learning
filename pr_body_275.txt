@@ -1,0 +1,11 @@
+### Description
+Added a comprehensive Troubleshooting Guide addressing missing environment variables, Supabase connection errors, dependency installation failures, build and deployment issues, and authentication setup problems. Also linked this guide in the README under a new Troubleshooting section.
+
+### Fixes
+Fixes #275
+
+### Type of change
+- [x] Documentation Update
+
+### GSSoC 2026
+This PR is submitted as part of GSSoC 2026.

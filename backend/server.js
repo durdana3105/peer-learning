@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 // import chatRoutes from "./routers/chatRoutes.js";  // 👈 ADD THIS
 // import aiRoutes from "./routers/aiRoutes.js";
 import express from "express";
+import mongoose from "mongoose";
 
 dotenv.config(); // must be first
 import authRoutes from "./routers/authRoutes.js";
@@ -10,8 +11,23 @@ import chatRoutes from "./routers/chatRoutes.js";
 import aiRoutes from "./routers/aiRoutes.js";
 
 const app = express();
+app.set("trust proxy", 1);
 app.use(express.json());
 const PORT = process.env.PORT || 5000;
+
+const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+if (mongoUri) {
+  mongoose
+    .connect(mongoUri)
+    .then(() => {
+      console.log("MongoDB connected");
+    })
+    .catch((error) => {
+      console.error("MongoDB connection failed:", error);
+    });
+} else {
+  console.warn("MONGO_URI is not configured; auth routes will fail until it is set.");
+}
 app.use("/api/ai", aiRoutes);
 app.use("/api", authRoutes);
 app.use("/api", chatRoutes);

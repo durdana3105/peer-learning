@@ -1,4 +1,4 @@
-create table resources (
+create table if not exists resources (
   id          uuid primary key default gen_random_uuid(),
   title       text not null,
   description text,

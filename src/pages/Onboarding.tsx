@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 type RoleChoice = "learner" | "mentor" | "both";
@@ -52,6 +53,7 @@ const roleOptions: {
 const Onboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setNeedsOnboarding } = useAuth();
   const [selectedRole, setSelectedRole] = useState<RoleChoice | null>(null);
 
   useEffect(() => {
@@ -73,37 +75,66 @@ const Onboarding = () => {
   ) => {
     setSelectedRole(role.id);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    let isTimeout = false;
+    const timeout = setTimeout(() => {
+      isTimeout = true;
       setSelectedRole(null);
       toast({
-        title: "Authentication required",
-        description: "Please log in to continue.",
+        title: "Selection timed out",
+        description: "The request to the server timed out. Please try again.",
         variant: "destructive",
       });
-      navigate("/login", { replace: true });
-      return;
-    }
+    }, 10_000);
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_mentor: role.is_mentor, is_learner: role.is_learner })
-      .eq("id", user.id);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (error) {
+      if (isTimeout) return;
+
+      if (!user) {
+        clearTimeout(timeout);
+        setSelectedRole(null);
+        toast({
+          title: "Authentication required",
+          description: "Please log in to continue.",
+          variant: "destructive",
+        });
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ is_mentor: role.is_mentor, is_learner: role.is_learner })
+        .eq("id", user.id);
+
+      if (isTimeout) return;
+      clearTimeout(timeout);
+
+      if (error) {
+        setSelectedRole(null);
+        toast({
+          title: "Could not update role",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setNeedsOnboarding(false);
+      navigate("/dashboard");
+    } catch (err) {
+      if (isTimeout) return;
+      clearTimeout(timeout);
       setSelectedRole(null);
       toast({
         title: "Could not update role",
-        description: error.message,
+        description: err instanceof Error ? err.message : "An unexpected error occurred.",
         variant: "destructive",
       });
-      return;
     }
-
-    navigate("/dashboard");
   };
 
   return (

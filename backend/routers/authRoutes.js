@@ -1,13 +1,24 @@
 import express from "express";
 import { forgotPassword, resetPassword } from "../controllers/authController.js";
-import { rateLimiter } from "../middlewares/rateLimiter.js";
+import {
+  forgotPasswordRateLimiter,
+  loginRateLimiter,
+  otpVerificationRateLimiter,
+  resetPasswordRateLimiter,
+  signupRateLimiter,
+} from "../middlewares/rateLimiter.js";
 
 const router = express.Router();
 
-router.post("/forgot-password", rateLimiter, forgotPassword);
-router.post("/reset-password/:token", rateLimiter, resetPassword);
-// Example route
-router.post("/login", rateLimiter, (req, res) => {
+export const authRouteRateLimiters = {
+  loginRateLimiter,
+  signupRateLimiter,
+  otpVerificationRateLimiter,
+};
+
+router.post("/forgot-password", forgotPasswordRateLimiter, forgotPassword);
+router.post("/reset-password/:token", resetPasswordRateLimiter, resetPassword);
+router.post("/login", loginRateLimiter, (req, res) => {
   res.json({ message: "Login route working" });
 });
 

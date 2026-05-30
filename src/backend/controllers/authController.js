@@ -3,11 +3,29 @@ import crypto from "crypto";
 import User from "../models/User.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
+const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
+const GENERIC_RESET_MESSAGE =
+  "If an account with that email exists, a password reset link has been sent.";
+
+const buildFrontendBaseUrl = (req) => {
+  const configuredBaseUrl =
+    process.env.PASSWORD_RESET_BASE_URL ||
+    process.env.FRONTEND_URL ||
+    process.env.CLIENT_URL;
+
+  if (configuredBaseUrl) {
+    return configuredBaseUrl;
+  }
+
+  const protocol = req.headers["x-forwarded-proto"] || req.protocol;
+  return `${protocol}://${req.get("host")}`;
+};
+
 export const forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email } = req.body || {};
 
-    if (!email) {
+    if (!email || typeof email !== "string") {
       return res.status(400).json({
         success: false,
         message: "Email is required",
@@ -20,8 +38,7 @@ export const forgotPassword = async (req, res) => {
     if (!user) {
       return res.status(200).json({
         success: true,
-        message:
-          "If an account with that email exists, a password reset link has been sent.",
+        message: GENERIC_RESET_MESSAGE,
       });
     }
 
@@ -32,14 +49,10 @@ export const forgotPassword = async (req, res) => {
       .digest("hex");
 
     user.resetPasswordToken = hashedResetToken;
-    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
+    user.resetPasswordExpire = new Date(Date.now() + RESET_TOKEN_TTL_MS);
     await user.save({ validateBeforeSave: false });
 
-    const frontendBaseUrl =
-      process.env.PASSWORD_RESET_BASE_URL ||
-      process.env.FRONTEND_URL ||
-      process.env.CLIENT_URL ||
-      `${req.protocol}://${req.get("host")}`;
+    const frontendBaseUrl = buildFrontendBaseUrl(req);
     const resetUrl = `${frontendBaseUrl.replace(/\/$/, "")}/reset-password?token=${rawResetToken}`;
 
     try {
@@ -57,10 +70,10 @@ export const forgotPassword = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message:
-        "If an account with that email exists, a password reset link has been sent.",
+      message: GENERIC_RESET_MESSAGE,
     });
   } catch (error) {
+    console.error("Forgot password error:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Server Error",
@@ -71,7 +84,7 @@ export const forgotPassword = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
-    const { password } = req.body;
+    const password = req.body?.password || req.body?.newPassword;
 
     if (!token || !password) {
       return res.status(400).json({
@@ -111,6 +124,7 @@ export const resetPassword = async (req, res) => {
       message: "Password has been reset successfully",
     });
   } catch (error) {
+    console.error("Reset password error:", error);
     res.status(500).json({
       success: false,
       message: error.message || "Server Error",

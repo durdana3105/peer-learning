@@ -1,16 +1,35 @@
+import dotenv from "dotenv";
 import express from "express";
+import mongoose from "mongoose";
 import authRoutes from "./routers/authRoutes.js";
 import chatRoutes from "./routers/chatRoutes.js";
 import matchRoutes from "./routers/matchRoutes.js";
 
+dotenv.config();
+
 const app = express();
 const port = Number(process.env.PORT) || 3001;
 
+app.set("trust proxy", 1);
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
 	res.status(200).json({ ok: true });
 });
+
+const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+if (mongoUri) {
+	mongoose
+		.connect(mongoUri)
+		.then(() => {
+			console.log("MongoDB connected");
+		})
+		.catch((error) => {
+			console.error("MongoDB connection failed:", error);
+		});
+} else {
+	console.warn("MONGO_URI is not configured; auth and recommendation routes will fail until it is set.");
+}
 
 app.use("/api", authRoutes);
 app.use("/api", chatRoutes);

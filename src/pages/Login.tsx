@@ -73,7 +73,9 @@ const Login = () => {
   };
 
   const handleGoogleLogin = async () => {
+    console.log("handleGoogleLogin clicked");
     if (supabaseMisconfigured) {
+      console.log("Supabase is misconfigured, aborting OAuth");
       toast({
         title: "Not configured",
         description:
@@ -83,19 +85,27 @@ const Login = () => {
       return;
     }
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
-      },
-    });
-
-    if (error) {
-      toast({
-        title: "Google login failed",
-        description: error.message,
-        variant: "destructive",
+    console.log("Initiating signInWithOAuth for Google...");
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
+
+      console.log("signInWithOAuth response:", { data, error });
+
+      if (error) {
+        console.error("signInWithOAuth error:", error);
+        toast({
+          title: "Google login failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error("Uncaught exception in signInWithOAuth:", err);
     }
   };
 

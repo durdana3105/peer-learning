@@ -1,6 +1,7 @@
 import express from "express";
 import { getRecommendedPartners } from "../controllers/matchController.js";
-import { requireAuth } from "../middlewares/requireAuth.js";
+import { requireAuth, requireProfileRole } from "../middlewares/requireAuth.js";
+import { protectedApiRateLimiter } from "../middlewares/rateLimiter.js";
 
 const router = express.Router();
 
@@ -8,6 +9,8 @@ const router = express.Router();
 router.get(
   "/recommendations",
   requireAuth,
+  requireProfileRole("mentor", "learner"),
+  protectedApiRateLimiter,
   getRecommendedPartners
 );
 

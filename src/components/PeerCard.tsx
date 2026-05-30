@@ -10,7 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-import type { User } from "@/data/mockData";
+import type { User } from "@/types";
 
 interface PeerCardProps {
   peer: User;

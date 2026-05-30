@@ -1,7 +1,6 @@
 import { useRole } from "@/contexts/RoleContext";
 import { useAuth } from "@/contexts/useAuth";
 import { useEffect, useState } from "react";
-import axios from "axios";
 
 import RecommendedPartners from "@/components/recommendations/RecommendedPartners";
 const LearnerDashboard = () => {
@@ -17,7 +16,7 @@ const LearnerDashboard = () => {
 
         const token = localStorage.getItem("token");
 
-        const response = await axios.get(
+        const response = await fetch(
           "http://localhost:5000/api/match/recommendations",
           {
             headers: {
@@ -26,7 +25,10 @@ const LearnerDashboard = () => {
           }
         );
 
-        setPartners(response.data.recommendations || []);
+        if (response.ok) {
+          const data = await response.json();
+          setPartners(data.recommendations || []);
+        }
       } catch (error) {
         console.error("Failed to fetch partners:", error);
       } finally {

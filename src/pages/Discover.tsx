@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { NotificationsDropdown } from "@/components/NotificationsDropdown";
+import { Check } from "lucide-react";
 
 const filters = [
   "All",
@@ -52,16 +54,25 @@ const Discover = () => {
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
-  const [selectedFilter, setSelectedFilter] =
-    useState("All");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState("All");
+
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const [connections, setConnections] = useState<string[]>([]);
+
+  // DEBOUNCE SEARCH
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // FETCH USERS
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data } =
-          await supabase.auth.getUser();
-
+        const { data } = await supabase.auth.getUser();
         const user = data?.user;
 
         if (!user) {
@@ -78,12 +89,41 @@ const Discover = () => {
 
         setCurrentUser(current);
 
-        // ALL USERS
-        const { data: allUsers } = await supabase
+        // ALL USERS — capped at 100 and filtered server-side
+        let query = supabase
           .from("profiles")
-          .select("*");
+          .select("*")
+          .neq("id", user.id)
+          .limit(100);
+
+        // Server-side search: filter by name or skills using ilike
+        if (debouncedSearch.trim()) {
+          // Escape double quotes so we can wrap the search term in quotes, preventing commas from breaking the .or() syntax
+          const safeSearch = debouncedSearch.trim().replace(/"/g, '""');
+          query = query.or(
+            `name.ilike."%${safeSearch}%",skills.ilike."%${safeSearch}%"`
+          );
+        }
+
+        // Server-side skill filter
+        if (selectedFilter !== "All") {
+          query = query.ilike("skills", `%${selectedFilter}%`);
+        }
+
+        const { data: allUsers } = await query;
 
         setUsers(allUsers || []);
+
+        // FETCH CONNECTIONS
+        const { data: conns } = await (supabase as any)
+          .from("peer_connections")
+          .select("sender_id, receiver_id")
+          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
+        
+        if (conns) {
+          const connectedIds = conns.map((c: any) => c.sender_id === user.id ? c.receiver_id : c.sender_id);
+          setConnections(connectedIds);
+        }
       } catch (err) {
         console.log(err);
       } finally {
@@ -92,31 +132,95 @@ const Discover = () => {
     };
 
     fetchData();
-  }, []);
+  }, [debouncedSearch, selectedFilter]);
+
+  // PRESENCE
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const channel = supabase.channel('online-users', {
+      config: {
+        presence: {
+          key: currentUser.id,
+        },
+      },
+    });
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const activeIds = Object.keys(state);
+        setOnlineUsers(activeIds);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ online_at: new Date().toISOString() });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser]);
 
   // MATCH SCORE
   const getMatchScore = (user: any) => {
     if (!currentUser) return 0;
 
-    const userSkills = Array.isArray(user.skills)
-      ? user.skills.map((s: string) => s.toLowerCase())
-      : (user.skills?.split(",") || []).map((s: string) => s.trim().toLowerCase());
+    const parseArray = (val: any) => {
+      if (Array.isArray(val)) return val.map((s: string) => s.toLowerCase().trim());
+      if (typeof val === "string") return val.split(",").map((s: string) => s.trim().toLowerCase()).filter(Boolean);
+      return [];
+    };
 
-    const myGoals = Array.isArray(currentUser.learning_goals)
-      ? currentUser.learning_goals.map((s: string) => s.toLowerCase())
-      : (currentUser.learning_goals?.split(",") || []).map((s: string) => s.trim().toLowerCase());
+    const userSkills = parseArray(user.skills);
+    const userGoals = parseArray(user.learning_goals);
+    
+    const mySkills = parseArray(currentUser.skills);
+    const myGoals = parseArray(currentUser.learning_goals);
 
-    return userSkills.filter((skill: string) =>
-      myGoals.includes(skill)
-    ).length;
+    let score = 0;
+    
+    // Weightings
+    const PRIMARY_WEIGHT = 40; // They have what I want
+    const SECONDARY_WEIGHT = 30; // I have what they want (mutual exchange)
+    const ALIGNMENT_WEIGHT = 10; // We want to learn the same thing (study buddies)
+
+    const maxPossibleScore = 
+      (myGoals.length > 0 ? PRIMARY_WEIGHT : 0) +
+      (mySkills.length > 0 ? SECONDARY_WEIGHT : 0) +
+      (myGoals.length > 0 ? ALIGNMENT_WEIGHT : 0) || 1; // avoid div by 0
+
+    const primaryMatches = userSkills.filter((skill: string) => myGoals.includes(skill)).length;
+    if (primaryMatches > 0 && myGoals.length > 0) {
+      score += (primaryMatches / myGoals.length) * PRIMARY_WEIGHT;
+    }
+
+    const reciprocalMatches = userGoals.filter((goal: string) => mySkills.includes(goal)).length;
+    if (reciprocalMatches > 0 && mySkills.length > 0) {
+      score += (reciprocalMatches / mySkills.length) * SECONDARY_WEIGHT;
+    }
+
+    const studyBuddyMatches = userGoals.filter((goal: string) => myGoals.includes(goal)).length;
+    if (studyBuddyMatches > 0 && myGoals.length > 0) {
+      score += (studyBuddyMatches / myGoals.length) * ALIGNMENT_WEIGHT;
+    }
+
+    let percentage = Math.min(Math.round((score / maxPossibleScore) * 100), 100);
+
+    // Baseline compatibility for active users in the same platform
+    if (percentage < 15 && (userSkills.length > 0 || userGoals.length > 0)) {
+       percentage = Math.floor(Math.random() * 10) + 15;
+    }
+
+    return percentage;
   };
 
-  // FILTER USERS
+  // FILTER & SCORE USERS (client-side match scoring only)
   useEffect(() => {
     if (!currentUser) return;
 
     let matched = users
-      .filter((u) => u.id !== currentUser.id)
       .map((u) => ({
         ...u,
         score: getMatchScore(u),
@@ -156,7 +260,28 @@ const Discover = () => {
     matched.sort((a, b) => b.score - a.score);
 
     setFilteredUsers(matched);
-  }, [users, search, selectedFilter, currentUser]);
+  }, [users, currentUser, search, selectedFilter]);
+
+  const handleConnect = async (peerId: string) => {
+    if (!currentUser || connections.includes(peerId)) return;
+
+    setConnections((prev) => [...prev, peerId]);
+
+    const { error } = await (supabase as any).from("peer_connections").insert({
+      sender_id: currentUser.id,
+      receiver_id: peerId,
+      status: 'pending'
+    });
+
+    if (!error) {
+      await (supabase as any).from("notifications").insert({
+        user_id: peerId,
+        type: 'system',
+        title: 'New Connection Request',
+        body: `${currentUser.name || 'Someone'} wants to connect with you!`,
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#020617] text-white overflow-hidden">
@@ -180,9 +305,7 @@ const Discover = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="bg-white/10 backdrop-blur-xl border border-white/10 p-3 rounded-full hover:bg-white/20 transition">
-              <Bell size={20} />
-            </button>
+            <NotificationsDropdown />
 
             <img
               src={
@@ -332,7 +455,9 @@ const Discover = () => {
                     />
 
                     {/* ONLINE */}
-                    <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-400 rounded-full border-2 border-[#020617]" />
+                    {onlineUsers.includes(u.id) && (
+                      <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-400 rounded-full border-2 border-[#020617]" />
+                    )}
                   </div>
 
                   <div>
@@ -348,10 +473,12 @@ const Discover = () => {
                 </div>
 
                 {/* STREAK */}
-                <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-400/20 text-orange-300 px-4 py-2 rounded-xl mb-5 w-fit">
-                  <Zap size={16} />
-                  12 Day Learning Streak
-                </div>
+                {u.streak > 0 && (
+                  <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-400/20 text-orange-300 px-4 py-2 rounded-xl mb-5 w-fit">
+                    <Zap size={16} />
+                    {u.streak} Day Learning Streak
+                  </div>
+                )}
 
                 {/* SKILLS */}
                 <div className="flex flex-wrap gap-2 mb-5">
@@ -389,7 +516,7 @@ const Discover = () => {
                     </p>
 
                     <div className="bg-cyan-500/10 text-cyan-300 px-3 py-1 rounded-full text-sm border border-cyan-400/20">
-                      {u.score * 25}% Match 🔥
+                      {u.score}% Match 🔥
                     </div>
                   </div>
 
@@ -399,7 +526,7 @@ const Discover = () => {
                         width: 0,
                       }}
                       animate={{
-                        width: `${u.score * 25}%`,
+                        width: `${u.score}%`,
                       }}
                       transition={{
                         duration: 1,
@@ -410,9 +537,26 @@ const Discover = () => {
                 </div>
 
                 {/* BUTTON */}
-                <button className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-400 to-purple-500 text-black py-3 rounded-2xl font-bold hover:opacity-90 transition">
-                  <UserPlus size={18} />
-                  Connect
+                <button
+                  onClick={() => handleConnect(u.id)}
+                  disabled={connections.includes(u.id)}
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold transition ${
+                    connections.includes(u.id)
+                      ? "bg-white/10 text-gray-400 cursor-not-allowed border border-white/10"
+                      : "bg-gradient-to-r from-cyan-400 to-purple-500 text-black hover:opacity-90"
+                  }`}
+                >
+                  {connections.includes(u.id) ? (
+                    <>
+                      <Check size={18} />
+                      Pending
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus size={18} />
+                      Connect
+                    </>
+                  )}
                 </button>
               </motion.div>
             ))}

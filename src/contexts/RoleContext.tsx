@@ -26,7 +26,6 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
   const [currentMode, setCurrentMode] = useState<UserMode>("learner");
   const [isMentor, setIsMentor] = useState(false);
   const [isLearner, setIsLearner] = useState(false);
-  const [profileLoading, setProfileLoading] = useState(true);
 
   const isDualRole = isMentor && isLearner;
 
@@ -40,11 +39,8 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
         setIsMentor(false);
         setIsLearner(false);
         setCurrentMode("learner");
-        setProfileLoading(false);
         return;
       }
-
-      setProfileLoading(true);
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -72,8 +68,6 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setCurrentMode("learner");
       }
-
-      setProfileLoading(false);
     };
 
     void fetchRoleProfile();
@@ -86,10 +80,6 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem("peerlearn_mode", mode);
     }
   };
-
-  if (loading || profileLoading) {
-    return null;
-  }
 
   return (
     <RoleContext.Provider

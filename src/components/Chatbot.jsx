@@ -23,13 +23,22 @@ export default function Chatbot() {
   // Load only the current user's chat messages
   useEffect(() => {
     const loadChats = async () => {
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
+
 
       const { data } = await supabase
         .from("chat_messages")
         .select("*")
+
+        .eq("user_id", user.id)
+
         .eq("user_id", session.user.id)
+
         .order("created_at", { ascending: true });
 
       if (data) setMessages(data);
@@ -41,6 +50,12 @@ export default function Chatbot() {
   const sendMessage = async () => {
     if (!input.trim()) return;
 
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const userMsg = { role: "user", text: input, user_id: user.id };
+
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
 
@@ -48,6 +63,7 @@ export default function Chatbot() {
 
     // Store user_id so each message is scoped to the authenticated user.
     const userMsg = { role: "user", text: input, user_id: userId };
+
 
     const updatedMessages = [...messages, userMsg];
 
@@ -94,7 +110,11 @@ export default function Chatbot() {
 
       const botReply = data?.reply || "No response 😅";
 
+
+      const botMsg = { role: "assistant", text: botReply, user_id: user.id };
+
       const botMsg = { role: "assistant", text: botReply, user_id: userId };
+
 
       // Smoother typing effect (chunked rendering)
       let currentText = "";

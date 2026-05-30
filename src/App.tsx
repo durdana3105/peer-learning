@@ -2,8 +2,6 @@ import React, { useEffect, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, Router } from "react-router-dom";
 
-import Landing from "./pages/Landing";
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,43 +9,49 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import AdminRoute from "@/components/AdminRoute";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ProtectedMentorRoute from "@/components/ProtectedMentorRoute";
 
+// Global layout components – rendered on every page, keep static
 import Navbar from "./components/Navbar";
 import Chatbot from "./components/Chatbot";
-import StudyRooms from "./components/StudyRooms";
-import Room from "./components/Room";
 import StreakBadge from "./components/StreakBadge";
 import FloatingAI from "./components/FloatingAI";
 
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Dashboard from "./pages/Dashboard";
-import MentorDashboard from "./pages/MentorDashboard";
-import LearnerDashboard from "./pages/LearnerDashboard";
-import Discover from "./pages/Discover";
-import Sessions from "./pages/Sessions";
-import Messages from "./pages/Messages";
-import Chat from "./pages/Chat";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Onboarding from "./pages/Onboarding";
-import Profile from "./pages/Profile";
-import EditProfile from "./pages/EditProfile";
-import Notifications from "./pages/Notifications";
-import Leaderboard from "./pages/Leaderboard";
-import Admin from "./pages/Admin";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import AnonymousDoubts from "./pages/AnonymousDoubts";
-import AIPage from "./pages/aipage";
-import ContributorDashboard from "./pages/ContributorDashboard";
-import BecomeMentor from "./pages/BecomeMentor";
-
 import { useAuth } from "@/contexts/useAuth";
 
+// Lazy-loaded page & route-specific components (code-split per route)
+const Landing = React.lazy(() => import("./pages/Landing"));
+const Index = React.lazy(() => import("./pages/Index"));
+const NotFound = React.lazy(() => import("./pages/NotFound"));
+const Dashboard = React.lazy(() => import("./pages/Dashboard"));
+const MentorDashboard = React.lazy(() => import("./pages/MentorDashboard"));
+const LearnerDashboard = React.lazy(() => import("./pages/LearnerDashboard"));
+const Discover = React.lazy(() => import("./pages/Discover"));
+const Sessions = React.lazy(() => import("./pages/Sessions"));
+const Messages = React.lazy(() => import("./pages/Messages"));
+const Chat = React.lazy(() => import("./pages/Chat"));
+const Login = React.lazy(() => import("./pages/Login"));
+const Signup = React.lazy(() => import("./pages/Signup"));
+const Onboarding = React.lazy(() => import("./pages/Onboarding"));
+const Profile = React.lazy(() => import("./pages/Profile"));
+const EditProfile = React.lazy(() => import("./pages/EditProfile"));
+const Notifications = React.lazy(() => import("./pages/Notifications"));
+const Leaderboard = React.lazy(() => import("./pages/Leaderboard"));
+const Admin = React.lazy(() => import("./pages/Admin"));
+const ForgotPassword = React.lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = React.lazy(() => import("./pages/ResetPassword"));
+const AnonymousDoubts = React.lazy(() => import("./pages/AnonymousDoubts"));
+const AIPage = React.lazy(() => import("./pages/aipage"));
+const ContributorDashboard = React.lazy(() => import("./pages/ContributorDashboard"));
+const BecomeMentor = React.lazy(() => import("./pages/BecomeMentor"));
+const Portfolio = React.lazy(() => import("./pages/Portfolio"));
+const AuthCallback = React.lazy(() => import("./pages/AuthCallback"));
+const PublicPortfolio = React.lazy(() => import("./pages/PublicPortfolio"));
 const ResourceHub = React.lazy(() => import("@/pages/ResourceHub"));
+const StudyRooms = React.lazy(() => import("./components/StudyRooms"));
+const Room = React.lazy(() => import("./components/Room"));
 
 const queryClient = new QueryClient();
 
@@ -98,7 +102,7 @@ function AppContent() {
       <div id="sparkle-container"></div>
 
 
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#020617]"><div className="h-10 w-10 animate-spin rounded-full border-4 border-cyan-400 border-t-transparent" /></div>}>
         <Routes>
           <Route
             path="/"
@@ -121,6 +125,9 @@ function AppContent() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/become-mentor" element={<BecomeMentor />} />
+          <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
+
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           <Route
             path="/dashboard"
@@ -255,13 +262,24 @@ function AppContent() {
           />
 
           <Route
-            path="/admin"
+            path="/portfolio"
             element={
               <ProtectedRoute>
                 <WithNav>
-                  <Admin />
+                  <Portfolio />
                 </WithNav>
               </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <WithNav>
+                  <Admin />
+                </WithNav>
+              </AdminRoute>
             }
           />
 

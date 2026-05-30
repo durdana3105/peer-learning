@@ -7,6 +7,7 @@ export interface AuthContextType {
   user: User | null;
   loading: boolean;
   needsOnboarding: boolean;
+  setNeedsOnboarding: (needs: boolean) => void;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -116,15 +117,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
 
           if (session?.user) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("is_mentor, is_learner")
-              .eq("id", session.user.id)
-              .single();
+            setTimeout(async () => {
+              try {
+                const { data: profile } = await supabase
+                  .from("profiles")
+                  .select("is_mentor, is_learner")
+                  .eq("id", session.user.id)
+                  .single();
 
-            setNeedsOnboarding(
-              profile?.is_mentor === false && profile?.is_learner === false
-            );
+                if (mounted) {
+                  setNeedsOnboarding(
+                    profile?.is_mentor === false && profile?.is_learner === false
+                  );
+                }
+              } catch (err) {
+                console.error("Failed to check onboarding profile:", err);
+              }
+            }, 0);
           } else {
             setNeedsOnboarding(false);
           }
@@ -187,7 +196,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, loading, needsOnboarding, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ session, user, loading, needsOnboarding, setNeedsOnboarding, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

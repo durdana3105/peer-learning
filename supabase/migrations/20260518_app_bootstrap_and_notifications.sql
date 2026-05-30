@@ -195,7 +195,7 @@ create policy "Users can read own chat messages"
 on public.chat_messages
 for select
 to authenticated
-using (user_id is null or user_id = auth.uid());
+using (user_id = auth.uid());
 
 drop policy if exists "Users can insert own chat messages" on public.chat_messages;
 create policy "Users can insert own chat messages"

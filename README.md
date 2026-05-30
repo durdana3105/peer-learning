@@ -48,12 +48,14 @@ A modern peer-to-peer learning platform where students can connect, collaborate,
 - [🚀 Deployment](#%F0%9F%9A%80-deployment)
 - [🏗️ System Architecture](#%F0%9F%8F%97%EF%B8%8F-system-architecture)
 - [📂 Project Structure](#%F0%9F%93%82-project-structure)
+    + [📝 Where to add new features?](#%F0%9F%93%9D-where-to-add-new-features)
 - [⚙️ Installation & Setup](#%E2%9A%99%EF%B8%8F-installation--setup)
   * [1️⃣ Clone the Repository](#1%EF%B8%8F%E2%83%A3-clone-the-repository)
   * [2️⃣ Navigate to Project Directory](#2%EF%B8%8F%E2%83%A3-navigate-to-project-directory)
   * [3️⃣ Install Dependencies](#3%EF%B8%8F%E2%83%A3-install-dependencies)
   * [4️⃣ Configure Environment Variables](#4%EF%B8%8F%E2%83%A3-configure-environment-variables)
   * [5️⃣ Start Development Server](#5%EF%B8%8F%E2%83%A3-start-development-server)
+  * [📚 Technical Documentation](#%F0%9F%93%9A-technical-documentation)
 - [🚀 Deployment](#%F0%9F%9A%80-deployment-1)
     + [Build Command](#build-command)
 - [🛠️ Troubleshooting](#%F0%9F%9B%A0%EF%B8%8F-troubleshooting)
@@ -225,22 +227,33 @@ graph TD
 ```bash
 peer-learning-platform/
 │
-├── public/
+├── public/               # Static assets (images, icons, etc.)
 │
-├── src/
-│   ├── components/
-│   ├── pages/
-│   ├── hooks/
-│   ├── integrations/
-│   ├── services/
-│   ├── utils/
-│   └── App.tsx
+├── src/                  # Main application source code
+│   ├── components/       # Reusable UI components (buttons, cards, forms)
+│   ├── pages/            # Application routes and views (Home, Profile, Chat)
+│   ├── hooks/            # Custom React hooks for state and side effects
+│   ├── integrations/     # Third-party integrations (Supabase, external APIs)
+│   ├── services/         # API calls and business logic
+│   ├── utils/            # Helper functions and utilities
+│   └── App.tsx           # Main application entry point and routing
 │
-├── package.json
-├── tailwind.config.js
-├── tsconfig.json
-└── README.md
+├── backend/              # Custom Node.js Express server
+│   ├── controllers/      # Request handlers (e.g., aiController)
+│   ├── routers/          # API route definitions
+│   └── server.js         # Backend entry point
+│
+├── package.json          # Project dependencies and npm scripts
+├── tailwind.config.js    # Tailwind CSS configuration
+├── tsconfig.json         # TypeScript compiler configuration
+└── README.md             # Project documentation
 ```
+
+### 📝 Where to add new features?
+- **New UI Element**: Add a reusable component in `src/components/`.
+- **New Page/Route**: Create a new view in `src/pages/` and add it to the router in `App.tsx`.
+- **New Database Query**: Add the Supabase logic inside `src/integrations/supabase/` or `src/services/`.
+- **New Backend API**: Define the route in `backend/routers/` and handle logic in `backend/controllers/`.
 
 ---
 
@@ -289,6 +302,13 @@ npm run dev
 
 ---
 
+## 📚 Technical Documentation
+For deeper technical insights, please refer to our dedicated documentation:
+- [🗄️ Database Architecture & Schema](./docs/database.md)
+- [🔌 API Documentation](./docs/api.md)
+
+---
+
 # 🚀 Deployment
 
 This project can be easily deployed on:
@@ -311,15 +331,25 @@ If you encounter issues during setup, installation, or configuration, please ref
 
 ---
 
-# 🌟 Future Enhancements
+# 🗺️ Feature Roadmap
 
-- 🎥 Video Calling Integration
-- 📅 Session Scheduling
-- 🧠 AI-based Peer Recommendations
-- 🔔 Real-time Notifications
-- 🌍 Multi-language Support
-- 📱 Dedicated Mobile App
-- 🧑‍🏫 Mentor Matching System
+Our development roadmap is structured to provide clear visibility into the project's priorities and progress. 
+
+### Completed ✅
+- **🔐 Secure Authentication**: Email/Password and OAuth integration.
+- **📚 Real-Time Chat & Study Sessions**: Live messaging and collaborative learning environments.
+- **🏆 Gamification System**: XP, levels, leaderboards, and streak counts.
+
+### In Progress 🚧
+- **📅 Session Scheduling**: Plan study sessions ahead of time. (Target: Q3)
+- **🧠 AI-based Peer Recommendations**: Smart matching system for peers. (Target: Q3)
+
+### Planned 📌
+- **🎥 Video Calling Integration**: Seamless face-to-face peer collaboration. (Target: Q4)
+- **🔔 Real-time Notifications**: Alerts for new messages and upcoming sessions. (Target: Q4)
+- **🧑‍🏫 Mentor Matching System**: Dedicated workflows for connecting students with mentors. (Target: Q1 2027)
+- **🌍 Multi-language Support**: Expanding accessibility for a global audience. (Target: Q1 2027)
+- **📱 Dedicated Mobile App**: Native applications for iOS and Android. (Target: 2027)
 
 ---
 

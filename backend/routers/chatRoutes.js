@@ -1,8 +1,8 @@
 import express from "express";
 import OpenAI from "openai";
 import dotenv from "dotenv";
-import { requireAuth } from "../middlewares/requireAuth.js";
-import { rateLimiter } from "../middlewares/rateLimiter.js";
+import { requireAuth, requireProfileRole } from "../middlewares/requireAuth.js";
+import { protectedApiRateLimiter } from "../middlewares/rateLimiter.js";
 dotenv.config();
 const router = express.Router();
 
@@ -35,28 +35,32 @@ const MAX_TOKENS_CAP = 512;
 const SYSTEM_PROMPT =
   "You are a helpful peer-learning assistant. Answer questions about coding, study techniques, and academic topics in a clear and supportive way.";
 
-router.post("/chat", requireAuth, rateLimiter, async (req, res) => {
-  try {
-    const {
-      messages,
-      model = "openai/gpt-3.5-turbo",
-      max_tokens,
-      temperature = 0.7,
-    } = req.body;
+router.post(
+  "/chat",
+  requireAuth,
+  requireProfileRole("mentor", "learner"),
+  protectedApiRateLimiter,
+  async (req, res) => {
+    try {
+      const {
+        messages,
+        model = "openai/gpt-3.5-turbo",
+        max_tokens,
+        temperature = 0.7,
+      } = req.body;
 
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return res.status(400).json({ error: "A non-empty messages array is required." });
-    }
+      if (!Array.isArray(messages) || messages.length === 0) {
+        return res.status(400).json({ error: "A non-empty messages array is required." });
+      }
 
-    if (messages.length > 50) {
-      return res.status(400).json({ error: "Maximum of 50 messages allowed per request." });
-    }
+      if (messages.length > 50) {
+        return res.status(400).json({ error: "Maximum of 50 messages allowed per request." });
+      }
 
-    // Validate each message has the expected shape to avoid sending malformed
-    // requests upstream.
-    let totalLength = 0;
-    const isValid = messages.every(
-      (m) => {
+      // Validate each message has the expected shape to avoid sending malformed
+      // requests upstream.
+      let totalLength = 0;
+      const isValid = messages.every((m) => {
         if (
           typeof m !== "object" ||
           (m.role !== "user" && m.role !== "assistant" && m.role !== "system") ||
@@ -64,46 +68,47 @@ router.post("/chat", requireAuth, rateLimiter, async (req, res) => {
         ) {
           return false;
         }
+
         totalLength += m.content.length;
         return true;
+      });
+
+      if (!isValid) {
+        return res
+          .status(400)
+          .json({ error: "Each message must have a role (user|assistant|system) and a string content field." });
       }
-    );
 
-    if (!isValid) {
-      return res
-        .status(400)
-        .json({ error: "Each message must have a role (user|assistant|system) and a string content field." });
+      if (totalLength > 20000) {
+        return res.status(400).json({ error: "Total message content exceeds maximum allowed length." });
+      }
+
+      // Reject unknown models to prevent cost escalation.
+      if (!ALLOWED_MODELS.has(model)) {
+        return res.status(400).json({ error: "Requested model is not allowed." });
+      }
+
+      // Cap token count server-side regardless of caller input.
+      const safeMaxTokens = Math.min(
+        typeof max_tokens === "number" ? max_tokens : MAX_TOKENS_CAP,
+        MAX_TOKENS_CAP
+      );
+
+      const chatMessages = [{ role: "system", content: SYSTEM_PROMPT }, ...messages];
+
+      const response = await openrouter.chat.completions.create({
+        model,
+        messages: chatMessages,
+        max_tokens: safeMaxTokens,
+        temperature,
+      });
+
+      res.json({ reply: response.choices[0].message.content });
+    } catch (error) {
+      console.error("Chat route error:", error);
+      res.status(500).json({ error: error.message || "AI request failed" });
     }
-
-    if (totalLength > 20000) {
-      return res.status(400).json({ error: "Total message content exceeds maximum allowed length." });
-    }
-
-    // Reject unknown models to prevent cost escalation.
-    if (!ALLOWED_MODELS.has(model)) {
-      return res.status(400).json({ error: "Requested model is not allowed." });
-    }
-
-    // Cap token count server-side regardless of caller input.
-    const safeMaxTokens = Math.min(
-      typeof max_tokens === "number" ? max_tokens : MAX_TOKENS_CAP,
-      MAX_TOKENS_CAP
-    );
-
-    const chatMessages = [{ role: "system", content: SYSTEM_PROMPT }, ...messages];
-
-    const response = await openrouter.chat.completions.create({
-      model,
-      messages: chatMessages,
-      max_tokens: safeMaxTokens,
-      temperature,
-    });
-
-    res.json({ reply: response.choices[0].message.content });
-  } catch (error) {
-    console.error("Chat route error:", error);
-    res.status(500).json({ error: error.message || "AI request failed" });
   }
-});
+);
 
 export default router;

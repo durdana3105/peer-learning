@@ -1,7 +1,7 @@
 import { Calendar, Clock, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { Session } from "@/data/mockData";
+import type { Session } from "@/types";
 
 const statusStyles = {
   upcoming: "bg-primary/10 text-primary",

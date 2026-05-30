@@ -30,6 +30,7 @@ import {
   Shield,
   Moon,
   Users,
+  BriefcaseBusiness,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -110,6 +111,11 @@ const Navbar = () => {
           to: "/leaderboard",
           label: "Ranks",
           icon: Trophy,
+        },
+        {
+          to: "/portfolio",
+          label: "Portfolio",
+          icon: BriefcaseBusiness,
         },
         ...(isAdmin
           ? [

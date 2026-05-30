@@ -42,10 +42,16 @@ const FloatingAI = () => {
 
     try {
       // Route the request through the backend so the API key stays server-side.
+      // The /api/chat endpoint is protected by requireAuth middleware.
+      // Without a Bearer token every request is rejected with 401 Unauthorized.
+      // Retrieve the session token from localStorage using the same pattern
+      // used by SuggestedPartners.tsx and other components in this project.
+      const token = localStorage.getItem("token");
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           messages: [{ role: "user", content: prompt }],

@@ -1,3 +1,4 @@
+import { supabase, supabaseMisconfigured } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -84,6 +85,37 @@ const Signup = () => {
 
     // Redirect user to login page
     navigate("/login");
+  };
+
+  const handleGoogleLogin = async () => {
+    if (supabaseMisconfigured) {
+      toast({
+        title: "Not configured",
+        description:
+          "Supabase environment variables are not set. Configure VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        toast({
+          title: "Google login failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error("Uncaught exception in signInWithOAuth:", err);
+    }
   };
 
   if (loading) {
@@ -279,6 +311,21 @@ const Signup = () => {
                 {isLoading ? "Creating..." : "Sign Up"}
               </Button>
             </motion.div>
+
+            {/* GOOGLE */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGoogleLogin}
+              className="h-10 w-full border border-white/10 bg-white/5 text-white hover:bg-white/10"
+            >
+              <img
+                src="https://www.svgrepo.com/show/475656/google-color.svg"
+                alt="google"
+                className="mr-2 h-5 w-5"
+              />
+              Continue with Google
+            </Button>
           </form>
 
           {/* Login redirect */}
