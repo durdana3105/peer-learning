@@ -304,18 +304,22 @@ function AppContent() {
           <Route
             path="/anonymous-doubts"
             element={
-              <WithNav>
-                <AnonymousDoubts />
-              </WithNav>
+              <ProtectedRoute>
+                <WithNav>
+                  <AnonymousDoubts />
+                </WithNav>
+              </ProtectedRoute>
             }
           />
 
           <Route
             path="/contributor-dashboard"
             element={
-              <WithNav>
-                <ContributorDashboard />
-              </WithNav>
+              <ProtectedRoute>
+                <WithNav>
+                  <ContributorDashboard />
+                </WithNav>
+              </ProtectedRoute>
             }
           />
 
