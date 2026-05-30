@@ -23,9 +23,13 @@ export default function Chatbot() {
   // ✅ Load chats
   useEffect(() => {
     const loadChats = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       const { data } = await supabase
         .from("chat_messages")
         .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: true });
 
       if (data) setMessages(data);
@@ -37,7 +41,10 @@ export default function Chatbot() {
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMsg = { role: "user", text: input };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const userMsg = { role: "user", text: input, user_id: user.id };
 
     // ✅ fix stale state
     const updatedMessages = [...messages, userMsg];
@@ -71,7 +78,7 @@ export default function Chatbot() {
 
       const botReply = data?.reply || "No response 😅";
 
-      const botMsg = { role: "assistant", text: botReply };
+      const botMsg = { role: "assistant", text: botReply, user_id: user.id };
 
       // ✅ smoother typing (chunked)
       let currentText = "";
