@@ -7,6 +7,7 @@ export interface AuthContextType {
   user: User | null;
   loading: boolean;
   needsOnboarding: boolean;
+  setNeedsOnboarding: (needs: boolean) => void;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -195,7 +196,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, loading, needsOnboarding, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ session, user, loading, needsOnboarding, setNeedsOnboarding, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

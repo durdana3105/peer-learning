@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 type RoleChoice = "learner" | "mentor" | "both";
@@ -52,6 +53,7 @@ const roleOptions: {
 const Onboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setNeedsOnboarding } = useAuth();
   const [selectedRole, setSelectedRole] = useState<RoleChoice | null>(null);
 
   useEffect(() => {
@@ -121,6 +123,7 @@ const Onboarding = () => {
         return;
       }
 
+      setNeedsOnboarding(false);
       navigate("/dashboard");
     } catch (err) {
       if (isTimeout) return;
