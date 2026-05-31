@@ -23,22 +23,13 @@ export default function Chatbot() {
   // Load only the current user's chat messages
   useEffect(() => {
     const loadChats = async () => {
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
-
 
       const { data } = await supabase
         .from("chat_messages")
         .select("*")
-
-        .eq("user_id", user.id)
-
         .eq("user_id", session.user.id)
-
         .order("created_at", { ascending: true });
 
       if (data) setMessages(data);
@@ -49,10 +40,6 @@ export default function Chatbot() {
   // SEND MESSAGE
   const sendMessage = async () => {
     if (!input.trim()) return;
-
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
@@ -77,32 +64,17 @@ export default function Chatbot() {
         content: msg.text,
       }));
       const res = await fetch(`${API_BASE_URL}/api/ai/ask`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${session.access_token}`, // still pass session for user auth
-  },
-  body: JSON.stringify({
-    messages: formattedMessages,
-    systemPrompt: systemPrompt.content,
-    model: "openai/gpt-4", 
-  }),
-});
-
-      // Route the request through the backend so the API key stays server-side.
-      // Include the session token so the backend can authenticate the request.
-      // const res = await fetch("/api/chat", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //     Authorization: `Bearer ${session.access_token}`,
-      //   },
-      //   body: JSON.stringify({
-      //     messages: formattedMessages,
-      //     systemPrompt: systemPrompt.content,
-      //     model: "openai/gpt-3.5-turbo",
-      //   }),
-      // });
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          messages: formattedMessages,
+          systemPrompt: systemPrompt.content,
+          model: "openai/gpt-4",
+        }),
+      });
 
       const data = await res.json();
 
