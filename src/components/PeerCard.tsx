@@ -48,6 +48,8 @@ const PeerCard = ({
           <img
             src={peer.avatar}
             alt={peer.name}
+            loading="lazy"
+            decoding="async"
             className="h-16 w-16 rounded-2xl object-cover border border-white/10"
           />
 

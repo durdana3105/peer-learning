@@ -3,9 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/useAuth';
 
-import Whiteboard from './Whiteboard/Whiteboard';
+import React, { Suspense } from 'react';
 
-import { MarkdownRenderer } from '@/components/MarkdownRenderer';
+const Whiteboard = React.lazy(() => import('./Whiteboard/Whiteboard'));
+const MarkdownRenderer = React.lazy(() =>
+  import('@/components/MarkdownRenderer').then((module) => ({ default: module.MarkdownRenderer }))
+);
 
 
 export default function Room() {
@@ -213,7 +216,9 @@ export default function Room() {
                           ? 'bg-blue-600 text-white rounded-br-sm' 
                           : 'bg-slate-800 text-slate-200 rounded-bl-sm border border-slate-700'
                       }`}>
-                        <MarkdownRenderer content={msg.content} />
+                        <Suspense fallback={<span className="text-slate-300">{msg.content}</span>}>
+                          <MarkdownRenderer content={msg.content} />
+                        </Suspense>
                       </div>
                     </div>
                   )
@@ -242,7 +247,9 @@ export default function Room() {
 
   {/* Whiteboard */}
   <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-    <Whiteboard roomId={id!} />
+    <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800" />}>
+      <Whiteboard roomId={id!} />
+    </Suspense>
   </div>
 
   {/* Participants */}

@@ -1,4 +1,5 @@
 "use client";
+import { useMemo } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -25,7 +26,7 @@ ChartJS.register(
 
 
 export default function AnalyticsCharts({ profile, sessions }) {
-  const learningHoursData = {
+  const learningHoursData = useMemo(() => ({
     labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     datasets: [
       {
@@ -35,9 +36,9 @@ export default function AnalyticsCharts({ profile, sessions }) {
         backgroundColor: "rgba(34,211,238,0.3)",
       },
     ],
-  };
+  }), []);
 
-  const attendanceData = {
+  const attendanceData = useMemo(() => ({
     labels: ["Attended", "Missed"],
     datasets: [
       {
@@ -47,9 +48,9 @@ export default function AnalyticsCharts({ profile, sessions }) {
         backgroundColor: ["rgba(34,211,238,0.6)", "rgba(239,68,68,0.6)"],
       },
     ],
-  };
+  }), [sessions]);
 
-  const xpGrowthData = {
+  const xpGrowthData = useMemo(() => ({
     labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
     datasets: [
       {
@@ -59,7 +60,7 @@ export default function AnalyticsCharts({ profile, sessions }) {
         backgroundColor: "rgba(59,130,246,0.3)",
       },
     ],
-  };
+  }), [profile?.points]);
 
   return (
     <div className="grid gap-8 md:grid-cols-2 mt-10">

@@ -1,14 +1,13 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import PeerCard from "@/components/PeerCard";
 import RecommendationPanel from "@/components/recommendations/RecommendationPanel";
 import SessionCard from "@/components/SessionCard";
 import StreakStats from "@/components/StreakStats";
 import { useAuth } from "@/contexts/useAuth";
 import { useRole } from "@/contexts/RoleContext";
 import { supabase } from "@/integrations/supabase/client";
-import AnalyticsCharts from "@/components/AnalyticsCharts";
+const AnalyticsCharts = lazy(() => import("@/components/AnalyticsCharts"));
 
 interface Profile {
   id: string;
@@ -390,7 +389,11 @@ const Dashboard = () => {
           </div>
         </div>
         {/* Analytics */}
-        <AnalyticsCharts profile={profile} sessions={upcomingSessions} />
+        <Suspense
+          fallback={<div className="mt-10 h-72 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl animate-pulse" />}
+        >
+          <AnalyticsCharts profile={profile} sessions={upcomingSessions} />
+        </Suspense>
 
         <RecommendationPanel profile={profile} sessions={upcomingSessions} />
 

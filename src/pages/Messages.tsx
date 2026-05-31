@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Inbox, MessageCircle, Phone, Search, Send, Users, Video } from "lucide-react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { supabase } from "@/integrations/supabase/client";
 
 type ProfileSummary = {
@@ -68,6 +69,97 @@ const normalizeProfile = (
   last_active: "last_active" in row ? row.last_active : null,
   last_seen: "last_seen" in row ? row.last_seen : null,
 });
+
+type ConversationRowProps = {
+  profile: ProfileSummary;
+  lastMessage: MessageRow | null;
+  unreadCount: number;
+  isOnline: boolean;
+  isSelected: boolean;
+  onSelect: (profile: ProfileSummary) => void;
+};
+
+const ConversationRow = memo(({ profile, lastMessage, unreadCount, isOnline, isSelected, onSelect }: ConversationRowProps) => {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(profile)}
+      className={`flex w-full items-center gap-3 rounded-3xl border p-3 text-left transition-all duration-300 ${
+        isSelected
+          ? "border-cyan-400/60 bg-cyan-500/10 shadow-[0_0_30px_rgba(34,211,238,0.12)]"
+          : "border-white/5 bg-white/5 hover:border-cyan-500/20 hover:bg-white/10"
+      }`}
+    >
+      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 font-semibold text-black">
+        {getInitial(profile)}
+        <span
+          className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-slate-950 ${
+            isOnline ? "bg-emerald-400" : "bg-slate-500"
+          }`}
+        />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-white">{getDisplayName(profile)}</p>
+            <p className="truncate text-xs text-slate-400">{getRoleLabel(profile)}</p>
+          </div>
+
+          {lastMessage?.created_at && (
+            <span className="shrink-0 text-[11px] text-slate-500">{formatTime(lastMessage.created_at)}</span>
+          )}
+        </div>
+
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <p className="truncate text-sm text-slate-300">
+            {lastMessage ? getMessageBody(lastMessage) : "Start the conversation"}
+          </p>
+
+          {unreadCount > 0 && (
+            <span className="shrink-0 rounded-full bg-cyan-400 px-2.5 py-1 text-[11px] font-semibold text-slate-950">
+              {unreadCount}
+            </span>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+});
+
+type ThreadBubbleProps = {
+  message: MessageRow;
+  isMine: boolean;
+  timeLabel: string;
+  isRead: boolean;
+};
+
+const ThreadBubble = memo(
+  forwardRef<HTMLDivElement, ThreadBubbleProps>(function ThreadBubble(
+    { message, isMine, timeLabel, isRead },
+    ref
+  ) {
+    const body = getMessageBody(message);
+
+    return (
+      <div ref={ref} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+        <div
+          className={`max-w-[82%] rounded-3xl px-4 py-3 shadow-xl shadow-black/10 sm:max-w-[70%] ${
+            isMine
+              ? "rounded-br-md bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950"
+              : "rounded-bl-md border border-white/10 bg-white/10 text-white backdrop-blur-xl"
+          }`}
+        >
+          <p className="whitespace-pre-wrap break-words text-sm leading-6">{body}</p>
+          <div className={`mt-2 flex items-center justify-between gap-3 text-[11px] ${isMine ? "text-slate-900/70" : "text-slate-400"}`}>
+            <span>{timeLabel}</span>
+            {isMine && isRead && <span>Read</span>}
+          </div>
+        </div>
+      </div>
+    );
+  })
+);
 
 const mergeProfiles = (profiles: ProfileSummary[], users: UserRow[]) => {
   const map = new Map<string, ProfileSummary>();
@@ -138,7 +230,22 @@ const Messages = ({ user }: MessagesProps) => {
 
   const currentUserId = user?.id;
 
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const conversationListRef = useRef<HTMLDivElement | null>(null);
+  const threadMessagesRef = useRef<HTMLDivElement | null>(null);
+
+  const conversationVirtualizer = useVirtualizer({
+    count: filteredConversationSummaries.length,
+    getScrollElement: () => conversationListRef.current,
+    estimateSize: () => 96,
+    overscan: 8,
+  });
+
+  const threadVirtualizer = useVirtualizer({
+    count: threadMessages.length,
+    getScrollElement: () => threadMessagesRef.current,
+    estimateSize: () => 92,
+    overscan: 12,
+  });
 
   const profileMap = useMemo(() => {
     return new Map(profiles.map((profile) => [profile.id, profile]));
@@ -238,13 +345,11 @@ const Messages = ({ user }: MessagesProps) => {
     [conversationSummaries, selectedUser?.id]
   );
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   useEffect(() => {
-    scrollToBottom();
-  }, [threadMessages]);
+    if (threadMessages.length > 0) {
+      threadVirtualizer.scrollToIndex(threadMessages.length - 1, { align: "end" });
+    }
+  }, [threadMessages.length, threadVirtualizer]);
 
   useEffect(() => {
     if (!currentUserId) {
@@ -468,7 +573,7 @@ const Messages = ({ user }: MessagesProps) => {
     }
   }, [conversationSummaries, selectedUser]);
 
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     const content = newMessage.trim();
 
     if (!content || !selectedUser || !currentUserId) return;
@@ -504,12 +609,12 @@ const Messages = ({ user }: MessagesProps) => {
           : [...previous, data as MessageRow]
       );
     }
-  };
+  }, [currentUserId, newMessage, selectedUser]);
 
-  const selectProfile = (profile: ProfileSummary) => {
+  const selectProfile = useCallback((profile: ProfileSummary) => {
     setSelectedUser(profile);
     setShowSidebarOnMobile(false);
-  };
+  }, []);
 
   const selectedDisplayName = selectedUser ? getDisplayName(selectedUser) : "Messages";
   const selectedSubtitle = selectedUser
@@ -592,57 +697,37 @@ const Messages = ({ user }: MessagesProps) => {
                     : "No conversations yet. Start a new one from the people list."}
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {filteredConversationSummaries.map(({ profile, lastMessage, unreadCount, isOnline }) => {
-                    const isSelected = selectedUser?.id === profile.id;
+                <div ref={conversationListRef} className="h-[420px] overflow-y-auto pr-1">
+                  <div style={{ height: `${conversationVirtualizer.getTotalSize()}px`, position: "relative" }}>
+                    {conversationVirtualizer.getVirtualItems().map((virtualItem) => {
+                      const item = filteredConversationSummaries[virtualItem.index];
 
-                    return (
-                      <button
-                        key={profile.id}
-                        type="button"
-                        onClick={() => selectProfile(profile)}
-                        className={`flex w-full items-center gap-3 rounded-3xl border p-3 text-left transition-all duration-300 ${
-                          isSelected
-                            ? "border-cyan-400/60 bg-cyan-500/10 shadow-[0_0_30px_rgba(34,211,238,0.12)]"
-                            : "border-white/5 bg-white/5 hover:border-cyan-500/20 hover:bg-white/10"
-                        }`}
-                      >
-                        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 font-semibold text-black">
-                          {getInitial(profile)}
-                          <span
-                            className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-slate-950 ${
-                              isOnline ? "bg-emerald-400" : "bg-slate-500"
-                            }`}
+                      return (
+                        <div
+                          key={item.profile.id}
+                          data-index={virtualItem.index}
+                          ref={conversationVirtualizer.measureElement}
+                          style={{
+                            transform: `translateY(${virtualItem.start}px)`,
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                          }}
+                          className="pb-2"
+                        >
+                          <ConversationRow
+                            profile={item.profile}
+                            lastMessage={item.lastMessage}
+                            unreadCount={item.unreadCount}
+                            isOnline={item.isOnline}
+                            isSelected={selectedUser?.id === item.profile.id}
+                            onSelect={selectProfile}
                           />
                         </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="truncate font-semibold text-white">{getDisplayName(profile)}</p>
-                              <p className="truncate text-xs text-slate-400">{getRoleLabel(profile)}</p>
-                            </div>
-
-                            {lastMessage?.created_at && (
-                              <span className="shrink-0 text-[11px] text-slate-500">{formatTime(lastMessage.created_at)}</span>
-                            )}
-                          </div>
-
-                          <div className="mt-2 flex items-center justify-between gap-3">
-                            <p className="truncate text-sm text-slate-300">
-                              {lastMessage ? getMessageBody(lastMessage) : "Start the conversation"}
-                            </p>
-
-                            {unreadCount > 0 && (
-                              <span className="shrink-0 rounded-full bg-cyan-400 px-2.5 py-1 text-[11px] font-semibold text-slate-950">
-                                {unreadCount}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </section>
@@ -753,7 +838,7 @@ const Messages = ({ user }: MessagesProps) => {
                 </div>
               </header>
 
-              <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5 sm:px-6">
+              <div ref={threadMessagesRef} className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
                 {loadingMessages ? (
                   <div className="space-y-4">
                     <div className="h-14 w-56 animate-pulse rounded-3xl bg-white/10" />
@@ -771,31 +856,36 @@ const Messages = ({ user }: MessagesProps) => {
                     </div>
                   </div>
                 ) : (
-                  threadMessages.map((message) => {
-                    const isMine = message.sender_id === currentUserId;
-                    const body = getMessageBody(message);
+                  <div style={{ height: `${threadVirtualizer.getTotalSize()}px`, position: "relative" }}>
+                    {threadVirtualizer.getVirtualItems().map((virtualItem) => {
+                      const message = threadMessages[virtualItem.index];
+                      const isMine = message.sender_id === currentUserId;
 
-                    return (
-                      <div key={message.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                      return (
                         <div
-                          className={`max-w-[82%] rounded-3xl px-4 py-3 shadow-xl shadow-black/10 sm:max-w-[70%] ${
-                            isMine
-                              ? "rounded-br-md bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950"
-                              : "rounded-bl-md border border-white/10 bg-white/10 text-white backdrop-blur-xl"
-                          }`}
+                          key={message.id}
+                          data-index={virtualItem.index}
+                          ref={threadVirtualizer.measureElement}
+                          style={{
+                            transform: `translateY(${virtualItem.start}px)`,
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                          }}
+                          className="pb-4"
                         >
-                          <p className="whitespace-pre-wrap break-words text-sm leading-6">{body}</p>
-                          <div className={`mt-2 flex items-center justify-between gap-3 text-[11px] ${isMine ? "text-slate-900/70" : "text-slate-400"}`}>
-                            <span>{formatTime(message.created_at)}</span>
-                            {isMine && message.read_at && <span>Read</span>}
-                          </div>
+                          <ThreadBubble
+                            message={message}
+                            isMine={isMine}
+                            timeLabel={formatTime(message.created_at)}
+                            isRead={Boolean(message.read_at)}
+                          />
                         </div>
-                      </div>
-                    );
-                  })
+                      );
+                    })}
+                  </div>
                 )}
-
-                <div ref={messagesEndRef} />
               </div>
 
               <div className="border-t border-white/10 bg-white/5 p-4 backdrop-blur-2xl sm:p-5">

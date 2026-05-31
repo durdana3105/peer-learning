@@ -1,4 +1,4 @@
-import { useCallback, useContext, useMemo, useState } from "react";
+import { useCallback, useContext, useMemo, useRef, useState } from "react";
 import { Filter, Upload } from "lucide-react";
 
 import FilterSidebar from "@/components/resources/FilterSidebar";
@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AuthContext } from "@/contexts/AuthContext";
 import { useResources } from "@/hooks/useResources";
 import type { Resource } from "@/types/resource";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 const ResourceHub = () => {
   const auth = useContext(AuthContext);
@@ -36,6 +37,24 @@ const ResourceHub = () => {
 
     return resources.filter((resource) => ["py", "js", "ts"].includes(resource.file_type));
   }, [resources, selectedType]);
+
+  const gridRows = useMemo(() => {
+    const rows: Resource[][] = [];
+
+    for (let index = 0; index < displayedResources.length; index += 3) {
+      rows.push(displayedResources.slice(index, index + 3));
+    }
+
+    return rows;
+  }, [displayedResources]);
+
+  const rowsParentRef = useRef<HTMLDivElement | null>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: gridRows.length,
+    getScrollElement: () => rowsParentRef.current,
+    estimateSize: () => 520,
+    overscan: 4,
+  });
 
   const handleClearFilters = useCallback(() => {
     setSearch("");
@@ -138,10 +157,34 @@ const ResourceHub = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {displayedResources.map((resource: Resource) => (
-                  <ResourceCard key={resource.id} resource={resource} onDelete={refetch} />
-                ))}
+              <div ref={rowsParentRef} className="h-[1200px] overflow-y-auto pr-2">
+                <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: "relative" }}>
+                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const row = gridRows[virtualRow.index];
+
+                    return (
+                      <div
+                        key={virtualRow.key}
+                        ref={rowVirtualizer.measureElement}
+                        data-index={virtualRow.index}
+                        style={{
+                          transform: `translateY(${virtualRow.start}px)`,
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                        }}
+                        className="pb-4"
+                      >
+                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                          {row.map((resource: Resource) => (
+                            <ResourceCard key={resource.id} resource={resource} onDelete={refetch} />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </section>

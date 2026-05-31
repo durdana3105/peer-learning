@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -42,6 +42,62 @@ const cardVariants = {
     y: 0,
   },
 };
+
+const DiscoverPeerCard = memo(({ user, isOnline, onConnect, isConnected }: any) => {
+  return (
+    <motion.div
+      variants={cardVariants}
+      whileHover={{
+        scale: 1.03,
+        y: -5,
+      }}
+      className="relative overflow-hidden rounded-[30px] p-6 border border-white/10 bg-white/5 backdrop-blur-2xl hover:border-cyan-400/40 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300"
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 opacity-0 hover:opacity-100 transition" />
+
+      <div className="relative z-10 flex items-center gap-4 mb-5">
+        <div className="relative">
+          <img
+            src={user.avatar_url || "https://i.pravatar.cc/150"}
+            alt={user.name}
+            loading="lazy"
+            decoding="async"
+            className="w-16 h-16 rounded-full object-cover border-2 border-cyan-400"
+          />
+
+          {isOnline && (
+            <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-400 rounded-full border-2 border-[#020617]" />
+          )}
+        </div>
+
+        <div>
+          <h2 className="text-xl font-bold">{user.name}</h2>
+          <p className="text-gray-400 text-sm">{user.bio || "Passionate learner 🚀"}</p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-5">
+        {(Array.isArray(user.skills) ? user.skills : (user.skills?.split(",") || [])).map((skill: string, index: number) => (
+          <span key={index} className="bg-cyan-500/10 border border-cyan-400/10 text-cyan-300 px-3 py-1 rounded-full text-sm">
+            {typeof skill === 'string' ? skill.trim() : skill}
+          </span>
+        ))}
+      </div>
+
+      <button
+        onClick={() => onConnect(user.id)}
+        disabled={isConnected}
+        className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold transition ${
+          isConnected
+            ? "bg-white/10 text-gray-400 cursor-not-allowed border border-white/10"
+            : "bg-gradient-to-r from-cyan-400 to-purple-500 text-black hover:opacity-90"
+        }`}
+      >
+        {isConnected ? "Pending" : "Connect"}
+      </button>
+    </motion.div>
+  );
+});
 
 const Discover = () => {
   const [currentUser, setCurrentUser] =
@@ -262,7 +318,7 @@ const Discover = () => {
     setFilteredUsers(matched);
   }, [users, currentUser, search, selectedFilter]);
 
-  const handleConnect = async (peerId: string) => {
+  const handleConnect = useCallback(async (peerId: string) => {
     if (!currentUser || connections.includes(peerId)) return;
 
     setConnections((prev) => [...prev, peerId]);
@@ -281,7 +337,7 @@ const Discover = () => {
         body: `${currentUser.name || 'Someone'} wants to connect with you!`,
       });
     }
-  };
+  }, [connections, currentUser]);
 
   return (
     <div className="min-h-screen bg-[#020617] text-white overflow-hidden">
@@ -313,6 +369,8 @@ const Discover = () => {
                 "https://i.pravatar.cc/150"
               }
               alt="avatar"
+              loading="lazy"
+              decoding="async"
               className="w-12 h-12 rounded-full border-2 border-cyan-400 object-cover"
             />
           </div>
@@ -430,135 +488,13 @@ const Discover = () => {
             className="grid md:grid-cols-3 gap-6"
           >
             {filteredUsers.map((u) => (
-              <motion.div
+              <DiscoverPeerCard
                 key={u.id}
-                variants={cardVariants}
-                whileHover={{
-                  scale: 1.03,
-                  y: -5,
-                }}
-                className="relative overflow-hidden rounded-[30px] p-6 border border-white/10 bg-white/5 backdrop-blur-2xl hover:border-cyan-400/40 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300"
-              >
-                {/* GLOW */}
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 opacity-0 hover:opacity-100 transition" />
-
-                {/* TOP */}
-                <div className="relative z-10 flex items-center gap-4 mb-5">
-                  <div className="relative">
-                    <img
-                      src={
-                        u.avatar_url ||
-                        "https://i.pravatar.cc/150"
-                      }
-                      alt={u.name}
-                      className="w-16 h-16 rounded-full object-cover border-2 border-cyan-400"
-                    />
-
-                    {/* ONLINE */}
-                    {onlineUsers.includes(u.id) && (
-                      <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-400 rounded-full border-2 border-[#020617]" />
-                    )}
-                  </div>
-
-                  <div>
-                    <h2 className="text-xl font-bold">
-                      {u.name}
-                    </h2>
-
-                    <p className="text-gray-400 text-sm">
-                      {u.bio ||
-                        "Passionate learner 🚀"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* STREAK */}
-                {u.streak > 0 && (
-                  <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-400/20 text-orange-300 px-4 py-2 rounded-xl mb-5 w-fit">
-                    <Zap size={16} />
-                    {u.streak} Day Learning Streak
-                  </div>
-                )}
-
-                {/* SKILLS */}
-                <div className="flex flex-wrap gap-2 mb-5">
-                  {(Array.isArray(u.skills) ? u.skills : (u.skills?.split(",") || [])).map(
-                    (
-                      skill: string,
-                      index: number
-                    ) => (
-                      <span
-                        key={index}
-                        className="bg-cyan-500/10 border border-cyan-400/10 text-cyan-300 px-3 py-1 rounded-full text-sm"
-                      >
-                        {typeof skill === 'string' ? skill.trim() : skill}
-                      </span>
-                    )
-                  )}
-                </div>
-
-                {/* GOALS */}
-                <div className="mb-5">
-                  <p className="text-gray-400 text-sm mb-2">
-                    Learning Goals
-                  </p>
-
-                  <p className="text-sm leading-relaxed text-gray-200">
-                    {u.learning_goals}
-                  </p>
-                </div>
-
-                {/* MATCH */}
-                <div className="mb-6">
-                  <div className="flex justify-between mb-2">
-                    <p className="text-sm text-gray-400">
-                      Compatibility
-                    </p>
-
-                    <div className="bg-cyan-500/10 text-cyan-300 px-3 py-1 rounded-full text-sm border border-cyan-400/20">
-                      {u.score}% Match 🔥
-                    </div>
-                  </div>
-
-                  <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{
-                        width: 0,
-                      }}
-                      animate={{
-                        width: `${u.score}%`,
-                      }}
-                      transition={{
-                        duration: 1,
-                      }}
-                      className="h-3 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full"
-                    />
-                  </div>
-                </div>
-
-                {/* BUTTON */}
-                <button
-                  onClick={() => handleConnect(u.id)}
-                  disabled={connections.includes(u.id)}
-                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold transition ${
-                    connections.includes(u.id)
-                      ? "bg-white/10 text-gray-400 cursor-not-allowed border border-white/10"
-                      : "bg-gradient-to-r from-cyan-400 to-purple-500 text-black hover:opacity-90"
-                  }`}
-                >
-                  {connections.includes(u.id) ? (
-                    <>
-                      <Check size={18} />
-                      Pending
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus size={18} />
-                      Connect
-                    </>
-                  )}
-                </button>
-              </motion.div>
+                user={u}
+                isOnline={onlineUsers.includes(u.id)}
+                onConnect={handleConnect}
+                isConnected={connections.includes(u.id)}
+              />
             ))}
           </motion.div>
         )}
