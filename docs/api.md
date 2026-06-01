@@ -38,11 +38,11 @@ const sendMessage = async (sessionId: string, content: string, userId: string) =
 
 For operations requiring secure handling of external API keys (e.g., OpenAI/OpenRouter), requests are sent to our custom backend.
 
-### `POST /api/ai/generate-summary`
+### `POST /api/ai/summary`
 
 Generates an AI summary of a chat session.
 
-**Endpoint**: `http://localhost:3000/api/ai/generate-summary`  
+**Endpoint**: `http://localhost:5000/api/ai/summary`  
 **Headers**:
 - `Authorization`: `Bearer <Supabase JWT Token>`
 
@@ -65,4 +65,4 @@ Generates an AI summary of a chat session.
 
 **Security & Rate Limiting**:
 - Requires a valid Supabase JWT token.
-- Protected by `express-rate-limit` to prevent abuse.
+- Protected by a custom, in-house rate limiter middleware (`backend/middlewares/rateLimiter.js`) to prevent abuse.

@@ -26,7 +26,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
 
-  const { user, loading } = useAuth();
+  const { user, loading, signIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -50,10 +50,7 @@ const Login = () => {
 
     setIsLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await signIn(email, password);
 
     setIsLoading(false);
 

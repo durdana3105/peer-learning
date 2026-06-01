@@ -5,7 +5,7 @@ import app from "./app.js";
 dotenv.config(); // must be first
 const PORT = process.env.PORT || 5000;
 
-const mongoUri = env.MONGO_URI || env.MONGODB_URI;
+const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
 if (mongoUri) {
   mongoose
     .connect(mongoUri)

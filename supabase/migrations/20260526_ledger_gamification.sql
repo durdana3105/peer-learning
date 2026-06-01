@@ -13,7 +13,7 @@ ALTER TABLE public.xp_transactions ENABLE ROW LEVEL SECURITY;
 
 -- 1. Modified increment_user_xp
 CREATE OR REPLACE FUNCTION public.increment_user_xp(_amount INT) RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_uid UUID := auth.uid();
   v_current_xp INT;
@@ -40,7 +40,7 @@ $$;
 
 -- 2. Modified update_daily_streak
 CREATE OR REPLACE FUNCTION public.update_daily_streak() RETURNS jsonb
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_uid UUID := auth.uid();
   v_last_active TEXT;
@@ -107,7 +107,7 @@ RETURNS TABLE (
   sessions_joined int,
   badges text[],
   updated_at text
-) LANGUAGE plpgsql SECURITY DEFINER AS $$
+) LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
   IF _timeframe = 'All Time' THEN
     RETURN QUERY

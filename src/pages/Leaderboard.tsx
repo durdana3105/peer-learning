@@ -383,6 +383,33 @@ const Leaderboard = () => {
           </div>
 
         </div>
+        {/* SCORING INFO */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-10 rounded-3xl border border-cyan-500/20 bg-cyan-500/5 p-6 backdrop-blur-xl"
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <Star className="h-5 w-5 text-yellow-400" />
+            <h3 className="text-lg font-bold text-cyan-300">
+              How does ranking work?
+            </h3>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-sm font-semibold text-white">📚 Join a Study Session</p>
+              <p className="mt-1 text-xs text-gray-400">Earn XP every time you join a live study session with peers.</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-sm font-semibold text-white">💬 Answer Peer Doubts</p>
+              <p className="mt-1 text-xs text-gray-400">Help others by answering questions in Anonymous Doubts to gain XP.</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-sm font-semibold text-white">🔥 Maintain Your Streak</p>
+              <p className="mt-1 text-xs text-gray-400">Log in and stay active daily to build your streak and boost your rank.</p>
+            </div>
+          </div>
+        </motion.div>
 
         {/* FILTERS */}
         <div className="mt-10 flex flex-wrap gap-3">
