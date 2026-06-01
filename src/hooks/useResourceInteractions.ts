@@ -1,42 +1,49 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export const useResourceInteractions = (resourceId: string, userId: string | null | undefined) => {
-  const queryClient = useQueryClient();
-
-  const { data: vote, isLoading: isLoadingVote } = useQuery({
-    queryKey: ["resource_vote", resourceId, userId],
+// Global cache hooks for bulk fetching
+const useAllUserVotes = (userId: string | null | undefined) => {
+  return useQuery({
+    queryKey: ["all_resource_votes", userId],
     queryFn: async () => {
-      if (!userId) return null;
+      if (!userId) return [];
       const { data, error } = await supabase
         .from("resource_votes")
-        .select("vote_type")
-        .eq("resource_id", resourceId)
-        .eq("user_id", userId)
-        .maybeSingle();
-      
+        .select("resource_id, vote_type")
+        .eq("user_id", userId);
       if (error) throw error;
-      return data?.vote_type ?? null;
+      return data || [];
     },
     enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
   });
+};
 
-  const { data: isSaved, isLoading: isLoadingSaved } = useQuery({
-    queryKey: ["resource_saved", resourceId, userId],
+const useAllUserSaves = (userId: string | null | undefined) => {
+  return useQuery({
+    queryKey: ["all_saved_resources", userId],
     queryFn: async () => {
-      if (!userId) return false;
+      if (!userId) return [];
       const { data, error } = await supabase
         .from("saved_resources")
         .select("resource_id")
-        .eq("resource_id", resourceId)
-        .eq("user_id", userId)
-        .maybeSingle();
-        
+        .eq("user_id", userId);
       if (error) throw error;
-      return !!data;
+      return data || [];
     },
     enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
   });
+};
+
+export const useResourceInteractions = (resourceId: string, userId: string | null | undefined) => {
+  const queryClient = useQueryClient();
+
+  const { data: allVotes, isLoading: isLoadingVotes } = useAllUserVotes(userId);
+  const { data: allSaves, isLoading: isLoadingSaves } = useAllUserSaves(userId);
+
+  const vote = allVotes?.find(v => v.resource_id === resourceId)?.vote_type ?? null;
+  const isSaved = allSaves?.some(s => s.resource_id === resourceId) ?? false;
 
   const toggleVoteMutation = useMutation({
     mutationFn: async (voteType: 1 | -1 | null) => {
@@ -56,7 +63,7 @@ export const useResourceInteractions = (resourceId: string, userId: string | nul
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["resource_vote", resourceId, userId] });
+      queryClient.invalidateQueries({ queryKey: ["all_resource_votes", userId] });
     },
   });
 
@@ -78,14 +85,14 @@ export const useResourceInteractions = (resourceId: string, userId: string | nul
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["resource_saved", resourceId, userId] });
+      queryClient.invalidateQueries({ queryKey: ["all_saved_resources", userId] });
     },
   });
 
   return {
     vote,
     isSaved,
-    isLoading: isLoadingVote || isLoadingSaved,
+    isLoading: isLoadingVotes || isLoadingSaves,
     toggleVote: toggleVoteMutation.mutateAsync,
     toggleSave: toggleSaveMutation.mutateAsync,
   };
