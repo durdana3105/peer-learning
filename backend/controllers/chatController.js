@@ -4,12 +4,16 @@ import { HttpError } from "../utils/httpError.js";
 
 dotenv.config();
 
+let openRouterInstance = null;
+
 const getOpenRouterClient = () => {
+  if (openRouterInstance) return openRouterInstance;
+
   if (!process.env.OPENROUTER_API_KEY) {
     return null;
   }
 
-  return new OpenAI({
+  openRouterInstance = new OpenAI({
     apiKey: process.env.OPENROUTER_API_KEY,
     baseURL: "https://openrouter.ai/api/v1",
     defaultHeaders: {
@@ -17,6 +21,8 @@ const getOpenRouterClient = () => {
       "X-Title": "Peer Learning AI",
     },
   });
+
+  return openRouterInstance;
 };
 
 const SYSTEM_PROMPT =
