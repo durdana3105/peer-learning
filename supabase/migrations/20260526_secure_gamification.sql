@@ -16,7 +16,7 @@ $$;
 -- 1. increment_user_xp
 -- Prevents users from giving themselves arbitrary XP. Limited to max 200 per call for safety.
 CREATE OR REPLACE FUNCTION public.increment_user_xp(_amount INT) RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_uid UUID := auth.uid();
   v_current_xp INT;
@@ -41,7 +41,7 @@ $$;
 -- 2. update_daily_streak
 -- Prevents manipulation of streaks and XP earned from streak visits.
 CREATE OR REPLACE FUNCTION public.update_daily_streak() RETURNS jsonb
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_uid UUID := auth.uid();
   v_last_active TEXT;
@@ -87,7 +87,7 @@ $$;
 -- 3. restore_user_streak
 -- Prevents bypassing the 100 XP cost or the once-per-day restriction.
 CREATE OR REPLACE FUNCTION public.restore_user_streak() RETURNS jsonb
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_uid UUID := auth.uid();
   v_streak INT;

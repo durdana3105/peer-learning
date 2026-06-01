@@ -2,7 +2,7 @@
 
 -- 1. Create secure RPC
 CREATE OR REPLACE FUNCTION public.join_leaderboard(_username TEXT, _avatar_url TEXT) RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_uid UUID := auth.uid();
   v_exists BOOLEAN;

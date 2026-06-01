@@ -1,7 +1,7 @@
 CREATE OR REPLACE FUNCTION get_user_rank(p_user_id UUID, p_filter TEXT DEFAULT 'All Time')
 RETURNS INTEGER
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
   v_user_xp INTEGER;
