@@ -139,10 +139,13 @@ const Dashboard = () => {
   // Sessions
   useEffect(() => {
     const fetchSessions = async () => {
+      // SECURITY/PERF: Limit fetch to top 4 to prevent downloading 10,000 global sessions
+      // which would cause massive browser OOM crashes and render thrashing.
       const { data, error } = await supabase
         .from("sessions")
         .select("*")
-        .eq("status", "upcoming");
+        .eq("status", "upcoming")
+        .limit(4);
 
       if (error || !data) {
         setUpcomingSessions([]);
