@@ -9,9 +9,15 @@ export const getSupabaseAdmin = () => {
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    return null;
+    throw new Error("FATAL: Supabase configuration is missing. Cannot initialize backend database client.");
   }
 
-  supabaseAdminClient = createClient(supabaseUrl, supabaseKey);
+  supabaseAdminClient = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    }
+  });
+  
   return supabaseAdminClient;
 };
