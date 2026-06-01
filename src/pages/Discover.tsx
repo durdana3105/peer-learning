@@ -13,6 +13,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
 import { Check } from "lucide-react";
+import { API_BASE_URL } from "@/config/api";
 
 const filters = [
   "All",
@@ -145,30 +146,27 @@ const Discover = () => {
 
         setCurrentUser(current);
 
-        // ALL USERS — capped at 100 and filtered server-side
-        let query = supabase
-          .from("profiles")
-          .select("*")
-          .neq("id", user.id)
-          .limit(100);
+        setCurrentUser(current);
 
-        // Server-side search: filter by name or skills using ilike
-        if (debouncedSearch.trim()) {
-          // Escape double quotes so we can wrap the search term in quotes, preventing commas from breaking the .or() syntax
-          const safeSearch = debouncedSearch.trim().replace(/"/g, '""');
-          query = query.or(
-            `name.ilike."%${safeSearch}%",skills.ilike."%${safeSearch}%"`
-          );
+        // FETCH PEERS FROM BACKEND
+        const searchParams = new URLSearchParams();
+        if (debouncedSearch.trim()) searchParams.append("search", debouncedSearch.trim());
+        if (selectedFilter !== "All") searchParams.append("filter", selectedFilter);
+        searchParams.append("limit", "100");
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const res = await fetch(`${API_BASE_URL}/api/match/supabase-discover?${searchParams.toString()}`, {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`
+            }
+          });
+          const apiData = await res.json();
+          if (apiData.success) {
+            setUsers(apiData.recommendations || []);
+            setFilteredUsers(apiData.recommendations || []);
+          }
         }
-
-        // Server-side skill filter
-        if (selectedFilter !== "All") {
-          query = query.ilike("skills", `%${selectedFilter}%`);
-        }
-
-        const { data: allUsers } = await query;
-
-        setUsers(allUsers || []);
 
         // FETCH CONNECTIONS
         const { data: conns } = await (supabase as any)
@@ -219,104 +217,7 @@ const Discover = () => {
     };
   }, [currentUser]);
 
-  // MATCH SCORE
-  const getMatchScore = (user: any) => {
-    if (!currentUser) return 0;
-
-    const parseArray = (val: any) => {
-      if (Array.isArray(val)) return val.map((s: string) => s.toLowerCase().trim());
-      if (typeof val === "string") return val.split(",").map((s: string) => s.trim().toLowerCase()).filter(Boolean);
-      return [];
-    };
-
-    const userSkills = parseArray(user.skills);
-    const userGoals = parseArray(user.learning_goals);
-    
-    const mySkills = parseArray(currentUser.skills);
-    const myGoals = parseArray(currentUser.learning_goals);
-
-    let score = 0;
-    
-    // Weightings
-    const PRIMARY_WEIGHT = 40; // They have what I want
-    const SECONDARY_WEIGHT = 30; // I have what they want (mutual exchange)
-    const ALIGNMENT_WEIGHT = 10; // We want to learn the same thing (study buddies)
-
-    const maxPossibleScore = 
-      (myGoals.length > 0 ? PRIMARY_WEIGHT : 0) +
-      (mySkills.length > 0 ? SECONDARY_WEIGHT : 0) +
-      (myGoals.length > 0 ? ALIGNMENT_WEIGHT : 0) || 1; // avoid div by 0
-
-    const primaryMatches = userSkills.filter((skill: string) => myGoals.includes(skill)).length;
-    if (primaryMatches > 0 && myGoals.length > 0) {
-      score += (primaryMatches / myGoals.length) * PRIMARY_WEIGHT;
-    }
-
-    const reciprocalMatches = userGoals.filter((goal: string) => mySkills.includes(goal)).length;
-    if (reciprocalMatches > 0 && mySkills.length > 0) {
-      score += (reciprocalMatches / mySkills.length) * SECONDARY_WEIGHT;
-    }
-
-    const studyBuddyMatches = userGoals.filter((goal: string) => myGoals.includes(goal)).length;
-    if (studyBuddyMatches > 0 && myGoals.length > 0) {
-      score += (studyBuddyMatches / myGoals.length) * ALIGNMENT_WEIGHT;
-    }
-
-    let percentage = Math.min(Math.round((score / maxPossibleScore) * 100), 100);
-
-    // Baseline compatibility for active users in the same platform
-    if (percentage < 15 && (userSkills.length > 0 || userGoals.length > 0)) {
-       percentage = Math.floor(Math.random() * 10) + 15;
-    }
-
-    return percentage;
-  };
-
-  // FILTER & SCORE USERS (client-side match scoring only)
-  useEffect(() => {
-    if (!currentUser) return;
-
-    let matched = users
-      .map((u) => ({
-        ...u,
-        score: getMatchScore(u),
-      }));
-
-    // SEARCH
-    if (search) {
-      matched = matched.filter((u) => {
-        const skillsStr = Array.isArray(u.skills)
-          ? u.skills.join(" ").toLowerCase()
-          : (u.skills || "").toLowerCase();
-        return (
-          u.name?.toLowerCase().includes(search.toLowerCase()) ||
-          skillsStr.includes(search.toLowerCase())
-        );
-      });
-    }
-
-    // FILTERS
-    if (selectedFilter !== "All") {
-      matched = matched.filter((u) => {
-        const skillsList = Array.isArray(u.skills)
-          ? u.skills.map((s: string) => s.toLowerCase())
-          : (u.skills?.split(",") || []).map((s: string) => s.trim().toLowerCase());
-        return skillsList.some((skill: string) =>
-          skill.includes(selectedFilter.toLowerCase())
-        );
-      });
-    }
-
-    // DEFAULT BUBBLE
-    // If no search and no filter are active, only show recommended peers (score > 0)
-    if (!search && selectedFilter === "All") {
-      matched = matched.filter((u) => u.score > 0);
-    }
-
-    matched.sort((a, b) => b.score - a.score);
-
-    setFilteredUsers(matched);
-  }, [users, currentUser, search, selectedFilter]);
+  // Match scoring has been moved to the Node.js backend to prevent O(N) payload bloat and severe UI jank
 
   const handleConnect = useCallback(async (peerId: string) => {
     if (!currentUser || connections.includes(peerId)) return;

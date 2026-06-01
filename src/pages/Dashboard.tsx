@@ -7,6 +7,7 @@ import StreakStats from "@/components/StreakStats";
 import { useAuth } from "@/contexts/useAuth";
 import { useRole } from "@/contexts/RoleContext";
 import { supabase } from "@/integrations/supabase/client";
+import { API_BASE_URL } from "@/config/api";
 const AnalyticsCharts = lazy(() => import("@/components/AnalyticsCharts"));
 
 interface Profile {
@@ -91,90 +92,40 @@ const Dashboard = () => {
   const fetchRecommendedPeers = async (myProfile: Profile) => {
     if (!user?.id) return;
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .neq("id", user.id)
-      .limit(100)
-      .returns<Profile[]>();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-    if (error || !data) return;
-
-    const peers = data || [];
-
-    const myLearn = myProfile.learn_subjects ?? [];
-    const myTeach = myProfile.teach_subjects ?? [];
-    const myInterests = myProfile.interests ?? [];
-
-    const mapped = peers.map((p) => {
-
-      const teach = p.teach_subjects ?? [];
-      const learn = p.learn_subjects ?? [];
-      const interests = p.interests ?? [];
-
-      const teachOverlap = myLearn.filter((s) => teach.includes(s)).length;
-      const learnOverlap = myTeach.filter((s) => learn.includes(s)).length;
-      const interestOverlap = myInterests.filter((s) => interests.includes(s)).length;
-      const learningStyleMatch =
-        myProfile.learning_style &&
-        p.learning_style &&
-        myProfile.learning_style === p.learning_style
-          ? 15
-          : 0;
-
-      const languageMatch =
-        myProfile.preferred_language &&
-        p.preferred_language &&
-        myProfile.preferred_language === p.preferred_language
-          ? 10
-          : 0;
-
-      const timezoneMatch =
-        myProfile.timezone &&
-        p.timezone &&
-        myProfile.timezone === p.timezone
-          ? 10
-          : 0;
-
-      const max = Math.max(
-        myLearn.length + myTeach.length + myInterests.length,
-        1
-      );
-
-      const baseScore =
-        ((teachOverlap + learnOverlap + interestOverlap) / max) * 65;
-
-      const matchScore = Math.min(
-        Math.round(
-          baseScore +
-            learningStyleMatch +
-            languageMatch +
-            timezoneMatch
-        ),
-        100
-      );
-
-      return {
-        id: p.id,
-        name: p.name || "User",
-        avatar:
-          p.avatar_url ||
-          `https://api.dicebear.com/9.x/avataaars/svg?seed=${p.name}`,
-        bio: p.bio || "",
-        skills: p.skills ?? [],
-        interests: interests,
-        teachSubjects: teach,
-        learnSubjects: learn,
-        rating: p.rating ?? 0,
-        sessionsCompleted: p.sessions_completed ?? 0,
-        points: p.points ?? 0,
-        badges: p.badges ?? [],
-        matchScore,
-      };
-    });
-
-    mapped.sort((a, b) => b.matchScore - a.matchScore);
-    setRecommendedPeers(mapped.slice(0, 3));
+      const res = await fetch(`${API_BASE_URL}/api/match/supabase-discover?limit=3`, {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+      
+      const data = await res.json();
+      
+      if (data.success && data.recommendations) {
+        const mapped = data.recommendations.map((p: any) => ({
+          id: p.id,
+          name: p.name || "User",
+          avatar: p.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${p.name}`,
+          bio: p.bio || "",
+          skills: p.skills ?? [],
+          interests: p.interests ?? [],
+          teachSubjects: p.teach_subjects ?? [],
+          learnSubjects: p.learn_subjects ?? [],
+          rating: p.rating ?? 0,
+          sessionsCompleted: p.sessions_completed ?? 0,
+          points: p.points ?? 0,
+          badges: p.badges ?? [],
+          matchScore: p.score ?? 0,
+        }));
+        
+        setRecommendedPeers(mapped);
+      }
+    } catch (err) {
+      console.error("Failed to fetch recommended peers:", err);
+    }
   };
 
   // Sessions
