@@ -1,7 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { HttpError } from "../utils/httpError.js";
 
+let supabaseInstance = null;
+
 const getSupabaseAdmin = () => {
+  if (supabaseInstance) return supabaseInstance;
+
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
@@ -9,7 +13,8 @@ const getSupabaseAdmin = () => {
     return null;
   }
 
-  return createClient(supabaseUrl, supabaseKey);
+  supabaseInstance = createClient(supabaseUrl, supabaseKey);
+  return supabaseInstance;
 };
 
 /**
