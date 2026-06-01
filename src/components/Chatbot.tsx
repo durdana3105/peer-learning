@@ -8,6 +8,13 @@ export default function Chatbot() {
   const [loading, setLoading] = useState(false);
 
   const chatEndRef = useRef(null);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const systemPrompt = {
     role: "system",
@@ -39,7 +46,7 @@ export default function Chatbot() {
 
   // SEND MESSAGE
   const sendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || loading) return;
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
@@ -90,6 +97,7 @@ export default function Chatbot() {
       setMessages((prev) => [...prev, { role: "assistant", text: "" }]);
 
       for (let i = 0; i < botReply.length; i += chunkSize) {
+        if (!isMounted.current) break;
         currentText += botReply.slice(i, i + chunkSize);
 
         await new Promise((resolve) => setTimeout(resolve, 20));
@@ -180,16 +188,18 @@ export default function Chatbot() {
           {/* Input */}
           <div className="p-2 border-t border-gray-700 flex gap-2">
             <input
-              className="flex-1 bg-gray-800 border border-gray-600 p-2 rounded text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 bg-gray-800 border border-gray-600 p-2 rounded text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              onKeyDown={(e) => e.key === "Enter" && !loading && sendMessage()}
               placeholder="Ask anything..."
+              disabled={loading}
             />
 
             <button
               onClick={sendMessage}
-              className="bg-blue-500 px-4 py-2 rounded text-white hover:bg-blue-600 transition"
+              disabled={loading}
+              className="bg-blue-500 px-4 py-2 rounded text-white hover:bg-blue-600 transition disabled:opacity-50"
             >
               ➤
             </button>
