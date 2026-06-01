@@ -1,0 +1,13 @@
+### Description
+Fixed access control omissions on the `mentors` table where users could not update their own applications and admins completely lacked access via the standard API. Added user update policies and administrator select/update policies.
+
+### Fixes
+Fixes #409
+
+### Type of change
+- [x] Security Fix
+- [x] Bug Fix
+- [ ] Feature
+
+### GSSoC 2026
+This PR is submitted as part of GSSoC 2026.

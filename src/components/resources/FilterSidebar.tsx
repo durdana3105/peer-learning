@@ -1,4 +1,4 @@
-import { Search, X } from "lucide-react";
+import { Search, X, Bookmark } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ type FilterSidebarProps = {
   onTagsChange: (tags: string[]) => void;
   selectedType: string;
   onTypeChange: (type: string) => void;
+  savedOnly: boolean;
+  onSavedOnlyChange: (savedOnly: boolean) => void;
   onClear: () => void;
 };
 
@@ -46,6 +48,8 @@ const FilterSidebar = ({
   onTagsChange,
   selectedType,
   onTypeChange,
+  savedOnly,
+  onSavedOnlyChange,
   onClear,
 }: FilterSidebarProps) => {
   const toggleTag = (tag: string) => {
@@ -81,6 +85,21 @@ const FilterSidebar = ({
               className="pl-9"
             />
           </div>
+        </div>
+        
+        <Separator />
+        
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-foreground">My Collection</p>
+          <Button 
+            variant={savedOnly ? "default" : "outline"} 
+            size="sm"
+            className="w-full justify-start gap-2"
+            onClick={() => onSavedOnlyChange(!savedOnly)}
+          >
+            <Bookmark className="h-4 w-4" fill={savedOnly ? "currentColor" : "none"} />
+            Saved Resources
+          </Button>
         </div>
 
         <Separator />

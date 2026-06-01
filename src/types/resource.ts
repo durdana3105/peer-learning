@@ -8,4 +8,6 @@ export type Resource = {
   tags: string[] | null;
   uploaded_by: string;
   created_at: string;
+  upvotes_count?: number;
+  downvotes_count?: number;
 };

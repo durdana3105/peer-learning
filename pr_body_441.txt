@@ -1,0 +1,13 @@
+### Description
+Fixed a Search Path Poisoning vulnerability in the `join_session` RPC by explicitly setting `search_path = public` on the `SECURITY DEFINER` function.
+
+### Fixes
+Fixes #441
+
+### Type of change
+- [x] Security Fix
+- [x] Bug Fix
+- [ ] Feature
+
+### GSSoC 2026
+This PR is submitted as part of GSSoC 2026.

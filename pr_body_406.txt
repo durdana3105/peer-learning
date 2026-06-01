@@ -1,0 +1,13 @@
+### Description
+Fixed a broken access control vulnerability that allowed any authenticated user to intercept, read, or inject whiteboard drawing events for any study room. Applied restrictive RLS policies aligning with study room privacy settings.
+
+### Fixes
+Fixes #406
+
+### Type of change
+- [x] Security Fix
+- [ ] Bug Fix
+- [ ] Feature
+
+### GSSoC 2026
+This PR is submitted as part of GSSoC 2026.

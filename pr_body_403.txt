@@ -1,0 +1,13 @@
+### Description
+Fixed a Race Condition (TOCTOU) vulnerability in the streak restoration feature. Added row-level locking (`FOR UPDATE`) to the `restore_user_streak` RPC to ensure point deductions are atomic and cannot be bypassed via concurrent requests.
+
+### Fixes
+Fixes #403
+
+### Type of change
+- [x] Security Fix
+- [ ] Bug Fix
+- [ ] Feature
+
+### GSSoC 2026
+This PR is submitted as part of GSSoC 2026.

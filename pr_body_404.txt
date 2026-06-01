@@ -1,0 +1,13 @@
+### Description
+Fixed an IDOR vulnerability where malicious users could force-accept peer connection requests upon creation. The INSERT RLS policy on the `peer_connections` table now restricts the `status` column to `'pending'`, preventing users from bypassing the receiver's consent.
+
+### Fixes
+Fixes #404
+
+### Type of change
+- [x] Security Fix
+- [ ] Bug Fix
+- [ ] Feature
+
+### GSSoC 2026
+This PR is submitted as part of GSSoC 2026.

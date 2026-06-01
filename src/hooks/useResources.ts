@@ -9,6 +9,7 @@ type ResourceFilters = {
   search?: string;
   tags?: string[];
   fileType?: string;
+  savedOnly?: boolean;
 };
 
 export const useResources = (filters?: ResourceFilters) => {
@@ -36,24 +37,53 @@ export const useResources = (filters?: ResourceFilters) => {
     setLoading(true);
     setError(null);
 
-    let query = supabase
-      .from("resources")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (filters?.search) {
-      query = query.ilike("title", `%${filters.search}%`);
-    }
-
-    if (filters?.tags && filters.tags.length > 0) {
-      query = query.overlaps("tags", filters.tags);
-    }
-
-    if (filters?.fileType) {
-      query = query.eq("file_type", filters.fileType);
-    }
-
     try {
+      let savedResourceIds: string[] | null = null;
+      
+      if (filters?.savedOnly) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setResources([]);
+          setLoading(false);
+          return;
+        }
+        
+        const { data: savedData, error: savedError } = await safeSupabaseCall(
+          () => supabase.from("saved_resources").select("resource_id").eq("user_id", user.id).abortSignal(controller.signal)
+        );
+        
+        if (savedError) throw savedError;
+        
+        savedResourceIds = savedData?.map((item: any) => item.resource_id) || [];
+        
+        if (savedResourceIds.length === 0) {
+          setResources([]);
+          setLoading(false);
+          return;
+        }
+      }
+
+      let query = supabase
+        .from("resources")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (filters?.search) {
+        query = query.ilike("title", `%${filters.search}%`);
+      }
+
+      if (filters?.tags && filters.tags.length > 0) {
+        query = query.overlaps("tags", filters.tags);
+      }
+
+      if (filters?.fileType) {
+        query = query.eq("file_type", filters.fileType);
+      }
+      
+      if (savedResourceIds && savedResourceIds.length > 0) {
+        query = query.in("id", savedResourceIds);
+      }
+
       const data = await safeSupabaseCall(
         () => query.abortSignal(controller.signal),
         { fallbackMessage: "Unable to load resources." },
@@ -86,7 +116,7 @@ export const useResources = (filters?: ResourceFilters) => {
 
       setLoading(false);
     }
-  }, [filters?.fileType, filters?.search, filters?.tags]);
+  }, [filters?.fileType, filters?.search, filters?.tags, filters?.savedOnly]);
 
   useEffect(() => {
     void fetchResources();

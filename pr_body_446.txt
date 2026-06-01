@@ -1,0 +1,13 @@
+### Description
+Fixed a major logic flaw where `skills_taxonomy` was open to arbitrary insertions by any authenticated user by restricting it to `admin` only.
+
+### Fixes
+Fixes #446
+
+### Type of change
+- [x] Security Fix
+- [x] Bug Fix
+- [ ] Feature
+
+### GSSoC 2026
+This PR is submitted as part of GSSoC 2026.

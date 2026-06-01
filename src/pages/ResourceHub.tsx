@@ -21,6 +21,7 @@ const ResourceHub = () => {
   const [search, setSearch] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState("all");
+  const [savedOnly, setSavedOnly] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
@@ -28,6 +29,7 @@ const ResourceHub = () => {
     search,
     tags: selectedTags,
     fileType: selectedType === "all" || selectedType === "code" ? undefined : selectedType,
+    savedOnly,
   });
 
   const displayedResources = useMemo(() => {
@@ -60,6 +62,7 @@ const ResourceHub = () => {
     setSearch("");
     setSelectedTags([]);
     setSelectedType("all");
+    setSavedOnly(false);
   }, []);
 
   const sidebar = (
@@ -70,6 +73,8 @@ const ResourceHub = () => {
       onTagsChange={setSelectedTags}
       selectedType={selectedType}
       onTypeChange={setSelectedType}
+      savedOnly={savedOnly}
+      onSavedOnlyChange={setSavedOnly}
       onClear={handleClearFilters}
     />
   );

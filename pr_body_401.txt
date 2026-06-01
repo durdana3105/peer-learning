@@ -1,0 +1,13 @@
+### Description
+Fixed a vulnerability with Search Path Poisoning (CVE-2018-1058) in RPC functions. Appended `SET search_path = public` to all `SECURITY DEFINER` functions in the database migrations.
+
+### Fixes
+Fixes #401
+
+### Type of change
+- [x] Security Fix
+- [ ] Bug Fix
+- [ ] Feature
+
+### GSSoC 2026
+This PR is submitted as part of GSSoC 2026.

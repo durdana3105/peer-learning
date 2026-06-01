@@ -1,0 +1,13 @@
+### Description
+Fixed a Search Path Poisoning vulnerability in the `invite_to_study_room` RPC by explicitly setting `search_path = public` on the `SECURITY DEFINER` function.
+
+### Fixes
+Fixes #442
+
+### Type of change
+- [x] Security Fix
+- [x] Bug Fix
+- [ ] Feature
+
+### GSSoC 2026
+This PR is submitted as part of GSSoC 2026.
