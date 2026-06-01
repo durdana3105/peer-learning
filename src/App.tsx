@@ -53,6 +53,8 @@ const PublicPortfolio = React.lazy(() => import("./pages/PublicPortfolio"));
 const ResourceHub = React.lazy(() => import("@/pages/ResourceHub"));
 const StudyRooms = React.lazy(() => import("./components/StudyRooms"));
 const Room = React.lazy(() => import("./components/Room"));
+const Contact = React.lazy(() => import("./pages/Contact"));
+const PrivacyPolicy = React.lazy(() => import("./pages/privacy"));
 
 const queryClient = new QueryClient();
 
@@ -99,6 +101,8 @@ function AppContent() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/become-mentor" element={<BecomeMentor />} />
           <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
+          <Route path="/contact" element={<WithNav><Contact /></WithNav>} />
+          <Route path="/privacy-policy" element={<WithNav><PrivacyPolicy /></WithNav>} />
 
           <Route path="/auth/callback" element={<AuthCallback />} />
 
