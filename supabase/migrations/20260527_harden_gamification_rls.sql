@@ -2,7 +2,7 @@
 -- Description: Hardens database by preventing clients from updating protected gamification columns directly.
 
 -- Function to silently revert protected column changes if initiated by a client (authenticated/anon roles).
--- Server-side RPCs (SECURITY DEFINER) bypass this because they run as the 'postgres' role.
+-- Server-side RPCs (SECURITY DEFINER SET search_path = public) bypass this because they run as the 'postgres' role.
 CREATE OR REPLACE FUNCTION public.protect_gamification_columns()
 RETURNS TRIGGER AS $$
 BEGIN

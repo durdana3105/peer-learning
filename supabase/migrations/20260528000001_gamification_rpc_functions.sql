@@ -8,7 +8,7 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS previous_streak INTEGER NOT
 CREATE OR REPLACE FUNCTION public.update_daily_streak()
 RETURNS json
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
   v_user_id uuid := auth.uid();
@@ -69,7 +69,7 @@ $$;
 CREATE OR REPLACE FUNCTION public.restore_user_streak()
 RETURNS json
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
   v_user_id uuid := auth.uid();
