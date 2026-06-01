@@ -132,50 +132,153 @@ export const getRecommendedPartners = async (req, res) => {
     const limit = Math.min(PAGE_SIZE, Math.max(1, parseInt(req.query.limit, 10) || PAGE_SIZE));
     const skip = (page - 1) * limit;
 
-    // Exclude the caller's email and only project fields needed for scoring.
-    // Email is intentionally omitted from the projection to prevent mass PII
-    // enumeration (resolves issue #146).
-    const users = await User.find(
-      { email: { $ne: currentUserEmail } },
-      {
-        _id: 1,
-        name: 1,
-        skills: 1,
-        interests: 1,
-        learningGoals: 1,
-        availability: 1,
-        learningStyle: 1,
-        preferredLanguage: 1,
-        timezone: 1,
-      }
+    // Calculate unique related skills for the current user upfront
+    const allRelatedSkills = [];
+    if (currentUser.skills && Array.isArray(currentUser.skills)) {
+      currentUser.skills.forEach(skill => {
+        allRelatedSkills.push(...getRelatedSkills(skill));
+      });
+    }
+    const uniqueRelatedSkills = [...new Set(allRelatedSkills)].filter(
+      s => !currentUser.skills.includes(s)
     );
 
-    // Score all users in memory, then paginate the sorted result so the page
-    // boundary is stable across requests.
-    const scored = users.map((user) => {
-  const result = calculateCompatibilityScore(currentUser, user);
+    // Build the aggregation pipeline for in-database scoring
+    const pipeline = [
+      { $match: { email: { $ne: currentUserEmail } } },
+      {
+        $addFields: {
+          commonSkillsCount: {
+            $size: { $setIntersection: [{ $ifNull: ["$skills", []] }, currentUser.skills || []] }
+          },
+          relatedSkillsCount: {
+            $size: { $setIntersection: [{ $ifNull: ["$skills", []] }, uniqueRelatedSkills] }
+          },
+          commonInterestsCount: {
+            $size: { $setIntersection: [{ $ifNull: ["$interests", []] }, currentUser.interests || []] }
+          },
+          commonGoalsCount: {
+            $size: { $setIntersection: [{ $ifNull: ["$learningGoals", []] }, currentUser.learningGoals || []] }
+          },
+          styleMatchScore: {
+            $cond: [
+              {
+                $and: [
+                  { $ne: [currentUser.learningStyle, null] },
+                  { $eq: ["$learningStyle", currentUser.learningStyle] }
+                ]
+              },
+              5,
+              0
+            ]
+          },
+          languageMatchScore: {
+            $cond: [
+              {
+                $and: [
+                  { $ne: [currentUser.preferredLanguage, null] },
+                  { $eq: ["$preferredLanguage", currentUser.preferredLanguage] }
+                ]
+              },
+              3,
+              0
+            ]
+          },
+          availabilityMatchScore: {
+            $cond: [
+              {
+                $and: [
+                  { $ne: [currentUser.availability, null] },
+                  { $eq: ["$availability", currentUser.availability] }
+                ]
+              },
+              3,
+              0
+            ]
+          },
+          timezoneMatchScore: {
+            $cond: [
+              {
+                $and: [
+                  { $ne: [currentUser.timezone, null] },
+                  { $eq: ["$timezone", currentUser.timezone] }
+                ]
+              },
+              3,
+              0
+            ]
+          }
+        }
+      },
+      {
+        $addFields: {
+          rawScore: {
+            $add: [
+              { $multiply: ["$commonSkillsCount", 10] },
+              { $multiply: ["$relatedSkillsCount", 6] },
+              { $multiply: ["$commonInterestsCount", 3] },
+              { $multiply: ["$commonGoalsCount", 5] },
+              "$styleMatchScore",
+              "$languageMatchScore",
+              "$availabilityMatchScore",
+              "$timezoneMatchScore"
+            ]
+          }
+        }
+      },
+      {
+        $addFields: {
+          compatibilityScore: { $min: ["$rawScore", 100] }
+        }
+      },
+      { $sort: { compatibilityScore: -1 } },
+      {
+        $facet: {
+          metadata: [{ $count: "totalCount" }],
+          data: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                skills: { $ifNull: ["$skills", []] },
+                interests: { $ifNull: ["$interests", []] },
+                learningGoals: { $ifNull: ["$learningGoals", []] },
+                availability: 1,
+                learningStyle: 1,
+                preferredLanguage: 1,
+                timezone: 1,
+                compatibilityScore: 1
+              }
+            }
+          ]
+        }
+      }
+    ];
 
-  return {
-    _id: user._id,
-    name: user.name,
-    skills: user.skills,
-    interests: user.interests,
-    learningGoals: user.learningGoals,
-    availability: user.availability,
-    learningStyle: user.learningStyle,
-    preferredLanguage: user.preferredLanguage,
-    timezone: user.timezone,
-    compatibilityScore: result.compatibilityScore,
-    reason:
-      result.reasons[0] ||
-      "You have similar learning interests and compatible skills.",
-  };
-});
+    const results = await User.aggregate(pipeline);
+    
+    const totalCount = results[0].metadata[0] ? results[0].metadata[0].totalCount : 0;
+    const paginatedUsers = results[0].data;
 
-    scored.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
-
-    const totalCount = scored.length;
-    const recommendations = scored.slice(skip, skip + limit);
+    // Run the JS logic strictly on the paginated slice to generate exact reason strings
+    const recommendations = paginatedUsers.map(user => {
+      const result = calculateCompatibilityScore(currentUser, user);
+      return {
+        _id: user._id,
+        name: user.name,
+        skills: user.skills,
+        interests: user.interests,
+        learningGoals: user.learningGoals,
+        availability: user.availability,
+        learningStyle: user.learningStyle,
+        preferredLanguage: user.preferredLanguage,
+        timezone: user.timezone,
+        compatibilityScore: result.compatibilityScore, // Matches DB score exactly
+        reason: result.reasons[0] || "You have similar learning interests and compatible skills."
+      };
+    });
 
     res.status(200).json({
       success: true,
