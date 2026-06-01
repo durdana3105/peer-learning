@@ -101,10 +101,14 @@ export const getRecommendedPartners = async (req, res) => {
     const skip = (page - 1) * limit;
 
     // Fetch potential matches from Supabase (everyone except current user)
+    // SECURITY/PERF: Bound the fetch pool to a maximum of 1000 candidates.
+    // This prevents catastrophic O(N) memory exhaustion and Node.js Event Loop blocking 
+    // when the platform scales to hundreds of thousands of users.
     const { data: users, error: usersError } = await supabaseAdmin
       .from('profiles')
       .select('id, name, skills, interests, teach_subjects, learn_subjects')
-      .neq('email', currentUserEmail);
+      .neq('email', currentUserEmail)
+      .limit(1000);
 
     if (usersError) {
        console.error("Supabase Users fetch error:", usersError);
