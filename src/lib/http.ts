@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+
 type UnknownRecord = Record<string, unknown>;
 
 export type ApiError = {
@@ -59,7 +61,7 @@ export function normalizeError(error: unknown, fallbackMessage = "Something went
       code: getString((error as Error & UnknownRecord).code),
       details: getString((error as Error & UnknownRecord).details),
       status: getNumber((error as Error & UnknownRecord).status),
-      cause: error.cause,
+      cause: (error as any).cause,
     };
   }
 
@@ -79,6 +81,9 @@ export async function withErrorBoundary<T>(
 
     const normalized = normalizeError(error, options.fallbackMessage);
     options.onError?.(normalized);
+    
+    toast.error(normalized.message || "An unexpected error occurred");
+
     throw normalized;
   }
 }

@@ -44,6 +44,10 @@ const deriveActiveRoles = (profile) => {
     roles.push("learner");
   }
 
+  if (profile?.is_admin) {
+    roles.push("admin");
+  }
+
   return roles;
 };
 
@@ -63,7 +67,7 @@ export const requireProfileRole = (...allowedRoles) => async (req, res, next) =>
 
     const { data: profile, error } = await supabaseAdmin
       .from("profiles")
-      .select("id, is_mentor, is_learner")
+      .select("id, is_mentor, is_learner, is_admin")
       .eq("id", req.user.id)
       .maybeSingle();
 
@@ -92,3 +96,9 @@ export const requireProfileRole = (...allowedRoles) => async (req, res, next) =>
     next(new HttpError(500, "Unable to verify account permissions"));
   }
 };
+
+/**
+ * Shorthand middleware explicitly requiring the Admin role.
+ * Any request missing the is_admin=true flag in the database will be rejected with 403.
+ */
+export const requireAdminRole = requireProfileRole("admin");
