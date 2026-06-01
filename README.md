@@ -285,8 +285,15 @@ npm install
 
 ## 4️⃣ Configure Environment Variables
 
-Create a `.env` file in the root directory and add:
+A `.env.example` file is provided in the root of the repository with all required variable names and placeholder values. Copy it to `.env` before running the project:
 
+```bash
+cp .env.example .env
+```
+
+Then fill in your actual values in `.env`. You can get your Supabase credentials from [https://supabase.com/dashboard](https://supabase.com/dashboard).
+
+Create a `.env` file in the root directory and add:
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key

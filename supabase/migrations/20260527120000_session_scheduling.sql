@@ -53,7 +53,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE sessions;
 CREATE OR REPLACE FUNCTION public.tick_session_statuses()
 RETURNS void
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY DEFINER SET search_path = public
 AS $$
 BEGIN
   -- Scheduled → live when start time has passed

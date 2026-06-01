@@ -14,7 +14,7 @@ INSERT INTO public.system_config (id) VALUES (1) ON CONFLICT DO NOTHING;
 CREATE OR REPLACE FUNCTION public.tick_session_statuses()
 RETURNS void
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
   v_last_tick timestamptz;
