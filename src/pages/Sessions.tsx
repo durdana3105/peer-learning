@@ -73,19 +73,7 @@ const [summaryLoading, setSummaryLoading] =
   const messagesEndRef = useRef<any>(null);
   
   // Track sessions that have already granted XP to prevent infinite farming across reloads
-  const getAwardedSessions = () => {
-    try {
-      return new Set<string>(JSON.parse(localStorage.getItem('awardedSessions') || '[]'));
-    } catch {
-      return new Set<string>();
-    }
-  };
-
-  const markSessionAwarded = (id: string) => {
-    const awarded = getAwardedSessions();
-    awarded.add(id);
-    localStorage.setItem('awardedSessions', JSON.stringify([...awarded]));
-  };
+  // Deprecated: XP validation now happens securely via backend query to prevent local bypass.
 
   // FETCH SESSIONS
   useEffect(() => {
@@ -284,6 +272,15 @@ const [summaryLoading, setSummaryLoading] =
   const handleJoinSession = async (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
     try {
+      // Security: Query the backend to check if the user is already a participant
+      // This prevents the XP farming exploit where users reload and rejoin the session
+      const { data: existingParticipant } = await supabase
+        .from('session_participants')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
       const { error } = await supabase.rpc("join_session", { p_session_id: sessionId });
       if (error) {
         if (error.message.includes("Session is full")) {
@@ -293,7 +290,11 @@ const [summaryLoading, setSummaryLoading] =
         }
       } else {
         toast({ title: "Success! 🎉", description: "You have joined the session." });
-        awardXP({ activity: 'session_join' });
+        
+        // Only award XP if they weren't already in the session
+        if (!existingParticipant) {
+          awardXP({ activity: 'session_join' });
+        }
       }
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Failed to join session.", variant: "destructive" });
