@@ -157,7 +157,7 @@ export const getSupabaseDiscover = async (req, res) => {
     const filter = req.query.filter || "All";
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 100);
 
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     const { data: currentUser, error: meError } = await supabase
       .from("profiles")
