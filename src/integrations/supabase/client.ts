@@ -13,20 +13,5 @@ export const supabase = createClient<Database>(
       persistSession: true,
       autoRefreshToken: true,
     },
-    global: {
-      fetch: async (...args: Parameters<typeof fetch>) => {
-        console.log("SUPABASE REQUEST:", args[0]);
-
-        const response = await fetch(...args);
-
-        console.log(
-          "SUPABASE RESPONSE:",
-          response.status,
-          response.url
-        );
-
-        return response;
-      },
-    },
   }
 );
