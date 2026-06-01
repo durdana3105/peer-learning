@@ -108,32 +108,32 @@ const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, response
 
 export const askAI = async (req, res, next) => {
   try {
-    const { question } = req.body;
+    const { messages } = req.body;
 
-    if (!question || typeof question !== "string") {
-      return res.status(400).json({ error: "Invalid question provided" });
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: "Invalid messages provided" });
     }
 
-    if (question.length > 2000) {
-      return res.status(400).json({ error: "Question exceeds maximum length of 2000 characters" });
+    const latestMessage = messages[messages.length - 1].content;
+    if (typeof latestMessage !== "string" || latestMessage.length > 2000) {
+      return res.status(400).json({ error: "Message exceeds maximum length of 2000 characters" });
     }
 
-    const maxTokens = budgetResponseTokens(question, ASK_AI_MAX_TOKENS);
+    const maxTokens = budgetResponseTokens(latestMessage, ASK_AI_MAX_TOKENS);
+    
+    const openRouterMessages = [
+      {
+        role: "system",
+        content:
+          "You are an AI peer mentor for students. Answer questions about coding, AI, DSA, and roadmaps in a supportive, clear, and approachable way.",
+      },
+      ...messages.slice(-10).map(m => ({ role: m.role || "user", content: m.content || "" }))
+    ];
 
     const data = await callOpenRouter({
       maxTokens,
       temperature: 0.7,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an AI peer mentor for students. Answer questions about coding, AI, DSA, and roadmaps in a supportive, clear, and approachable way.",
-        },
-        {
-          role: "user",
-          content: question,
-        },
-      ],
+      messages: openRouterMessages,
     });
 
     const content = extractMessageContent(data);
