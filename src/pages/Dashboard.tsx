@@ -28,6 +28,7 @@ interface Profile {
   availability: string | null;
   preferred_language: string | null;
   timezone: string | null;
+  focus_time_this_week: number | null;
 }
 interface Session {
   id: string;
@@ -276,6 +277,10 @@ const Dashboard = () => {
 
                 <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
                   🎯 {upcomingSessions.length || 0} Sessions
+                </div>
+                
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
+                  ⏱️ {profile?.focus_time_this_week ? Math.round(profile.focus_time_this_week / 60) : 0} hrs focused
                 </div>
               </div>
             </div>

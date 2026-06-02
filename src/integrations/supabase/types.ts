@@ -167,6 +167,8 @@ export type Database = {
           last_active: string | null
           restoration_used_today: boolean
           restoration_date: string | null
+          is_in_focus_mode: boolean | null
+          focus_time_this_week: number | null
         }
         Insert: {
           avatar_url?: string | null

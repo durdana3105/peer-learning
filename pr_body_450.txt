@@ -1,0 +1,15 @@
+Fixes #450
+
+## Description
+Fixed the chronology spoofing vulnerability in study room messages.
+- Added a `BEFORE INSERT` trigger on the `study_room_messages` table.
+- The trigger automatically forces `created_at` to `now()`, preventing malicious users from spoofing message timestamps to manipulate the order of messages in study rooms.
+
+## Type of Change
+- [x] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+
+## Checklist
+- [x] My code follows the GSSoC 2026 guidelines
+- [x] I have tested the changes locally

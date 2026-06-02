@@ -86,14 +86,25 @@ const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, response
     body.response_format = responseFormat;
   }
 
-  const response = await fetch(OPENROUTER_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-    },
-    body: JSON.stringify(body),
-  });
+  let response;
+  try {
+    response = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new HttpError(503, "AI request timed out. Please try again.", {
+        retryable: true,
+        reason: "timeout",
+      });
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     const errData = await response.json().catch(() => null);
@@ -195,7 +206,7 @@ export const generateSessionSummary = async (req, res, next) => {
 
     res.json(parseStrictSummaryContent(content));
   } catch (error) {
-    if (error.message === "Model did not return a valid summary JSON payload.") {
+    if (error instanceof SyntaxError || error.message === "Model did not return a valid summary JSON payload.") {
       next(new HttpError(502, "Summary generation returned an invalid response format."));
     } else {
       next(error);

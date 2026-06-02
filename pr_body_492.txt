@@ -1,0 +1,6 @@
+Fixes #492
+
+## Description
+Implemented gamification elements including:
+- Awarding XP for chat messages, resource uploads, and hosting sessions.
+- Added badges 'Top Mentor' and 'Consistency King'.

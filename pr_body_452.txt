@@ -1,0 +1,15 @@
+Fixes #452
+
+## Description
+Fixed the race condition (TOCTOU) in the `join_session` RPC:
+- Reordered the execution so the `UPDATE` to increment the participants counter happens *before* the `INSERT` into the `session_participants` table.
+- Replaced the `BEGIN...EXCEPTION WHEN unique_violation` block with an upfront `EXISTS` check. This prevents the `INSERT` from throwing or yielding before the seat count is updated, eliminating the narrow race window where a concurrent check on `session_participants` could exceed `max_participants`.
+
+## Type of Change
+- [x] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+
+## Checklist
+- [x] My code follows the GSSoC 2026 guidelines
+- [x] I have tested the changes locally

@@ -8,7 +8,7 @@ dotenv.config();
 const router = express.Router();
 
 const openrouter = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
+  apiKey: process.env.OPENROUTER_API_KEY || "dummy-key",
   baseURL: "https://openrouter.ai/api/v1",
   defaultHeaders: {
     "HTTP-Referer": process.env.SITE_URL || "http://localhost:8080",

@@ -66,7 +66,14 @@ export const chatSchemas = {
 export const aiSchemas = {
   askAI: {
     body: z.object({
-      question: z.string().trim().min(1).max(2000),
+      messages: z.array(
+        z.object({
+          role: z.string().optional(),
+          content: z.string().trim().min(1).max(4000),
+        })
+      ).min(1).max(50),
+      systemPrompt: z.string().optional(),
+      model: z.string().optional()
     }),
   },
   generateSessionSummary: {

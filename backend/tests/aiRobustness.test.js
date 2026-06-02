@@ -2,7 +2,7 @@ import express from "express";
 import request from "supertest";
 import { vi, describe, it, expect, afterEach } from "vitest";
 import { askAI } from "../controllers/aiController.js";
-import { createRateLimiter } from "../middlewares/rateLimiter.js";
+import { rateLimiter } from "../middlewares/rateLimiter.js";
 import { errorHandler } from "../middlewares/errorHandler.js";
 import { validate } from "../middlewares/validate.js";
 import { aiSchemas } from "../validation/schemas.js";
@@ -22,12 +22,11 @@ describe("AI route robustness", () => {
     app.post("/ask", validate(aiSchemas.askAI), askAI);
     app.use(errorHandler);
 
-    const response = await request(app).post("/ask").send({ question: "Explain closures" });
+    const response = await request(app).post("/ask").send({ messages: [{ role: "user", content: "Explain closures" }] });
 
     expect(response.status).toBe(503);
     expect(response.body).toMatchObject({
-      statusCode: 503,
-      message: "AI request timed out. Please try again.",
+      error: "AI request timed out. Please try again.",
     });
     expect(response.body.details).toMatchObject({
       retryable: true,
@@ -36,30 +35,25 @@ describe("AI route robustness", () => {
   });
 
   it("rate limits by user id before ip and returns a consistent 429 payload", async () => {
-    const limiter = createRateLimiter({
-      windowMs: 60 * 1000,
-      maxRequests: 1,
-      keyPrefix: "ai-test",
-      message: "Too many AI requests. Please wait before trying again.",
-    });
-
     const app = express();
     app.use((req, res, next) => {
       req.user = { id: req.get("x-test-user") };
       next();
     });
-    app.get("/ai", limiter, (req, res) => {
+    app.get("/ai", rateLimiter, (req, res) => {
       res.json({ ok: true });
     });
     app.use(errorHandler);
 
-    const first = await request(app)
-      .get("/ai")
-      .set("x-test-user", "user-1")
-      .set("x-forwarded-for", "1.1.1.1");
+    // Make 20 requests to hit the limit (MAX_REQUESTS is 20 in rateLimiter.js)
+    for (let i = 0; i < 20; i++) {
+      await request(app)
+        .get("/ai")
+        .set("x-test-user", "user-1")
+        .set("x-forwarded-for", "1.1.1.1");
+    }
 
-    expect(first.status).toBe(200);
-
+    // The 21st request with the same user ID (but different IP) should be limited
     const second = await request(app)
       .get("/ai")
       .set("x-test-user", "user-1")
@@ -67,8 +61,7 @@ describe("AI route robustness", () => {
 
     expect(second.status).toBe(429);
     expect(second.body).toMatchObject({
-      statusCode: 429,
-      message: "Too many AI requests. Please wait before trying again.",
+      error: "Too many requests. Please wait before sending more messages.",
     });
   });
 });
