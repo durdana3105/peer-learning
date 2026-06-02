@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-empty-object-type, no-unsafe-finally, @typescript-eslint/no-unused-expressions, @typescript-eslint/ban-ts-comment, @typescript-eslint/no-require-imports */
-=======
->>>>>>> 215963a (fix: resolve git merge conflict in supabase types.ts)
 export type Json =
   | string
   | number
@@ -852,10 +849,8 @@ export const Constants = {
     Enums: {},
   },
 } as const
-<<<<<<< HEAD
  main
 
 
 
-=======
->>>>>>> 215963a (fix: resolve git merge conflict in supabase types.ts)
+
