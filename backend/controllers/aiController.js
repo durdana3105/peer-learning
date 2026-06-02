@@ -125,6 +125,13 @@ export const askAI = async (req, res, next) => {
       return res.status(400).json({ error: "Invalid messages provided" });
     }
 
+    const hasInvalidRole = messages.some(
+      (m) => m.role !== "user" && m.role !== "assistant"
+    );
+    if (hasInvalidRole) {
+      return res.status(400).json({ error: "Messages can only contain user or assistant roles." });
+    }
+
     const latestMessage = messages[messages.length - 1].content;
     if (typeof latestMessage !== "string" || latestMessage.length > 2000) {
       return res.status(400).json({ error: "Message exceeds maximum length of 2000 characters" });
