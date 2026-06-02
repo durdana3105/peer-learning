@@ -138,7 +138,5 @@ export default {
   plugins: [require("tailwindcss-animate")],
 } satisfies Config;
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 70b31e1 (fix: add eslint-disable for tailwind.config.ts require import)
+
