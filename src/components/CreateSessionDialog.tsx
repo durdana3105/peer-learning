@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAwardXP } from "@/hooks/useAwardXP";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -86,6 +87,7 @@ export function CreateSessionDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<number>(60);
   const [useCustom, setUseCustom] = useState(false);
+  const awardXP = useAwardXP();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -147,6 +149,7 @@ export function CreateSessionDialog({
       setSelectedPreset(60);
       setUseCustom(false);
       setOpen(false);
+      awardXP.mutate({ activity: "host_session" });
       onSessionCreated();
     } catch (error: unknown) {
       const msg =

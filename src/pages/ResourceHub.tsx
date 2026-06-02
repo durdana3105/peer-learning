@@ -1,4 +1,4 @@
-import { useCallback, useContext, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Filter, Upload } from "lucide-react";
 
 import FilterSidebar from "@/components/resources/FilterSidebar";
@@ -19,14 +19,23 @@ const ResourceHub = () => {
   const currentUser = auth?.user ?? null;
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState("all");
   const [savedOnly, setSavedOnly] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
+  // Debounce search to prevent network spam on every keystroke
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [search]);
+
   const { resources, loading, error, refetch } = useResources({
-    search,
+    search: debouncedSearch,
     tags: selectedTags,
     fileType: selectedType === "all" || selectedType === "code" ? undefined : selectedType,
     savedOnly,

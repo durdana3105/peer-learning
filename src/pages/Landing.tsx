@@ -190,34 +190,33 @@ export default function Landing() {
       return;
     }
 
-    // clear any existing interval before creating a new one
     if (testimonialAutoScrollRef.current) {
-      clearInterval(testimonialAutoScrollRef.current);
+      cancelAnimationFrame(testimonialAutoScrollRef.current);
       testimonialAutoScrollRef.current = null;
     }
 
-    testimonialAutoScrollRef.current = window.setInterval(() => {
-      if (testimonialPausedRef.current) {
-        return;
-      }
+    let animationFrameId: number;
 
-      // Cards are duplicated, so loop back at halfway for a seamless carousel.
-      const loopPoint = el.scrollWidth / 2;
-      if (loopPoint <= 0) {
-        return;
+    const scrollLoop = () => {
+      if (!testimonialPausedRef.current) {
+        const loopPoint = el.scrollWidth / 2;
+        if (loopPoint > 0) {
+          el.scrollLeft += 2; // Smooth 60fps scrolling
+          if (el.scrollLeft >= loopPoint) {
+            el.scrollLeft -= loopPoint;
+          }
+        }
       }
+      animationFrameId = requestAnimationFrame(scrollLoop);
+      testimonialAutoScrollRef.current = animationFrameId;
+    };
 
-      el.scrollLeft += 3; // slightly faster
-      if (el.scrollLeft >= loopPoint) {
-        el.scrollLeft -= loopPoint;
-      }
-    }, 16);
+    animationFrameId = requestAnimationFrame(scrollLoop);
+    testimonialAutoScrollRef.current = animationFrameId;
 
     return () => {
-      if (testimonialAutoScrollRef.current) {
-        clearInterval(testimonialAutoScrollRef.current);
-        testimonialAutoScrollRef.current = null;
-      }
+      cancelAnimationFrame(animationFrameId);
+      testimonialAutoScrollRef.current = null;
     };
   }, [loading]);
 

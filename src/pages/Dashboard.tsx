@@ -36,17 +36,8 @@ interface Session {
   date?: string;
 }
 
-
-const Dashboard = () => {
-  const { user, loading } = useAuth();
-  const { currentMode } = useRole();
-  const navigate = useNavigate();
-
-  const [profile, setProfile] = useState<Profile | null>(null);
+const Clock = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [recommendedPeers, setRecommendedPeers] = useState<any[]>([]);
-  const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -55,6 +46,23 @@ const Dashboard = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  return (
+    <p className="mt-3 text-sm text-slate-400">
+      {currentTime.toLocaleTimeString()}
+    </p>
+  );
+};
+
+const Dashboard = () => {
+  const { user, loading } = useAuth();
+  const { currentMode } = useRole();
+  const navigate = useNavigate();
+
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [recommendedPeers, setRecommendedPeers] = useState<any[]>([]);
+  const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
 
   const displayName =
     profile?.name?.trim() ||
@@ -131,10 +139,13 @@ const Dashboard = () => {
   // Sessions
   useEffect(() => {
     const fetchSessions = async () => {
+      // SECURITY/PERF: Limit fetch to top 4 to prevent downloading 10,000 global sessions
+      // which would cause massive browser OOM crashes and render thrashing.
       const { data, error } = await supabase
         .from("sessions")
         .select("*")
-        .eq("status", "upcoming");
+        .eq("status", "upcoming")
+        .limit(4);
 
       if (error || !data) {
         setUpcomingSessions([]);
@@ -247,9 +258,7 @@ const Dashboard = () => {
                 👋
               </h1>
 
-              <p className="mt-3 text-sm text-slate-400">
-                {currentTime.toLocaleTimeString()}
-              </p>
+              <Clock />
 
               <p className="mt-4 text-lg text-slate-300/80">
                 Continue your learning journey today.

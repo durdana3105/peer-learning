@@ -153,22 +153,24 @@ export default function Contact() {
             <form className="mt-10 space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-300">
+                  <label htmlFor="first-name" className="mb-2 block text-sm font-medium text-slate-300">
                     First Name
                   </label>
 
                   <Input
+                    id="first-name"
                     placeholder="Enter first name"
                     className="h-14 rounded-2xl border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus-visible:ring-cyan-400"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-300">
+                  <label htmlFor="last-name" className="mb-2 block text-sm font-medium text-slate-300">
                     Last Name
                   </label>
 
                   <Input
+                    id="last-name"
                     placeholder="Enter last name"
                     className="h-14 rounded-2xl border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus-visible:ring-cyan-400"
                   />
@@ -176,11 +178,12 @@ export default function Contact() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">
+                <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-300">
                   Email Address
                 </label>
 
                 <Input
+                  id="email"
                   type="email"
                   placeholder="you@example.com"
                   className="h-14 rounded-2xl border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus-visible:ring-cyan-400"
@@ -188,22 +191,24 @@ export default function Contact() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">
+                <label htmlFor="subject" className="mb-2 block text-sm font-medium text-slate-300">
                   Subject
                 </label>
 
                 <Input
+                  id="subject"
                   placeholder="How can we help you?"
                   className="h-14 rounded-2xl border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus-visible:ring-cyan-400"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-300">
+                <label htmlFor="message" className="mb-2 block text-sm font-medium text-slate-300">
                   Message
                 </label>
 
                 <Textarea
+                  id="message"
                   placeholder="Write your message here..."
                   className="min-h-[180px] rounded-2xl border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus-visible:ring-cyan-400"
                 />

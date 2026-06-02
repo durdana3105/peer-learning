@@ -2,6 +2,7 @@ import { forwardRef, memo, useCallback, useEffect, useMemo, useRef, useState } f
 import { ArrowLeft, Inbox, MessageCircle, Phone, Search, Send, Users, Video } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { supabase } from "@/integrations/supabase/client";
+import { useAwardXP } from "@/hooks/useAwardXP";
 
 type ProfileSummary = {
   id: string;
@@ -227,6 +228,8 @@ const Messages = ({ user }: MessagesProps) => {
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
   const [showSidebarOnMobile, setShowSidebarOnMobile] = useState(true);
+  
+  const awardXP = useAwardXP();
 
   const currentUserId = user?.id;
 
@@ -417,29 +420,23 @@ const Messages = ({ user }: MessagesProps) => {
           schema: "public",
           table: "profiles",
         },
-        () => {
-          void supabase
-            .from("profiles")
-            .select("*")
-            .neq("id", currentUserId)
-            .order("name", { ascending: true })
-            .limit(100)
-            .then(({ data: profileData }) => {
-              void supabase
-                .from("users")
-                .select("*")
-                .neq("id", currentUserId)
-                .order("name", { ascending: true })
-                .limit(100)
-                .then(({ data: userData }) => {
-                  setProfiles(
-                    mergeProfiles(
-                      (profileData ?? []).map((row) => row as ProfileSummary),
-                      (userData ?? []) as UserRow[]
-                    )
-                  );
-                });
+        (payload) => {
+          if (payload.new && payload.new.id && payload.new.id !== currentUserId) {
+            setProfiles((prev) => {
+              const updated = normalizeProfile(payload.new as ProfileRow);
+              const index = prev.findIndex((p) => p.id === updated.id);
+              
+              if (index === -1) {
+                const newProfiles = [...prev, updated];
+                newProfiles.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+                return newProfiles;
+              }
+              
+              const newProfiles = [...prev];
+              newProfiles[index] = { ...newProfiles[index], ...updated };
+              return newProfiles;
             });
+          }
         }
       )
       .subscribe();
@@ -459,10 +456,11 @@ const Messages = ({ user }: MessagesProps) => {
         .from("messages")
         .select("id,sender_id,receiver_id,content,text,message,created_at,read_at")
         .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .limit(100);
 
       if (!error && data) {
-        setMessages(data as MessageRow[]);
+        setMessages((data as MessageRow[]).reverse());
       } else if (error) {
         console.error("Failed to load messages:", error.message);
       }
@@ -608,8 +606,9 @@ const Messages = ({ user }: MessagesProps) => {
           ? previous
           : [...previous, data as MessageRow]
       );
+      awardXP.mutate({ activity: "chat_message" });
     }
-  }, [currentUserId, newMessage, selectedUser]);
+  }, [currentUserId, newMessage, selectedUser, awardXP]);
 
   const selectProfile = useCallback((profile: ProfileSummary) => {
     setSelectedUser(profile);

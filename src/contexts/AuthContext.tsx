@@ -82,17 +82,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          await ensureProfileExists(session.user);
-
+          // PERF: Read first to avoid firing a database write on every single page load
           const { data: profile } = await supabase
             .from("profiles")
             .select("is_mentor, is_learner")
             .eq("id", session.user.id)
-            .single();
+            .maybeSingle();
 
-          setNeedsOnboarding(
-            profile?.is_mentor === false && profile?.is_learner === false
-          );
+          if (!profile) {
+            await ensureProfileExists(session.user);
+            setNeedsOnboarding(true);
+          } else {
+            setNeedsOnboarding(
+              profile.is_mentor === false && profile.is_learner === false
+            );
+          }
         } else {
           setNeedsOnboarding(false);
         }
@@ -116,20 +120,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(session?.user ?? null);
 
           if (session?.user) {
-            if (_event === "SIGNED_IN") {
-              await ensureProfileExists(session.user);
-            }
-
             try {
+              // PERF: Check if profile exists first, even on SIGNED_IN events
               const { data: profile } = await supabase
                 .from("profiles")
                 .select("is_mentor, is_learner")
                 .eq("id", session.user.id)
-                .single();
+                .maybeSingle();
 
-              if (mounted) {
+              if (!profile) {
+                await ensureProfileExists(session.user);
+                if (mounted) setNeedsOnboarding(true);
+              } else if (mounted) {
                 setNeedsOnboarding(
-                  profile?.is_mentor === false && profile?.is_learner === false
+                  profile.is_mentor === false && profile.is_learner === false
                 );
               }
             } catch (err) {

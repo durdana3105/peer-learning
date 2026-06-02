@@ -4,9 +4,9 @@ const MAX_ENTRIES = 10000;
 const CLEANUP_INTERVAL_MS = 60 * 1000;
 
 const requestCounts = new Map();
+let lastCleanup = Date.now();
 
-const evictStaleEntries = () => {
-  const now = Date.now();
+const evictStaleEntries = (now) => {
   for (const [key, entry] of requestCounts.entries()) {
     if (now - entry.windowStart >= WINDOW_MS) {
       requestCounts.delete(key);
@@ -14,11 +14,18 @@ const evictStaleEntries = () => {
   }
 };
 
-setInterval(evictStaleEntries, CLEANUP_INTERVAL_MS);
-
 export const rateLimiter = (req, res, next) => {
+  // If the user is unauthenticated, fallback to req.ip.
+  // Because 'trust proxy' in app.js is conditionally secured, req.ip cannot be spoofed 
+  // via X-Forwarded-For headers unless explicitly allowed by infrastructure.
   const userId = req.user?.id || req.ip;
   const now = Date.now();
+
+  // Passive eviction: clean up stale entries lazily to avoid holding the event loop open
+  if (now - lastCleanup >= CLEANUP_INTERVAL_MS) {
+    evictStaleEntries(now);
+    lastCleanup = now;
+  }
 
   let entry = requestCounts.get(userId);
 

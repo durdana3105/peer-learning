@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useAwardXP } from "@/hooks/useAwardXP";
 
 type UploadDialogProps = {
   open: boolean;
@@ -36,6 +37,7 @@ const formatFileSize = (size: number) => {
 const UploadDialog = ({ open, onOpenChange, onSuccess }: UploadDialogProps) => {
   const auth = useContext(AuthContext);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const awardXP = useAwardXP();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -101,6 +103,7 @@ const UploadDialog = ({ open, onOpenChange, onSuccess }: UploadDialogProps) => {
     }
 
     toast.success("Resource uploaded successfully.");
+    awardXP.mutate({ activity: "resource_upload" });
     resetForm();
     onOpenChange(false);
     onSuccess();

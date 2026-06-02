@@ -65,6 +65,7 @@ A modern peer-to-peer learning platform where students can connect, collaborate,
 - [💖 Contributors](#%F0%9F%92%96-contributors)
 - [👩‍💻 Author](#%F0%9F%91%A9%E2%80%8D%F0%9F%92%BB-author)
   * [Durdana Sultana](#durdana-sultana)
+- [❓ FAQ](#%E2%9D%93-faq)
 - [⭐ Support](#%E2%AD%90-support)
 - [📜 License](#%F0%9F%93%9C-license)
   * [🌟 Empowering Students Through Collaborative Learning 🌟](#%F0%9F%8C%9F-empowering-students-through-collaborative-learning-%F0%9F%8C%9F)
@@ -425,16 +426,49 @@ If you like this project, please give it a ⭐ on GitHub.
 
 </p>
 
-<p align="center">
-  <a href="https://github.com/durdana3105/peer-learning/stargazers">
-    <img src="https://img.shields.io/github/stars/durdana3105/peer-learning?style=social" alt="Stars">
-  </a>
-  &nbsp;&nbsp;
-  <a href="https://github.com/durdana3105/peer-learning/network/members">
-    <img src="https://img.shields.io/github/forks/durdana3105/peer-learning?style=social" alt="Forks">
-  </a>
-</p>
+## ❓ FAQ
 
+### Q: How do I set up the project locally?
+A: Clone the repo, install dependencies, copy `.env.example` to `.env`, fill in Supabase values, then run the development server.
+
+```bash
+git clone https://github.com/durdana3105/peer-learning.git
+cd peer-learning
+bun install
+cp .env.example .env
+# Update .env with your Supabase values
+bun run dev
+```
+
+If you do not use Bun, `npm install` and `npm run dev` are valid alternatives.
+
+### Q: What environment variables are required?
+A: Your frontend needs `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (or supported aliases such as `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
+
+The backend uses `SUPABASE_URL` and either `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_ANON_KEY` as well as `OPENROUTER_API_KEY` for AI chat and `SITE_URL` where applicable.
+
+### Q: How should I configure Supabase?
+A: Create a Supabase project and copy the project URL and anon key into `.env`. Enable Supabase Auth, add the required authentication providers, and make sure your auth redirect URL matches your local or deployed site.
+
+### Q: How can I deploy this project?
+A: This repository is configured for Vercel deployment. Deploy the frontend and backend to Vercel, then add the same Supabase environment variables to your Vercel project settings.
+
+For local deployment, ensure your `.env` variables are correct and run `bun run dev` for development or `bun run build` then `bun run preview` for production preview.
+
+### Q: Why does authentication fail even though I set up Supabase?
+A: Common causes:
+- `.env` variables are missing, wrong, or not loaded.
+- The site URL in Supabase Auth settings does not match your local URL (`http://localhost:5173`) or deployed URL.
+- OAuth provider callback URLs are not configured correctly.
+
+Verify the keys and URLs carefully in both Supabase and the app.
+
+### Q: What should I do if the app still fails to start?
+A: Check these steps:
+- Confirm `.env.example` was copied to `.env` and values were filled.
+- Run `bun install` again after deleting `node_modules` if dependencies appear broken.
+- Make sure Node/Bun versions are compatible with the repo.
+- Look for console errors from the frontend or backend and verify the Supabase credentials.
 
 ---
 

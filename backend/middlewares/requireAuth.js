@@ -1,5 +1,45 @@
+import crypto from "crypto";
 import { HttpError } from "../utils/httpError.js";
 import { getSupabaseAdmin } from "../utils/supabase.js";
+
+const base64UrlDecode = (str) => {
+  str = str.replace(/-/g, "+").replace(/_/g, "/");
+  while (str.length % 4) {
+    str += "=";
+  }
+  return Buffer.from(str, "base64").toString("utf-8");
+};
+
+const verifyLocalJwt = (token, secret) => {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+
+    const [headerB64, payloadB64, signatureB64] = parts;
+
+    const expectedSignature = crypto
+      .createHmac("sha256", secret)
+      .update(`${headerB64}.${payloadB64}`)
+      .digest("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=/g, "");
+
+    if (expectedSignature !== signatureB64) {
+      return null;
+    }
+
+    const payload = JSON.parse(base64UrlDecode(payloadB64));
+
+    if (payload.exp && Date.now() >= payload.exp * 1000) {
+      return null;
+    }
+
+    return payload;
+  } catch (err) {
+    return null;
+  }
+};
 
 /**
  * Express middleware that validates a Supabase JWT from the Authorization header.
@@ -22,6 +62,28 @@ export const requireAuth = async (req, res, next) => {
   }
 
   const token = authHeader.slice(7);
+  const jwtSecret = process.env.SUPABASE_JWT_SECRET;
+
+  if (jwtSecret) {
+    // Fast, local verification (0ms network latency)
+    const payload = verifyLocalJwt(token, jwtSecret);
+    if (!payload) {
+      next(new HttpError(401, "Invalid or expired session"));
+      return;
+    }
+
+    req.user = { 
+      id: payload.sub,
+      email: payload.email,
+      user_metadata: payload.user_metadata,
+      app_metadata: payload.app_metadata,
+      role: payload.role
+    };
+    return next();
+  }
+
+  // Slow, fallback network verification
+  console.warn("WARN: SUPABASE_JWT_SECRET is missing. Falling back to slow network-based auth verification.");
   const { data, error } = await supabaseAdmin.auth.getUser(token);
 
   if (error || !data?.user) {
@@ -44,6 +106,10 @@ const deriveActiveRoles = (profile) => {
     roles.push("learner");
   }
 
+  if (profile?.is_admin) {
+    roles.push("admin");
+  }
+
   return roles;
 };
 
@@ -63,7 +129,7 @@ export const requireProfileRole = (...allowedRoles) => async (req, res, next) =>
 
     const { data: profile, error } = await supabaseAdmin
       .from("profiles")
-      .select("id, is_mentor, is_learner")
+      .select("id, is_mentor, is_learner, is_admin")
       .eq("id", req.user.id)
       .maybeSingle();
 
@@ -92,3 +158,9 @@ export const requireProfileRole = (...allowedRoles) => async (req, res, next) =>
     next(new HttpError(500, "Unable to verify account permissions"));
   }
 };
+
+/**
+ * Shorthand middleware explicitly requiring the Admin role.
+ * Any request missing the is_admin=true flag in the database will be rejected with 403.
+ */
+export const requireAdminRole = requireProfileRole("admin");

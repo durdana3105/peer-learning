@@ -38,11 +38,22 @@ export const createChatCompletion = async (req, res, next) => {
       return;
     }
 
+    const ALLOWED_MODELS = [
+      "google/gemini-2.5-flash",
+      "meta-llama/llama-3-8b-instruct",
+      "mistralai/mistral-7b-instruct:free",
+      "google/gemma-7b-it:free"
+    ];
+
+    const safeModel = ALLOWED_MODELS.includes(model) ? model : "google/gemini-2.5-flash";
+    const safeMaxTokens = Math.min(parseInt(max_tokens, 10) || 512, 1024);
+    const safeTemperature = Math.min(Math.max(parseFloat(temperature) || 0.7, 0), 2);
+
     const response = await openrouter.chat.completions.create({
-      model,
+      model: safeModel,
       messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
-      max_tokens: max_tokens ?? 512,
-      temperature,
+      max_tokens: safeMaxTokens,
+      temperature: safeTemperature,
     });
 
     res.json({ reply: response.choices[0].message.content });

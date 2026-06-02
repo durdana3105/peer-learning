@@ -4,6 +4,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { AuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useAwardXP } from "@/hooks/useAwardXP";
 const MarkdownRenderer = React.lazy(() =>
   import("@/components/MarkdownRenderer").then((module) => ({ default: module.MarkdownRenderer }))
 );
@@ -131,6 +132,7 @@ const Chat = () => {
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [typingUserId, setTypingUserId] = useState<string | null>(null);
   const [showConversationList, setShowConversationList] = useState(true);
+  const awardXP = useAwardXP();
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -433,8 +435,10 @@ const Chat = () => {
     if (error) {
       setMessageText(content);
       console.error("Failed to send message:", error.message);
+    } else {
+      awardXP.mutate({ activity: "chat_message" });
     }
-  }, [currentUser?.id, messageText, selectedUser?.id, sendTypingStatus]);
+  }, [currentUser?.id, messageText, selectedUser?.id, sendTypingStatus, awardXP]);
 
   const selectUser = useCallback((user: Profile) => {
     setSelectedUser(user);

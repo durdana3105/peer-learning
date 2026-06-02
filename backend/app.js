@@ -8,7 +8,12 @@ import { errorHandler } from "./middlewares/errorHandler.js";
 
 const app = express();
 
-app.set("trust proxy", 1);
+// SECURITY: Only trust proxy if explicitly configured (e.g., when behind Nginx/Cloudflare)
+// This prevents attackers from spoofing their IP via X-Forwarded-For headers
+if (process.env.TRUST_PROXY === "true") {
+  app.set("trust proxy", 1);
+}
+
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
 // Cap incoming JSON body size to 100 KB so a single oversized request
 // cannot exhaust server memory or cause a denial-of-service condition.

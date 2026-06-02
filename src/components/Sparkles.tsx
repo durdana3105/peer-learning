@@ -1,27 +1,50 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 const Sparkles: React.FC = () => {
-  const [sparkles, setSparkles] = useState<{ id: number; x: number; y: number }[]>([]);
-  const sparkleIdRef = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    let timeouts: NodeJS.Timeout[] = [];
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      const newSparkles = Array.from({ length: 2 }).map(() => ({
-        id: sparkleIdRef.current++,
-        x: e.clientX + Math.random() * 10 - 5,
-        y: e.clientY + Math.random() * 10 - 5,
-      }));
+    let ticking = false;
+    let timeouts = new Set<NodeJS.Timeout>();
+    const container = containerRef.current;
 
-      setSparkles((prev) => [...prev, ...newSparkles]);
+    if (!container) return;
 
-      newSparkles.forEach((sparkle) => {
+    const createSparkles = (x: number, y: number) => {
+      for (let i = 0; i < 2; i++) {
+        const sparkle = document.createElement("div");
+        sparkle.className = "sparkle";
+        
+        const left = x + Math.random() * 10 - 5;
+        const top = y + Math.random() * 10 - 5;
+        
+        sparkle.style.left = `${left}px`;
+        sparkle.style.top = `${top}px`;
+        sparkle.style.position = "absolute";
+        sparkle.style.pointerEvents = "none";
+        
+        container.appendChild(sparkle);
+
         const timeout = setTimeout(() => {
-          setSparkles((prev) => prev.filter((s) => s.id !== sparkle.id));
+          if (container.contains(sparkle)) {
+            container.removeChild(sparkle);
+          }
+          // MEMORY LEAK FIX: Remove timer from Set once executed
+          timeouts.delete(timeout);
         }, 800);
-        timeouts.push(timeout);
-      });
+        
+        timeouts.add(timeout);
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          createSparkles(e.clientX, e.clientY);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     window.addEventListener("mousemove", handleMouseMove);
@@ -29,19 +52,19 @@ const Sparkles: React.FC = () => {
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       timeouts.forEach(clearTimeout);
+      timeouts.clear();
+      if (container) {
+        container.innerHTML = "";
+      }
     };
   }, []);
 
   return (
-    <div id="sparkle-container">
-      {sparkles.map((sparkle) => (
-        <div
-          key={sparkle.id}
-          className="sparkle"
-          style={{ left: `${sparkle.x}px`, top: `${sparkle.y}px`, position: 'absolute', pointerEvents: 'none' }}
-        />
-      ))}
-    </div>
+    <div 
+      ref={containerRef} 
+      id="sparkle-container" 
+      style={{ position: 'fixed', top: 0, left: 0, pointerEvents: 'none', zIndex: 9999, width: '100vw', height: '100vh', overflow: 'hidden' }} 
+    />
   );
 };
 

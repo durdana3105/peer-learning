@@ -5,7 +5,9 @@ serve(async (req) => {
   const authHeader = req.headers.get("Authorization");
   const cronSecret = Deno.env.get("CRON_SECRET");
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  // Fail-closed: reject all requests when CRON_SECRET is not configured
+  // rather than accepting them when the env var is absent.
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },

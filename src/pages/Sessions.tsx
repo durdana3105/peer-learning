@@ -72,8 +72,8 @@ const [summaryLoading, setSummaryLoading] =
 
   const messagesEndRef = useRef<any>(null);
   
-  // Track sessions that have already granted XP to prevent infinite farming
-  const awardedSessions = useRef<Set<string>>(new Set());
+  // Track sessions that have already granted XP to prevent infinite farming across reloads
+  // Deprecated: XP validation now happens securely via backend query to prevent local bypass.
 
   // FETCH SESSIONS
   useEffect(() => {
@@ -272,6 +272,15 @@ const [summaryLoading, setSummaryLoading] =
   const handleJoinSession = async (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
     try {
+      // Security: Query the backend to check if the user is already a participant
+      // This prevents the XP farming exploit where users reload and rejoin the session
+      const { data: existingParticipant } = await supabase
+        .from('session_participants')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
       const { error } = await supabase.rpc("join_session", { p_session_id: sessionId });
       if (error) {
         if (error.message.includes("Session is full")) {
@@ -281,7 +290,11 @@ const [summaryLoading, setSummaryLoading] =
         }
       } else {
         toast({ title: "Success! 🎉", description: "You have joined the session." });
-        awardXP({ activity: 'session_join' });
+        
+        // Only award XP if they weren't already in the session
+        if (!existingParticipant) {
+          awardXP({ activity: 'session_join' });
+        }
       }
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Failed to join session.", variant: "destructive" });
@@ -664,10 +677,11 @@ const [summaryLoading, setSummaryLoading] =
                 <button 
                   onClick={() => {
                     setIsVideoActive(true);
-                    // Prevent infinite XP farming loophole
-                    if (!awardedSessions.current.has(selectedSession.id)) {
+                    // Prevent infinite XP farming loophole across page reloads
+                    const awarded = getAwardedSessions();
+                    if (!awarded.has(selectedSession.id)) {
                       awardXP({ activity: 'session_join' });
-                      awardedSessions.current.add(selectedSession.id);
+                      markSessionAwarded(selectedSession.id);
                     }
                   }}
                   className="flex items-center gap-2 bg-gradient-to-r from-cyan-400 to-purple-500 text-black px-4 py-2 rounded-2xl font-bold hover:opacity-90 transition"

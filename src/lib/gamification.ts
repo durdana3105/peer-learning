@@ -19,8 +19,10 @@ export const ALL_ACHIEVEMENTS = [
   { id: "first_steps", name: "First Steps", xpRequired: 50, icon: "👣", description: "Earned your first 50 XP" },
   { id: "active_learner", name: "Active Learner", xpRequired: 200, icon: "📚", description: "Participated in sessions" },
   { id: "knowledge_explorer", name: "Knowledge Explorer", xpRequired: 500, icon: "🧭", description: "Consistently learning" },
+  { id: "consistency_king", name: "Consistency King", xpRequired: 750, icon: "👑", description: "Earned for high activity" },
   { id: "community_mentor", name: "Community Mentor", xpRequired: 1000, icon: "🤝", description: "Helped others grow" },
   { id: "session_host", name: "Session Host", xpRequired: 1500, icon: "🎙️", description: "Hosted multiple sessions" },
+  { id: "top_mentor", name: "Top Mentor", xpRequired: 2500, icon: "🥇", description: "Outstanding guidance" },
   { id: "top_contributor", name: "Top 10 Contributor", xpRequired: 3000, icon: "🌟", description: "Reached the top 10" },
 ];
 
@@ -37,6 +39,9 @@ export const getAchievements = (xp: number) => {
 
 export const getXPForActivity = (activity: string) => {
   switch (activity) {
+    case "host_session":
+      return 50;
+
     case "session_join":
       return 50;
 
@@ -45,6 +50,12 @@ export const getXPForActivity = (activity: string) => {
 
     case "daily_login":
       return 20;
+
+    case "resource_upload":
+      return 20;
+
+    case "chat_message":
+      return 5;
 
     default:
       return 10;
