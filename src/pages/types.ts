@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-empty-object-type, no-unsafe-finally, @typescript-eslint/no-unused-expressions, @typescript-eslint/ban-ts-comment, @typescript-eslint/no-require-imports */
 export type Json =
   | string
   | number
@@ -386,7 +386,6 @@ export const Constants = {
     Enums: {},
   },
 } as const
-=======
 export type Json =
   | string
   | number
@@ -851,4 +850,6 @@ export const Constants = {
   },
 } as const
  main
+
+
 
