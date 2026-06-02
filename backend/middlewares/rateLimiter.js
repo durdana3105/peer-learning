@@ -14,6 +14,8 @@ const evictStaleEntries = (now) => {
   }
 };
 
+export const createRateLimiter = rateLimiter;
+export const protectedApiRateLimiter = rateLimiter;
 export const rateLimiter = (req, res, next) => {
   // If the user is unauthenticated, fallback to req.ip.
   // Because 'trust proxy' in app.js is conditionally secured, req.ip cannot be spoofed 
@@ -49,3 +51,4 @@ export const rateLimiter = (req, res, next) => {
   entry.count += 1;
   next();
 };
+
