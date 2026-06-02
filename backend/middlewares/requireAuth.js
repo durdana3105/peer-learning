@@ -42,9 +42,56 @@ const verifyLocalJwt = (token, secret) => {
 };
 
 /**
- * Express middleware that validates a Supabase JWT from the Authorization header.
- * Rejects requests with no token or an invalid/expired token with 401.
- * Attaches the authenticated user object to req.user on success.
+ * Startup check: warn loudly if SUPABASE_JWT_SECRET is missing.
+ * In production, this is a fatal misconfiguration — the server refuses to start.
+ */
+const jwtSecret = process.env.SUPABASE_JWT_SECRET;
+
+if (!jwtSecret) {
+  if (process.env.NODE_ENV === "production") {
+    console.error("[security] FATAL: SUPABASE_JWT_SECRET is not set. Local JWT verification is required in production.");
+    process.exit(1);
+  }
+  console.warn("[security] WARNING: SUPABASE_JWT_SECRET is not set. Using slow network-based auth (dev only).");
+}
+
+/**
+ * Simple rate limiter specifically for the network fallback path.
+ * Prevents attackers from spamming invalid tokens to exhaust Supabase API quotas.
+ */
+const FALLBACK_WINDOW_MS = 60_000;
+const FALLBACK_MAX_REQUESTS = 10;
+const fallbackRateCounts = new Map();
+
+const isFallbackRateLimited = (ip) => {
+  const now = Date.now();
+  const entry = fallbackRateCounts.get(ip);
+
+  if (!entry || now - entry.windowStart >= FALLBACK_WINDOW_MS) {
+    fallbackRateCounts.set(ip, { count: 1, windowStart: now });
+    return false;
+  }
+
+  if (entry.count >= FALLBACK_MAX_REQUESTS) {
+    return true;
+  }
+
+  entry.count += 1;
+  return false;
+};
+
+/**
+ * Express middleware that validates a Supabase JWT.
+ *
+ * Token source priority:
+ *   1. HttpOnly cookie (`access_token`)
+ *   2. Authorization header (`Bearer <token>`)
+ *
+ * Verification strategy:
+ *   - Production: Local HMAC-SHA256 verification only (fast, zero network latency).
+ *     Server refuses to start if SUPABASE_JWT_SECRET is missing.
+ *   - Development: Falls back to Supabase getUser() if the secret is absent,
+ *     with a strict per-IP rate limiter to prevent API exhaustion.
  */
 export const requireAuth = async (req, res, next) => {
   const supabaseAdmin = getSupabaseAdmin();
@@ -66,10 +113,9 @@ export const requireAuth = async (req, res, next) => {
     next(new HttpError(401, "Authentication required"));
     return;
   }
-  const jwtSecret = process.env.SUPABASE_JWT_SECRET;
 
+  // PRIMARY PATH: Fast, local HMAC verification (0ms network latency)
   if (jwtSecret) {
-    // Fast, local verification (0ms network latency)
     const payload = verifyLocalJwt(token, jwtSecret);
     if (!payload) {
       next(new HttpError(401, "Invalid or expired session"));
@@ -86,8 +132,14 @@ export const requireAuth = async (req, res, next) => {
     return next();
   }
 
-  // Slow, fallback network verification
-  console.warn("WARN: SUPABASE_JWT_SECRET is missing. Falling back to slow network-based auth verification.");
+  // FALLBACK PATH (development only — production exits at startup above)
+  // Rate-limit this path to prevent Supabase API quota exhaustion from token spam.
+  const clientIp = req.socket?.remoteAddress || req.ip || "unknown";
+  if (isFallbackRateLimited(clientIp)) {
+    next(new HttpError(429, "Too many authentication attempts. Please try again later."));
+    return;
+  }
+
   const { data, error } = await supabaseAdmin.auth.getUser(token);
 
   if (error || !data?.user) {
