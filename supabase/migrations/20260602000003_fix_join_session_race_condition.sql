@@ -5,6 +5,7 @@ CREATE OR REPLACE FUNCTION public.join_session(p_session_id UUID)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_seat_limit integer;
