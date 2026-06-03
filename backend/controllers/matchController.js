@@ -165,7 +165,11 @@ export const getSupabaseDiscover = async (req, res) => {
       return res.status(404).json({ success: false, message: "User profile not found" });
     }
 
-    let query = supabaseAdmin.from("profiles").select("*").neq("id", userId).limit(100);
+    let query = supabaseAdmin
+      .from("profiles")
+      .select("id, name, skills, interests, learning_goals, teach_subjects, learn_subjects, learning_style, preferred_language, timezone")
+      .neq("id", userId)
+      .limit(100);
 
     if (search.trim()) {
       const safeSearch = search.trim().replace(/"/g, '""');
