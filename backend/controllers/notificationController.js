@@ -31,6 +31,13 @@ export const sendPushNotification = async (req, res, next) => {
       return res.status(400).json({ error: "user_id, title, and body are required" });
     }
 
+    // Security Fix: Prevent IDOR. Enforce that standard users can only send push notifications to themselves.
+    // If a webhook secret is used, req.user will be undefined (which bypasses this check if we allow webhooks to send to anyone).
+    // If user auth is used, req.user is set.
+    if (req.user && req.user.id !== user_id && !(req.roles && req.roles.includes("admin"))) {
+      return res.status(403).json({ error: "Not authorized to send push notifications to this user" });
+    }
+
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
     const supabase = getSupabaseClient();
 
