@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from "@/integrations/supabase/client";
 import { env } from "@/env";
 
@@ -73,3 +74,4 @@ export async function registerBrowserPush(userId: string) {
 
   return { ok: true, reason: "subscribed" as const };
 }
+

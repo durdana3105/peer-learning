@@ -41,6 +41,8 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api", chatRoutes);
 app.use("/api/match", matchRoutes);
+app.use("/api/cron", cronRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // 404 handler for unmatched routes
 app.use((_req, res) => {

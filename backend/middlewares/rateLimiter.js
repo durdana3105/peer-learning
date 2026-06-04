@@ -3,17 +3,6 @@ const MAX_REQUESTS = 20;
 const MAX_ENTRIES = 10000;
 const CLEANUP_INTERVAL_MS = 60 * 1000;
 
-const requestCounts = new Map();
-let lastCleanup = Date.now();
-
-const evictStaleEntries = (now) => {
-  for (const [key, entry] of requestCounts.entries()) {
-    if (now - entry.windowStart >= WINDOW_MS) {
-      requestCounts.delete(key);
-    }
-  }
-};
-
 /**
  * Derives a rate-limit key for the current request.
  *
@@ -36,35 +25,49 @@ const deriveRateLimitKey = (req) => {
   return `ip:${expressIp}|${socketIp}|${ua}`;
 };
 
-export const rateLimiter = (req, res, next) => {
-  const key = deriveRateLimitKey(req);
-  const now = Date.now();
+export const createRateLimiter = (options = {}) => {
+  const windowMs = options.windowMs || WINDOW_MS;
+  const maxRequests = options.maxRequests || MAX_REQUESTS;
+  const maxEntries = options.maxEntries || MAX_ENTRIES;
+  const store = new Map();
+  let cleanupTime = Date.now();
 
-  // Passive eviction: clean up stale entries lazily to avoid holding the event loop open
-  if (now - lastCleanup >= CLEANUP_INTERVAL_MS) {
-    evictStaleEntries(now);
-    lastCleanup = now;
-  }
+  return (req, res, next) => {
+    const key = deriveRateLimitKey(req);
+    const now = Date.now();
 
-  let entry = requestCounts.get(key);
-
-  if (!entry || now - entry.windowStart >= WINDOW_MS) {
-    if (!entry && requestCounts.size >= MAX_ENTRIES) {
-      const oldestKey = requestCounts.keys().next().value;
-      if (oldestKey !== undefined) {
-        requestCounts.delete(oldestKey);
+    if (now - cleanupTime >= CLEANUP_INTERVAL_MS) {
+      for (const [k, entry] of store.entries()) {
+        if (now - entry.windowStart >= windowMs) {
+          store.delete(k);
+        }
       }
+      cleanupTime = now;
     }
-    requestCounts.set(key, { count: 1, windowStart: now });
-    return next();
-  }
 
-  if (entry.count >= MAX_REQUESTS) {
-    return res.status(429).json({
-      error: "Too many requests. Please wait before sending more messages.",
-    });
-  }
+    let entry = store.get(key);
 
-  entry.count += 1;
-  next();
+    if (!entry || now - entry.windowStart >= windowMs) {
+      if (!entry && store.size >= maxEntries) {
+        const oldestKey = store.keys().next().value;
+        if (oldestKey !== undefined) {
+          store.delete(oldestKey);
+        }
+      }
+      store.set(key, { count: 1, windowStart: now });
+      return next();
+    }
+
+    if (entry.count >= maxRequests) {
+      return res.status(429).json({
+        error: "Too many requests. Please wait before sending more messages.",
+      });
+    }
+
+    entry.count += 1;
+    next();
+  };
 };
+
+export const rateLimiter = createRateLimiter();
+export const protectedApiRateLimiter = rateLimiter;

@@ -2,7 +2,11 @@ import { useRole } from "@/contexts/RoleContext";
 import { useAuth } from "@/contexts/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { API_BASE_URL } from "@/config/api";
+import { Link } from "react-router-dom";
+import { Bot } from "lucide-react";
 import RecommendedPartners from "@/components/recommendations/RecommendedPartners";
+import { MentorshipMilestones } from "@/components/mentorship/MentorshipMilestones";
+
 const LearnerDashboard = () => {
   const { user } = useAuth();
   const { currentMode } = useRole();
@@ -56,6 +60,29 @@ const LearnerDashboard = () => {
             You have not connected with any mentors yet. Visit Discover to find
             one.
           </p>
+        </section>
+
+        {user && (
+          <section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
+            <MentorshipMilestones userId={user.id} isMentor={false} />
+          </section>
+        )}
+
+        <section className="rounded-xl border border-slate-800 bg-slate-900 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Bot className="text-cyan-400" /> AI Mock Interviews
+            </h2>
+            <p className="mt-2 text-slate-400">
+              Practice your behavioral and technical interview skills with our AI. Get real-time feedback and an evaluation report.
+            </p>
+          </div>
+          <Link
+            to="/mock-interview"
+            className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-3 rounded-lg font-medium transition-colors whitespace-nowrap"
+          >
+            Start Practice
+          </Link>
         </section>
                 <section>
           {loadingPartners ? (

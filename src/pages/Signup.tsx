@@ -31,7 +31,23 @@ const Signup = () => {
   const navigate = useNavigate();
 
   if (!loading && user) return <Navigate to="/dashboard" replace />;
+  const getPasswordStrength = (password: string) => {
+    let score = 0;
 
+    if (password.length >= 8) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[a-z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+
+    if (score <= 2) return { label: "Weak", color: "bg-red-500" };
+    if (score <= 4) return { label: "Medium", color: "bg-yellow-500" };
+    return { label: "Strong", color: "bg-green-500" };
+  };
+  const passwordStrength = getPasswordStrength(password);
+  if (!loading && user) {
+    return <Navigate to="/dashboard" replace />;
+  }
   const validate = () => {
     const errs: FormErrors = {};
 
@@ -263,6 +279,34 @@ const Signup = () => {
               </button>
             </div>
 
+            {password && (
+              <div className="mt-2">
+              <div className="h-2 w-full bg-state-700 rounded">
+                <div
+                  className ={`h-2 rounded transition-all duration-300 ${passwordStrength.color}`}
+                  style={{ width: `${(passwordStrength.label === "Weak" ? 33 : passwordStrength.label === "Medium" ? 66 : 100)}%` }}
+                />
+              </div>
+              <p className="text-sm text-state-300 mt-1">Password Strength: {passwordStrength.label}</p>
+              <div className="mt-2 text-sm space-y-1">
+                <p className={password.length >= 8 ? "text-green-400" : "text-red-400"}>
+                  {password.length >= 8 ? "✓" : "✗"} At least 8 characters
+                </p>
+                <p className={/([A-Z])/.test(password) ? "text-green-400" : "text-red-400"}>
+                  {/([A-Z])/.test(password) ? "✓" : "✗"} Uppercase letter (A-Z)
+                </p>
+                <p className={/([a-z])/.test(password) ? "text-green-400" : "text-red-400"}>
+                  {/([a-z])/.test(password) ? "✓" : "✗"} Lowercase letter (a-z)
+                </p>
+                <p className={/([0-9])/.test(password) ? "text-green-400" : "text-red-400"}>
+                  {/([0-9])/.test(password) ? "✓" : "✗"} Number (0-9)
+                </p>
+                <p className={/([^A-Za-z0-9])/.test(password) ? "text-green-400" : "text-red-400"}>
+                  {/([^A-Za-z0-9])/.test(password) ? "✓" : "✗"} Special character (!@#$%)
+                </p>
+              </div>
+            </div>
+             )}
             {errors.password && (
               <p className="text-red-400 text-sm">{errors.password}</p>
             )}
