@@ -97,3 +97,34 @@ export const aiSchemas = {
       }),
   },
 };
+
+export const matchSchemas = {
+  getRecommendedPartners: {
+    query: z.object({
+      page: z
+        .string()
+        .optional()
+        .refine((val) => val === undefined || (/^\d+$/.test(val) && parseInt(val) >= 1), {
+          message: "page must be a positive integer",
+        }),
+      limit: z
+        .string()
+        .optional()
+        .refine((val) => val === undefined || (/^\d+$/.test(val) && parseInt(val) >= 1 && parseInt(val) <= 20), {
+          message: "limit must be an integer between 1 and 20",
+        }),
+    }),
+  },
+  getSupabaseDiscover: {
+    query: z.object({
+      search: z.string().optional(),
+      filter: z.string().optional(),
+      limit: z
+        .string()
+        .optional()
+        .refine((val) => val === undefined || (/^\d+$/.test(val) && parseInt(val) >= 1 && parseInt(val) <= 100), {
+          message: "limit must be an integer between 1 and 100",
+        }),
+    }),
+  },
+};
