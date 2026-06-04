@@ -34,7 +34,8 @@ export const sendPushNotification = async (req, res, next) => {
     // Security Fix: Prevent IDOR. Enforce that standard users can only send push notifications to themselves.
     // If a webhook secret is used, req.user will be undefined (which bypasses this check if we allow webhooks to send to anyone).
     // If user auth is used, req.user is set.
-    if (req.user && req.user.id !== user_id && !(req.roles && req.roles.includes("admin"))) {
+    const isAdmin = req.user?.role === "admin" || req.user?.app_metadata?.role === "admin" || (req.roles && req.roles.includes("admin"));
+    if (req.user && req.user.id !== user_id && !isAdmin) {
       return res.status(403).json({ error: "Not authorized to send push notifications to this user" });
     }
 
