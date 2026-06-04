@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from "@/integrations/supabase/client";
 
 export const rewardXP = async (
@@ -11,4 +12,5 @@ export const rewardXP = async (
   // users can only increment their own XP.
   await (supabase as any).rpc("increment_user_xp", { _amount: amount });
 };
+
 

@@ -5,7 +5,7 @@ const MouseSparkles: React.FC = () => {
 
   useEffect(() => {
     let ticking = false;
-    let timeouts = new Set<NodeJS.Timeout>();
+    const timeouts = new Set<NodeJS.Timeout>();
     const container = containerRef.current;
 
     if (!container) return;
@@ -56,7 +56,7 @@ const MouseSparkles: React.FC = () => {
       timeouts.forEach(clearTimeout);
       timeouts.clear();
       if (container) {
-        container.innerHTML = "";
+        container.replaceChildren();
       }
     };
   }, []);
@@ -65,3 +65,5 @@ const MouseSparkles: React.FC = () => {
 };
 
 export default MouseSparkles;
+
+

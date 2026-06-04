@@ -17,6 +17,18 @@ const verifyLocalJwt = (token, secret) => {
 
     const [headerB64, payloadB64, signatureB64] = parts;
 
+    const header = JSON.parse(base64UrlDecode(headerB64));
+    
+    // Prevent algorithm confusion: Only process HS256 tokens using HMAC.
+    if (header.alg !== "HS256") {
+      return null;
+    }
+    
+    // Additional check: if the secret appears to be a PEM-encoded public key, reject HMAC
+    if (secret.startsWith("-----BEGIN")) {
+      return null;
+    }
+
     const expectedSignature = crypto
       .createHmac("sha256", secret)
       .update(`${headerB64}.${payloadB64}`)
@@ -25,7 +37,13 @@ const verifyLocalJwt = (token, secret) => {
       .replace(/\//g, "_")
       .replace(/=/g, "");
 
-    if (expectedSignature !== signatureB64) {
+    const expectedSignatureBuffer = Buffer.from(expectedSignature);
+    const signatureBuffer = Buffer.from(signatureB64);
+
+    if (
+      expectedSignatureBuffer.length !== signatureBuffer.length ||
+      !crypto.timingSafeEqual(expectedSignatureBuffer, signatureBuffer)
+    ) {
       return null;
     }
 
@@ -54,14 +72,18 @@ export const requireAuth = async (req, res, next) => {
     return;
   }
 
-  const authHeader = req.headers.authorization;
+  let token = null;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (req.cookies && req.cookies.access_token) {
+    token = req.cookies.access_token;
+  } else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
+    token = req.headers.authorization.slice(7);
+  }
+
+  if (!token) {
     next(new HttpError(401, "Authentication required"));
     return;
   }
-
-  const token = authHeader.slice(7);
   const jwtSecret = process.env.SUPABASE_JWT_SECRET;
 
   if (jwtSecret) {

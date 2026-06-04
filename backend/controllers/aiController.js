@@ -16,6 +16,13 @@ const summaryResponseSchema = z.object({
   key_takeaways: z.array(z.string().trim().min(1)).max(12),
 });
 
+const mockInterviewReportSchema = z.object({
+  strengths: z.array(z.string().trim().min(1)).max(10),
+  areas_for_improvement: z.array(z.string().trim().min(1)).max(10),
+  overall_score: z.number().min(0).max(100),
+  summary: z.string().trim().min(1),
+});
+
 const estimateTokens = (text) => {
   if (typeof text !== "string" || !text.trim()) {
     return 0;
@@ -68,6 +75,15 @@ const parseStrictSummaryContent = (content) => {
   }
 
   throw new Error("Model did not return a valid summary JSON payload.");
+};
+
+const parseStrictMockInterviewReport = (content) => {
+  const direct = mockInterviewReportSchema.safeParse(JSON.parse(content));
+  if (direct.success) {
+    return direct.data;
+  }
+
+  throw new Error("Model did not return a valid mock interview report JSON payload.");
 };
 
 const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, responseFormat }) => {
@@ -123,6 +139,13 @@ export const askAI = async (req, res, next) => {
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: "Invalid messages provided" });
+    }
+
+    const hasInvalidRole = messages.some(
+      (m) => m.role !== "user" && m.role !== "assistant"
+    );
+    if (hasInvalidRole) {
+      return res.status(400).json({ error: "Messages can only contain user or assistant roles." });
     }
 
     const latestMessage = messages[messages.length - 1].content;
@@ -208,6 +231,101 @@ export const generateSessionSummary = async (req, res, next) => {
   } catch (error) {
     if (error instanceof SyntaxError || error.message === "Model did not return a valid summary JSON payload.") {
       next(new HttpError(502, "Summary generation returned an invalid response format."));
+    } else {
+      next(error);
+    }
+  }
+};
+
+export const conductMockInterview = async (req, res, next) => {
+  try {
+    const { messages, role } = req.body;
+
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: "Invalid messages provided" });
+    }
+
+    if (typeof role !== "string" || !role.trim()) {
+      return res.status(400).json({ error: "Role is required" });
+    }
+
+    const latestMessage = messages[messages.length - 1].content;
+    if (typeof latestMessage !== "string" || latestMessage.length > 2000) {
+      return res.status(400).json({ error: "Message exceeds maximum length" });
+    }
+
+    const maxTokens = budgetResponseTokens(latestMessage, ASK_AI_MAX_TOKENS);
+    
+    const openRouterMessages = [
+      {
+        role: "system",
+        content: `You are acting as a strict but fair ${role} conducting a mock interview for a candidate. 
+        Follow these rules:
+        1. Ask ONLY ONE question at a time.
+        2. Wait for the candidate's response before proceeding.
+        3. Provide very brief, constructive feedback on their previous answer (if applicable), then ask the next question.
+        4. Do not break character. Do not provide a list of questions at once.`,
+      },
+      ...messages.slice(-20).map(m => ({ role: m.role || "user", content: m.content || "" }))
+    ];
+
+    const data = await callOpenRouter({
+      maxTokens,
+      temperature: 0.6,
+      messages: openRouterMessages,
+    });
+
+    const content = extractMessageContent(data);
+    if (!content) {
+      throw new HttpError(502, "AI service returned an empty response.");
+    }
+
+    res.json({ answer: content });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const generateMockInterviewReport = async (req, res, next) => {
+  try {
+    const { messages } = req.body;
+
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: "Messages are required" });
+    }
+
+    const conversationText = messages
+      .map((msg) => `${msg.role === 'assistant' ? 'Interviewer' : 'Candidate'}: ${msg.content}`)
+      .join("\n")
+      .slice(-20000);
+
+    const maxTokens = budgetResponseTokens(conversationText, SUMMARY_MAX_TOKENS);
+
+    const data = await callOpenRouter({
+      maxTokens,
+      temperature: 0.3,
+      responseFormat: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert technical recruiter evaluating a mock interview. Return only strict JSON with exactly these keys: strengths (array of strings), areas_for_improvement (array of strings), overall_score (number between 0 and 100), and summary (string).",
+        },
+        {
+          role: "user",
+          content: conversationText,
+        },
+      ],
+    });
+
+    const content = extractMessageContent(data);
+    if (!content) {
+      throw new HttpError(502, "Report generation returned an empty response.");
+    }
+
+    res.json(parseStrictMockInterviewReport(content));
+  } catch (error) {
+    if (error instanceof SyntaxError || error.message.includes("valid mock interview report JSON payload")) {
+      next(new HttpError(502, "Report generation returned an invalid response format."));
     } else {
       next(error);
     }

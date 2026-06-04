@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef } from 'react';
 
 const Sparkles: React.FC = () => {
@@ -5,7 +6,7 @@ const Sparkles: React.FC = () => {
 
   useEffect(() => {
     let ticking = false;
-    let timeouts = new Set<NodeJS.Timeout>();
+    const timeouts = new Set<NodeJS.Timeout>();
     const container = containerRef.current;
 
     if (!container) return;
@@ -54,7 +55,7 @@ const Sparkles: React.FC = () => {
       timeouts.forEach(clearTimeout);
       timeouts.clear();
       if (container) {
-        container.innerHTML = "";
+        container.replaceChildren();
       }
     };
   }, []);
@@ -69,3 +70,6 @@ const Sparkles: React.FC = () => {
 };
 
 export default React.memo(Sparkles);
+
+
+

@@ -14,6 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      mentorship_paths: {
+        Row: {
+          id: string
+          mentor_id: string
+          mentee_id: string
+          goal: string
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          mentor_id: string
+          mentee_id: string
+          goal: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          mentor_id?: string
+          mentee_id?: string
+          goal?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentorship_paths_mentee_id_fkey"
+            columns: ["mentee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentorship_paths_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      mentorship_milestones: {
+        Row: {
+          id: string
+          path_id: string
+          title: string
+          description: string | null
+          is_completed: boolean
+          due_date: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          path_id: string
+          title: string
+          description?: string | null
+          is_completed?: boolean
+          due_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          path_id?: string
+          title?: string
+          description?: string | null
+          is_completed?: boolean
+          due_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentorship_milestones_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "mentorship_paths"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       peer_submissions: {
         Row: {
           id: string
@@ -143,6 +229,50 @@ export type Database = {
         }
         Relationships: []
       }
+      leaderboard: {
+        Row: {
+          id: string
+          user_id: string
+          username: string
+          avatar_url: string | null
+          xp: number
+          streak: number
+          sessions_joined: number
+          badges: string[]
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          username: string
+          avatar_url?: string | null
+          xp?: number
+          streak?: number
+          sessions_joined?: number
+          badges?: string[]
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          username?: string
+          avatar_url?: string | null
+          xp?: number
+          streak?: number
+          sessions_joined?: number
+          badges?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -169,6 +299,10 @@ export type Database = {
           restoration_date: string | null
           is_in_focus_mode: boolean | null
           focus_time_this_week: number | null
+          learning_style: string | null
+          availability: string | null
+          preferred_language: string | null
+          timezone: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -193,6 +327,10 @@ export type Database = {
           last_active?: string | null
           restoration_used_today?: boolean
           restoration_date?: string | null
+          learning_style?: string | null
+          availability?: string | null
+          preferred_language?: string | null
+          timezone?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -217,6 +355,88 @@ export type Database = {
           last_active?: string | null
           restoration_used_today?: boolean
           restoration_date?: string | null
+          learning_style?: string | null
+          availability?: string | null
+          preferred_language?: string | null
+          timezone?: string | null
+        }
+        Relationships: []
+      }
+      resources: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          url: string
+          tags: string[] | null
+          file_type: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          url: string
+          tags?: string[] | null
+          file_type: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          url?: string
+          tags?: string[] | null
+          file_type?: string
+          user_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      resource_votes: {
+        Row: {
+          id: string
+          resource_id: string
+          user_id: string
+          vote_type: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          resource_id: string
+          user_id: string
+          vote_type: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          resource_id?: string
+          user_id?: string
+          vote_type?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      saved_resources: {
+        Row: {
+          id: string
+          resource_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          resource_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          resource_id?: string
+          user_id?: string
+          created_at?: string
         }
         Relationships: []
       }
@@ -403,10 +623,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_activity_xp: {
+        Args: { _activity_type: string }
+        Returns: undefined
+      }
+      get_user_rank: {
+        Args: { 
+          p_user_id: string
+          p_filter?: string 
+        }
+        Returns: number
+      }
       invite_to_study_room: {
         Args: {
           p_room_id: string
           p_user_email: string
+        }
+        Returns: undefined
+      }
+      join_leaderboard: {
+        Args: {
+          _username: string
+          _avatar_url: string | null
         }
         Returns: undefined
       }

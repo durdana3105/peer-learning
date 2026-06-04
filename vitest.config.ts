@@ -24,6 +24,7 @@ export default defineConfig({
           name: "backend",
           environment: "node",
           globals: true,
+          setupFiles: ["./backend/tests/setup.js"],
           include: ["backend/**/*.{test,spec}.{js,ts}"],
         },
       },

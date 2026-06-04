@@ -8,7 +8,7 @@ BEGIN
   NEW.created_at = now();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS enforce_study_room_message_created_at ON public.study_room_messages;
 CREATE TRIGGER enforce_study_room_message_created_at
