@@ -2,6 +2,7 @@ import express from "express";
 import {
   dispatchPushNotifications,
   sendSessionReminders,
+  sendMentorshipCheckinReminders,
 } from "../controllers/cronController.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
@@ -19,5 +20,6 @@ const verifyCronSecret = (req, res, next) => {
 
 router.post("/dispatch-notifications", verifyCronSecret, asyncHandler(dispatchPushNotifications));
 router.post("/reminders", verifyCronSecret, asyncHandler(sendSessionReminders));
+router.post("/mentorship-reminders", verifyCronSecret, asyncHandler(sendMentorshipCheckinReminders));
 
 export default router;

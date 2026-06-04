@@ -151,3 +151,82 @@ export const sendSessionReminders = async (req, res, next) => {
     next(error);
   }
 };
+
+export const sendMentorshipCheckinReminders = async (req, res, next) => {
+  try {
+    const supabase = getSupabaseClient();
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    
+    // Find milestones due in the next 24 hours or overdue, that are not completed
+    const { data: milestones, error } = await supabase
+      .from("mentorship_milestones")
+      .select(`
+        id,
+        title,
+        due_date,
+        mentorship_paths (
+          id,
+          mentor_id,
+          mentee_id,
+          goal
+        )
+      `)
+      .eq("is_completed", false)
+      .not("due_date", "is", null)
+      .lte("due_date", tomorrow);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    const notifications = [];
+    for (const m of milestones || []) {
+      const path = m.mentorship_paths;
+      if (!path) continue;
+      
+      const isOverdue = new Date(m.due_date) < now;
+      const title = isOverdue ? "Milestone Overdue" : "Milestone Due Soon";
+      const body = `The milestone "${m.title}" for goal "${path.goal}" is ${isOverdue ? 'overdue' : 'due soon'}. Check in with your mentor/mentee!`;
+
+      // Notify mentor
+      notifications.push({
+        user_id: path.mentor_id,
+        type: "mentorship_reminder",
+        title,
+        body,
+        entity_id: m.id,
+        action_url: "/dashboard", // MentorDashboard
+      });
+      
+      // Notify mentee
+      notifications.push({
+        user_id: path.mentee_id,
+        type: "mentorship_reminder",
+        title,
+        body,
+        entity_id: m.id,
+        action_url: "/dashboard", // LearnerDashboard
+      });
+    }
+
+    if (notifications.length === 0) {
+      return res.json({ inserted: 0 });
+    }
+
+    const { error: insertError } = await supabase
+      .from("notifications")
+      .upsert(notifications, {
+        onConflict: "user_id,entity_id,type",
+        ignoreDuplicates: true,
+      });
+
+    if (insertError) {
+      return res.status(500).json({ error: insertError.message });
+    }
+
+    res.json({ inserted: notifications.length });
+  } catch (error) {
+    next(error);
+  }
+};

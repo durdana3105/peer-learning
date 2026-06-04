@@ -5,6 +5,7 @@ import { API_BASE_URL } from "@/config/api";
 import { Link } from "react-router-dom";
 import { Bot } from "lucide-react";
 import RecommendedPartners from "@/components/recommendations/RecommendedPartners";
+import { MentorshipMilestones } from "@/components/mentorship/MentorshipMilestones";
 
 const LearnerDashboard = () => {
   const { user } = useAuth();
@@ -63,6 +64,12 @@ const LearnerDashboard = () => {
             one.
           </p>
         </section>
+
+        {user && (
+          <section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
+            <MentorshipMilestones userId={user.id} isMentor={false} />
+          </section>
+        )}
 
         <section className="rounded-xl border border-slate-800 bg-slate-900 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
