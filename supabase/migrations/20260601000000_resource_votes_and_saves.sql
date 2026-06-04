@@ -45,7 +45,7 @@ alter table resources add column if not exists downvotes_count integer default 0
 
 -- Trigger to maintain vote counts
 create or replace function update_resource_vote_counts()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer set search_path = public as $$
 begin
   if tg_op = 'INSERT' then
     if new.vote_type = 1 then

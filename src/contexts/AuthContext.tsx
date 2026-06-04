@@ -2,6 +2,24 @@ import { createContext, useEffect, useState, ReactNode, useCallback, useRef } fr
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+const syncSessionCookie = async (session: Session | null) => {
+  try {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+    if (session?.access_token) {
+      await fetch(`${API_BASE_URL}/api/auth/set-cookie`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ access_token: session.access_token }),
+      });
+    } else {
+      await fetch(`${API_BASE_URL}/api/auth/clear-cookie`, {
+        method: "POST",
+      });
+    }
+  } catch (err) {
+    console.error("Failed to sync session cookie:", err);
+  }
+};
 export interface AuthContextType {
   session: Session | null;
   user: User | null;
@@ -97,6 +115,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         setSession(session);
         setUser(session?.user ?? null);
+        
+        await syncSessionCookie(session);
 
         if (session?.user) {
           // PERF: Read first to avoid firing a database write on every single page load
@@ -141,6 +161,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
           setSession(session);
           setUser(session?.user ?? null);
+          
+          await syncSessionCookie(session);
 
           if (session?.user) {
             try {

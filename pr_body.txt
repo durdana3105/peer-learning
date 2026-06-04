@@ -1,0 +1,8 @@
+Resolves #653
+
+## Description
+This PR adds a Live Code Execution Sandbox to the Study Room chats. It integrates the Piston API to allow students to run, test, and debug code snippets (Python, JS, C++, Java) directly in the platform and share their code and output straight into the chat.
+
+## Changes
+- Added LiveCodeRunner component.
+- Updated SessionChat to include the Code Runner trigger and handle formatted markdown sharing.

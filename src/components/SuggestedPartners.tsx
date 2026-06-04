@@ -17,9 +17,7 @@ const SuggestedPartners = () => {
       const response = await fetch(
         `${API_BASE_URL}/api/match/recommendations`,
         {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          credentials: "include",
         }
       );
       

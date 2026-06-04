@@ -58,6 +58,7 @@ const PrivacyPolicy = React.lazy(() => import("./pages/privacy"));
 const PeerReviewDashboard = React.lazy(() => import("./pages/PeerReviewDashboard"));
 const SubmitForReview = React.lazy(() => import("./pages/SubmitForReview"));
 const ReviewSubmission = React.lazy(() => import("./pages/ReviewSubmission"));
+const MockInterview = React.lazy(() => import("./pages/MockInterview"));
 
 const queryClient = new QueryClient();
 
@@ -289,6 +290,17 @@ function AppContent() {
               <ProtectedRoute>
                 <WithNav>
                   <ReviewSubmission />
+                </WithNav>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/mock-interview"
+            element={
+              <ProtectedRoute>
+                <WithNav>
+                  <MockInterview />
                 </WithNav>
               </ProtectedRoute>
             }

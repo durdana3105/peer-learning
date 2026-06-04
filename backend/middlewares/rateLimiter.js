@@ -3,49 +3,49 @@ const MAX_REQUESTS = 20;
 const MAX_ENTRIES = 10000;
 const CLEANUP_INTERVAL_MS = 60 * 1000;
 
-const requestCounts = new Map();
-let lastCleanup = Date.now();
+export const createRateLimiter = (options = {}) => {
+  const windowMs = options.windowMs || WINDOW_MS;
+  const maxRequests = options.maxRequests || MAX_REQUESTS;
+  const maxEntries = options.maxEntries || MAX_ENTRIES;
+  const store = new Map();
+  let cleanupTime = Date.now();
 
-const evictStaleEntries = (now) => {
-  for (const [key, entry] of requestCounts.entries()) {
-    if (now - entry.windowStart >= WINDOW_MS) {
-      requestCounts.delete(key);
-    }
-  }
-};
+  return (req, res, next) => {
+    const userId = req.user?.id || req.ip;
+    const now = Date.now();
 
-export const rateLimiter = (req, res, next) => {
-  // If the user is unauthenticated, fallback to req.ip.
-  // Because 'trust proxy' in app.js is conditionally secured, req.ip cannot be spoofed 
-  // via X-Forwarded-For headers unless explicitly allowed by infrastructure.
-  const userId = req.user?.id || req.ip;
-  const now = Date.now();
-
-  // Passive eviction: clean up stale entries lazily to avoid holding the event loop open
-  if (now - lastCleanup >= CLEANUP_INTERVAL_MS) {
-    evictStaleEntries(now);
-    lastCleanup = now;
-  }
-
-  let entry = requestCounts.get(userId);
-
-  if (!entry || now - entry.windowStart >= WINDOW_MS) {
-    if (!entry && requestCounts.size >= MAX_ENTRIES) {
-      const oldestKey = requestCounts.keys().next().value;
-      if (oldestKey !== undefined) {
-        requestCounts.delete(oldestKey);
+    if (now - cleanupTime >= CLEANUP_INTERVAL_MS) {
+      for (const [key, entry] of store.entries()) {
+        if (now - entry.windowStart >= windowMs) {
+          store.delete(key);
+        }
       }
+      cleanupTime = now;
     }
-    requestCounts.set(userId, { count: 1, windowStart: now });
-    return next();
-  }
 
-  if (entry.count >= MAX_REQUESTS) {
-    return res.status(429).json({
-      error: "Too many requests. Please wait before sending more messages.",
-    });
-  }
+    let entry = store.get(userId);
 
-  entry.count += 1;
-  next();
+    if (!entry || now - entry.windowStart >= windowMs) {
+      if (!entry && store.size >= maxEntries) {
+        const oldestKey = store.keys().next().value;
+        if (oldestKey !== undefined) {
+          store.delete(oldestKey);
+        }
+      }
+      store.set(userId, { count: 1, windowStart: now });
+      return next();
+    }
+
+    if (entry.count >= maxRequests) {
+      return res.status(429).json({
+        error: "Too many requests. Please wait before sending more messages.",
+      });
+    }
+
+    entry.count += 1;
+    next();
+  };
 };
+
+export const rateLimiter = createRateLimiter();
+export const protectedApiRateLimiter = rateLimiter;
