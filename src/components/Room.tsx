@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,6 +5,7 @@ import { useAuth } from '@/contexts/useAuth';
 import ParticipantCard from "./studyroom/ParticipantCard";
 import StudyTimer from "./studyroom/StudyTimer";
 import ActivityFeed from "./studyroom/ActivityFeed";
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 import React, { Suspense } from 'react';
 
@@ -15,15 +15,43 @@ const MarkdownRenderer = React.lazy(() =>
 );
 import GroupPomodoro from '@/components/GroupPomodoro';
 
+interface RoomDetails {
+  id: string;
+  topic: string;
+  is_private: boolean;
+  created_by: string;
+  created_at: string;
+}
+
+interface Profile {
+  name: string;
+  avatar_url?: string | null;
+}
+
+interface RoomMessage {
+  id: string;
+  room_id: string;
+  profile_id: string;
+  content: string;
+  created_at: string;
+  profiles?: Profile;
+}
+
+interface Participant {
+  user_id: string;
+  name: string;
+  online_at?: string;
+}
+
 export default function Room() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth(); 
 
-  const [room, setRoom] = useState<any>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [room, setRoom] = useState<RoomDetails | null>(null);
+  const [messages, setMessages] = useState<RoomMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [participants, setParticipants] = useState<any[]>([]);
+  const [participants, setParticipants] = useState<Participant[]>([]);
   const [activities, setActivities] = useState<string[]>([]);
   const [inviteEmail, setInviteEmail] = useState('');
   const [isInviting, setIsInviting] = useState(false);
@@ -36,13 +64,13 @@ export default function Room() {
     fetchRoomDetails();
     fetchMessages();
 
-    let roomChannel: any;
+    let roomChannel: RealtimeChannel;
 
     // 🚀 UPDATED: We made this an async function so we can fetch the user's real name first
     const initializeChat = async () => {
       // 1. Fetch this specific user's profile name
       
-      const { data } = await supabase.from('profiles' as any).select('name').eq('id', user.id).single() as any;
+      const { data } = await supabase.from('profiles').select('name').eq('id', user.id).single();
       const displayName = data?.name || user.email?.split('@')[0] || 'Student';
 
       // 2. Connect to the room
@@ -53,7 +81,7 @@ export default function Room() {
       roomChannel
         .on('presence', { event: 'sync' }, () => {
           const newState = roomChannel.presenceState();
-          const onlineUsers = Object.values(newState).map((p: any) => p[0]);
+          const onlineUsers = Object.values(newState).map((p: unknown) => (p as Participant[])[0]);
 
           setParticipants(onlineUsers);
 
@@ -102,7 +130,7 @@ export default function Room() {
   }, [messages]);
 
   const fetchRoomDetails = async () => {
-    const { data, error } = await supabase.from('study_rooms' as any).select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('study_rooms').select('*').eq('id', id).single();
     if (error) {
       console.error("Error fetching room:", error);
       if (error.code === 'PGRST116') {
@@ -115,7 +143,7 @@ export default function Room() {
 
   const fetchMessages = async () => {
     const { data, error } = await supabase
-      .from('study_room_messages' as any)
+      .from('study_room_messages')
       .select('*, profiles(name, avatar_url)')
       .eq('room_id', id)
       .order('created_at', { ascending: true });
@@ -139,7 +167,7 @@ export default function Room() {
       ...prev,
     ]);
 
-    const { error } = await supabase.from('study_room_messages' as any).insert([
+    const { error } = await supabase.from('study_room_messages').insert([
       { room_id: id, profile_id: user.id, content: messageText }
     ]);
     
@@ -152,7 +180,7 @@ export default function Room() {
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
     setIsInviting(true);
-    const { error } = await (supabase.rpc as any)('invite_to_study_room', {
+    const { error } = await supabase.rpc('invite_to_study_room', {
       p_room_id: id,
       p_user_email: inviteEmail
     });

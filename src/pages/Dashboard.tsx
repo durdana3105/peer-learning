@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Suspense, lazy, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -31,11 +30,32 @@ interface Profile {
   timezone: string | null;
   focus_time_this_week: number | null;
 }
+
 interface Session {
   id: string;
   status: string;
   title?: string;
   date?: string;
+  created_at?: string;
+  created_by?: string;
+  topic?: string;
+  is_private?: boolean;
+}
+
+interface PeerRecommendation {
+  id: string;
+  name: string;
+  avatar: string;
+  bio: string;
+  skills: string[];
+  interests: string[];
+  teachSubjects: string[];
+  learnSubjects: string[];
+  rating: number;
+  sessionsCompleted: number;
+  points: number;
+  badges: string[];
+  matchScore: number;
 }
 
 const Clock = () => {
@@ -62,9 +82,9 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [recommendedPeers, setRecommendedPeers] = useState<any[]>([]);
-  const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [recommendedPeers, setRecommendedPeers] = useState<PeerRecommendation[]>([]);
+  const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
+  const [leaderboard, setLeaderboard] = useState<Profile[]>([]);
 
   const displayName =
     profile?.name?.trim() ||
@@ -80,7 +100,7 @@ const Dashboard = () => {
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .single<Profile>();   // 👈 tell TS this is a single Profile row
+        .single<Profile>();
 
       if (error) {
         console.error(error);
@@ -88,12 +108,10 @@ const Dashboard = () => {
       }
 
       if (data) {
-        setProfile(data);              // TS now knows `data` is Profile
-        fetchRecommendedPeers(data);   // safe to pass
+        setProfile(data);
+        fetchRecommendedPeers(data);
       }
     };
-
-
 
     fetchProfile();
   }, [user]);
@@ -116,7 +134,7 @@ const Dashboard = () => {
       const data = await res.json();
       
       if (data.success && data.recommendations) {
-        const mapped = data.recommendations.map((p: any) => ({
+        const mapped: PeerRecommendation[] = data.recommendations.map((p: any) => ({
           id: p.id,
           name: p.name || "User",
           avatar: p.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${p.name}`,
@@ -137,7 +155,7 @@ const Dashboard = () => {
     } catch (err) {
       console.error("Failed to fetch recommended peers:", err);
     }
-  };
+  }; };
 
   // Sessions
   useEffect(() => {

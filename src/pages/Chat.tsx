@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { memo, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, MessageCircle, Search, Send } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import type { RealtimePostgresInsertPayload } from "@supabase/supabase-js";
 
 import { AuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -302,7 +302,7 @@ const Chat = () => {
 
     loadMessages();
 
-    const handleNewMessage = (payload: any) => {
+    const handleNewMessage = (payload: RealtimePostgresInsertPayload<ChatMessage>) => {
       const nextMessage = payload.new as ChatMessage;
       const belongsToOpenChat =
         (nextMessage.sender_id === currentUser.id &&
