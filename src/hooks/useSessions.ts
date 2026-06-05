@@ -180,13 +180,6 @@ export function useSessions(user: any) {
   const handleJoinSession = useCallback(async (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
     try {
-      const { data: existingParticipant } = await (supabase as any)
-        .from("session_participants")
-        .select("*")
-        .eq("session_id", sessionId)
-        .eq("user_id", user?.id)
-        .maybeSingle();
-
       const { error } = await supabase.rpc("join_session", { p_session_id: sessionId });
       if (error) {
         if (error.message.includes("Session is full")) {
@@ -196,10 +189,7 @@ export function useSessions(user: any) {
         }
       } else {
         toast({ title: "Success! 🎉", description: "You have joined the session." });
-
-        if (!existingParticipant) {
-          awardXP({ activity: "session_join" });
-        }
+        awardXP({ activity: "session_join" });
       }
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Failed to join session.", variant: "destructive" });
