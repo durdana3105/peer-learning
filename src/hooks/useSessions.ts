@@ -91,7 +91,7 @@ export function useSessions(user: any) {
     channelRef.current = roomChannel;
 
     roomChannel
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload: any) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `session_id=eq.${selectedSession.id}` }, (payload: any) => {
         if (payload.new.session_id === selectedSession.id) {
           setMessages((prev) => [...prev, payload.new]);
         }
