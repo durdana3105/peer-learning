@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import RecommendationPanel from "@/components/recommendations/RecommendationPanel";
@@ -71,35 +70,8 @@ const Dashboard = () => {
     user?.email?.split("@")[0] ||
     "Learner";
 
-  // Fetch Profile
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchProfile = async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single<Profile>();   // 👈 tell TS this is a single Profile row
-
-      if (error) {
-        console.error(error);
-        return;
-      }
-
-      if (data) {
-        setProfile(data);              // TS now knows `data` is Profile
-        fetchRecommendedPeers(data);   // safe to pass
-      }
-    };
-
-
-
-    fetchProfile();
-  }, [user]);
-
   // Recommended Peers
-  const fetchRecommendedPeers = async (myProfile: Profile) => {
+  const fetchRecommendedPeers = useCallback(async (myProfile: Profile) => {
     if (!user?.id) return;
 
     try {
@@ -137,7 +109,34 @@ const Dashboard = () => {
     } catch (err) {
       console.error("Failed to fetch recommended peers:", err);
     }
-  };
+  }, [user?.id]);
+
+  // Fetch Profile
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchProfile = async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single<Profile>();   // 👈 tell TS this is a single Profile row
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      if (data) {
+        setProfile(data);              // TS now knows `data` is Profile
+        fetchRecommendedPeers(data);   // safe to pass
+      }
+    };
+
+
+
+    fetchProfile();
+  }, [user, fetchRecommendedPeers]);
 
   // Sessions
   useEffect(() => {
