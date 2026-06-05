@@ -19,6 +19,7 @@ import Chatbot from "./components/Chatbot";
 import StreakBadge from "./components/StreakBadge";
 import FloatingAI from "./components/FloatingAI";
 import MouseSparkles from "./components/MouseSparkles";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 import { useAuth } from "@/contexts/useAuth";
 
@@ -362,22 +363,24 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
 
-          <BrowserRouter>
-            <AuthProvider>
-              <RoleProvider>
-                <AppContent />
-              </RoleProvider>
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+            <BrowserRouter>
+              <AuthProvider>
+                <RoleProvider>
+                  <AppContent />
+                </RoleProvider>
+              </AuthProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
