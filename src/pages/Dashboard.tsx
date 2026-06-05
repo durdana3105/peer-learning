@@ -144,9 +144,10 @@ const Dashboard = () => {
     const fetchSessions = async () => {
       // SECURITY/PERF: Limit fetch to top 4 to prevent downloading 10,000 global sessions
       // which would cause massive browser OOM crashes and render thrashing.
+      // OPTIMIZATION: Only select required fields instead of * to save network bandwidth
       const { data, error } = await supabase
         .from("sessions")
-        .select("*")
+        .select("id, status, subject, peerName, peerAvatar, date, time, duration, rating")
         .eq("status", "upcoming")
         .limit(4);
 
@@ -167,9 +168,10 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchLeaderboardData = async () => {
       // 1. Fetch top 5 for the mini-leaderboard
+      // OPTIMIZATION: Select only id, name, and points to prevent downloading large arrays
       const { data } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, name, points")
         .order("points", { ascending: false })
         .limit(5);
 
