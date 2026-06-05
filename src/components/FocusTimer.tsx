@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Play, Square, Coffee, Clock } from 'lucide-react';
@@ -41,22 +41,21 @@ export default function FocusTimer() {
     fetchProfileState();
   }, [user]);
 
-  // Timer logic
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
+  const updateProfile = useCallback(async (inFocus: boolean, focusTime?: number) => {
+    if (!user) return;
     
-    if (isActive && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (isActive && timeLeft === 0) {
-      handleTimerComplete();
+    const updates: any = { is_in_focus_mode: inFocus };
+    if (focusTime !== undefined) {
+      updates.focus_time_this_week = focusTime;
     }
     
-    return () => clearInterval(interval);
-  }, [isActive, timeLeft]);
+    await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', user.id);
+  }, [user]);
 
-  const handleTimerComplete = async () => {
+  const handleTimerComplete = useCallback(async () => {
     if (!isBreak) {
       // Completed a work session
       toast({
@@ -83,21 +82,22 @@ export default function FocusTimer() {
       setIsActive(false);
       setTimeLeft(workDuration * 60);
     }
-  };
+  }, [isBreak, toast, workDuration, breakDuration, user, focusTimeThisWeek, updateProfile]);
 
-  const updateProfile = async (inFocus: boolean, focusTime?: number) => {
-    if (!user) return;
+  // Timer logic
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
     
-    const updates: any = { is_in_focus_mode: inFocus };
-    if (focusTime !== undefined) {
-      updates.focus_time_this_week = focusTime;
+    if (isActive && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (isActive && timeLeft === 0) {
+      handleTimerComplete();
     }
     
-    await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id);
-  };
+    return () => clearInterval(interval);
+  }, [isActive, timeLeft, handleTimerComplete]);
 
   const toggleTimer = async () => {
     const newIsActive = !isActive;

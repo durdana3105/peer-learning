@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Play, Square, Coffee, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -61,6 +61,41 @@ export default function GroupPomodoro({ roomId }: GroupPomodoroProps) {
     };
   }, [roomId]);
 
+  const handleTimerComplete = useCallback(async () => {
+    if (timerState === 'work') {
+      toast({
+        title: "Group Focus Session Complete! 🎉",
+        description: `Great job focusing! Time for a short break.`,
+      });
+      await setGroupTimer('break', breakDuration);
+    } else if (timerState === 'break') {
+      toast({
+        title: "Break Over!",
+        description: "Back to focus?",
+      });
+      await setGroupTimer('idle', 0);
+    }
+  }, [timerState, toast, breakDuration, setGroupTimer]);
+
+  const setGroupTimer = useCallback(async (newState: 'idle' | 'work' | 'break', durationMinutes: number) => {
+    let newEndTime = null;
+    
+    if (newState !== 'idle') {
+      const now = new Date();
+      newEndTime = new Date(now.getTime() + durationMinutes * 60 * 1000).toISOString();
+    }
+    
+    await supabase
+      .from('study_rooms' as any)
+      .update({
+        timer_state: newState,
+        timer_end_time: newEndTime,
+        timer_work_duration: workDuration,
+        timer_break_duration: breakDuration
+      })
+      .eq('id', roomId);
+  }, [roomId, workDuration, breakDuration]);
+
   // Countdown logic
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -84,42 +119,7 @@ export default function GroupPomodoro({ roomId }: GroupPomodoroProps) {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [timerState, endTime, workDuration, breakDuration]);
-
-  const handleTimerComplete = async () => {
-    if (timerState === 'work') {
-      toast({
-        title: "Group Focus Session Complete! 🎉",
-        description: `Great job focusing! Time for a short break.`,
-      });
-      await setGroupTimer('break', breakDuration);
-    } else if (timerState === 'break') {
-      toast({
-        title: "Break Over!",
-        description: "Back to focus?",
-      });
-      await setGroupTimer('idle', 0);
-    }
-  };
-
-  const setGroupTimer = async (newState: 'idle' | 'work' | 'break', durationMinutes: number) => {
-    let newEndTime = null;
-    
-    if (newState !== 'idle') {
-      const now = new Date();
-      newEndTime = new Date(now.getTime() + durationMinutes * 60 * 1000).toISOString();
-    }
-    
-    await supabase
-      .from('study_rooms' as any)
-      .update({
-        timer_state: newState,
-        timer_end_time: newEndTime,
-        timer_work_duration: workDuration,
-        timer_break_duration: breakDuration
-      })
-      .eq('id', roomId);
-  };
+  }, [timerState, endTime, workDuration, breakDuration, handleTimerComplete]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);

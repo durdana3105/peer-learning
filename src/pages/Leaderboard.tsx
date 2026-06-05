@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Trophy,
@@ -109,8 +108,7 @@ const Leaderboard = () => {
   const listParentRef = useRef<HTMLDivElement | null>(null);
 
   // FETCH LEADERBOARD
-  const fetchLeaderboard = async () => {
-
+  const fetchLeaderboard = useCallback(async () => {
     setLoading(true);
 
     let query = supabase
@@ -199,11 +197,10 @@ const Leaderboard = () => {
     }
 
     setLoading(false);
-  };
+  }, [user, filter]);
 
   // AUTO CREATE USER
-  const ensureUserExists = async () => {
-
+  const ensureUserExists = useCallback(async () => {
     if (!user) return;
 
     const { data: existingUser } = await supabase
@@ -224,7 +221,7 @@ const Leaderboard = () => {
           user.user_metadata?.avatar_url || null,
       });
     }
-  };
+  }, [user]);
 
   // INIT
   useEffect(() => {
@@ -236,8 +233,7 @@ const Leaderboard = () => {
     };
 
     init();
-
-  }, [user, filter]);
+  }, [user, filter, fetchLeaderboard, ensureUserExists]);
 
   // REALTIME
   // We use a ref so the realtime listener always calls the latest fetchLeaderboard, 

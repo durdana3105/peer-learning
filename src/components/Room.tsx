@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/useAuth';
@@ -30,6 +29,32 @@ export default function Room() {
   const [showInviteUI, setShowInviteUI] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const fetchRoomDetails = useCallback(async () => {
+    const { data, error } = await supabase.from('study_rooms' as any).select('*').eq('id', id).single();
+    if (error) {
+      console.error("Error fetching room:", error);
+      if (error.code === 'PGRST116') {
+        alert("Room not found or you don't have access.");
+        navigate('/rooms');
+      }
+    }
+    if (data) setRoom(data);
+  }, [id, navigate]);
+
+  const fetchMessages = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('study_room_messages' as any)
+      .select('*, profiles(name, avatar_url)')
+      .eq('room_id', id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error("Database fetch error:", error.message, error.details);
+    } else if (data) {
+      setMessages(data);
+    }
+  }, [id]);
+
   useEffect(() => {
     if (!id || !user) return;
 
@@ -57,9 +82,9 @@ export default function Room() {
 
           setParticipants(onlineUsers);
 
-          setActivities([
+          setActivities((prev) => [
             `${onlineUsers.length} participant(s) online`,
-            ...activities,
+            ...prev,
           ]);
         })
         .on('postgres_changes', {
@@ -95,37 +120,11 @@ export default function Room() {
 
       if (roomChannel) supabase.removeChannel(roomChannel);
     };
-  }, [id, user]);
+  }, [id, user, fetchMessages, fetchRoomDetails]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  const fetchRoomDetails = async () => {
-    const { data, error } = await supabase.from('study_rooms' as any).select('*').eq('id', id).single();
-    if (error) {
-      console.error("Error fetching room:", error);
-      if (error.code === 'PGRST116') {
-        alert("Room not found or you don't have access.");
-        navigate('/rooms');
-      }
-    }
-    if (data) setRoom(data);
-  };
-
-  const fetchMessages = async () => {
-    const { data, error } = await supabase
-      .from('study_room_messages' as any)
-      .select('*, profiles(name, avatar_url)')
-      .eq('room_id', id)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error("Database fetch error:", error.message, error.details);
-    } else if (data) {
-      setMessages(data);
-    }
-  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
