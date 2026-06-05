@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { memo, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -585,3 +586,4 @@ const Leaderboard = () => {
 };
 
 export default Leaderboard;
+

@@ -23,10 +23,11 @@ describe("aiController", () => {
       }),
     });
 
-    const req = { body: { question: "How do I start with DSA?" } };
+    const req = { body: { messages: [{ role: "user", content: "How do I start with DSA?" }] } };
     const res = createRes();
+    const next = vi.fn();
 
-    await askAI(req, res);
+    await askAI(req, res, next);
 
     const [, requestInit] = fetchSpy.mock.calls[0];
     const payload = JSON.parse(requestInit.body);
@@ -86,10 +87,13 @@ describe("aiController", () => {
       },
     };
     const res = createRes();
+    const next = vi.fn();
 
-    await expect(generateSessionSummary(req, res)).rejects.toMatchObject({
-      name: "HttpError",
-      statusCode: 502,
-    });
+    await generateSessionSummary(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+    const errorPassedToNext = next.mock.calls[0][0];
+    expect(errorPassedToNext.name).toBe("HttpError");
+    expect(errorPassedToNext.statusCode).toBe(502);
   });
 });

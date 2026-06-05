@@ -108,22 +108,27 @@ const Portfolio = () => {
   }, [form.slug]);
 
   useEffect(() => {
+    let isMounted = true;
+    let timeout: NodeJS.Timeout;
+
     const loadPortfolio = async () => {
       if (!user) {
-        setLoading(false);
+        if (isMounted) setLoading(false);
         return;
       }
 
-      setLoading(true);
+      if (isMounted) setLoading(true);
 
       // Safety timeout: if queries hang, stop loading after 10 seconds
-      const timeout = setTimeout(() => {
-        setLoading(false);
-        toast({
-          title: "Loading timed out",
-          description: "Some data may not have loaded. Please refresh to try again.",
-          variant: "destructive",
-        });
+      timeout = setTimeout(() => {
+        if (isMounted) {
+          setLoading(false);
+          toast({
+            title: "Loading timed out",
+            description: "Some data may not have loaded. Please refresh to try again.",
+            variant: "destructive",
+          });
+        }
       }, 10_000);
 
       try {
@@ -145,6 +150,7 @@ const Portfolio = () => {
         ]);
 
         clearTimeout(timeout);
+        if (!isMounted) return;
 
         const { data: profile, error: profileError } = profileResult;
         const { data: portfolio, error: portfolioError } = portfolioResult;
@@ -194,17 +200,24 @@ const Portfolio = () => {
         }
       } catch (error) {
         clearTimeout(timeout);
+        if (!isMounted) return;
+
         toast({
           title: "Portfolio could not load",
           description: error instanceof Error ? error.message : "Please try again.",
           variant: "destructive",
         });
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     void loadPortfolio();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeout);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
@@ -240,6 +253,32 @@ const Portfolio = () => {
     }
 
     setSaving(true);
+
+    const { data: existingSlugUser, error: slugCheckError } = await supabase
+      .from("portfolio_profiles")
+      .select("profile_id")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    if (slugCheckError) {
+      setSaving(false);
+      toast({
+        title: "Error checking URL",
+        description: "Failed to verify if the URL is available.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (existingSlugUser && existingSlugUser.profile_id !== user.id) {
+      setSaving(false);
+      toast({
+        title: "URL already taken",
+        description: "This public URL is already in use by someone else. Please choose another one.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const payload = {
       profile_id: user.id,

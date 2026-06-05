@@ -15,6 +15,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { useAuth } from "@/contexts/useAuth";
 import { useTheme } from "@/contexts/ThemeContext";
 import { NotificationBell } from "@/features/notifications/NotificationBell";
+import FocusTimer from "@/components/FocusTimer";
 
 
 import {
@@ -31,6 +32,7 @@ import {
   Moon,
   Users,
   BriefcaseBusiness,
+  FileCheck,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -117,6 +119,11 @@ const Navbar = () => {
           label: "Portfolio",
           icon: BriefcaseBusiness,
         },
+        {
+          to: "/peer-review",
+          label: "Peer Review",
+          icon: FileCheck,
+        },
         ...(isAdmin
           ? [
               {
@@ -186,34 +193,52 @@ const Navbar = () => {
 
         {/* DESKTOP NAV */}
         <div className="hidden items-center gap-3 md:flex">
-
           {navLinks.map((link) => {
+          const Icon = link.icon;
 
-            const Icon = link.icon;
+          const active =
+              link.to === "/"
+                ? location.pathname === "/" && !location.hash
+                : link.to.startsWith("/#")
+                ? location.hash === link.to.replace("/", "")
+                : location.pathname === link.to;
 
-            const active = location.pathname === link.to;
+          const className = `flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300
+            ${
+              active
+                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-black shadow-lg shadow-cyan-500/20"
+                : "text-gray-300 hover:bg-white/10 hover:text-white"
+            }`;
 
+          if (
+            link.to === "/#features" ||
+            link.to === "/#community" ||
+            link.to === "/#faq"
+          ) {
             return (
-              <Link
+              <a
                 key={link.to}
-                to={link.to}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300
-                  
-                  ${
-                    active
-                      ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/20"
-                      : "text-gray-300 hover:bg-white/10 hover:text-white"
-                  }
-                `}
+                href={link.to.replace("/", "")}
+                className={className}
               >
-
                 <Icon size={16} />
-
                 {link.label}
-
-              </Link>
+              </a>
             );
-          })}
+          }
+
+          return (
+            <Link
+              key={link.to}
+              to={link.to}
+              className={className}
+            >
+              <Icon size={16} />
+              {link.label}
+            </Link>
+          );
+        })}
+
 
         </div>
 
@@ -253,6 +278,10 @@ const Navbar = () => {
                 <span className="h-2 w-2 rounded-full bg-orange-500" />
                 <span className="text-orange-400 font-medium">Sunset Orange</span>
               </DropdownMenuItem>
+              <DropdownMenuItem className="flex items-center gap-2 cursor-pointer focus:bg-white/10 hover:bg-white/10 focus:text-white px-3 py-2 text-sm rounded-lg" onClick={() => setTheme("black-white")}>
+                <span className="h-2 w-2 rounded-full bg-black border border-white-400" />
+                <span className="text-gray-300 font-medium">Black White</span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -281,6 +310,7 @@ const Navbar = () => {
                   </button>
                 </div>
               )}
+              <FocusTimer />
               <NotificationBell userId={user.id} />
 
               {/* PROFILE */}
@@ -411,7 +441,10 @@ const Navbar = () => {
                   <span className="text-sm font-medium text-gray-300">
                     Notifications
                   </span>
-                  <NotificationBell userId={user.id} />
+                  <div className="flex items-center gap-2">
+                    <FocusTimer />
+                    <NotificationBell userId={user.id} />
+                  </div>
                 </div>
 
                 <Button

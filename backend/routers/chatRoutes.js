@@ -8,7 +8,7 @@ dotenv.config();
 const router = express.Router();
 
 const openrouter = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
+  apiKey: process.env.OPENROUTER_API_KEY || "dummy-key",
   baseURL: "https://openrouter.ai/api/v1",
   defaultHeaders: {
     "HTTP-Referer": process.env.SITE_URL || "http://localhost:8080",
@@ -47,7 +47,7 @@ router.post("/chat", requireAuth, rateLimiter, asyncHandler(async (req, res) => 
     (m) => {
       if (
         typeof m !== "object" ||
-        (m.role !== "user" && m.role !== "assistant" && m.role !== "system") ||
+        (m.role !== "user" && m.role !== "assistant") ||
         typeof m.content !== "string"
       ) {
         return false;
@@ -60,7 +60,7 @@ router.post("/chat", requireAuth, rateLimiter, asyncHandler(async (req, res) => 
   if (!isValid) {
     return res
       .status(400)
-      .json({ error: "Each message must have a role (user|assistant|system) and a string content field." });
+      .json({ error: "Each message must have a role (user|assistant) and a string content field." });
   }
 
   if (totalLength > 20000) {

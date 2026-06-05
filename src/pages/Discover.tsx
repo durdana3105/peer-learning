@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -125,9 +126,9 @@ const Discover = () => {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // FETCH USERS
+  // 1. FETCH INITIAL DATA (User Profile & Connections) - Runs ONCE on mount
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
         const { data } = await supabase.auth.getUser();
         const user = data?.user;
@@ -146,28 +147,6 @@ const Discover = () => {
 
         setCurrentUser(current);
 
-        setCurrentUser(current);
-
-        // FETCH PEERS FROM BACKEND
-        const searchParams = new URLSearchParams();
-        if (debouncedSearch.trim()) searchParams.append("search", debouncedSearch.trim());
-        if (selectedFilter !== "All") searchParams.append("filter", selectedFilter);
-        searchParams.append("limit", "100");
-
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const res = await fetch(`${API_BASE_URL}/api/match/supabase-discover?${searchParams.toString()}`, {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`
-            }
-          });
-          const apiData = await res.json();
-          if (apiData.success) {
-            setUsers(apiData.recommendations || []);
-            setFilteredUsers(apiData.recommendations || []);
-          }
-        }
-
         // FETCH CONNECTIONS
         const { data: conns } = await (supabase as any)
           .from("peer_connections")
@@ -179,18 +158,53 @@ const Discover = () => {
           setConnections(connectedIds);
         }
       } catch (err) {
-        console.log(err);
+        console.log("Error fetching initial data:", err);
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  // 2. FETCH PEERS FROM BACKEND - Runs on search/filter change
+  useEffect(() => {
+    const fetchPeers = async () => {
+      // PERF: Don't fetch peers until the user profile has securely loaded
+      if (!currentUser) return;
+      
+      setLoading(true);
+      try {
+        const searchParams = new URLSearchParams();
+        if (debouncedSearch.trim()) searchParams.append("search", debouncedSearch.trim());
+        if (selectedFilter !== "All") searchParams.append("filter", selectedFilter);
+        searchParams.append("limit", "100");
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const res = await fetch(`${API_BASE_URL}/api/match/supabase-discover?${searchParams.toString()}`, {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`
+            },
+            credentials:"include"
+          });
+          const apiData = await res.json();
+          if (apiData.success) {
+            setUsers(apiData.recommendations || []);
+            setFilteredUsers(apiData.recommendations || []);
+          }
+        }
+      } catch (err) {
+        console.log("Error fetching peers:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, [debouncedSearch, selectedFilter]);
+    fetchPeers();
+  }, [debouncedSearch, selectedFilter, currentUser]);
 
   // PRESENCE
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser?.id) return;
 
     const channel = supabase.channel('online-users', {
       config: {
@@ -215,7 +229,7 @@ const Discover = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentUser]);
+  }, [currentUser?.id]);
 
   // Match scoring has been moved to the Node.js backend to prevent O(N) payload bloat and severe UI jank
 
@@ -405,3 +419,4 @@ const Discover = () => {
 };
 
 export default Discover;
+

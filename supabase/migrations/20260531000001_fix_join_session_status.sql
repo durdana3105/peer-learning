@@ -30,19 +30,21 @@ BEGIN
     RAISE EXCEPTION 'Session is full.';
   END IF;
 
-  -- Insert the participant
+  -- Insert the participant and increment the counter atomically within a
+  -- subtransaction so that a failure on either statement rolls back both.
   BEGIN
     INSERT INTO public.session_participants (session_id, user_id)
     VALUES (p_session_id, auth.uid());
+
+    -- Increment the participants count in the same subtransaction so the
+    -- counter always reflects the actual number of rows in session_participants.
+    UPDATE public.sessions
+    SET participants = participants + 1
+    WHERE id = p_session_id;
   EXCEPTION WHEN unique_violation THEN
-    -- Already joined
+    -- Already joined; no counter change needed.
     RETURN;
   END;
-
-  -- Increment the participants count
-  UPDATE public.sessions
-  SET participants = participants + 1
-  WHERE id = p_session_id;
 
 END;
 $$;

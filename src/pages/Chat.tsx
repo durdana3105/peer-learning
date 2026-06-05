@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { memo, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, MessageCircle, Search, Send } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -286,7 +287,7 @@ const Chat = () => {
 
       const { data, error } = await supabase
         .from("messages")
-        .select("id,sender_id,receiver_id,content,text,created_at,read_at")
+        .select("id,sender_id,receiver_id,content,text,created_at")
         .or(
           `and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedUser.id}),and(sender_id.eq.${selectedUser.id},receiver_id.eq.${currentUser.id})`
         )
@@ -654,3 +655,4 @@ const Chat = () => {
 };
 
 export default Chat;
+

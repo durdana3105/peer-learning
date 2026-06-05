@@ -1,0 +1,53 @@
+-- Fix Race Condition (TOCTOU) in Session Joining (join_session RPC)
+-- Issue #452
+
+CREATE OR REPLACE FUNCTION public.join_session(p_session_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_seat_limit integer;
+  v_participants integer;
+  v_status text;
+BEGIN
+  -- Validate the session exists and fetch its limits and status, locking the row to prevent race conditions
+  SELECT seat_limit, participants, status INTO v_seat_limit, v_participants, v_status
+  FROM public.sessions
+  WHERE id = p_session_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Session not found.';
+  END IF;
+
+  -- Verify the session's status
+  IF v_status NOT IN ('scheduled', 'live') THEN
+    RAISE EXCEPTION 'Cannot join a session that is %.', v_status;
+  END IF;
+
+  -- Check if already joined (early exit to prevent incrementing participants wrongly)
+  IF EXISTS (
+    SELECT 1 FROM public.session_participants 
+    WHERE session_id = p_session_id AND user_id = auth.uid()
+  ) THEN
+    RETURN;
+  END IF;
+
+  -- Check if seat limit is reached
+  IF v_seat_limit IS NOT NULL AND v_participants >= v_seat_limit THEN
+    RAISE EXCEPTION 'Session is full.';
+  END IF;
+
+  -- Increment the participants count FIRST to secure the seat
+  UPDATE public.sessions
+  SET participants = participants + 1
+  WHERE id = p_session_id;
+
+  -- Insert the participant
+  INSERT INTO public.session_participants (session_id, user_id)
+  VALUES (p_session_id, auth.uid());
+
+END;
+$$;

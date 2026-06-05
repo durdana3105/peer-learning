@@ -1,8 +1,10 @@
 import dotenv from "dotenv";
 import app from "./app.js";
+import { validateEnv } from "./utils/env.js";
 
 dotenv.config(); // must be first
-const PORT = process.env.PORT || 5000;
+const env = validateEnv(); // Immediately crash if required envs are missing
+const PORT = env.PORT || 5000;
 
 console.log("Backend server initialized");
 

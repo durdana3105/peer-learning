@@ -1,12 +1,93 @@
-export const errorHandler = (err, req, res, next) => {
-  console.error("Unhandled error:", err);
+import { ZodError } from "zod";
+import { HttpError } from "../utils/httpError.js";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+/**
+ * Map of generic, user-safe messages for common HTTP status codes.
+ * Used in production to avoid leaking internal details.
+ */
+const SAFE_STATUS_MESSAGES = {
+  400: "Bad request.",
+  401: "Authentication required.",
+  403: "Access denied.",
+  404: "Resource not found.",
+  409: "Conflict.",
+  422: "Unprocessable request.",
+  429: "Too many requests.",
+  500: "Internal server error.",
+  502: "Service temporarily unavailable.",
+  503: "Service unavailable.",
+};
+
+/**
+ * Global Express error handler.
+ *
+ * Security strategy:
+ *   - HttpError instances (intentionally thrown by our code) have safe, controlled messages.
+ *     These are always returned to the client.
+ *   - ZodError instances are validation errors. In production, only a generic
+ *     "Validation failed" message is returned. In development, full field-level details are included.
+ *   - All other unexpected errors (library crashes, DB errors, etc.) are fully masked
+ *     in production with a generic status message. Verbose details are only shown in development.
+ *   - Full error details are always logged server-side with the request ID for debugging.
+ */
+export const errorHandler = (err, req, res, next) => {
   if (res.headersSent) {
     return next(err);
   }
 
-  const status = err.status || err.statusCode || 500;
-  const message = err.message || "Internal server error";
+  const requestId = req.requestId || "unknown";
 
-  res.status(status).json({ error: message });
+  // --- Zod Validation Errors ---
+  if (err instanceof ZodError || err.name === "ZodError") {
+    console.warn(`[${requestId}] Validation Error:`, err.errors || err.message);
+
+    const payload = { error: "Validation failed" };
+
+    // Only include field-level details in development
+    if (!isProduction) {
+      payload.details = err.errors;
+    }
+
+    return res.status(400).json(payload);
+  }
+
+  // --- Known HttpError (intentionally thrown by our code) ---
+  if (err instanceof HttpError) {
+    const status = err.statusCode || 500;
+    console.error(`[${requestId}] HttpError ${status}:`, err.message);
+
+    const payload = { error: err.message };
+
+    // Only include details in development (details may contain internal info)
+    if (!isProduction && err.details) {
+      payload.details = err.details;
+    }
+
+    return res.status(status).json(payload);
+  }
+
+  // --- Unexpected / Unknown Errors ---
+  // Always log the full error server-side for debugging
+  console.error(`[${requestId}] Unhandled error:`, err);
+
+  const status = err.status || err.statusCode || 500;
+
+  if (isProduction) {
+    // Return a generic message — never leak internal details
+    const safeMessage = SAFE_STATUS_MESSAGES[status] || SAFE_STATUS_MESSAGES[500];
+    return res.status(status).json({ error: safeMessage });
+  }
+
+  // Development: include full details for easier debugging
+  const payload = { error: err.message || "Internal server error" };
+  if (err.details) {
+    payload.details = err.details;
+  }
+  if (err.stack) {
+    payload.stack = err.stack;
+  }
+
+  res.status(status).json(payload);
 };

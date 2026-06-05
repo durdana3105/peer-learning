@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { Bot, Send, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { API_BASE_URL } from "@/config/api";
 
 const AIPage = () => {
   const [messages, setMessages] = useState<any[]>([
@@ -34,13 +36,26 @@ const AIPage = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("ai-chat", {
-        body: { prompt }
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const res = await fetch(`${API_BASE_URL}/api/ai/ask`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        credentials:"include",
+        body: JSON.stringify({
+          question: prompt,
+        }),
       });
 
-      if (error) throw error;
-
-      const aiReply = data?.choices?.[0]?.message?.content;
+      if (!res.ok) {
+        throw new Error("Failed to get response");
+      }
+      
+      const data = await res.json();
+      const aiReply = data?.answer;
 
       setMessages((prev: any) => [
         ...prev,

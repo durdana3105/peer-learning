@@ -5,6 +5,10 @@ import path from "path";
 export default defineConfig({
   plugins: [react()],
   test: {
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json", "html"],
+    },
     projects: [
       {
         test: {
@@ -20,6 +24,7 @@ export default defineConfig({
           name: "backend",
           environment: "node",
           globals: true,
+          setupFiles: ["./backend/tests/setup.js"],
           include: ["backend/**/*.{test,spec}.{js,ts}"],
         },
       },

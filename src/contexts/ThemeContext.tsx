@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-export type Theme = "default" | "purple" | "blue" | "green" | "orange";
+export type Theme = "default" | "purple" | "blue" | "green" | "orange" | "black-white";
 
 interface ThemeContextType {
   theme: Theme;
@@ -22,7 +22,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     const root = window.document.documentElement;
     // Remove all previous theme classes
-    root.classList.remove("theme-default", "theme-purple", "theme-blue", "theme-green", "theme-orange");
+    root.classList.remove("theme-default", "theme-purple", "theme-blue", "theme-green", "theme-orange","theme-black-white");
     // Add new theme class
     root.classList.add(`theme-${theme}`);
   }, [theme]);
