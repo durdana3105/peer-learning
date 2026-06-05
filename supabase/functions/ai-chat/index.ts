@@ -8,6 +8,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 /** Request payload from client */
 interface AIChatRequest {
   prompt: string;
+  conversation_id?: string;
+  limit?: number;
+  offset?: number;
 }
 
 /** Supabase auth response */
@@ -134,7 +137,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // Parse and validate request body
-    const body = await parseRequestBody(req)
+    const body = await parseRequestBody(req) as AIChatRequest;
     if (!body) {
       return createJsonResponse(
         { error: 'Invalid request body' } as ErrorResponse,
@@ -142,7 +145,34 @@ serve(async (req: Request): Promise<Response> => {
       )
     }
 
-    const { prompt } = body as AIChatRequest
+    const { prompt, conversation_id, limit = 20, offset = 0 } = body;
+
+    // Fetch paginated chat history if a conversation ID is provided
+    let history: OpenRouterMessage[] = [];
+    let totalCount = 0;
+
+    if (conversation_id) {
+      const { data, error: dbError, count } = await supabase
+        .from('messages')
+        .select('role, content', { count: 'exact' })
+        .eq('conversation_id', conversation_id)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (dbError) {
+        console.error('Database error:', dbError);
+      } else if (data) {
+        // Reverse to maintain chronological order for the AI context
+        history = data.reverse() as OpenRouterMessage[];
+        totalCount = count || 0;
+      }
+    }
+
+    // If only history was requested (no prompt), return the messages immediately
+    if (!prompt) {
+      return createJsonResponse({ messages: history, total: totalCount }, 200);
+    }
 
     // Validate prompt parameter
     const promptValidation = validatePrompt(prompt)
@@ -165,9 +195,13 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // Call OpenRouter API
-    const aiResponse = await callOpenRouterAPI(openRouterApiKey, prompt)
+    const aiResponse = await callOpenRouterAPI(openRouterApiKey, prompt, history)
 
-    return createJsonResponse(aiResponse, 200)
+    return createJsonResponse({
+      reply: aiResponse,
+      history_count: totalCount,
+      offset_used: offset
+    }, 200)
   } catch (error) {
     console.error('ai-chat error:', error)
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred'
@@ -211,11 +245,14 @@ function validatePrompt(prompt: unknown): { valid: boolean; message: string } {
 /**
  * Call OpenRouter API with typed request and response
  */
-async function callOpenRouterAPI(apiKey: string, prompt: string): Promise<OpenRouterResponse | ErrorResponse> {
+async function callOpenRouterAPI(apiKey: string, prompt: string, history: OpenRouterMessage[] = []): Promise<OpenRouterResponse | ErrorResponse> {
   const openRouterRequest: OpenRouterRequest = {
     model: 'openai/gpt-3.5-turbo',
-    messages: [{ role: 'user', content: prompt }],
-    max_tokens: 150,
+    messages: [
+      ...history,
+      { role: 'user', content: prompt }
+    ],
+    max_tokens: 500,
     temperature: 0.7,
   }
 
