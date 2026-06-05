@@ -5,19 +5,26 @@ import { API_BASE_URL } from "@/config/api";
 
 const syncSessionCookie = async (session: Session | null) => {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
     if (session?.access_token) {
       await fetch(`${API_BASE_URL}/api/auth/set-cookie`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
+        signal: controller.signal,
         body: JSON.stringify({ access_token: session.access_token }),
       });
     } else {
       await fetch(`${API_BASE_URL}/api/auth/clear-cookie`, {
         method: "POST",
         credentials: "include",
+        signal: controller.signal,
       });
     }
+
+    clearTimeout(timeoutId);
   } catch (err) {
     console.error("Failed to sync session cookie:", err);
   }
@@ -164,7 +171,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setSession(session);
           setUser(session?.user ?? null);
           
-          await syncSessionCookie(session);
+          // Fire-and-forget: must NOT block supabase.auth.signUp() from returning.
+          // gotrue-js awaits every onAuthStateChange subscriber before resolving
+          // the signUp/signIn promise, so awaiting a backend call that may hang
+          // would delay the caller by the full timeout duration.
+          syncSessionCookie(session);
 
           if (session?.user) {
             try {

@@ -28,15 +28,33 @@ if (process.env.TRUSTED_PROXIES) {
 // - FRONTEND_URL can be a single URL or comma-separated list (e.g., "https://app.example.com,https://staging.example.com").
 // - In production, the server refuses to start if FRONTEND_URL is missing.
 // - In development, it defaults to common localhost origins for convenience.
-const ALLOWED_ORIGINS = process.env.FRONTEND_URL;
+const buildAllowedOrigins = () => {
+  const raw = process.env.FRONTEND_URL;
 
-if (!ALLOWED_ORIGINS) {
-  console.error('❌ FRONTEND_URL environment variable is required');
-  process.exit(1);
-}
+  if (raw) {
+    return raw.split(",").map(s => s.trim()).filter(Boolean);
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    console.error("[security] FATAL: FRONTEND_URL is not set. Refusing to start with a wildcard CORS policy in production.");
+    process.exit(1);
+  }
+
+  console.warn("[security] FRONTEND_URL not set. Defaulting to localhost origins for development.");
+  return ["http://localhost:5173", "http://localhost:3000", "http://localhost:8080"];
+};
+
+const allowedOrigins = new Set(buildAllowedOrigins());
 
 app.use(cors({
-  origin: ALLOWED_ORIGINS.split(',').map(url => url.trim()),
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g., server-to-server, curl, mobile apps)
+    if (!origin || allowedOrigins.has(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin '${origin}' is not allowed`));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
