@@ -40,7 +40,14 @@ router.post("/chat", requireAuth, rateLimiter, validate(chatSchemas.chatCompleti
     temperature,
   });
 
-  res.json({ reply: response.choices[0].message.content });
+  const content = response.choices[0]?.message?.content;
+  if (!content) {
+    console.warn("AI returned empty response for user message");
+    return res.status(502).json({
+      error: "AI service returned an empty response. Please try rephrasing your question.",
+    });
+  }
+  res.json({ reply: content });
 }));
 
 export default router;
