@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 
@@ -97,7 +98,7 @@ const EditProfile = () => {
     setLoading(false);
 
     if (!error) {
-      alert("Profile Updated Successfully 🚀");
+      toast.success("Profile updated successfully!");
     }
   };
 

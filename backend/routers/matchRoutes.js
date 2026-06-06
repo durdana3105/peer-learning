@@ -2,6 +2,8 @@ import express from "express";
 import { getRecommendedPartners, getSupabaseDiscover } from "../controllers/matchController.js";
 import { requireAuth, requireProfileRole } from "../middlewares/requireAuth.js";
 import { rateLimiter } from "../middlewares/rateLimiter.js";
+import { validate } from "../middlewares/validate.js";
+import { matchSchemas } from "../validation/schemas.js";
 
 const router = express.Router();
 
@@ -11,6 +13,7 @@ router.get(
   requireAuth,
   requireProfileRole("mentor", "learner"),
   rateLimiter,
+  validate(matchSchemas.getRecommendedPartners),
   getRecommendedPartners
 );
 
@@ -19,6 +22,7 @@ router.get(
   "/supabase-discover",
   requireAuth,
   rateLimiter,
+  validate(matchSchemas.getSupabaseDiscover),
   getSupabaseDiscover
 );
 

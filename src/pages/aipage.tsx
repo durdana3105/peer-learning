@@ -65,7 +65,7 @@ const AIPage = () => {
         },
       ]);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setMessages((prev: any) => [
         ...prev,
         {
@@ -188,6 +188,7 @@ const AIPage = () => {
 
           <button
             onClick={sendMessage}
+            aria-label="Send message"
             className="bg-cyan-400 hover:bg-cyan-300 transition text-black p-4 rounded-2xl"
           >
             <Send size={20} />

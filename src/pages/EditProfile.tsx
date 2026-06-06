@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 const EditProfile = () => {
@@ -32,11 +33,11 @@ const EditProfile = () => {
   const handleUpdate = async () => {
     try {
       if (profile.name?.length > 50) {
-        alert("Name must be less than 50 characters.");
+        toast.error("Name must be less than 50 characters.");
         return;
       }
       if (profile.bio?.length > 300) {
-        alert("Bio must be less than 300 characters.");
+        toast.error("Bio must be less than 300 characters.");
         return;
       }
 
@@ -52,10 +53,10 @@ const EditProfile = () => {
         .eq("id", userId);
 
       if (error) throw error;
-      alert("Profile successfully updated!");
+      toast.success("Profile updated successfully!");
     } catch (err) {
       console.error("Failed to update profile:", err);
-      alert("Error updating profile. Please try again.");
+      toast.error("Error updating profile. Please try again.");
     }
   };
 
