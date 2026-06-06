@@ -3,40 +3,62 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { API_BASE_URL } from "@/config/api";
 
-const syncSessionCookie = async (session: Session | null, setSynced?: (v: boolean) => void) => {
+const syncSessionCookie = async (
+  session: Session | null,
+  setSynced?: (v: boolean) => void,
+  signal?: AbortSignal
+) => {
   const MAX_RETRIES = 3;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    if (signal?.aborted) return;
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const fetchController = new AbortController();
+      const timeoutId = setTimeout(() => fetchController.abort(), 3000);
 
-      if (session?.access_token) {
-        await fetch(`${API_BASE_URL}/api/auth/set-cookie`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          signal: controller.signal,
-          body: JSON.stringify({ access_token: session.access_token }),
-        });
-      } else {
-        await fetch(`${API_BASE_URL}/api/auth/clear-cookie`, {
-          method: "POST",
-          credentials: "include",
-          signal: controller.signal,
-        });
+      const abortHandler = () => {
+        fetchController.abort();
+      };
+      if (signal) {
+        signal.addEventListener("abort", abortHandler);
       }
 
-      clearTimeout(timeoutId);
+      try {
+        if (session?.access_token) {
+          await fetch(`${API_BASE_URL}/api/auth/set-cookie`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            signal: fetchController.signal,
+            body: JSON.stringify({ access_token: session.access_token }),
+          });
+        } else {
+          await fetch(`${API_BASE_URL}/api/auth/clear-cookie`, {
+            method: "POST",
+            credentials: "include",
+            signal: fetchController.signal,
+          });
+        }
+      } finally {
+        clearTimeout(timeoutId);
+        if (signal) {
+          signal.removeEventListener("abort", abortHandler);
+        }
+      }
+
+      if (signal?.aborted) return;
       setSynced?.(true);
       return;
     } catch (err) {
+      if (signal?.aborted) return;
       console.warn(`Cookie sync attempt ${attempt + 1}/${MAX_RETRIES} failed:`, err);
       if (attempt < MAX_RETRIES - 1) {
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
       }
     }
   }
-  setSynced?.(false);
+  if (!signal?.aborted) {
+    setSynced?.(false);
+  }
 };
 export interface AuthContextType {
   session: Session | null;
@@ -56,7 +78,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<"loading" | "ready" | "failed">("loading");
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [cookieSynced, setCookieSynced] = useState(true);
   const profilePromises = useRef<Record<string, Promise<{ is_mentor: boolean; is_learner: boolean } | null> | undefined>>({});
@@ -126,14 +148,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
-    const loadingFallback = window.setTimeout(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    const timeoutId = window.setTimeout(() => {
+      console.warn("Auth initialization timed out after 5s");
+      controller.abort();
       if (mounted) {
-        setLoading(false);
+        setStatus("failed");
       }
     }, 5000);
 
     const syncOnboardingState = async (user: User) => {
       try {
+        if (signal.aborted) return;
         // PERF: Read first to avoid firing a database write on every single page load
         const { data: profile, error } = await supabase
           .from("profiles")
@@ -142,13 +170,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .maybeSingle();
 
         if (error) throw error;
+        if (signal.aborted) return;
 
         let finalProfile = profile;
         if (!finalProfile) {
           finalProfile = await ensureProfileExists(user);
         }
 
-        if (mounted) {
+        if (mounted && !signal.aborted) {
           if (!finalProfile) {
             setNeedsOnboarding(true);
           } else {
@@ -158,6 +187,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       } catch (err) {
+        if (signal.aborted) return;
         console.error("Failed to sync onboarding state:", err);
       }
     };
@@ -167,24 +197,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) throw error;
-        if (!mounted) return;
+        if (signal.aborted) return;
 
         setSession(session);
         setUser(session?.user ?? null);
         
-        await syncSessionCookie(session, setCookieSynced);
+        await syncSessionCookie(session, setCookieSynced, signal);
+
+        if (signal.aborted) return;
 
         if (session?.user) {
           await syncOnboardingState(session.user);
         } else {
           setNeedsOnboarding(false);
         }
+
+        if (mounted && !signal.aborted) {
+          setStatus("ready");
+        }
       } catch (err) {
+        if (signal.aborted) return;
         console.error("Unexpected session initialization error:", err);
         setSession(null);
         setUser(null);
+        if (mounted) {
+          setStatus("failed");
+        }
       } finally {
-        if (mounted) setLoading(false);
+        window.clearTimeout(timeoutId);
       }
     };
 
@@ -209,17 +249,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           } else {
             setNeedsOnboarding(false);
           }
+          
+          if (mounted) {
+            setStatus("ready");
+          }
         } catch (err) {
           console.error("Auth state change error:", err);
-        } finally {
-          if (mounted) setLoading(false);
+          if (mounted) {
+            setStatus("failed");
+          }
         }
       }
     );
 
     return () => {
       mounted = false;
-      window.clearTimeout(loadingFallback);
+      controller.abort();
+      window.clearTimeout(timeoutId);
       listener.subscription.unsubscribe();
     };
   }, [ensureProfileExists]);
@@ -279,7 +325,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = useMemo(() => ({
     session,
     user,
-    loading,
+    loading: status === "loading",
     needsOnboarding,
     setNeedsOnboarding,
     cookieSynced,
@@ -290,7 +336,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }), [
     session,
     user,
-    loading,
+    status,
     needsOnboarding,
     cookieSynced,
     retrySyncSessionCookie,
