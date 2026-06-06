@@ -15,16 +15,18 @@ export interface User {
 }
 
 export interface Session {
-  id: string;
-  peerId: string;
-  peerName: string;
-  peerAvatar: string;
-  subject: string;
-  date: string;
-  time: string;
-  duration: number;
-  status: "upcoming" | "completed" | "cancelled";
-  rating?: number;
+  id: number;
+  title: string | null;
+  description: string | null;
+  scheduled_at: string | null;
+  duration_minutes: number;
+  status: string;
+  mentor_id: string | null;
+  student_id: string | null;
+  seat_limit: number | null;
+  participants: number;
+  tags: string[] | null;
+  created_at: string;
 }
 
 export interface Message {
