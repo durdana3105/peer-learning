@@ -62,7 +62,7 @@ const PeerReviewDashboard = React.lazy(() => import("./pages/PeerReviewDashboard
 const SubmitForReview = React.lazy(() => import("./pages/SubmitForReview"));
 const ReviewSubmission = React.lazy(() => import("./pages/ReviewSubmission"));
 const MockInterview = React.lazy(() => import("./pages/MockInterview"));
-
+const InterviewHistory = React.lazy(() => import("./pages/InterviewHistory"));
 const queryClient = new QueryClient();
 
 const WithNav = ({ children }: { children: React.ReactNode }) => {
@@ -305,6 +305,18 @@ function AppContent() {
               <ProtectedRoute>
                 <WithNav>
                   <MockInterview />
+                </WithNav>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/interview-history"
+            element={
+              <ProtectedRoute>
+                <WithNav>
+                  <Suspense fallback={<div className="min-h-screen bg-[#020617]" />}>
+                    <InterviewHistory />
+                  </Suspense>
                 </WithNav>
               </ProtectedRoute>
             }
