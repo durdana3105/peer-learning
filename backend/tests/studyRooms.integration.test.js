@@ -275,6 +275,11 @@ function addParticipantRecord(roomId, userId) {
   });
 }
 
+// Match studyRooms.test.js createRoom: creators are participants by default.
+for (const [roomId, room] of Object.entries(mockRooms)) {
+  addParticipantRecord(roomId, room.created_by);
+}
+
 function joinPublicRoom(userId, roomId) {
   const room = mockRooms[roomId];
 
