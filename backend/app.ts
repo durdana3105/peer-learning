@@ -13,13 +13,16 @@ import { errorHandler } from "./middlewares/errorHandler.js";
 
 const app = express();
 
-// SECURITY: Only trust proxy headers when explicitly configured.
+// SECURITY: Only trust proxy headers when explicitly configured via strict subnet whitelisting.
 if (process.env.TRUSTED_PROXIES) {
   app.set("trust proxy", process.env.TRUSTED_PROXIES.split(",").map(s => s.trim()));
   console.log(`[security] trust proxy enabled for subnets: ${process.env.TRUSTED_PROXIES}`);
 } else if (process.env.TRUST_PROXY === "true") {
-  app.set("trust proxy", 1);
-  console.warn("[security] trust proxy enabled with hop-count 1. Consider setting TRUSTED_PROXIES for explicit subnet whitelisting.");
+  console.error("[security] FATAL: Insecure 'TRUST_PROXY=true' fallback is disabled to prevent IP spoofing. You must provide explicit subnets via TRUSTED_PROXIES.");
+  process.exit(1);
+} else {
+  app.set("trust proxy", false);
+  console.log("[security] trust proxy disabled. Set TRUSTED_PROXIES to enable.");
 }
 
 // SECURITY: Build a strict CORS origin whitelist.
