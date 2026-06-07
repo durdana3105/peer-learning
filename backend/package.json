@@ -1,0 +1,29 @@
+{
+  "name": "peer-learning-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.4.2",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.5.2",
+    "nodemailer": "^8.0.5",
+    "openai": "^6.34.0",
+    "web-push": "^3.6.7",
+    "@supabase/supabase-js": "^2.102.1",
+    "axios": "^1.16.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "supertest": "^7.2.2"
+  }
+}
