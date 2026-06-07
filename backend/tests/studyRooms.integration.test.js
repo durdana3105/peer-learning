@@ -3,8 +3,6 @@
  * Tests the complete flow from UI interaction to database state
  */
 
-const { describe, it, expect, beforeAll, afterAll } = require('@jest/globals');
-
 /**
  * Integration Test: Complete User Flow for Study Rooms
  * This simulates real user interactions with the study room system
@@ -186,13 +184,12 @@ describe('Study Rooms API Integration Tests - Issue #408', () => {
        * - All non-creator joins must use the RPC
        */
       
-      const user = { id: 'user-uuid' };
-      const room = { id: 'room-uuid', is_private: true };
-      
+      const user = { id: "user-uuid" };
+
       // Direct insertion as non-creator to private room should fail RLS
       expect(() => {
-        directInsertParticipant(room.id, user.id);
-      }).toThrow('RLS policy violation');
+        directInsertParticipant("private-room-uuid", user.id);
+      }).toThrow("RLS policy violation");
     });
 
     it('RLS allows direct insertion for public rooms (backwards compat)', () => {
@@ -262,45 +259,81 @@ describe('Study Rooms API Integration Tests - Issue #408', () => {
  * Mock functions for testing
  */
 
+const mockRooms = {
+  "room-uuid": { is_private: false, created_by: "other-creator" },
+  "private-room-uuid": { is_private: true, created_by: "creator-uuid" },
+  "collab-room-uuid": { is_private: false, created_by: "user1-uuid" },
+};
+
+const mockParticipants = new Map();
+
+function addParticipantRecord(roomId, userId) {
+  mockParticipants.set(`${roomId}:${userId}`, {
+    room_id: roomId,
+    profile_id: userId,
+    joined_at: new Date().toISOString(),
+  });
+}
+
 function joinPublicRoom(userId, roomId) {
-  // Simplified mock - in reality this calls the Supabase RPC
-  const rooms = {
-    'room-uuid': { is_private: false, created_by: 'other' },
-    'private-room-uuid': { is_private: true, created_by: 'creator-uuid' },
-    'collab-room-uuid': { is_private: false, created_by: 'user1-uuid' }
-  };
-  
-  if (!rooms[roomId]) {
-    throw new Error('Study room not found');
+  const room = mockRooms[roomId];
+
+  if (!room) {
+    throw new Error("Study room not found");
   }
-  
-  if (rooms[roomId].is_private && rooms[roomId].created_by !== userId) {
-    throw new Error('This is a private room. You need an invitation to join');
+
+  if (room.is_private && room.created_by !== userId) {
+    throw new Error("This is a private room. You need an invitation to join");
   }
-  
+
+  addParticipantRecord(roomId, userId);
+
   return {
     success: true,
-    redirectTo: `/rooms/${roomId}`
+    redirectTo: `/rooms/${roomId}`,
   };
 }
 
 function getRoomParticipants(roomId) {
-  // Mock returning participants
-  return [];
+  return [...mockParticipants.values()].filter(
+    (participant) => participant.room_id === roomId,
+  );
 }
 
 function canAccessRoom(userId, roomId) {
-  // Mock access check
-  return true;
+  const room = mockRooms[roomId];
+  if (!room) {
+    return false;
+  }
+
+  if (!room.is_private) {
+    return true;
+  }
+
+  if (room.created_by === userId) {
+    return true;
+  }
+
+  return mockParticipants.has(`${roomId}:${userId}`);
 }
 
 function addRoomParticipant(roomId, userId) {
-  // Mock adding participant
+  addParticipantRecord(roomId, userId);
   return true;
 }
 
 function directInsertParticipant(roomId, userId) {
-  throw new Error('RLS policy violation');
+  const room = mockRooms[roomId];
+  if (!room) {
+    throw new Error("Study room not found");
+  }
+
+  if (room.is_private) {
+    throw new Error("RLS policy violation");
+  }
+
+  addParticipantRecord(roomId, userId);
+  return { success: true };
 }
 
 function directInsertParticipantAsCreator(roomId, creatorId) {

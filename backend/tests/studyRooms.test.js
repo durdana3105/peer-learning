@@ -9,8 +9,6 @@
  * - Idempotent join behavior (joining multiple times is safe)
  */
 
-const { describe, it, expect, beforeAll, afterAll } = require('@jest/globals');
-
 // Mock Supabase client for testing
 class MockSupabaseClient {
   constructor() {
@@ -28,6 +26,13 @@ class MockSupabaseClient {
       is_private: isPrivate,
       created_at: new Date().toISOString(),
     });
+
+    // Creators are participants by default
+    this.participants.set(`${roomId}:${createdBy}`, {
+      room_id: roomId,
+      profile_id: createdBy,
+      joined_at: new Date().toISOString(),
+    });
   }
 
   // Simulate storing a user
@@ -37,6 +42,10 @@ class MockSupabaseClient {
 
   // Simulate joining a room
   joinRoom(roomId, userId) {
+    if (!roomId || !userId) {
+      throw new Error('Room ID and user ID are required.');
+    }
+
     const room = this.rooms.get(roomId);
     if (!room) {
       throw new Error('Study room not found.');
