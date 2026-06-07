@@ -118,10 +118,26 @@ export function EditSessionDialog({
       const scheduledAt = new Date(values.date);
       scheduledAt.setHours(hours, minutes, 0, 0);
 
-      const seatLimit =
-        values.seatLimit && values.seatLimit.trim() !== ""
-          ? parseInt(values.seatLimit, 10)
-          : null;
+      const seatLimit = (() => {
+        if (!values.seatLimit || values.seatLimit.trim() === "") {
+          return null;
+        }
+
+        const parsed = parseInt(values.seatLimit, 10);
+        if (Number.isInteger(parsed) && parsed > 0) {
+          return parsed;
+        }
+
+        form.setError("seatLimit", {
+          message: "Seat limit must be a positive integer.",
+        });
+        return undefined;
+      })();
+
+      if (seatLimit === undefined) {
+        setIsLoading(false);
+        return;
+      }
 
       const { error } = await supabase
         .from("sessions")

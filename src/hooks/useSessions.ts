@@ -6,7 +6,7 @@ import { API_BASE_URL } from "@/config/api";
 import { joinSession } from "@/lib/joinSession";
 
 const UPCOMING_STATUSES = new Set(["scheduled", "live", "upcoming"]);
-const COMPLETED_STATUSES = new Set(["ended", "completed", "cancelled"]);
+export const COMPLETED_STATUSES = new Set(["ended", "completed", "cancelled"]);
 
 export function useSessions(user: any) {
   const { mutate: awardXP } = useAwardXP();
@@ -243,21 +243,7 @@ export function useSessions(user: any) {
   const sendMessage = useCallback(async (msgText: string) => {
     if (!msgText.trim() || !selectedSession) return;
 
-    const activity = {
-      id: Date.now(),
-      text: `${user?.user_metadata?.full_name || "Someone"} sent a message`,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
-
-    if (channelRef.current) {
-      channelRef.current.send({
-        type: "broadcast",
-        event: "activity",
-        payload: activity,
-      });
-    }
-
-    await (supabase as any)
+    const { error } = await (supabase as any)
       .from("messages")
       .insert({
         session_id: selectedSession.id,
@@ -265,7 +251,28 @@ export function useSessions(user: any) {
         username: user?.user_metadata?.full_name || "Anonymous",
         message: msgText,
       });
-  }, [selectedSession, user]);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const activity = {
+      id: Date.now(),
+      text: `${user?.user_metadata?.full_name || "Someone"} sent a message`,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "activity",
+      payload: activity,
+    });
+  }, [selectedSession, user, toast]);
 
   const sendTypingEvent = useCallback(() => {
     if (channelRef.current) {
@@ -354,6 +361,7 @@ export function useSessions(user: any) {
 }
 
 export function useSessionRoom(session: any, user: any) {
+  const { toast } = useToast();
   const [messages, setMessages] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
   const [userStatus, setUserStatus] = useState("Active");
@@ -468,25 +476,32 @@ export function useSessionRoom(session: any, user: any) {
   const sendMessage = useCallback(async (msgText: string) => {
     if (!msgText.trim() || !session) return;
 
-    if (channelRef.current) {
-      channelRef.current.send({
-        type: "broadcast",
-        event: "activity",
-        payload: {
-          id: Date.now(),
-          text: `${user?.user_metadata?.full_name || "Someone"} sent a message`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        },
-      });
-    }
-
-    await (supabase as any).from("messages").insert({
+    const { error } = await (supabase as any).from("messages").insert({
       session_id: session.id,
       user_id: user?.id,
       username: user?.user_metadata?.full_name || "Anonymous",
       message: msgText,
     });
-  }, [session, user]);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "activity",
+      payload: {
+        id: Date.now(),
+        text: `${user?.user_metadata?.full_name || "Someone"} sent a message`,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      },
+    });
+  }, [session, user, toast]);
 
   const sendTypingEvent = useCallback(() => {
     channelRef.current?.send({

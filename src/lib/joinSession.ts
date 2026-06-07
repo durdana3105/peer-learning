@@ -18,6 +18,10 @@ export async function joinSession(
     alreadyJoined = Boolean(existingParticipant);
   }
 
+  if (alreadyJoined) {
+    return { error: null, alreadyJoined: true };
+  }
+
   const { error } = await supabase.rpc("join_session", {
     p_session_id: normalizedSessionId,
   });

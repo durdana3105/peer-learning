@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/useAuth";
-import { useSessionRoom } from "@/hooks/useSessions";
+import { useSessionRoom, COMPLETED_STATUSES } from "@/hooks/useSessions";
 import { useAwardXP } from "@/hooks/useAwardXP";
 import { useToast } from "@/hooks/use-toast";
 import { joinSession } from "@/lib/joinSession";
@@ -133,6 +133,7 @@ export default function SessionDetail() {
   const isOwner = Boolean(session && user?.id && session.mentor_id === user.id);
   const isFull =
     session?.seat_limit != null && session.participants >= session.seat_limit;
+  const isNonJoinable = COMPLETED_STATUSES.has(session?.status?.toLowerCase() ?? "");
 
   const handleJoin = async () => {
     if (!session) return;
@@ -312,7 +313,7 @@ export default function SessionDetail() {
               {!isOwner && (
                 <Button
                   onClick={() => void handleJoin()}
-                  disabled={isFull || hasJoined || session.status === "ended"}
+                  disabled={isFull || hasJoined || isNonJoinable}
                   className="bg-gradient-to-r from-cyan-400 to-purple-500 font-bold text-black hover:opacity-90"
                 >
                   {hasJoined ? "Joined" : isFull ? "Session Full" : "Join Session"}
