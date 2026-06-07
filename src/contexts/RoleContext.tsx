@@ -46,7 +46,7 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
         .from("profiles")
         .select("is_mentor, is_learner")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       const mentor = profile?.is_mentor === true;
       const learner = profile?.is_learner === true;
