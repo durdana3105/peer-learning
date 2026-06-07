@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
+import { hasFunctionalConsent } from "@/lib/cookieConsent";
+
 export type Theme = "default" | "purple" | "blue" | "green" | "orange" | "black-white";
 
 interface ThemeContextType {
@@ -11,12 +13,27 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
-    return (localStorage.getItem("app-theme") as Theme) || "default";
+    if (!hasFunctionalConsent()) {
+      return "default";
+    }
+
+    try {
+      return (localStorage.getItem("app-theme") as Theme) || "default";
+    } catch {
+      return "default";
+    }
   });
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem("app-theme", newTheme);
+
+    if (hasFunctionalConsent()) {
+      try {
+        localStorage.setItem("app-theme", newTheme);
+      } catch {
+        // ignore storage access failures
+      }
+    }
   };
 
   useEffect(() => {

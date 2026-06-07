@@ -250,7 +250,8 @@ const Navbar = () => {
                 variant="ghost"
                 size="icon"
                 className="h-10 w-10 rounded-xl text-white hover:bg-white/10"
-                title="Theme: Dark (Default)"
+                aria-label="Change theme"
+                title="Change theme"
               >
                 <Moon className="h-5 w-5 text-cyan-400" />
               </Button>
@@ -389,10 +390,10 @@ const Navbar = () => {
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
           className="rounded-lg border border-white/10 bg-white/5 p-3 text-white md:hidden active:scale-95"
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileOpen}
         >
-
           {mobileOpen ? <X /> : <Menu />}
-
         </button>
 
       </div>

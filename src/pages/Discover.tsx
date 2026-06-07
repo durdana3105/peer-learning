@@ -158,7 +158,7 @@ const Discover = () => {
           setConnections(connectedIds);
         }
       } catch (err) {
-        console.log("Error fetching initial data:", err);
+        console.error("Error fetching initial data:", err);
       }
     };
 
@@ -193,7 +193,7 @@ const Discover = () => {
           }
         }
       } catch (err) {
-        console.log("Error fetching peers:", err);
+        console.error("Error fetching peers:", err);
       } finally {
         setLoading(false);
       }
