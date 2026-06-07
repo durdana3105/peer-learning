@@ -6,12 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { FileText, Clock, CheckCircle, User, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
 export default function PeerReviewDashboard() {
   const { user } = useAuth();
-  const [pendingSubmissions, setPendingSubmissions] = useState<any[]>([]);
-  const [mySubmissions, setMySubmissions] = useState<any[]>([]);
-  const [myReviews, setMyReviews] = useState<any[]>([]);
+  const [pendingSubmissions, setPendingSubmissions] = useState<UnknownArray>([]);
+  const [mySubmissions, setMySubmissions] = useState<UnknownArray>([]);
+  const [myReviews, setMyReviews] = useState<UnknownArray>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,7 +61,7 @@ export default function PeerReviewDashboard() {
     );
   }
 
-  const renderSubmissionCard = (sub: any, isMine: boolean = false) => {
+  const renderSubmissionCard = (sub: UnknownRecord, isMine: boolean = false) => {
     const isAnon = sub.is_anonymous;
     const authorName = isAnon ? "Anonymous Learner" : (sub.profiles?.name || "Unknown");
     const avatar = isAnon ? `https://api.dicebear.com/9.x/bottts/svg?seed=${sub.id}` : (sub.profiles?.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${authorName}`);

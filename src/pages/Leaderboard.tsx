@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { memo, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -12,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
 import {
   calculateLevel,
@@ -114,7 +114,7 @@ const Leaderboard = () => {
     setLoading(true);
 
     let query = supabase
-      .from("leaderboard" as any)
+      .from("leaderboard" as unknown)
       .select("*");
 
     if (filter === "Weekly") {
@@ -147,7 +147,7 @@ const Leaderboard = () => {
 
     if (!error && data) {
 
-      const updatedData = data.map((entry: any) => ({
+      const updatedData = data.map((entry: UnknownRecord) => ({
         ...entry,
         badges:
           entry.badges && entry.badges.length > 0
@@ -160,7 +160,7 @@ const Leaderboard = () => {
 
     // Fetch total learner count efficiently (head-only count)
     const { count } = await supabase
-      .from("leaderboard" as any)
+      .from("leaderboard" as unknown)
       .select("*", { count: "exact", head: true });
 
     setTotalLearners(count || 0);
@@ -169,7 +169,7 @@ const Leaderboard = () => {
     if (user) {
       // Get the current user's entry
       const { data: myData } = await supabase
-        .from("leaderboard" as any)
+        .from("leaderboard" as unknown)
         .select("*")
         .eq("user_id", user.id)
         .single();
@@ -207,14 +207,14 @@ const Leaderboard = () => {
     if (!user) return;
 
     const { data: existingUser } = await supabase
-      .from("leaderboard" as any)
+      .from("leaderboard" as unknown)
       .select("*")
       .eq("user_id", user.id)
       .single();
 
     if (!existingUser) {
 
-      await (supabase as any).rpc("join_leaderboard", {
+      await (supabase as unknown).rpc("join_leaderboard", {
         _username:
           user.user_metadata?.name ||
           user.email?.split("@")[0] ||

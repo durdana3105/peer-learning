@@ -73,7 +73,7 @@ export default function Contact() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await (supabase as any).from("contact_messages").insert([
+      const { error } = await (supabase as unknown).from("contact_messages").insert([
         {
           first_name: formData.first_name,
           last_name: formData.last_name,
@@ -101,7 +101,7 @@ export default function Contact() {
         message: "",
       });
       setErrors({});
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Submission Failed",
         description: error.message || "An unexpected error occurred. Please try again.",

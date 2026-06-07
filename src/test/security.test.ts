@@ -21,11 +21,11 @@ describe("Database Security & RLS Policies", () => {
   describe("RPC SECURITY DEFINER functions", () => {
     it("should allow authorized users to join a session via RPC", async () => {
       // Mock authorized state
-      (supabase.auth.getUser as any).mockResolvedValue({
+      (supabase.auth.getUser as unknown).mockResolvedValue({
         data: { user: { id: "user-123" } },
         error: null,
       });
-      (supabase.rpc as any).mockResolvedValue({ data: null, error: null });
+      (supabase.rpc as unknown).mockResolvedValue({ data: null, error: null });
 
       const { error } = await supabase.rpc("join_session", {
         p_session_id: "session-456",
@@ -39,11 +39,11 @@ describe("Database Security & RLS Policies", () => {
 
     it("should reject unauthorized attempts to join a session if RPC logic enforces it", async () => {
       // Mock unauthorized state - RPC should ideally fail on the DB side if logic requires
-      (supabase.auth.getUser as any).mockResolvedValue({
+      (supabase.auth.getUser as unknown).mockResolvedValue({
         data: { user: null },
         error: null,
       });
-      (supabase.rpc as any).mockResolvedValue({
+      (supabase.rpc as unknown).mockResolvedValue({
         data: null,
         error: { message: "Unauthorized", code: "401" },
       });
@@ -61,7 +61,7 @@ describe("Database Security & RLS Policies", () => {
     describe("resource_votes table", () => {
       it("allows users to insert their own vote", async () => {
         const mockInsert = vi.fn().mockResolvedValue({ data: [], error: null });
-        (supabase.from as any).mockReturnValue({ insert: mockInsert });
+        (supabase.from as unknown).mockReturnValue({ insert: mockInsert });
 
         const { error } = await supabase.from("resource_votes").insert({
           resource_id: "res-1",
@@ -79,7 +79,7 @@ describe("Database Security & RLS Policies", () => {
           data: null,
           error: { message: "new row violates row-level security policy" },
         });
-        (supabase.from as any).mockReturnValue({ insert: mockInsert });
+        (supabase.from as unknown).mockReturnValue({ insert: mockInsert });
 
         const { error } = await supabase.from("resource_votes").insert({
           resource_id: "res-1",
@@ -95,7 +95,7 @@ describe("Database Security & RLS Policies", () => {
     describe("saved_resources table", () => {
       it("allows users to select their own saved resources", async () => {
         const mockSelect = vi.fn().mockResolvedValue({ data: [{ id: "res-1" }], error: null });
-        (supabase.from as any).mockReturnValue({ select: mockSelect });
+        (supabase.from as unknown).mockReturnValue({ select: mockSelect });
 
         const { data, error } = await supabase.from("saved_resources").select("*");
 

@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 import {
   ToolType,
   WhiteboardEvent,
@@ -15,7 +15,7 @@ export default function Canvas({ roomId }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const channelRef = useRef<any>(null);
+  const channelRef = useRef<UnknownRecord>(null);
 
   const isDrawing = useRef(false);
 
@@ -118,7 +118,7 @@ export default function Canvas({ roomId }: Props) {
   };
 
   const persistEvent = async (event: WhiteboardEvent) => {
-    await supabase.from("whiteboard_events" as any).insert({
+    await supabase.from("whiteboard_events" as unknown).insert({
       room_id: roomId,
       user_id: user?.id,
       type: event.type,
@@ -164,7 +164,7 @@ export default function Canvas({ roomId }: Props) {
   useEffect(() => {
     const initializeBoard = async () => {
       const { data } = await supabase
-        .from("whiteboard_events" as any)
+        .from("whiteboard_events" as unknown)
         .select("*")
         .eq("room_id", roomId)
         .order("created_at", {
@@ -172,7 +172,7 @@ export default function Canvas({ roomId }: Props) {
         });
 
       if (data) {
-        strokesRef.current = data as any;
+        strokesRef.current = data as unknown;
 
         replayCanvas();
       }
@@ -319,7 +319,7 @@ export default function Canvas({ roomId }: Props) {
   replayCanvas();
 
   await supabase
-    .from("whiteboard_events" as any)
+    .from("whiteboard_events" as unknown)
     .delete()
     .eq("room_id", roomId)
     .eq(
@@ -352,7 +352,7 @@ export default function Canvas({ roomId }: Props) {
   strokesRef.current = [];
 
   await supabase
-    .from("whiteboard_events" as any)
+    .from("whiteboard_events" as unknown)
     .delete()
     .eq("room_id", roomId);
 
@@ -431,7 +431,7 @@ onTouchStart={(e) => {
   startDrawing({
     clientX: touch.clientX,
     clientY: touch.clientY,
-  } as any);
+  } as unknown);
 }}
 
 onTouchMove={(e) => {
@@ -442,7 +442,7 @@ onTouchMove={(e) => {
   draw({
     clientX: touch.clientX,
     clientY: touch.clientY,
-  } as any);
+  } as unknown);
 }}
 
 onTouchEnd={stopDrawing}

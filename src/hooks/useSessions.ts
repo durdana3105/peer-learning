@@ -3,28 +3,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAwardXP } from "@/hooks/useAwardXP";
 import { useToast } from "@/hooks/use-toast";
 import { API_BASE_URL } from "@/config/api";
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
-export function useSessions(user: any) {
+export function useSessions(user: UnknownRecord) {
   const { mutate: awardXP } = useAwardXP();
   const { toast } = useToast();
 
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<UnknownArray>([]);
+  const [messages, setMessages] = useState<UnknownArray>([]);
   const [selectedTab, setSelectedTab] = useState("Upcoming");
-  const [selectedSession, setSelectedSession] = useState<any>(null);
+  const [selectedSession, setSelectedSession] = useState<UnknownRecord>(null);
   const [search, setSearch] = useState("");
 
-  const [activities, setActivities] = useState<any[]>([]);
+  const [activities, setActivities] = useState<UnknownArray>([]);
   const [userStatus, setUserStatus] = useState("Active");
   const [typingUser, setTypingUser] = useState<string | null>(null);
   const [participantCount, setParticipantCount] = useState(1);
   const [isVideoActive, setIsVideoActive] = useState(false);
-  const [sessionSummary, setSessionSummary] = useState<any>(null);
+  const [sessionSummary, setSessionSummary] = useState<UnknownRecord>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [studyTime, setStudyTime] = useState(60 * 60);
 
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const channelRef = useRef<any>(null);
+  const channelRef = useRef<UnknownRecord>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const lastMoveRef = useRef(0);
 
@@ -69,7 +70,7 @@ export function useSessions(user: any) {
     if (!selectedSession) return;
 
     const fetchMessages = async () => {
-      const { data } = await (supabase as any)
+      const { data } = await (supabase as unknown)
         .from("messages")
         .select("*")
         .eq("session_id", selectedSession.id)
@@ -91,7 +92,7 @@ export function useSessions(user: any) {
     channelRef.current = roomChannel;
 
     roomChannel
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload: any) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload: UnknownRecord) => {
         if (payload.new.session_id === selectedSession.id) {
           setMessages((prev) => [...prev, payload.new]);
         }
@@ -180,7 +181,7 @@ export function useSessions(user: any) {
   const handleJoinSession = useCallback(async (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
     try {
-      const { data: existingParticipant } = await (supabase as any)
+      const { data: existingParticipant } = await (supabase as unknown)
         .from("session_participants")
         .select("*")
         .eq("session_id", sessionId)
@@ -201,7 +202,7 @@ export function useSessions(user: any) {
           awardXP({ activity: "session_join" });
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Error", description: err.message || "Failed to join session.", variant: "destructive" });
     }
   }, [user, awardXP, toast]);
@@ -223,7 +224,7 @@ export function useSessions(user: any) {
       });
     }
 
-    await (supabase as any)
+    await (supabase as unknown)
       .from("messages")
       .insert({
         session_id: selectedSession.id,
@@ -271,7 +272,7 @@ export function useSessions(user: any) {
       const parsedData = await res.json();
       setSessionSummary(parsedData);
 
-      await (supabase as any)
+      await (supabase as unknown)
         .from("session_summaries")
         .insert({
           session_id: selectedSession.id,

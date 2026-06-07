@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CheckCircle2, Circle, Plus, Trophy, Calendar, Map } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
 type MentorshipMilestonesProps = {
   userId: string;
@@ -10,7 +11,7 @@ type MentorshipMilestonesProps = {
 };
 
 export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesProps) {
-  const [paths, setPaths] = useState<any[]>([]);
+  const [paths, setPaths] = useState<UnknownArray>([]);
   const [loading, setLoading] = useState(true);
   const [newGoal, setNewGoal] = useState("");
   const [newMenteeId, setNewMenteeId] = useState("");
@@ -29,7 +30,7 @@ export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesP
 
       if (error) throw error;
       setPaths(data || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       toast.error("Failed to load mentorship paths");
     } finally {
@@ -58,7 +59,7 @@ export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesP
       setNewGoal("");
       setNewMenteeId("");
       fetchPaths();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error("Failed to create path: " + err.message);
     }
   };
@@ -73,7 +74,7 @@ export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesP
       if (error) throw error;
       fetchPaths();
       toast.success("Milestone added!");
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error("Failed to add milestone: " + err.message);
     }
   };
@@ -86,7 +87,7 @@ export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesP
         .eq("id", milestoneId);
       if (error) throw error;
       fetchPaths();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error("Failed to update milestone: " + err.message);
     }
   };
@@ -150,7 +151,7 @@ export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesP
         <div className="grid gap-6">
           {paths.map((path) => {
             const milestones = path.mentorship_milestones || [];
-            const completedCount = milestones.filter((m: any) => m.is_completed).length;
+            const completedCount = milestones.filter((m: UnknownRecord) => m.is_completed).length;
             const progress = milestones.length === 0 ? 0 : Math.round((completedCount / milestones.length) * 100);
             const isFullyCompleted = milestones.length > 0 && progress === 100;
 
@@ -187,7 +188,7 @@ export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesP
                   {milestones.length === 0 ? (
                     <p className="text-xs text-slate-500 italic">No milestones set yet.</p>
                   ) : (
-                    milestones.map((m: any) => (
+                    milestones.map((m: UnknownRecord) => (
                       <div key={m.id} className="flex items-start gap-3 group">
                         <button
                           onClick={() => toggleMilestone(m.id, m.is_completed)}

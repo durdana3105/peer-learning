@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getXPForActivity } from "@/lib/gamification";
@@ -20,7 +19,7 @@ export const useAwardXP = () => {
       const xpToAward = getXPForActivity(activity);
 
       // Delegate to the activity-based secure RPC to prevent client-side XP forgery
-      const { error: rpcError } = await (supabase as any).rpc("award_activity_xp", { _activity_type: activity });
+      const { error: rpcError } = await (supabase as unknown).rpc("award_activity_xp", { _activity_type: activity });
 
       if (rpcError) throw rpcError;
 

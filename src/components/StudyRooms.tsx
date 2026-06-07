@@ -1,15 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/useAuth';
 import { toast } from 'sonner';
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
 export default function StudyRooms() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [rooms, setRooms] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<UnknownArray>([]);
   const [newTopic, setNewTopic] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -36,7 +36,7 @@ export default function StudyRooms() {
 
   const fetchRooms = async () => {
     const { data, error } = await supabase
-      .from('study_rooms' as any)
+      .from('study_rooms' as unknown)
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -51,7 +51,7 @@ export default function StudyRooms() {
     setLoading(true);
 
     const { error } = await supabase
-      .from('study_rooms' as any)
+      .from('study_rooms' as unknown)
       .insert([
         {
           topic: newTopic,
@@ -76,7 +76,7 @@ export default function StudyRooms() {
    * Private rooms are accessible only to their creator
    * or users explicitly invited.
    */
-  const handleJoinRoom = async (room: any) => {
+  const handleJoinRoom = async (room: UnknownRecord) => {
     if (!user) return;
 
     setJoiningRoomId(room.id);

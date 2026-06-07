@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -15,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
 import { Check } from "lucide-react";
 import { API_BASE_URL } from "@/config/api";
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
 const filters = [
   "All",
@@ -45,7 +45,7 @@ const cardVariants = {
   },
 };
 
-const DiscoverPeerCard = memo(({ user, isOnline, onConnect, isConnected }: any) => {
+const DiscoverPeerCard = memo(({ user, isOnline, onConnect, isConnected }: UnknownRecord) => {
   return (
     <motion.div
       variants={cardVariants}
@@ -103,11 +103,11 @@ const DiscoverPeerCard = memo(({ user, isOnline, onConnect, isConnected }: any) 
 
 const Discover = () => {
   const [currentUser, setCurrentUser] =
-    useState<any>(null);
+    useState<UnknownRecord>(null);
 
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<UnknownArray>([]);
   const [filteredUsers, setFilteredUsers] =
-    useState<any[]>([]);
+    useState<UnknownArray>([]);
 
   const [loading, setLoading] = useState(true);
 
@@ -148,13 +148,13 @@ const Discover = () => {
         setCurrentUser(current);
 
         // FETCH CONNECTIONS
-        const { data: conns } = await (supabase as any)
+        const { data: conns } = await (supabase as unknown)
           .from("peer_connections")
           .select("sender_id, receiver_id")
           .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
         
         if (conns) {
-          const connectedIds = conns.map((c: any) => c.sender_id === user.id ? c.receiver_id : c.sender_id);
+          const connectedIds = conns.map((c: UnknownRecord) => c.sender_id === user.id ? c.receiver_id : c.sender_id);
           setConnections(connectedIds);
         }
       } catch (err) {
@@ -238,14 +238,14 @@ const Discover = () => {
 
     setConnections((prev) => [...prev, peerId]);
 
-    const { error } = await (supabase as any).from("peer_connections").insert({
+    const { error } = await (supabase as unknown).from("peer_connections").insert({
       sender_id: currentUser.id,
       receiver_id: peerId,
       status: 'pending'
     });
 
     if (!error) {
-      await (supabase as any).from("notifications").insert({
+      await (supabase as unknown).from("notifications").insert({
         user_id: peerId,
         type: 'system',
         title: 'New Connection Request',

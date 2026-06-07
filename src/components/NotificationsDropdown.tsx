@@ -1,12 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from "react";
 import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
 export const NotificationsDropdown = () => {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<UnknownArray>([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -14,7 +14,7 @@ export const NotificationsDropdown = () => {
     if (!user) return;
 
     const fetchNotifications = async () => {
-      const { data } = await (supabase as any)
+      const { data } = await (supabase as unknown)
         .from("notifications")
         .select("*")
         .eq("user_id", user.id)
@@ -28,7 +28,7 @@ export const NotificationsDropdown = () => {
 
     fetchNotifications();
 
-    const channel = (supabase as any)
+    const channel = (supabase as unknown)
       .channel("public:notifications")
       .on(
         "postgres_changes",
@@ -62,7 +62,7 @@ export const NotificationsDropdown = () => {
   }, []);
 
   const markAsRead = async (id: string) => {
-    await (supabase as any).from("notifications").update({ read: true }).eq("id", id);
+    await (supabase as unknown).from("notifications").update({ read: true }).eq("id", id);
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );

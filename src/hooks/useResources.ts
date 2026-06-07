@@ -1,10 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-empty-object-type, no-unsafe-finally, @typescript-eslint/no-unused-expressions, @typescript-eslint/ban-ts-comment, @typescript-eslint/no-require-imports */
+/* eslint-disable  @typescript-eslint/no-empty-object-type, no-unsafe-finally, @typescript-eslint/no-unused-expressions, @typescript-eslint/ban-ts-comment, @typescript-eslint/no-require-imports */
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { isAbortError, normalizeError, safeSupabaseCall } from "@/lib/http";
 import type { Resource } from "@/types/resource";
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
 type ResourceFilters = {
   search?: string;
@@ -55,7 +56,7 @@ export const useResources = (filters?: ResourceFilters) => {
         
         if (savedError) throw savedError;
         
-        savedResourceIds = savedData?.map((item: any) => item.resource_id) || [];
+        savedResourceIds = savedData?.map((item: UnknownRecord) => item.resource_id) || [];
         
         if (savedResourceIds.length === 0) {
           setResources([]);

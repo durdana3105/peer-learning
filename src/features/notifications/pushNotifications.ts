@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from "@/integrations/supabase/client";
 import { env } from "@/env";
 
@@ -60,7 +59,7 @@ export async function registerBrowserPush(userId: string) {
 
   const payload = subscription.toJSON();
 
-  const { error } = await (supabase as any).from("push_subscriptions").upsert({
+  const { error } = await (supabase as unknown).from("push_subscriptions").upsert({
     user_id: userId,
     endpoint: payload.endpoint,
     p256dh: payload.keys?.p256dh,

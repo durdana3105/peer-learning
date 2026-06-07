@@ -2,11 +2,12 @@ import { motion } from "framer-motion";
 import { Calendar, Users, Clock, Sparkles } from "lucide-react";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { generateICS } from "@/utils/calendar";
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
 type SessionListProps = {
-  filteredSessions: any[];
-  selectedSession: any;
-  setSelectedSession: (session: any) => void;
+  filteredSessions: UnknownArray;
+  selectedSession: UnknownRecord;
+  setSelectedSession: (session: UnknownRecord) => void;
   handleJoinSession: (e: React.MouseEvent, sessionId: string) => void;
 };
 

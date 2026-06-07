@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -15,16 +14,17 @@ const MarkdownRenderer = React.lazy(() =>
   import('@/components/MarkdownRenderer').then((module) => ({ default: module.MarkdownRenderer }))
 );
 import GroupPomodoro from '@/components/GroupPomodoro';
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
 export default function Room() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth(); 
 
-  const [room, setRoom] = useState<any>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [room, setRoom] = useState<UnknownRecord>(null);
+  const [messages, setMessages] = useState<UnknownArray>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [participants, setParticipants] = useState<any[]>([]);
+  const [participants, setParticipants] = useState<UnknownArray>([]);
   const [activities, setActivities] = useState<string[]>([]);
   const [inviteEmail, setInviteEmail] = useState('');
   const [isInviting, setIsInviting] = useState(false);
@@ -37,13 +37,13 @@ export default function Room() {
     fetchRoomDetails();
     fetchMessages();
 
-    let roomChannel: any;
+    let roomChannel: UnknownRecord;
 
     // 🚀 UPDATED: We made this an async function so we can fetch the user's real name first
     const initializeChat = async () => {
       // 1. Fetch this specific user's profile name
       
-      const { data } = await supabase.from('profiles' as any).select('name').eq('id', user.id).single() as any;
+      const { data } = await supabase.from('profiles' as unknown).select('name').eq('id', user.id).single() as unknown;
       const displayName = data?.name || user.email?.split('@')[0] || 'Student';
 
       // 2. Connect to the room
@@ -54,7 +54,7 @@ export default function Room() {
       roomChannel
         .on('presence', { event: 'sync' }, () => {
           const newState = roomChannel.presenceState();
-          const onlineUsers = Object.values(newState).map((p: any) => p[0]);
+          const onlineUsers = Object.values(newState).map((p: UnknownRecord) => p[0]);
 
           setParticipants(onlineUsers);
 
@@ -103,7 +103,7 @@ export default function Room() {
   }, [messages]);
 
   const fetchRoomDetails = async () => {
-    const { data, error } = await supabase.from('study_rooms' as any).select('*').eq('id', id).single();
+    const { data, error } = await supabase.from('study_rooms' as unknown).select('*').eq('id', id).single();
     if (error) {
       console.error("Error fetching room:", error);
       if (error.code === 'PGRST116') {
@@ -135,7 +135,7 @@ export default function Room() {
 
   const fetchMessages = async () => {
     const { data, error } = await supabase
-      .from('study_room_messages' as any)
+      .from('study_room_messages' as unknown)
       .select('*, profiles(name, avatar_url)')
       .eq('room_id', id)
       .order('created_at', { ascending: true });
@@ -159,7 +159,7 @@ export default function Room() {
       ...prev,
     ]);
 
-    const { error } = await supabase.from('study_room_messages' as any).insert([
+    const { error } = await supabase.from('study_room_messages' as unknown).insert([
       { room_id: id, profile_id: user.id, content: messageText }
     ]);
     
@@ -172,7 +172,7 @@ export default function Room() {
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
     setIsInviting(true);
-    const { error } = await (supabase.rpc as any)('invite_to_study_room', {
+    const { error } = await (supabase.rpc as unknown)('invite_to_study_room', {
       p_room_id: id,
       p_user_email: inviteEmail
     });

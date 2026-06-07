@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Suspense, lazy, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +8,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useRole } from "@/contexts/RoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import { API_BASE_URL } from "@/config/api";
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 const AnalyticsCharts = lazy(() => import("@/components/AnalyticsCharts"));
 
 interface Profile {
@@ -62,9 +62,9 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [recommendedPeers, setRecommendedPeers] = useState<any[]>([]);
-  const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [recommendedPeers, setRecommendedPeers] = useState<UnknownArray>([]);
+  const [upcomingSessions, setUpcomingSessions] = useState<UnknownArray>([]);
+  const [leaderboard, setLeaderboard] = useState<UnknownArray>([]);
 
   const displayName =
     profile?.name?.trim() ||
@@ -116,7 +116,7 @@ const Dashboard = () => {
       const data = await res.json();
       
       if (data.success && data.recommendations) {
-        const mapped = data.recommendations.map((p: any) => ({
+        const mapped = data.recommendations.map((p: UnknownRecord) => ({
           id: p.id,
           name: p.name || "User",
           avatar: p.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${p.name}`,

@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 
 import { Camera, Save, Sparkles, User, Flame, Zap, Trophy, Lock } from "lucide-react";
 import StreakStats from "@/components/StreakStats";
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
 import {
   calculateLevel,
@@ -28,7 +29,7 @@ const EditProfile = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const [profile, setProfile] = useState<any>({
+  const [profile, setProfile] = useState<UnknownRecord>({
     name: "",
     bio: "",
     skills: "",
@@ -55,7 +56,7 @@ const EditProfile = () => {
         .eq("id", user.id)
         .single();
 
-      const profileData = rawProfileData as any;
+      const profileData = rawProfileData as unknown;
 
       if (profileData) {
         setProfile({

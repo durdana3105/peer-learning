@@ -9,6 +9,7 @@ import {
   DropdownMenuContent,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/components/ui/use-toast';
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
 export default function FocusTimer() {
   const { user } = useAuth();
@@ -88,7 +89,7 @@ export default function FocusTimer() {
   const updateProfile = async (inFocus: boolean, focusTime?: number) => {
     if (!user) return;
     
-    const updates: any = { is_in_focus_mode: inFocus };
+    const updates: UnknownRecord = { is_in_focus_mode: inFocus };
     if (focusTime !== undefined) {
       updates.focus_time_this_week = focusTime;
     }

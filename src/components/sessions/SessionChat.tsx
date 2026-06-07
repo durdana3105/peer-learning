@@ -2,23 +2,24 @@ import { useRef, useState, useEffect } from "react";
 import { Send, Video, Sparkles } from "lucide-react";
 import { LiveCodeRunner } from "@/components/studyroom/LiveCodeRunner";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
 type SessionChatProps = {
-  selectedSession: any;
-  messages: any[];
-  activities: any[];
+  selectedSession: UnknownRecord;
+  messages: UnknownArray;
+  activities: UnknownArray;
   userStatus: string;
   typingUser: string | null;
   participantCount: number;
   isVideoActive: boolean;
-  sessionSummary: any;
+  sessionSummary: UnknownRecord;
   summaryLoading: boolean;
   studyTime: number;
   sendMessage: (msg: string) => void;
   sendTypingEvent: () => void;
   handleLeaveVideo: () => void;
   handleJoinVideo: () => void;
-  user: any;
+  user: UnknownRecord;
 };
 
 export function SessionChat({

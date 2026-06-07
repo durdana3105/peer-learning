@@ -1,13 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
 const Notifications = () => {
-  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<UnknownArray>([]);
 
   useEffect(() => {
     const fetchAlerts = async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("sessions")
         .select("*")
         .eq("status", "upcoming")

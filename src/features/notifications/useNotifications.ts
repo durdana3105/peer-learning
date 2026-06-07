@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Notification } from "./types";
@@ -30,7 +29,7 @@ export function useNotifications(userId?: string) {
       const from = nextPage * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("notifications")
         .select("*")
         .eq("user_id", userId)
@@ -63,7 +62,7 @@ export function useNotifications(userId?: string) {
       );
     });
 
-    const { error } = await (supabase as any)
+    const { error } = await (supabase as unknown)
       .from("notifications")
       .update({ read: true })
       .eq("id", id);
@@ -84,7 +83,7 @@ export function useNotifications(userId?: string) {
       return current.map((notification) => ({ ...notification, read: true }));
     });
 
-    const { error } = await (supabase as any)
+    const { error } = await (supabase as unknown)
       .from("notifications")
       .update({ read: true })
       .eq("user_id", userId)

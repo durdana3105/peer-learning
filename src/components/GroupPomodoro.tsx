@@ -24,7 +24,7 @@ export default function GroupPomodoro({ roomId }: GroupPomodoroProps) {
 
     const fetchTimerState = async () => {
       const { data, error } = await supabase
-        .from('study_rooms' as any)
+        .from('study_rooms' as unknown)
         .select('timer_state, timer_end_time, timer_work_duration, timer_break_duration')
         .eq('id', roomId)
         .single();
@@ -111,7 +111,7 @@ export default function GroupPomodoro({ roomId }: GroupPomodoroProps) {
     }
     
     await supabase
-      .from('study_rooms' as any)
+      .from('study_rooms' as unknown)
       .update({
         timer_state: newState,
         timer_end_time: newEndTime,

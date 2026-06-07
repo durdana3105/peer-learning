@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Loader2, Plus } from "lucide-react";
@@ -33,7 +32,7 @@ export default function MentorForm() {
   });
   useEffect(() => {
     const fetchSkills = async () => {
-      const { data } = await (supabase as any).from("skills_taxonomy").select("name").order("name");
+      const { data } = await (supabase as unknown).from("skills_taxonomy").select("name").order("name");
       if (data) {
         setAvailableSkills(data.map(d => d.name));
       }
@@ -44,7 +43,7 @@ export default function MentorForm() {
     const skill = customSkill.trim();
     if (!skill) return;
     
-    await (supabase as any).from("skills_taxonomy").insert({ name: skill });
+    await (supabase as unknown).from("skills_taxonomy").insert({ name: skill });
     
     if (!availableSkills.includes(skill)) {
       setAvailableSkills([...availableSkills, skill]);
@@ -110,7 +109,7 @@ export default function MentorForm() {
         setLoading(false);
         return;
       }
-      const { error } = await (supabase as any)
+      const { error } = await (supabase as unknown)
         .from("mentors")
         .insert([
           {

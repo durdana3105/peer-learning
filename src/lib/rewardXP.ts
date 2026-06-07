@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from "@/integrations/supabase/client";
 
 export const rewardXP = async (
@@ -10,7 +9,7 @@ export const rewardXP = async (
   // award events both read the same stale XP value and one write clobbers
   // the other (see issue #143). auth.uid() inside the RPC enforces that
   // users can only increment their own XP.
-  await (supabase as any).rpc("increment_user_xp", { _amount: amount });
+  await (supabase as unknown).rpc("increment_user_xp", { _amount: amount });
 };
 
 

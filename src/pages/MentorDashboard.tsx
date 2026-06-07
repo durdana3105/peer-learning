@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { useRole } from "@/contexts/RoleContext";
 import { useAuth } from "@/contexts/useAuth";
@@ -6,13 +5,14 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SessionCard from "@/components/SessionCard";
 import { MentorshipMilestones } from "@/components/mentorship/MentorshipMilestones";
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
 const MentorDashboard = () => {
   const { user, loading } = useAuth();
   const { currentMode } = useRole();
   
-  const [profile, setProfile] = useState<any>(null);
-  const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
+  const [profile, setProfile] = useState<UnknownRecord>(null);
+  const [upcomingSessions, setUpcomingSessions] = useState<UnknownArray>([]);
 
   const displayName =
     profile?.name ||

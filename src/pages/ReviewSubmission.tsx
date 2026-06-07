@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, Send, Star, ExternalLink, Code } from "lucide-react";
+import { UnknownRecord, UnknownArray } from "@/types/wrappers";
 
 export default function ReviewSubmission() {
   const { id } = useParams<{ id: string }>();
@@ -13,8 +14,8 @@ export default function ReviewSubmission() {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [submission, setSubmission] = useState<any>(null);
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [submission, setSubmission] = useState<UnknownRecord>(null);
+  const [reviews, setReviews] = useState<UnknownArray>([]);
   const [loading, setLoading] = useState(true);
   
   const [feedback, setFeedback] = useState("");

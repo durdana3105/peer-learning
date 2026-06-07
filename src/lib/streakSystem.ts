@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * streakSystem.ts
  *
@@ -124,7 +123,7 @@ export async function getStreakData(): Promise<StreakData> {
  */
 export async function updateDailyStreak(): Promise<{ streak: number; xpEarned: number }> {
   try {
-    const { data, error } = await (supabase as any).rpc("update_daily_streak");
+    const { data, error } = await (supabase as unknown).rpc("update_daily_streak");
     if (error) throw error;
 
     // Invalidate cache so next getStreakData() fetches fresh data
@@ -146,7 +145,7 @@ export async function restoreStreak(): Promise<{
   newStreak?: number;
 }> {
   try {
-    const { data, error } = await (supabase as any).rpc("restore_user_streak");
+    const { data, error } = await (supabase as unknown).rpc("restore_user_streak");
     if (error) throw error;
 
     if (data.success) {

@@ -71,7 +71,7 @@ const MockInterview = () => {
       if (!response.ok) throw new Error("Failed to get response");
       const data = await response.json();
       setMessages((prev) => [...prev, { role: "assistant", content: data.answer }]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.message || "Failed to process interview message.");
     } finally {
       setLoading(false);
@@ -112,7 +112,7 @@ const MockInterview = () => {
       if (!response.ok) throw new Error("Failed to generate report");
       const data = await response.json();
       setReport(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.message || "Failed to generate evaluation report.");
     } finally {
       setGeneratingReport(false);
