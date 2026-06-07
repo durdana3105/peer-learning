@@ -28,6 +28,7 @@ export function useSessions(user: UnknownRecord) {
   const channelRef = useRef<UnknownRecord>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const lastMoveRef = useRef(0);
+  const awardedSessionsRef = useRef<Set<string | number>>(new Set());
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -199,6 +200,7 @@ export function useSessions(user: UnknownRecord) {
         toast({ title: "Success! 🎉", description: "You have joined the session." });
 
         if (!existingParticipant) {
+          awardedSessionsRef.current.add(sessionId);
           awardXP({ activity: "session_join" });
         }
       }
@@ -261,7 +263,6 @@ export function useSessions(user: UnknownRecord) {
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
         credentials: "include",
-        credentials:"include",
         body: JSON.stringify({ messages }),
       });
 
@@ -288,10 +289,11 @@ export function useSessions(user: UnknownRecord) {
 
   const handleJoinVideo = useCallback(() => {
     setIsVideoActive(true);
-    // Simple mock logic for preventing double XP without using localStorage here directly unless needed
-    // Assuming backend or component handles it or we could use the old local storage logic if needed
-    awardXP({ activity: 'session_join' });
-  }, [awardXP]);
+    if (selectedSession && !awardedSessionsRef.current.has(selectedSession.id)) {
+      awardedSessionsRef.current.add(selectedSession.id);
+      awardXP({ activity: 'session_join' });
+    }
+  }, [awardXP, selectedSession]);
 
   return {
     sessions,

@@ -5,6 +5,7 @@ import { API_BASE_URL } from "@/config/api";
 import { toast } from "sonner";
 import { Loader2, Send, Bot, User, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { supabase } from "@/config/supabaseClient";
 
 type Message = {
   role: "system" | "user" | "assistant";
@@ -27,6 +28,11 @@ const ROLES = [
   "HR Manager (Behavioral)",
 ];
 
+const getAccessToken = async (): Promise<string | null> => {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? null;
+};
+
 const MockInterview = () => {
   const { user } = useAuth();
   const [role, setRole] = useState(ROLES[0]);
@@ -48,6 +54,12 @@ const MockInterview = () => {
   }, [messages]);
 
   const startInterview = async () => {
+    const token = await getAccessToken();
+    if (!token) {
+      toast.error("You must be logged in to start a mock interview.");
+      return;
+    }
+
     setHasStarted(true);
     const initialMsg: Message = { role: "user", content: "Hi! I am ready for the mock interview. Please start by asking your first question." };
     setMessages([initialMsg]);
@@ -57,7 +69,12 @@ const MockInterview = () => {
   const sendMessage = async (currentMessages: Message[]) => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const token = await getAccessToken();
+      if (!token) {
+        toast.error("Session expired. Please log in again.");
+        return;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/ai/mock-interview/chat`, {
         method: "POST",
         headers: {
@@ -72,16 +89,17 @@ const MockInterview = () => {
       const data = await response.json();
       setMessages((prev) => [...prev, { role: "assistant", content: data.answer }]);
     } catch (error: unknown) {
-      toast.error(error.message || "Failed to process interview message.");
+      const message = error instanceof Error ? error.message : "Failed to process interview message.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // --- FIX: submitAnswer has no event parameter at all ---
+  // Called from both the form onSubmit and the textarea onKeyDown safely
+  const submitAnswer = async () => {
     if (!inputValue.trim() || loading) return;
-
     const newMsg: Message = { role: "user", content: inputValue.trim() };
     const updatedMessages = [...messages, newMsg];
     setMessages(updatedMessages);
@@ -94,11 +112,17 @@ const MockInterview = () => {
       toast.error("You need to answer some questions before ending the interview.");
       return;
     }
-    
+
     setIsFinished(true);
     setGeneratingReport(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const token = await getAccessToken();
+      if (!token) {
+        toast.error("Session expired. Please log in again.");
+        setGeneratingReport(false);
+        return;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/ai/mock-interview/report`, {
         method: "POST",
         headers: {
@@ -113,7 +137,8 @@ const MockInterview = () => {
       const data = await response.json();
       setReport(data);
     } catch (error: unknown) {
-      toast.error(error.message || "Failed to generate evaluation report.");
+      const message = error instanceof Error ? error.message : "Failed to generate evaluation report.";
+      toast.error(message);
     } finally {
       setGeneratingReport(false);
     }
@@ -257,7 +282,7 @@ const MockInterview = () => {
         {/* Chat Area */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {messages.map((msg, idx) => {
-            if (idx === 0 && msg.role === "user") return null; // Hide the initial prompt trigger
+            if (idx === 0 && msg.role === "user") return null;
             const isAI = msg.role === "assistant" || msg.role === "system";
             return (
               <div key={idx} className={`flex gap-4 ${isAI ? "" : "flex-row-reverse"}`}>
@@ -286,7 +311,14 @@ const MockInterview = () => {
 
         {/* Input Area */}
         <div className="p-4 bg-slate-950 border-t border-slate-800">
-          <form onSubmit={handleSubmit} className="flex gap-3">
+          {/* --- FIX: form onSubmit calls submitAnswer directly, no event needed --- */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitAnswer();
+            }}
+            className="flex gap-3"
+          >
             <textarea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -296,7 +328,8 @@ const MockInterview = () => {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  handleSubmit(e);
+                  // --- FIX: call submitAnswer() directly, no event passed ---
+                  submitAnswer();
                 }
               }}
             />

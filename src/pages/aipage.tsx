@@ -38,6 +38,11 @@ const AIPage = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
+      const formattedMessages = [...messages, userMessage].map((msg: any) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
       const res = await fetch(`${API_BASE_URL}/api/ai/ask`, {
         method: "POST",
         headers: {
@@ -46,7 +51,7 @@ const AIPage = () => {
         },
         credentials:"include",
         body: JSON.stringify({
-          question: prompt,
+          messages: formattedMessages,
         }),
       });
 

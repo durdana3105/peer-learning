@@ -10,6 +10,7 @@
  * It is always reconciled against the server on load.
  */
 
+import { hasFunctionalConsent } from "@/lib/cookieConsent";
 import { supabase } from "@/integrations/supabase/client";
 
 // ── Local cache keys (read-only cache, never source of truth) ──
@@ -37,12 +38,20 @@ export const calculateStreakXP = (streak: number): number => {
 
 // ── Cache helpers ──────────────────────────────────────────────
 function writeCache(data: StreakData): void {
+  if (!hasFunctionalConsent()) {
+    return;
+  }
+
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(data));
   } catch { /* ignore */ }
 }
 
 function readCache(): StreakData | null {
+  if (!hasFunctionalConsent()) {
+    return null;
+  }
+
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     return raw ? (JSON.parse(raw) as StreakData) : null;

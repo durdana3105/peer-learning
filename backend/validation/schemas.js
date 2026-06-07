@@ -76,6 +76,41 @@ export const aiSchemas = {
       model: z.string().optional()
     }),
   },
+  mockInterviewChat: {
+    body: z.object({
+      messages: z.array(
+        z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string().trim().min(1).max(2000),
+        })
+      ).min(1).max(50),
+      role: z.string().trim().min(1).max(200),
+    }),
+  },
+  mockInterviewReport: {
+    body: z
+      .object({
+        messages: z.array(
+          z.object({
+            role: z.enum(["user", "assistant"]),
+            content: z.string().trim().min(1).max(4000),
+          })
+        ).min(1).max(100),
+      })
+      .superRefine((data, ctx) => {
+        const totalLength = data.messages.reduce(
+          (sum, m) => sum + m.content.length,
+          0
+        );
+        if (totalLength > 20000) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["messages"],
+            message: "Total content exceeds maximum allowed length",
+          });
+        }
+      }),
+  },
   generateSessionSummary: {
     body: z
       .object({

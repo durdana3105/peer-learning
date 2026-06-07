@@ -231,10 +231,6 @@ export const getSupabaseDiscover = async (req, res) => {
 
       let percentage = Math.min(Math.round((score / maxPossibleScore) * 100), 100);
 
-      if (percentage < 15 && (userSkills.length > 0 || userGoals.length > 0)) {
-        percentage = Math.floor(Math.random() * 10) + 15;
-      }
-
       const teachOverlap = myGoals.filter((s) => (p.teach_subjects || []).includes(s)).length;
       const learnOverlap = mySkills.filter((s) => (p.learn_subjects || []).includes(s)).length;
       const interestOverlap = (currentUser.interests || []).filter((s) => (p.interests || []).includes(s)).length;

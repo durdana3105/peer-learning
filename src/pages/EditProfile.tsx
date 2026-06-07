@@ -99,4 +99,4 @@ const EditProfile = () => {
   );
 };
 
-export default EditProfile;
+export { default } from "./Profile";
