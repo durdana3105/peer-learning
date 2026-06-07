@@ -152,7 +152,9 @@ export const getSupabaseDiscover = async (req, res) => {
     const userId = req.user.id;
     const search = req.query.search || "";
     const filter = req.query.filter || "All";
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 100);
+    const skip = (page - 1) * limit;
 
     const supabaseAdmin = getSupabaseAdmin();
 
@@ -170,12 +172,13 @@ export const getSupabaseDiscover = async (req, res) => {
       .from("profiles")
       .select("id, name, skills, interests, learning_goals, teach_subjects, learn_subjects, learning_style, preferred_language, timezone")
       .neq("id", userId)
-      .limit(100);
+      .range(skip, skip + limit - 1);
 
     if (search.trim()) {
-      const safeSearch = search.trim().replace(/[",()]/g, '');
+      const safeSearch = search.trim().replace(/[^\w\s-]/g, "");
       if (safeSearch) {
-        query = query.or(`name.ilike."%${safeSearch}%",skills.ilike."%${safeSearch}%"`);
+        const pattern = `%${safeSearch.replace(/['"]/g, "")}%`;
+        query = query.or(`name.ilike."${pattern}",skills.ilike."${pattern}"`);
       }
     }
 
@@ -228,10 +231,6 @@ export const getSupabaseDiscover = async (req, res) => {
       }
 
       let percentage = Math.min(Math.round((score / maxPossibleScore) * 100), 100);
-
-      if (percentage < 15 && (userSkills.length > 0 || userGoals.length > 0)) {
-        percentage = Math.floor(Math.random() * 10) + 15;
-      }
 
       const teachOverlap = myGoals.filter((s) => (p.teach_subjects || []).includes(s)).length;
       const learnOverlap = mySkills.filter((s) => (p.learn_subjects || []).includes(s)).length;

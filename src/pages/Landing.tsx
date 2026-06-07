@@ -3,6 +3,7 @@ import { ChevronDown, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useCookieConsent } from "@/contexts/CookieConsentContext";
 import { useState, useEffect } from "react";
 
 import { Hero } from "@/components/landing/Hero";
@@ -40,6 +41,7 @@ const faqs = [
 export default function Landing() {
   const { scrollYProgress } = useScroll();
   const { setTheme } = useTheme();
+  const { openPreferences, preferences } = useCookieConsent();
 
   const [open, setOpen] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,6 +74,17 @@ export default function Landing() {
     // Device-local daily streak using localStorage
     const KEY_STREAK = "pl_streak";
     const KEY_LAST = "pl_last_active";
+
+    if (!preferences?.functional) {
+      try {
+        localStorage.removeItem(KEY_STREAK);
+        localStorage.removeItem(KEY_LAST);
+      } catch {
+        // ignore storage access failures
+      }
+      setStreak(null);
+      return;
+    }
 
     const today = new Date();
     const todayKey = today.toISOString().slice(0, 10); // YYYY-MM-DD
@@ -110,7 +123,7 @@ export default function Landing() {
     } catch (e) {
       setStreak(0);
     }
-  }, []);
+  }, [preferences?.functional]);
 
   if (loading) {
     return (
@@ -354,6 +367,21 @@ export default function Landing() {
             >
               Privacy Policy
             </Link>
+
+            <Link
+              to="/cookies-policy"
+              className="transition hover:text-cyan-400"
+            >
+              Cookies Policy
+            </Link>
+
+            <button
+              type="button"
+              onClick={openPreferences}
+              className="transition hover:text-cyan-400"
+            >
+              Cookie Settings
+            </button>
           </div>
 
           <div className="text-slate-500">© 2026 PeerLearn</div>
