@@ -66,13 +66,21 @@ export default function SessionDetail() {
   const loadSession = useCallback(async () => {
     if (!sessionId) return;
 
+    const parsedSessionId = Number(sessionId);
+    if (Number.isNaN(parsedSessionId)) {
+      setNotFound(true);
+      setSession(null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setNotFound(false);
 
     const { data, error } = await supabase
       .from("sessions")
       .select("*")
-      .eq("id", sessionId)
+      .eq("id", parsedSessionId)
       .maybeSingle();
 
     if (error || !data) {
@@ -97,7 +105,7 @@ export default function SessionDetail() {
     const { data: participantRows } = await (supabase as any)
       .from("session_participants")
       .select("user_id")
-      .eq("session_id", sessionId);
+      .eq("session_id", parsedSessionId);
 
     const rows = participantRows || [];
     setHasJoined(Boolean(rows.some((row: ParticipantRow) => row.user_id === user?.id)));
