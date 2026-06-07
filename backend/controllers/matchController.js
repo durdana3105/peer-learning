@@ -69,13 +69,14 @@ export const getRecommendedPartners = async (req, res) => {
       return res.status(500).json({ success: false, message: "Supabase client not configured" });
     }
 
+    const currentUserId = req.user.id;
     const currentUserEmail = req.user.email;
     
     // Fetch current user from Supabase profiles
     const { data: currentUser, error: currentUserError } = await supabaseAdmin
       .from('profiles')
       .select('skills, interests, teach_subjects, learn_subjects')
-      .eq('email', currentUserEmail)
+      .eq('id', currentUserId)
       .single();
 
     if (currentUserError || !currentUser) {

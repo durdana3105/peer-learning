@@ -110,14 +110,15 @@ const Login = () => {
   }
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden bg-[#020817] text-white">
+    <div className="relative flex min-h-screen overflow-hidden text-white" style={{ background: 'linear-gradient(135deg, #020617 0%, #0d0d2b 40%, #020617 100%)' }}>
 
-      {/* GRID BACKGROUND */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
+      {/* Grid */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.04)_1px,transparent_1px)] bg-[size:60px_60px]" />
 
-      {/* GLOW EFFECTS */}
-      <div className="absolute top-0 left-0 h-[500px] w-[500px] bg-cyan-500/20 blur-[140px]" />
-      <div className="absolute bottom-0 right-0 h-[500px] w-[500px] bg-blue-600/20 blur-[140px]" />
+      {/* Glow Orbs */}
+      <div className="absolute -top-20 -left-20 h-[450px] w-[450px] orb orb-cyan opacity-50" />
+      <div className="absolute bottom-0 right-0 h-[500px] w-[500px] orb orb-indigo opacity-40" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[300px] w-[300px] orb orb-purple opacity-25" />
 
       {/* LEFT SIDE */}
       <div className="hidden lg:flex w-1/2 relative items-center justify-center p-16 z-10">
@@ -184,39 +185,43 @@ const Login = () => {
       <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12 relative z-10">
 
         <motion.div
-          initial={{ opacity: 0, y: 40, scale: 0.98 }}
+          initial={{ opacity: 0, y: 40, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.6 }}
-          className="w-full max-w-md rounded-3xl border border-cyan-400/10 bg-white/5 p-8 backdrop-blur-2xl shadow-[0_0_50px_rgba(34,211,238,0.15)]"
+          transition={{ duration: 0.7, type: 'spring' }}
+          className="w-full max-w-md relative"
+          style={{
+            background: 'rgba(13, 13, 43, 0.7)',
+            backdropFilter: 'blur(28px)',
+            WebkitBackdropFilter: 'blur(28px)',
+            border: '1px solid rgba(99,102,241,0.2)',
+            borderRadius: '28px',
+            boxShadow: '0 0 60px rgba(99,102,241,0.2), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)',
+            padding: '2.5rem',
+          }}
         >
-          <div className="mb-7 text-cyan-400">
-            <Link
-              to="/"
-              className="cursor-pointer"
-            >
+          {/* Top gradient line */}
+          <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[28px]" style={{ background: 'linear-gradient(90deg, #22d3ee, #6366f1, #a855f7)' }} />
+
+          <div className="mb-7 text-indigo-400">
+            <Link to="/" className="cursor-pointer hover:text-indigo-300 transition-colors">
               ← Back to Home
             </Link>
           </div>
           {/* LOGO */}
           <div className="mb-8 text-center">
             <Link to="/" className="inline-flex items-center gap-3">
-
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 shadow-[0_0_20px_rgba(34,211,238,0.5)]">
-                <BookOpen className="h-6 w-6 text-black" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg" style={{ background: 'linear-gradient(135deg, #22d3ee, #6366f1, #a855f7)', boxShadow: '0 0 25px rgba(99,102,241,0.5)' }}>
+                <BookOpen className="h-6 w-6 text-white" />
               </div>
-
-              <span className="text-3xl font-bold tracking-tight bg-gradient-to-r from-cyan-300 to-blue-400 bg-clip-text text-transparent">
+              <span className="text-3xl font-bold tracking-tight" style={{ fontFamily: 'Outfit, sans-serif', background: 'linear-gradient(135deg, #22d3ee, #6366f1, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 PeerLearn
               </span>
             </Link>
 
-            <h2 className="mt-8 text-3xl font-bold text-white">
-              Welcome Back
+            <h2 className="mt-8 text-3xl font-bold text-white" style={{ fontFamily: 'Outfit, sans-serif' }}>
+              Welcome Back 👋
             </h2>
-
-            <p className="mt-2 text-slate-400">
-              Continue your futuristic learning journey
-            </p>
+            <p className="mt-2 text-slate-400">Continue your futuristic learning journey</p>
           </div>
 
           {/* FORM */}
@@ -227,7 +232,7 @@ const Login = () => {
                 placeholder="Email Address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-12 border border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400"
+                className="glass-input h-12 rounded-xl text-white placeholder:text-slate-500"
               />
 
               {errors.email && (
@@ -243,7 +248,7 @@ const Login = () => {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-12 border border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus:border-cyan-400"
+                className="glass-input h-12 rounded-xl text-white placeholder:text-slate-500 pr-12"
               />
 
               <button
@@ -289,10 +294,10 @@ const Login = () => {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="h-12 w-full rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-bold shadow-[0_0_20px_rgba(34,211,238,0.35)] hover:opacity-90"
+                className="h-12 w-full rounded-xl font-bold text-white transition-all hover:opacity-90 hover:scale-[1.02]"
+                style={{ background: 'linear-gradient(135deg, #22d3ee, #6366f1, #a855f7)', boxShadow: '0 0 25px rgba(99,102,241,0.4)' }}
               >
                 {isLoading ? "Logging in..." : "Log In"}
-
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </motion.div>
@@ -302,14 +307,9 @@ const Login = () => {
               type="button"
               variant="outline"
               onClick={handleGoogleLogin}
-              className="h-12 w-full border border-white/10 bg-white/5 text-white hover:bg-white/10"
+              className="h-12 w-full glass-button rounded-xl text-slate-200 hover:text-white border-white/10"
             >
-              <img
-                src="https://www.svgrepo.com/show/475656/google-color.svg"
-                alt="google"
-                className="mr-2 h-5 w-5"
-              />
-
+              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="google" className="mr-2 h-5 w-5" />
               Continue with Google
             </Button>
           </form>
