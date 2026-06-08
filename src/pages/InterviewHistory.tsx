@@ -68,6 +68,7 @@ const recurringImprovements = useMemo(() => {
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate("/mock-interview")}
+            aria-label="Back to mock interview"
             className="text-slate-400 hover:text-white transition-colors"
           >
             <ArrowLeft />
@@ -127,7 +128,7 @@ const recurringImprovements = useMemo(() => {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            
+
             {recurringImprovements.length > 0 && (
               <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
                 <h2 className="text-lg font-semibold mb-4 text-slate-300">

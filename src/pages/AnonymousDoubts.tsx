@@ -42,14 +42,16 @@ export default function AnonymousDoubts() {
   };
 
   const addDoubt = async () => {
-    if (!text || !subject) return;
+    const trimmedText = text.trim();
+    const trimmedSubject = subject.trim();
+    if (!trimmedText || !trimmedSubject) return;
     if (!user) { toast.error("Please log in to post a doubt."); return; }
 
     setSubmitting(true);
     const { error } = await (supabase as any).from("doubts").insert({
       user_id: anonymous ? null : user.id,
-      content: text,
-      subject,
+      content: trimmedText,
+      subject: trimmedSubject,
       anonymous,
     });
 
@@ -100,7 +102,7 @@ export default function AnonymousDoubts() {
         </label>
         <button
           onClick={addDoubt}
-          disabled={submitting || !text || !subject}
+          disabled={submitting || !text.trim() || !subject.trim()}
           className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
         >
           {submitting ? "Posting..." : "Post Doubt"}
