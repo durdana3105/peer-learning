@@ -107,6 +107,10 @@ const MockInterview = () => {
     setInputValue("");
     await sendMessage(updatedMessages);
   };
+  /**
+   * Ends the current interview session, generates an AI evaluation report,
+   * and persists the session data to the database.
+   */
 
   const endInterview = async () => {
     if (messages.length < 3) {

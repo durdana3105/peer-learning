@@ -14,6 +14,10 @@ type Session = {
   improvements: string[];
   created_at: string;
 };
+/**
+ * Displays the user's mock interview history with score progression chart
+ * and expandable session details including strengths and improvement areas.
+ */
 
 const InterviewHistory = () => {
   const { user } = useAuth();
