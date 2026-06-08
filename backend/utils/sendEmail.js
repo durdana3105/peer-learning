@@ -10,7 +10,9 @@ const isValidEmail = (value) => {
   // - Local part: alphanumeric, dots, hyphens, underscores, plus signs
   // - Domain: alphanumeric and hyphens, multiple levels
   // - TLD: at least 2 characters (required for valid domain)
-  const emailRegex = /^[a-z0-9._%-+]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
+  // The email is already normalised to lowercase above so the /i flag
+  // is redundant and is intentionally omitted here.
+  const emailRegex = /^[a-z0-9._%-+]+@[a-z0-9.-]+\.[a-z]{2,}$/;
 
   if (!emailRegex.test(email)) {
     return false;
@@ -37,9 +39,18 @@ const isValidEmail = (value) => {
     return false;
   }
 
-  // Prevent leading or trailing hyphens in domain (RFC 952)
-  if (domain.startsWith('-') || domain.endsWith('-')) {
-    return false;
+  // Validate each domain label individually per RFC 1035:
+  // - No empty labels (consecutive dots already caught above, but defensive)
+  // - No label longer than 63 characters
+  // - No leading or trailing hyphen (RFC 952)
+  const domainLabels = domain.split('.');
+  for (const label of domainLabels) {
+    if (label.length === 0 || label.length > 63) {
+      return false;
+    }
+    if (label.startsWith('-') || label.endsWith('-')) {
+      return false;
+    }
   }
 
   return true;
