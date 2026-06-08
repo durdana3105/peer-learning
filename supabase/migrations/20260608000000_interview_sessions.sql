@@ -5,9 +5,9 @@ create table if not exists interview_sessions (
   messages      jsonb not null default '[]',
   strengths     text[] not null default '{}',
   improvements  text[] not null default '{}',
-  overall_score integer not null,
+  overall_score integer not null check (overall_score between 0 and 100),
   summary       text not null,
-  created_at    timestamptz default now()
+  created_at    timestamptz not null default now()
 );
 
 alter table interview_sessions enable row level security;

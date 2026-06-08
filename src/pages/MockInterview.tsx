@@ -136,8 +136,7 @@ const MockInterview = () => {
 
       if (!response.ok) throw new Error("Failed to generate report");
       const data = await response.json();
-      setReport(data);
-      await (supabase as any).from("interview_sessions").insert({
+      const { error: insertError } = await (supabase as any).from("interview_sessions").insert({
         user_id: user!.id,
         role,
         messages,
@@ -146,6 +145,13 @@ const MockInterview = () => {
         overall_score: data.overall_score,
         summary: data.summary,
       });
+
+      if (insertError) {
+        console.error("Failed to save interview session:", insertError);
+        toast.error("Interview completed but failed to save to history.");
+      }
+
+      setReport(data);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to generate evaluation report.";
       toast.error(message);

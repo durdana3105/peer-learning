@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo} from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
@@ -21,6 +21,7 @@ const InterviewHistory = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -31,11 +32,27 @@ const InterviewHistory = () => {
         .eq("user_id", user.id)
         .order("created_at", { ascending: true });
 
-      if (!error && data) setSessions(data);
+      if (error) {
+        console.error("Failed to fetch sessions:", error);
+        setFetchError("Failed to load interview history. Please try again.");
+      } else {
+        setSessions(data ?? []);
+      }
       setLoading(false);
     };
     fetchSessions();
   }, [user]);
+
+const recurringImprovements = useMemo(() => {
+  const freq: Record<string, number> = {};
+  sessions.forEach(s => s.improvements.forEach(imp => {
+    freq[imp] = (freq[imp] || 0) + 1;
+  }));
+  return Object.entries(freq)
+    .filter(([, count]) => count > 1)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+}, [sessions]);
 
   const chartData = sessions.map((s, i) => ({
     session: `#${i + 1}`,
@@ -64,7 +81,18 @@ const InterviewHistory = () => {
           <div className="flex justify-center py-20">
             <Loader2 className="w-10 h-10 text-cyan-400 animate-spin" />
           </div>
-        ) : sessions.length === 0 ? (
+
+        ) : fetchError ? (
+          <div className="text-center py-20 text-red-400">
+            <p>{fetchError}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 bg-slate-800 hover:bg-slate-700 px-6 py-3 rounded-xl text-white font-medium transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        ) :sessions.length === 0 ? (
           <div className="text-center py-20 text-slate-400">
             <p className="text-lg">No interviews yet.</p>
             <button
@@ -99,6 +127,22 @@ const InterviewHistory = () => {
                 </LineChart>
               </ResponsiveContainer>
             </div>
+            
+            {recurringImprovements.length > 0 && (
+              <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                <h2 className="text-lg font-semibold mb-4 text-slate-300">
+                  🔁 Recurring Improvement Areas
+                </h2>
+                <ul className="space-y-2">
+                  {recurringImprovements.map(([area, count]) => (
+                    <li key={area} className="flex justify-between items-center text-sm text-slate-300">
+                      <span>• {area}</span>
+                      <span className="text-yellow-400 text-xs">{count} sessions</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Session List */}
             <div className="space-y-4">
