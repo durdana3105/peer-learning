@@ -23,8 +23,9 @@ const syncSessionCookie = async (
       }
 
       try {
+        let response: Response;
         if (session?.access_token) {
-          await fetch(`${API_BASE_URL}/api/auth/set-cookie`, {
+          response = await fetch(`${API_BASE_URL}/api/auth/set-cookie`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -32,11 +33,15 @@ const syncSessionCookie = async (
             body: JSON.stringify({ access_token: session.access_token }),
           });
         } else {
-          await fetch(`${API_BASE_URL}/api/auth/clear-cookie`, {
+          response = await fetch(`${API_BASE_URL}/api/auth/clear-cookie`, {
             method: "POST",
             credentials: "include",
             signal: fetchController.signal,
           });
+        }
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
       } finally {
         clearTimeout(timeoutId);
@@ -148,20 +153,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
-    const controller = new AbortController();
-    const signal = controller.signal;
+    const initController = new AbortController();
+    const initSignal = initController.signal;
+    let activeAuthEventController: AbortController | null = null;
 
     const timeoutId = window.setTimeout(() => {
       console.warn("Auth initialization timed out after 5s");
-      controller.abort();
+      initController.abort();
       if (mounted) {
         setStatus("failed");
       }
     }, 5000);
 
-    const syncOnboardingState = async (user: User) => {
+    const syncOnboardingState = async (user: User, signal?: AbortSignal) => {
       try {
-        if (signal.aborted) return;
+        if (signal?.aborted) return;
         // PERF: Read first to avoid firing a database write on every single page load
         const { data: profile, error } = await supabase
           .from("profiles")
@@ -170,14 +176,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .maybeSingle();
 
         if (error) throw error;
-        if (signal.aborted) return;
+        if (signal?.aborted) return;
 
         let finalProfile = profile;
         if (!finalProfile) {
           finalProfile = await ensureProfileExists(user);
         }
 
-        if (mounted && !signal.aborted) {
+        if (mounted && !signal?.aborted) {
           if (!finalProfile) {
             setNeedsOnboarding(true);
           } else {
@@ -187,8 +193,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       } catch (err) {
-        if (signal.aborted) return;
+        if (signal?.aborted) return;
         console.error("Failed to sync onboarding state:", err);
+        throw err;
       }
     };
 
@@ -197,26 +204,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) throw error;
-        if (signal.aborted) return;
+        if (initSignal.aborted) return;
 
         setSession(session);
         setUser(session?.user ?? null);
         
-        await syncSessionCookie(session, setCookieSynced, signal);
+        await syncSessionCookie(session, setCookieSynced, initSignal);
 
-        if (signal.aborted) return;
+        if (initSignal.aborted) return;
 
         if (session?.user) {
-          await syncOnboardingState(session.user);
+          await syncOnboardingState(session.user, initSignal);
         } else {
           setNeedsOnboarding(false);
         }
 
-        if (mounted && !signal.aborted) {
+        if (mounted && !initSignal.aborted) {
           setStatus("ready");
         }
       } catch (err) {
-        if (signal.aborted) return;
+        if (initSignal.aborted) return;
         console.error("Unexpected session initialization error:", err);
         setSession(null);
         setUser(null);
@@ -234,6 +241,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       async (_event, session) => {
         if (!mounted) return;
 
+        if (activeAuthEventController) {
+          activeAuthEventController.abort();
+        }
+        activeAuthEventController = new AbortController();
+        const eventSignal = activeAuthEventController.signal;
+
         try {
           setSession(session);
           setUser(session?.user ?? null);
@@ -242,18 +255,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // gotrue-js awaits every onAuthStateChange subscriber before resolving
           // the signUp/signIn promise, so awaiting a backend call that may hang
           // would delay the caller by the full timeout duration.
-          syncSessionCookie(session, setCookieSynced);
+          syncSessionCookie(session, setCookieSynced, eventSignal);
 
           if (session?.user) {
-            await syncOnboardingState(session.user);
+            await syncOnboardingState(session.user, eventSignal);
           } else {
             setNeedsOnboarding(false);
           }
           
-          if (mounted) {
+          if (mounted && !eventSignal.aborted) {
             setStatus("ready");
           }
         } catch (err) {
+          if (eventSignal.aborted) return;
           console.error("Auth state change error:", err);
           if (mounted) {
             setStatus("failed");
@@ -264,7 +278,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       mounted = false;
-      controller.abort();
+      initController.abort();
+      if (activeAuthEventController) {
+        activeAuthEventController.abort();
+      }
       window.clearTimeout(timeoutId);
       listener.subscription.unsubscribe();
     };
