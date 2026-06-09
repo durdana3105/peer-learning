@@ -21,6 +21,7 @@ import StreakBadge from "./components/StreakBadge";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import FloatingAI from "./components/FloatingAI";
 import MouseSparkles from "./components/MouseSparkles";
+import BackToTop from "./components/BackToTop";  // ← ADDED THIS LINE
 
 import { useAuth } from "@/contexts/useAuth";
 
@@ -372,6 +373,8 @@ function AppContent() {
           <FloatingAI />
         </>
       )}
+
+      <BackToTop />  {/* ← ADDED THIS LINE */}
     </>
   );
 }

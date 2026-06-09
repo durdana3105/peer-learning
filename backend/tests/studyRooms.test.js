@@ -9,6 +9,8 @@
  * - Idempotent join behavior (joining multiple times is safe)
  */
 
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+
 // Mock Supabase client for testing
 class MockSupabaseClient {
   constructor() {
@@ -26,7 +28,6 @@ class MockSupabaseClient {
       is_private: isPrivate,
       created_at: new Date().toISOString(),
     });
-
     // Creators are participants by default
     this.participants.set(`${roomId}:${createdBy}`, {
       room_id: roomId,
