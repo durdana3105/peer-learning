@@ -69,6 +69,7 @@ export interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  status: "loading" | "ready" | "failed";
   needsOnboarding: boolean;
   setNeedsOnboarding: (needs: boolean) => void;
   cookieSynced: boolean;
@@ -343,6 +344,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     session,
     user,
     loading: status === "loading",
+    status,
     needsOnboarding,
     setNeedsOnboarding,
     cookieSynced,

@@ -3,7 +3,7 @@ body, html {
   height: 100%;
 }
 body {
-    font-family: Helvetica Neue, Helvetica, Arial;
+    font-family: "Helvetica Neue", Helvetica, Arial;
     font-size: 14px;
     color:#333;
 }
@@ -129,14 +129,12 @@ table.coverage td span.cline-any {
   white-space: nowrap;
 }
 .coverage-summary th.file { border-right: none !important; }
-.coverage-summary th.pct { }
 .coverage-summary th.pic,
 .coverage-summary th.abs,
 .coverage-summary td.pct,
 .coverage-summary td.abs { text-align: right; }
 .coverage-summary td.file { white-space: nowrap;  }
 .coverage-summary td.pic { min-width: 120px !important;  }
-.coverage-summary tfoot td { }
 
 .coverage-summary .sorter {
     height: 10px;

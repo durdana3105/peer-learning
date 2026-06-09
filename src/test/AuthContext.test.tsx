@@ -34,7 +34,7 @@ describe("AuthContext cookie sync & onboarding sync propagation", () => {
   let originalFetch: any;
 
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     mockGetSession = supabase.auth.getSession;
     mockOnAuthStateChange = supabase.auth.onAuthStateChange;
     mockFrom = supabase.from;
@@ -54,6 +54,7 @@ describe("AuthContext cookie sync & onboarding sync propagation", () => {
     return (
       <div>
         <span data-testid="loading">{context.loading ? "Loading" : "Done"}</span>
+        <span data-testid="status">{context.status}</span>
         <span data-testid="cookieSynced">{context.cookieSynced ? "Synced" : "Not Synced"}</span>
         <span data-testid="needsOnboarding">{context.needsOnboarding ? "Needs Onboarding" : "No Onboarding"}</span>
       </div>
@@ -108,7 +109,9 @@ describe("AuthContext cookie sync & onboarding sync propagation", () => {
       });
     }
 
-    expect(screen.getByTestId("cookieSynced")).toHaveTextContent("Not Synced");
+    await waitFor(() =>
+      expect(screen.getByTestId("cookieSynced")).toHaveTextContent("Not Synced")
+    );
   });
 
   it("propagates onboarding sync failure by putting auth state to failed", async () => {
@@ -147,11 +150,9 @@ describe("AuthContext cookie sync & onboarding sync propagation", () => {
       </AuthProvider>
     );
 
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(100);
-    });
-
     // Since onboarding sync fails and propagates, loading should finish, but status is "failed"
-    expect(screen.getByTestId("loading")).toHaveTextContent("Done");
+    await waitFor(() =>
+      expect(screen.getByTestId("status")).toHaveTextContent("failed")
+    );
   });
 });
