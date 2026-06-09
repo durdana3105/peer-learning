@@ -40,13 +40,35 @@ export const dispatchPushNotifications = async (req, res, next) => {
       return res.json({ sent: 0, processed: 0 });
     }
 
+    const userIds = [...new Set(notifications.map((n) => n.user_id))];
+
+    // Fetch subscriptions for all notification recipients in a single query.
+    const { data: allSubscriptions, error: subscriptionsError } = await supabase
+      .from("push_subscriptions")
+      .select("user_id,endpoint,p256dh,auth")
+      .in("user_id", userIds);
+
+    if(subscriptionsError) {
+      return res.status(500).json({ error: subscriptionsError.message });
+    }
+
+    // Group subscriptions by user_id for constant-time lookup during dispatch.
+    const subscriptionsByUser = new Map();
+
+    for (const subscription of allSubscriptions || []) {
+
+      if(!subscriptionsByUser.has(subscription.user_id)) {
+        subscriptionsByUser.set(subscription.user_id, []);
+      }
+
+      subscriptionsByUser.get(subscription.user_id).push(subscription);
+    }
+
     let sent = 0;
 
     for (const notification of notifications) {
-      const { data: subscriptions } = await supabase
-        .from("push_subscriptions")
-        .select("endpoint,p256dh,auth")
-        .eq("user_id", notification.user_id);
+      
+      const subscriptions = subscriptionsByUser.get(notification.user_id) || [];
 
       const pushResults = await Promise.allSettled(
         (subscriptions || []).map((subscription) =>

@@ -27,6 +27,112 @@ type ContactFormData = {
 
 type FormErrors = Partial<Record<keyof ContactFormData, string>>;
 
+// --- Rate limit constants (must mirror the DB-level policy values) ---
+const RATE_LIMIT_MAX = 3;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const COOLDOWN_MS = 60 * 1000;               // 1 minute between submissions
+const STORAGE_KEY = "contact_submissions";
+
+type SubmissionRecord = {
+  timestamps: number[];
+  lastMessage: string;
+};
+
+const getSubmissionRecord = (): SubmissionRecord => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { timestamps: [], lastMessage: "" };
+    return JSON.parse(raw) as SubmissionRecord;
+  } catch {
+    return { timestamps: [], lastMessage: "" };
+  }
+};
+
+const saveSubmissionRecord = (record: SubmissionRecord) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
+};
+
+const checkRateLimit = (
+  message: string
+): { allowed: boolean; reason?: string } => {
+  const now = Date.now();
+  const record = getSubmissionRecord();
+
+  const recentTimestamps = record.timestamps.filter(
+    (t) => now - t < RATE_LIMIT_WINDOW_MS
+  );
+
+  if (recentTimestamps.length >= RATE_LIMIT_MAX) {
+    const oldest = Math.min(...recentTimestamps);
+    const resetInMin = Math.ceil(
+      (RATE_LIMIT_WINDOW_MS - (now - oldest)) / 60000
+    );
+    return {
+      allowed: false,
+      reason: `Too many messages sent. Please wait ${resetInMin} minute${resetInMin !== 1 ? "s" : ""} before trying again.`,
+    };
+  }
+
+  if (recentTimestamps.length > 0) {
+    const lastSubmission = Math.max(...recentTimestamps);
+    const cooldownRemaining = COOLDOWN_MS - (now - lastSubmission);
+    if (cooldownRemaining > 0) {
+      const seconds = Math.ceil(cooldownRemaining / 1000);
+      return {
+        allowed: false,
+        reason: `Please wait ${seconds} second${seconds !== 1 ? "s" : ""} before sending another message.`,
+      };
+    }
+  }
+
+  if (
+    record.lastMessage &&
+    record.lastMessage.trim().toLowerCase() === message.trim().toLowerCase()
+  ) {
+    return {
+      allowed: false,
+      reason: "You already sent this message. Please write a different message.",
+    };
+  }
+
+  return { allowed: true };
+};
+
+const recordSubmission = (message: string) => {
+  const now = Date.now();
+  const record = getSubmissionRecord();
+  const recentTimestamps = record.timestamps.filter(
+    (t) => now - t < RATE_LIMIT_WINDOW_MS
+  );
+  saveSubmissionRecord({
+    timestamps: [...recentTimestamps, now],
+    lastMessage: message,
+  });
+};
+
+// FIX: Phrases that Supabase/PostgreSQL actually returns for RLS violations.
+// Supabase does NOT return "rate limit" — it returns RLS policy error text.
+// We map all of these to a clear, user-friendly message.
+const RLS_ERROR_PHRASES = [
+  "violates row-level security policy",
+  "new row violates",
+  "row-level security",
+  "check constraint",
+] as const;
+
+function parseSupabaseError(errorMessage: string): string {
+  const lower = errorMessage.toLowerCase();
+
+  if (RLS_ERROR_PHRASES.some((phrase) => lower.includes(phrase))) {
+    // The DB-level policy blocked this — could be rate limit or duplicate.
+    // Give the user an accurate, actionable message.
+    return "You've submitted too many messages recently, or sent a duplicate message. Please wait a few minutes before trying again.";
+  }
+
+  // Fallback for unexpected errors
+  return errorMessage || "An unexpected error occurred. Please try again.";
+}
+
 export default function Contact() {
   const { toast } = useToast();
   const [formData, setFormData] = useState<ContactFormData>({
@@ -41,16 +147,18 @@ export default function Contact() {
 
   const validate = () => {
     const newErrors: FormErrors = {};
-    if (!formData.first_name.trim()) newErrors.first_name = "First name is required";
-    if (!formData.last_name.trim()) newErrors.last_name = "Last name is required";
-    
+    if (!formData.first_name.trim())
+      newErrors.first_name = "First name is required";
+    if (!formData.last_name.trim())
+      newErrors.last_name = "Last name is required";
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!emailRegex.test(formData.email)) {
-      newErrors.email = "Invalid email address";
+      newErrors.email = "Please enter a valid email address";
     }
-    
+
     if (!formData.subject.trim()) newErrors.subject = "Subject is required";
     if (!formData.message.trim()) newErrors.message = "Message is required";
 
@@ -70,29 +178,48 @@ export default function Contact() {
       return;
     }
 
+    // Client-side rate limit check (fast, no DB round-trip needed)
+    const rateLimitCheck = checkRateLimit(formData.message);
+    if (!rateLimitCheck.allowed) {
+      toast({
+        title: "Slow Down",
+        description: rateLimitCheck.reason,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const { error } = await (supabase as any).from("contact_messages").insert([
-        {
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          email: formData.email,
-          subject: formData.subject,
-          message: formData.message,
-        },
-      ]);
+      const { error } = await (supabase as any)
+        .from("contact_messages")
+        .insert([
+          {
+            first_name: formData.first_name,
+            last_name: formData.last_name,
+            email: formData.email,
+            subject: formData.subject,
+            message: formData.message,
+          },
+        ]);
 
       if (error) {
-        throw new Error(error.message || "Failed to send message");
+        // FIX: Use parseSupabaseError instead of checking for "rate limit".
+        // Supabase RLS violations never contain the phrase "rate limit" —
+        // they contain "violates row-level security policy" and similar.
+        throw new Error(parseSupabaseError(error.message));
       }
+
+      // Record locally so future submissions are caught client-side first
+      recordSubmission(formData.message);
 
       toast({
         title: "Message Sent! 🎉",
-        description: "We've received your message and will get back to you shortly.",
+        description:
+          "We've received your message and will get back to you shortly.",
       });
 
-      // Clear the form on success
       setFormData({
         first_name: "",
         last_name: "",
@@ -101,10 +228,14 @@ export default function Contact() {
         message: "",
       });
       setErrors({});
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred. Please try again.";
       toast({
         title: "Submission Failed",
-        description: error.message || "An unexpected error occurred. Please try again.",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -112,10 +243,11 @@ export default function Contact() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
-    // Clear error when user starts typing
     if (errors[id as keyof ContactFormData]) {
       setErrors((prev) => ({ ...prev, [id]: undefined }));
     }
@@ -140,7 +272,7 @@ export default function Contact() {
         >
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-5 py-2 text-sm text-cyan-300 backdrop-blur-xl">
             <MessageCircle size={16} />
-            We’d Love to Hear From You
+            We'd Love to Hear From You
           </div>
 
           <h1 className="text-5xl font-black leading-tight md:text-7xl">
@@ -153,7 +285,7 @@ export default function Contact() {
 
           <p className="mt-8 text-lg leading-8 text-slate-300/80 md:text-xl">
             Have questions, feedback, partnership ideas, or need support? Reach
-            out to our team and we’ll get back to you as soon as possible.
+            out to our team and we'll get back to you as soon as possible.
           </p>
         </motion.div>
 
@@ -179,12 +311,9 @@ export default function Contact() {
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black">
                   <Mail />
                 </div>
-
                 <div>
                   <h3 className="text-lg font-bold">Email</h3>
-                  <p className="mt-1 text-slate-300/70">
-                    support@peerlearn.com
-                  </p>
+                  <p className="mt-1 text-slate-300/70">support@peerlearn.com</p>
                 </div>
               </div>
 
@@ -192,7 +321,6 @@ export default function Contact() {
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black">
                   <Phone />
                 </div>
-
                 <div>
                   <h3 className="text-lg font-bold">Phone</h3>
                   <p className="mt-1 text-slate-300/70">+91 98765 43210</p>
@@ -203,7 +331,6 @@ export default function Contact() {
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black">
                   <MapPin />
                 </div>
-
                 <div>
                   <h3 className="text-lg font-bold">Location</h3>
                   <p className="mt-1 text-slate-300/70">Punjab, India</p>
@@ -214,7 +341,6 @@ export default function Contact() {
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black">
                   <Clock />
                 </div>
-
                 <div>
                   <h3 className="text-lg font-bold">Availability</h3>
                   <p className="mt-1 text-slate-300/70">
@@ -228,12 +354,10 @@ export default function Contact() {
               <h3 className="text-xl font-bold text-cyan-300">
                 Want to become a mentor?
               </h3>
-
               <p className="mt-3 leading-7 text-slate-300/80">
                 Join our growing mentor network and help students learn faster,
                 build projects, and grow their careers.
               </p>
-
               <Link to="/become-mentor">
                 <Button className="mt-6 rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-6 py-6 text-black hover:scale-105 transition-all duration-300">
                   Become a Mentor
@@ -257,10 +381,17 @@ export default function Contact() {
               Fill out the form below and our team will respond shortly.
             </p>
 
+            <p className="mt-2 text-xs text-slate-400">
+              You can send up to {RATE_LIMIT_MAX} messages every 10 minutes.
+            </p>
+
             <form className="mt-10 space-y-6" onSubmit={handleSubmit}>
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
-                  <label htmlFor="first_name" className="mb-2 block text-sm font-medium text-slate-300">
+                  <label
+                    htmlFor="first_name"
+                    className="mb-2 block text-sm font-medium text-slate-300"
+                  >
                     First Name
                   </label>
                   <Input
@@ -271,12 +402,17 @@ export default function Contact() {
                     className={`h-14 rounded-2xl border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus-visible:ring-cyan-400 ${errors.first_name ? "border-red-400" : ""}`}
                   />
                   {errors.first_name && (
-                    <p className="mt-1 text-sm text-red-400">{errors.first_name}</p>
+                    <p className="mt-1 text-sm text-red-400">
+                      {errors.first_name}
+                    </p>
                   )}
                 </div>
 
                 <div>
-                  <label htmlFor="last_name" className="mb-2 block text-sm font-medium text-slate-300">
+                  <label
+                    htmlFor="last_name"
+                    className="mb-2 block text-sm font-medium text-slate-300"
+                  >
                     Last Name
                   </label>
                   <Input
@@ -287,13 +423,18 @@ export default function Contact() {
                     className={`h-14 rounded-2xl border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus-visible:ring-cyan-400 ${errors.last_name ? "border-red-400" : ""}`}
                   />
                   {errors.last_name && (
-                    <p className="mt-1 text-sm text-red-400">{errors.last_name}</p>
+                    <p className="mt-1 text-sm text-red-400">
+                      {errors.last_name}
+                    </p>
                   )}
                 </div>
               </div>
 
               <div>
-                <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-300">
+                <label
+                  htmlFor="email"
+                  className="mb-2 block text-sm font-medium text-slate-300"
+                >
                   Email Address
                 </label>
                 <Input
@@ -310,7 +451,10 @@ export default function Contact() {
               </div>
 
               <div>
-                <label htmlFor="subject" className="mb-2 block text-sm font-medium text-slate-300">
+                <label
+                  htmlFor="subject"
+                  className="mb-2 block text-sm font-medium text-slate-300"
+                >
                   Subject
                 </label>
                 <Input
@@ -326,7 +470,10 @@ export default function Contact() {
               </div>
 
               <div>
-                <label htmlFor="message" className="mb-2 block text-sm font-medium text-slate-300">
+                <label
+                  htmlFor="message"
+                  className="mb-2 block text-sm font-medium text-slate-300"
+                >
                   Message
                 </label>
                 <Textarea
@@ -341,7 +488,7 @@ export default function Contact() {
                 )}
               </div>
 
-              <Button 
+              <Button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 py-7 text-base font-bold text-black shadow-[0_0_40px_rgba(34,211,238,0.35)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_60px_rgba(34,211,238,0.45)] disabled:opacity-70 disabled:hover:scale-100"
@@ -371,7 +518,7 @@ export default function Contact() {
           className="mt-24 rounded-[36px] border border-white/10 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 p-12 text-center backdrop-blur-2xl"
         >
           <h2 className="text-4xl font-black leading-tight md:text-5xl">
-            Let’s Build the Future of
+            Let's Build the Future of
             <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
               {" "}
               Student Learning

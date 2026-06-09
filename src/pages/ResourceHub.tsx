@@ -46,7 +46,7 @@ const ResourceHub = () => {
       return resources;
     }
 
-    return resources.filter((resource) => ["py", "js", "ts"].includes(resource.file_type));
+    return resources.filter((resource) => ["py", "js", "ts", "md", "txt"].includes(resource.file_type));
   }, [resources, selectedType]);
 
   const gridRows = useMemo(() => {
