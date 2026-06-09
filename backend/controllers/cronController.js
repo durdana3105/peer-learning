@@ -1,16 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "../utils/supabase.js";
 import webpush from "web-push";
-
-const getSupabaseClient = () => {
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-  }
-
-  return createClient(supabaseUrl, serviceRoleKey);
-};
 
 export const dispatchPushNotifications = async (req, res, next) => {
   try {
@@ -23,7 +12,7 @@ export const dispatchPushNotifications = async (req, res, next) => {
     }
 
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
-    const supabase = getSupabaseClient();
+    const supabase = getSupabaseAdmin();
 
     const { data: notifications, error } = await supabase
       .from("notifications")
@@ -105,7 +94,7 @@ export const dispatchPushNotifications = async (req, res, next) => {
 
 export const sendSessionReminders = async (req, res, next) => {
   try {
-    const supabase = getSupabaseClient();
+    const supabase = getSupabaseAdmin();
     const now = Date.now();
     const windowStart = new Date(now + 14 * 60 * 1000).toISOString();
     const windowEnd = new Date(now + 16 * 60 * 1000).toISOString();
@@ -176,7 +165,7 @@ export const sendSessionReminders = async (req, res, next) => {
 
 export const sendMentorshipCheckinReminders = async (req, res, next) => {
   try {
-    const supabase = getSupabaseClient();
+    const supabase = getSupabaseAdmin();
     const now = new Date();
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
     
