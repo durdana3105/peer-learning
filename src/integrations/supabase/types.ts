@@ -648,6 +648,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      join_public_study_room: {
+        Args: { p_room_id: string }
+        Returns: undefined
+      }
       join_session: {
         Args: { p_session_id: string }
         Returns: undefined

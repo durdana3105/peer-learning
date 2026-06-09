@@ -1,8 +1,8 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import React from "react";
 
 interface Props {
-  children?: ReactNode;
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
 }
 
 interface State {
@@ -10,53 +10,58 @@ interface State {
   error: Error | null;
 }
 
-class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false,
-    error: null,
-  };
+class ErrorBoundary extends React.Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
 
-  public static getDerivedStateFromError(error: Error): State {
-    // Update state so the next render will show the fallback UI.
+  static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("Uncaught error:", error, info.componentStack);
   }
 
-  public render() {
+  handleReset = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  render() {
     if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 p-6 text-center text-slate-100">
-          <div className="mx-auto flex max-w-md flex-col items-center space-y-6 rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10">
-              <AlertCircle className="h-10 w-10 text-red-400" />
-            </div>
-            
-            <div className="space-y-2">
-              <h1 className="text-2xl font-bold tracking-tight text-white">Something went wrong</h1>
-              <p className="text-sm text-slate-400">
-                A rendering error occurred in the application. Don't worry, your data is safe.
-              </p>
-            </div>
-
-            {this.state.error && (
-              <div className="w-full rounded-md bg-slate-950 p-4 text-left">
-                <p className="text-xs font-mono text-red-400 break-words">
-                  {this.state.error.message}
-                </p>
-              </div>
-            )}
-
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
+          <h1 className="text-2xl font-semibold text-foreground">
+            Something went wrong
+          </h1>
+          <p className="max-w-md text-sm text-muted-foreground">
+            An unexpected error occurred. You can try reloading the page or
+            returning to the home page.
+          </p>
+          <div className="flex gap-3">
             <button
-              onClick={() => window.location.reload()}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-cyan-500"
+              onClick={this.handleReset}
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
-              <RefreshCw className="h-4 w-4" />
-              Reload Application
+              Try again
             </button>
+            <a
+              href="/"
+              className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent"
+            >
+              Go home
+            </a>
           </div>
+          {import.meta.env.DEV && this.state.error && (
+            <pre className="mt-4 max-w-xl overflow-auto rounded-md bg-muted p-4 text-left text-xs text-muted-foreground">
+              {this.state.error.message}
+            </pre>
+          )}
         </div>
       );
     }

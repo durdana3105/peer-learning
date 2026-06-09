@@ -64,19 +64,14 @@ const verifyLocalJwt = (token, secret) => {
  * In production, this is a fatal misconfiguration — the server refuses to start.
  */
 const jwtSecret = process.env.SUPABASE_JWT_SECRET;
+const isProduction = process.env.NODE_ENV === "production";
 
-if (!jwtSecret) {
-  if (process.env.NODE_ENV === "production") {
-    console.error("[security] FATAL: SUPABASE_JWT_SECRET is not set. Local JWT verification is required in production.");
-    process.exit(1);
-  }
-  console.warn("[security] WARNING: SUPABASE_JWT_SECRET is not set. Using slow network-based auth (dev only).");
+if (!jwtSecret && isProduction) {
+  console.error("[security] FATAL: SUPABASE_JWT_SECRET is not set in production. Set it from your Supabase project settings.");
+  process.exit(1);
 }
 
-/**
- * Simple rate limiter specifically for the network fallback path.
- * Prevents attackers from spamming invalid tokens to exhaust Supabase API quotas.
- */
+// Rate limiter specifically for the slow fallback path
 const FALLBACK_WINDOW_MS = 60_000;
 const FALLBACK_MAX_REQUESTS = 10;
 const fallbackRateCounts = new Map();
@@ -106,19 +101,11 @@ const isFallbackRateLimited = (ip) => {
  *   2. Authorization header (`Bearer <token>`)
  *
  * Verification strategy:
- *   - Production: Local HMAC-SHA256 verification only (fast, zero network latency).
- *     Server refuses to start if SUPABASE_JWT_SECRET is missing.
- *   - Development: Falls back to Supabase getUser() if the secret is absent,
- *     with a strict per-IP rate limiter to prevent API exhaustion.
+ *   - Local HMAC-SHA256 verification (fast, zero network latency) is preferred.
+ *   - Server refuses to start if SUPABASE_JWT_SECRET is missing in production.
+ *   - In development, falls back to `supabase.auth.getUser()` with strict rate limiting.
  */
 export const requireAuth = async (req, res, next) => {
-  const supabaseAdmin = getSupabaseAdmin();
-
-  if (!supabaseAdmin) {
-    next(new HttpError(500, "Supabase configuration is missing"));
-    return;
-  }
-
   let token = null;
 
   if (req.cookies && req.cookies.access_token) {
@@ -132,15 +119,15 @@ export const requireAuth = async (req, res, next) => {
     return;
   }
 
-  // PRIMARY PATH: Fast, local HMAC verification (0ms network latency)
   if (jwtSecret) {
+    // LOCAL HMAC verification — no network call
     const payload = verifyLocalJwt(token, jwtSecret);
     if (!payload) {
       next(new HttpError(401, "Invalid or expired session"));
       return;
     }
 
-    req.user = { 
+    req.user = {
       id: payload.sub,
       email: payload.email,
       user_metadata: payload.user_metadata,
@@ -150,23 +137,35 @@ export const requireAuth = async (req, res, next) => {
     return next();
   }
 
-  // FALLBACK PATH (development only — production exits at startup above)
-  // Rate-limit this path to prevent Supabase API quota exhaustion from token spam.
+  // DEVELOPMENT ONLY FALLBACK
+  console.warn("[security] Using slow network fallback for JWT verification. Do not use in production.");
+  
   const clientIp = req.socket?.remoteAddress || req.ip || "unknown";
   if (isFallbackRateLimited(clientIp)) {
-    next(new HttpError(429, "Too many authentication attempts. Please try again later."));
+    next(new HttpError(429, "Too many verification requests. Please try again later."));
     return;
   }
 
-  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  try {
+    const supabaseAdmin = getSupabaseAdmin();
+    if (!supabaseAdmin) {
+      next(new HttpError(500, "Supabase configuration is missing for verification fallback"));
+      return;
+    }
 
-  if (error || !data?.user) {
-    next(new HttpError(401, "Invalid or expired session"));
-    return;
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    
+    if (error || !user) {
+      next(new HttpError(401, "Invalid or expired session"));
+      return;
+    }
+
+    req.user = user;
+    return next();
+  } catch (err) {
+    console.error("Auth fallback error:", err);
+    next(new HttpError(500, "Internal authentication error"));
   }
-
-  req.user = data.user;
-  next();
 };
 
 const deriveActiveRoles = (profile) => {

@@ -132,21 +132,18 @@ const Portfolio = () => {
       }, 10_000);
 
       try {
-        console.log("Starting parallel load queries for profile and portfolio (user ID:", user.id, ")");
-        // Run both queries in parallel instead of sequentially
+          // Run both queries in parallel instead of sequentially
         const [profileResult, portfolioResult] = await Promise.all([
           supabase
             .from("profiles")
             .select("name, skills")
             .eq("id", user.id)
-            .maybeSingle()
-            .then(res => { console.log("Profile query finished:", res); return res; }),
+            .maybeSingle(),
           supabase
             .from("portfolio_profiles")
             .select("*")
             .eq("profile_id", user.id)
-            .maybeSingle()
-            .then(res => { console.log("Portfolio query finished:", res); return res; }),
+            .maybeSingle(),
         ]);
 
         clearTimeout(timeout);
@@ -308,7 +305,6 @@ const Portfolio = () => {
     }, 10_000);
 
     try {
-      console.log("Starting portfolio save with payload:", payload);
       const { error } = await supabase
         .from("portfolio_profiles")
         .upsert(payload, { onConflict: "profile_id" });
@@ -329,7 +325,6 @@ const Portfolio = () => {
         return;
       }
 
-      console.log("Portfolio saved successfully in database!");
       setForm((current) => ({ ...current, slug }));
       toast({
         title: "Portfolio saved",
@@ -491,6 +486,7 @@ const Portfolio = () => {
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8 text-slate-300 hover:bg-white/10 hover:text-white"
+                        aria-label={`Remove project ${index + 1}`}
                         onClick={() => setForm({ ...form, projects: form.projects.filter((_, itemIndex) => itemIndex !== index) })}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -551,6 +547,7 @@ const Portfolio = () => {
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8 text-slate-300 hover:bg-white/10 hover:text-white"
+                        aria-label={`Remove achievement ${index + 1}`}
                         onClick={() => setForm({ ...form, achievements: form.achievements.filter((_, itemIndex) => itemIndex !== index) })}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -591,7 +588,7 @@ const Portfolio = () => {
                 <p className="text-xs uppercase tracking-wide text-slate-500">Shareable URL</p>
                 <div className="mt-2 flex items-center gap-2">
                   <p className="min-w-0 flex-1 truncate text-sm text-cyan-200">{publicUrl || "Set a slug to create a URL"}</p>
-                  <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-white hover:bg-white/10" onClick={copyShareLink}>
+                  <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-white hover:bg-white/10" aria-label="Copy shareable link" onClick={copyShareLink}>
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
