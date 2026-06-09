@@ -3,6 +3,7 @@ import { ArrowLeft, MessageCircle, Search, Send } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { RealtimePostgresInsertPayload } from "@supabase/supabase-js";
 
+import { toast } from "sonner";
 import { AuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAwardXP } from "@/hooks/useAwardXP";
@@ -419,7 +420,7 @@ const Chat = () => {
     if (!content || !currentUser?.id || !selectedUser?.id) return;
 
     if (content.length > 2000) {
-      alert("Message exceeds maximum length of 2000 characters.");
+      toast.error("Message exceeds maximum length of 2000 characters.");
       return;
     }
 

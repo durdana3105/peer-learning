@@ -83,6 +83,10 @@ export default function Chatbot() {
         }),
       });
 
+      if (!res.ok) {
+        throw new Error(`Request failed with status ${res.status}`);
+      }
+
       const data = await res.json();
 
       const botReply = data?.reply || "No response 😅";
@@ -114,7 +118,9 @@ export default function Chatbot() {
 
       await supabase.from("chat_messages").insert([botMsg]);
     } catch (err) {
-      console.error("AI error:", err);
+      const errorMsg = { role: "assistant", text: "Something went wrong. Please try again.", user_id: userId };
+      setMessages((prev) => [...prev, errorMsg]);
+      await supabase.from("chat_messages").insert([errorMsg]);
     }
 
     setLoading(false);

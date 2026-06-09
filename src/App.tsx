@@ -7,6 +7,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AuthProvider } from "@/contexts/AuthContext";
+import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import AdminRoute from "@/components/AdminRoute";
@@ -17,8 +18,10 @@ import ProtectedMentorRoute from "@/components/ProtectedMentorRoute";
 import Navbar from "./components/Navbar";
 import Chatbot from "./components/Chatbot";
 import StreakBadge from "./components/StreakBadge";
+import CookieConsentBanner from "./components/CookieConsentBanner";
 import FloatingAI from "./components/FloatingAI";
 import MouseSparkles from "./components/MouseSparkles";
+import BackToTop from "./components/BackToTop";  // ← ADDED THIS LINE
 
 import { useAuth } from "@/contexts/useAuth";
 
@@ -55,6 +58,7 @@ const StudyRooms = React.lazy(() => import("./components/StudyRooms"));
 const Room = React.lazy(() => import("./components/Room"));
 const Contact = React.lazy(() => import("./pages/Contact"));
 const PrivacyPolicy = React.lazy(() => import("./pages/privacy"));
+const CookiesPolicy = React.lazy(() => import("./pages/cookies-policy"));
 const PeerReviewDashboard = React.lazy(() => import("./pages/PeerReviewDashboard"));
 const SubmitForReview = React.lazy(() => import("./pages/SubmitForReview"));
 const ReviewSubmission = React.lazy(() => import("./pages/ReviewSubmission"));
@@ -79,7 +83,7 @@ function AppContent() {
   return (
     <>
       <MouseSparkles />
-
+      <CookieConsentBanner />
 
       <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#020617]"><div className="h-10 w-10 animate-spin rounded-full border-4 border-cyan-400 border-t-transparent" /></div>}>
         <Routes>
@@ -107,6 +111,7 @@ function AppContent() {
           <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
           <Route path="/contact" element={<WithNav><Contact /></WithNav>} />
           <Route path="/privacy-policy" element={<WithNav><PrivacyPolicy /></WithNav>} />
+          <Route path="/cookies-policy" element={<WithNav><CookiesPolicy /></WithNav>} />
 
           <Route path="/auth/callback" element={<AuthCallback />} />
 
@@ -356,6 +361,8 @@ function AppContent() {
           <FloatingAI />
         </>
       )}
+
+      <BackToTop />  {/* ← ADDED THIS LINE */}
     </>
   );
 }
@@ -369,11 +376,13 @@ function App() {
           <Sonner />
 
           <BrowserRouter>
-            <AuthProvider>
-              <RoleProvider>
-                <AppContent />
-              </RoleProvider>
-            </AuthProvider>
+            <CookieConsentProvider>
+              <AuthProvider>
+                <RoleProvider>
+                  <AppContent />
+                </RoleProvider>
+              </AuthProvider>
+            </CookieConsentProvider>
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>

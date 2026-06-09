@@ -89,10 +89,6 @@ const PublicPortfolio = () => {
     setLoading(true);
 
     try {
-      console.log("Fetching public portfolio for slug:", slug);
-
-      console.log("STEP 1");
-
 const { data: portfolioData, error: portfolioError } = await supabase
   .from("portfolio_profiles")
   .select(`
@@ -109,10 +105,6 @@ const { data: portfolioData, error: portfolioError } = await supabase
   .eq("is_published", true)
   .maybeSingle();
 
-console.log("STEP 2");
-console.log("Portfolio data:", portfolioData);
-console.log("Portfolio error:", portfolioError);
-
       if (portfolioError) {
         throw portfolioError;
       }
@@ -122,11 +114,6 @@ console.log("Portfolio error:", portfolioError);
         setPortfolio(null);
         return;
       }
-
-      console.log(
-        "Fetching profile for profile_id:",
-        portfolioData.profile_id
-      );
 
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
@@ -140,9 +127,6 @@ console.log("Portfolio error:", portfolioError);
         `)
         .eq("id", portfolioData.profile_id)
         .maybeSingle();
-
-      console.log("Profile data:", profileData);
-      console.log("Profile error:", profileError);
 
       if (profileError) {
         console.error("Profile query failed:", profileError);

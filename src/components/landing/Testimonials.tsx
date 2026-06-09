@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 
 export function Testimonials() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -233,7 +234,7 @@ export function Testimonials() {
               e.preventDefault();
 
               if (!review.trim()) {
-                alert("Please enter your feedback.");
+                toast.error("Please enter your feedback.");
                 return;
               }
 

@@ -151,13 +151,18 @@ export const getSupabaseDiscover = async (req, res) => {
     const userId = req.user.id;
     const search = req.query.search || "";
     const filter = req.query.filter || "All";
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 100);
+    const skip = (page - 1) * limit;
 
     const supabaseAdmin = getSupabaseAdmin();
 
+    // Fetch only the columns used for compatibility scoring so we avoid
+    // pulling large, unused fields (e.g. bio, avatar_url) across the wire
+    // for every discover request.
     const { data: currentUser, error: meError } = await supabaseAdmin
       .from("profiles")
-      .select("*")
+      .select("skills, learning_goals, interests, learn_subjects, teach_subjects, learning_style, preferred_language, timezone")
       .eq("id", userId)
       .single();
 
@@ -169,17 +174,28 @@ export const getSupabaseDiscover = async (req, res) => {
       .from("profiles")
       .select("id, name, skills, interests, learning_goals, teach_subjects, learn_subjects, learning_style, preferred_language, timezone")
       .neq("id", userId)
-      .limit(100);
+      .range(skip, skip + limit - 1);
 
     if (search.trim()) {
-      const safeSearch = search.trim().replace(/[",()]/g, '');
+      // Keep only alphanumeric chars, spaces, and hyphens.
+      // Crucially, the underscore (_) must be removed even though it is a JS
+      // \w character, because in SQL LIKE/ILIKE patterns _ is a single-char
+      // wildcard. Leaving it in would let clients pass a string of underscores
+      // to match any row, turning every search into a near-full-table scan.
+      const safeSearch = search.trim().replace(/[^a-zA-Z0-9\s-]/g, "");
       if (safeSearch) {
-        query = query.or(`name.ilike."%${safeSearch}%",skills.ilike."%${safeSearch}%"`);
+        const pattern = `%${safeSearch}%`;
+        query = query.or(`name.ilike."${pattern}",skills.ilike."${pattern}"`);
       }
     }
 
     if (filter !== "All") {
-      query = query.ilike("skills", `%${filter}%`);
+      // Sanitize the filter value the same way as search to prevent LIKE
+      // wildcard injection via the filter query parameter.
+      const safeFilter = filter.replace(/[^a-zA-Z0-9\s-]/g, "");
+      if (safeFilter) {
+        query = query.ilike("skills", `%${safeFilter}%`);
+      }
     }
 
     const { data: peers, error: peersError } = await query;
@@ -227,10 +243,6 @@ export const getSupabaseDiscover = async (req, res) => {
       }
 
       let percentage = Math.min(Math.round((score / maxPossibleScore) * 100), 100);
-
-      if (percentage < 15 && (userSkills.length > 0 || userGoals.length > 0)) {
-        percentage = Math.floor(Math.random() * 10) + 15;
-      }
 
       const teachOverlap = myGoals.filter((s) => (p.teach_subjects || []).includes(s)).length;
       const learnOverlap = mySkills.filter((s) => (p.learn_subjects || []).includes(s)).length;

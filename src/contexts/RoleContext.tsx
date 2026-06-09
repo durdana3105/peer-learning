@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import { useAuth } from "@/contexts/useAuth";
+import { hasFunctionalConsent } from "@/lib/cookieConsent";
 import { supabase } from "@/integrations/supabase/client";
 
 export type UserMode = "learner" | "mentor";
@@ -46,7 +47,7 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
         .from("profiles")
         .select("is_mentor, is_learner")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       const mentor = profile?.is_mentor === true;
       const learner = profile?.is_learner === true;
@@ -59,7 +60,16 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
       } else if (mentor && !learner) {
         setCurrentMode("mentor");
       } else if (mentor && learner) {
-        const storedMode = localStorage.getItem("peerlearn_mode");
+        let storedMode: string | null = null;
+
+        if (hasFunctionalConsent()) {
+          try {
+            storedMode = localStorage.getItem("peerlearn_mode");
+          } catch {
+            storedMode = null;
+          }
+        }
+
         setCurrentMode(
           storedMode === "mentor" || storedMode === "learner"
             ? storedMode
@@ -76,8 +86,12 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
   const setMode = (mode: UserMode) => {
     setCurrentMode(mode);
 
-    if (isDualRole) {
-      localStorage.setItem("peerlearn_mode", mode);
+    if (isDualRole && hasFunctionalConsent()) {
+      try {
+        localStorage.setItem("peerlearn_mode", mode);
+      } catch {
+        // ignore storage access failures
+      }
     }
   };
 

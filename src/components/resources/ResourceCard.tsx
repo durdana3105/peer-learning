@@ -129,6 +129,7 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
             size="icon"
             className={cn(isSaved && "text-primary")}
             onClick={handleSave}
+            aria-label={isSaved ? "Unsave resource" : "Save resource"}
             title={isSaved ? "Unsave resource" : "Save resource"}
           >
             <Bookmark className="h-5 w-5" fill={isSaved ? "currentColor" : "none"} />

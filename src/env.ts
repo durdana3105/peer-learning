@@ -9,6 +9,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1).optional(),
   VITE_VAPID_PUBLIC_KEY: z.string().min(1).optional(),
   VITE_API_URL: z.string().url().optional(),
+  VITE_PISTON_API_URL: z.string().url().optional(),
 });
 
 const _env = envSchema.safeParse(import.meta.env);
