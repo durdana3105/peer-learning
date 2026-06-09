@@ -1,5 +1,7 @@
 import express from "express";
 import { randomUUID } from "crypto";
+import path from "path";
+import { fileURLToPath } from "url";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
@@ -9,6 +11,7 @@ import matchRoutes from "./routers/matchRoutes.js";
 import authRoutes from "./routers/authRoutes.js";
 import cronRoutes from "./routers/cronRoutes.js";
 import notificationRoutes from "./routers/notificationRoutes.js";
+import userRoutes from "./routes/users.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 
 const app = express();
@@ -98,6 +101,11 @@ app.use("/api", chatRoutes);
 app.use("/api/match", matchRoutes);
 app.use("/api/cron", cronRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/users", userRoutes);
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // 404 handler for unmatched routes
 app.use((_req, res) => {
