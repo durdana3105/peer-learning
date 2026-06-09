@@ -17,7 +17,7 @@ const router = express.Router();
  * Previously used a fallback to "dummy-key" which could enable silent
  * configuration failures and potential security issues.
  */
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || (process.env.NODE_ENV === "test" ? "dummy-key-for-tests" : undefined);
 
 if (!OPENROUTER_API_KEY) {
   console.error("[security] FATAL: OPENROUTER_API_KEY is not configured. Chat functionality will not work.");

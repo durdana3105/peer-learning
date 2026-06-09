@@ -1,6 +1,5 @@
 import express from "express";
 import request from "supertest";
-import app from "../app.js";
 import { validate } from "../middlewares/validate.js";
 import { errorHandler } from "../middlewares/errorHandler.js";
 import { aiSchemas } from "../validation/schemas.js";
