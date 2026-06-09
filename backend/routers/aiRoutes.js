@@ -21,7 +21,7 @@ const aiBodyLimit = express.json({ limit: "50kb" });
 
 router.post("/ask", aiBodyLimit, requireAuth, rateLimiter, validate(aiSchemas.askAI), asyncHandler(askAI));
 router.post("/generate-summary", aiBodyLimit, requireAuth, rateLimiter, validate(aiSchemas.generateSessionSummary), asyncHandler(generateSessionSummary));
-router.post("/mock-interview/chat", aiBodyLimit, requireAuth, rateLimiter, asyncHandler(conductMockInterview));
-router.post("/mock-interview/report", aiBodyLimit, requireAuth, rateLimiter, asyncHandler(generateMockInterviewReport));
+router.post("/mock-interview/chat", aiBodyLimit, requireAuth, rateLimiter, validate(aiSchemas.mockInterviewChat), asyncHandler(conductMockInterview));
+router.post("/mock-interview/report", aiBodyLimit, requireAuth, rateLimiter, validate(aiSchemas.mockInterviewReport), asyncHandler(generateMockInterviewReport));
 
 export default router;

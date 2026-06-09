@@ -275,6 +275,14 @@ participantsStore.add('collab-room-uuid:user1-uuid');
  * Mock functions for testing
  */
 
+const rooms = {
+  'room-uuid': { is_private: false, created_by: 'other' },
+  'private-room-uuid': { is_private: true, created_by: 'creator-uuid' },
+  'collab-room-uuid': { is_private: false, created_by: 'user1-uuid' }
+};
+
+const participantsByRoom = {};
+
 function joinPublicRoom(userId, roomId) {
   if (!roomId || !userId) {
     throw new Error('Room ID and User ID are required');

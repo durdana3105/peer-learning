@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Play, Code, Share, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { env } from "@/env";
+
+const PISTON_API_URL = env.VITE_PISTON_API_URL ?? "https://emkc.org/api/v2/piston/execute";
 
 interface LiveCodeRunnerProps {
   onShare: (code: string, language: string, output: string) => void;
@@ -31,7 +34,7 @@ export function LiveCodeRunner({ onShare }: LiveCodeRunnerProps) {
     setOutput("");
 
     try {
-      const response = await fetch("https://emkc.org/api/v2/piston/execute", {
+      const response = await fetch(PISTON_API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -48,6 +48,9 @@ class MockSupabaseClient {
     if (!room) {
       throw new Error('Study room not found.');
     }
+    if (!userId) {
+      throw new Error('User ID is required.');
+    }
 
     // Check if private and user is not creator
     if (room.is_private && room.created_by !== userId) {
