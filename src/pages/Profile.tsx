@@ -79,27 +79,33 @@ const Profile = () => {
   // SAVE PROFILE
   const handleSave = async () => {
     setLoading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const user = data?.session?.user;
+      if (!user) {
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
 
-    const { data } = await supabase.auth.getSession();
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          name: profile.name,
+          bio: profile.bio,
+          skills: Array.isArray(profile.skills) ? profile.skills : profile.skills.split(",").map((s: string) => s.trim()).filter(Boolean),
+          avatar_url: profile.avatar_url,
+        })
+        .eq("id", user.id);
 
-    const user = data?.session?.user;
-
-    if (!user) return;
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        name: profile.name,
-        bio: profile.bio,
-        skills: Array.isArray(profile.skills) ? profile.skills : profile.skills.split(",").map((s: string) => s.trim()),
-        avatar_url: profile.avatar_url,
-      })
-      .eq("id", user.id);
-
-    setLoading(false);
-
-    if (!error) {
-      toast.success("Profile updated successfully!");
+      if (error) {
+        toast.error("Failed to update profile: " + error.message);
+      } else {
+        toast.success("Profile updated successfully!");
+      }
+    } catch (err: any) {
+      toast.error("An unexpected error occurred: " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
