@@ -22,42 +22,23 @@ var jumpToCode = (function init() {
     var currentIndex;
 
     function toggleClass(index) {
-        if (missingCoverageElements.length === 0) {
-            return;
-        }
-        var currentEl = missingCoverageElements.item(currentIndex);
-        if (currentEl) {
-            currentEl.classList.remove('highlighted');
-        }
-        var nextEl = missingCoverageElements.item(index);
-        if (nextEl) {
-            nextEl.classList.add('highlighted');
-        }
+        missingCoverageElements
+            .item(currentIndex)
+            .classList.remove('highlighted');
+        missingCoverageElements.item(index).classList.add('highlighted');
     }
 
     function makeCurrent(index) {
-        if (missingCoverageElements.length === 0) {
-            return;
-        }
-        if (index < 0 || index >= missingCoverageElements.length) {
-            return;
-        }
         toggleClass(index);
         currentIndex = index;
-        var el = missingCoverageElements.item(index);
-        if (el) {
-            el.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center',
-                inline: 'center'
-            });
-        }
+        missingCoverageElements.item(index).scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'center'
+        });
     }
 
     function goToPrevious() {
-        if (missingCoverageElements.length === 0) {
-            return;
-        }
         var nextIndex = 0;
         if (typeof currentIndex !== 'number' || currentIndex === 0) {
             nextIndex = missingCoverageElements.length - 1;
@@ -69,9 +50,6 @@ var jumpToCode = (function init() {
     }
 
     function goToNext() {
-        if (missingCoverageElements.length === 0) {
-            return;
-        }
         var nextIndex = 0;
 
         if (
@@ -85,9 +63,6 @@ var jumpToCode = (function init() {
     }
 
     return function jump(event) {
-        if (missingCoverageElements.length === 0) {
-            return;
-        }
         if (
             document.getElementById('fileSearch') === document.activeElement &&
             document.activeElement != null
