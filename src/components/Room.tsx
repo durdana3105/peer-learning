@@ -58,9 +58,9 @@ export default function Room() {
 
           setParticipants(onlineUsers);
 
-          setActivities([
+          setActivities((prev) => [
             `${onlineUsers.length} participant(s) online`,
-            ...activities,
+            ...prev,
           ]);
         })
         .on('postgres_changes', {
