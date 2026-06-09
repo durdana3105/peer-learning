@@ -5,7 +5,7 @@ const envSchema = z.object({
   SUPABASE_URL: z.string().url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   SUPABASE_JWT_SECRET: z.string().min(1),
-  OPENROUTER_API_KEY: z.string().optional(),
+  OPENROUTER_API_KEY: z.string().min(1),
   FRONTEND_URL: z.string().url().default("http://localhost:5173"),
   SITE_URL: z.string().url().optional()
 });

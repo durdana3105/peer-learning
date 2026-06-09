@@ -64,11 +64,34 @@ const verifyLocalJwt = (token, secret) => {
  * In production, this is a fatal misconfiguration — the server refuses to start.
  */
 const jwtSecret = process.env.SUPABASE_JWT_SECRET;
+const isProduction = process.env.NODE_ENV === "production";
 
-if (!jwtSecret) {
-  console.error("[security] FATAL: SUPABASE_JWT_SECRET is not set. Set it from your Supabase project settings.");
+if (!jwtSecret && isProduction) {
+  console.error("[security] FATAL: SUPABASE_JWT_SECRET is not set in production. Set it from your Supabase project settings.");
   process.exit(1);
 }
+
+// Rate limiter specifically for the slow fallback path
+const FALLBACK_WINDOW_MS = 60_000;
+const FALLBACK_MAX_REQUESTS = 10;
+const fallbackRateCounts = new Map();
+
+const isFallbackRateLimited = (ip) => {
+  const now = Date.now();
+  const entry = fallbackRateCounts.get(ip);
+
+  if (!entry || now - entry.windowStart >= FALLBACK_WINDOW_MS) {
+    fallbackRateCounts.set(ip, { count: 1, windowStart: now });
+    return false;
+  }
+
+  if (entry.count >= FALLBACK_MAX_REQUESTS) {
+    return true;
+  }
+
+  entry.count += 1;
+  return false;
+};
 
 /**
  * Express middleware that validates a Supabase JWT.
@@ -78,8 +101,9 @@ if (!jwtSecret) {
  *   2. Authorization header (`Bearer <token>`)
  *
  * Verification strategy:
- *   - Always uses local HMAC-SHA256 verification (fast, zero network latency).
- *   - Server refuses to start if SUPABASE_JWT_SECRET is missing.
+ *   - Local HMAC-SHA256 verification (fast, zero network latency) is preferred.
+ *   - Server refuses to start if SUPABASE_JWT_SECRET is missing in production.
+ *   - In development, falls back to `supabase.auth.getUser()` with strict rate limiting.
  */
 export const requireAuth = async (req, res, next) => {
   let token = null;
@@ -95,21 +119,53 @@ export const requireAuth = async (req, res, next) => {
     return;
   }
 
-  // LOCAL HMAC verification — no network call
-  const payload = verifyLocalJwt(token, jwtSecret);
-  if (!payload) {
-    next(new HttpError(401, "Invalid or expired session"));
+  if (jwtSecret) {
+    // LOCAL HMAC verification — no network call
+    const payload = verifyLocalJwt(token, jwtSecret);
+    if (!payload) {
+      next(new HttpError(401, "Invalid or expired session"));
+      return;
+    }
+
+    req.user = {
+      id: payload.sub,
+      email: payload.email,
+      user_metadata: payload.user_metadata,
+      app_metadata: payload.app_metadata,
+      role: payload.role
+    };
+    return next();
+  }
+
+  // DEVELOPMENT ONLY FALLBACK
+  console.warn("[security] Using slow network fallback for JWT verification. Do not use in production.");
+  
+  const clientIp = req.socket?.remoteAddress || req.ip || "unknown";
+  if (isFallbackRateLimited(clientIp)) {
+    next(new HttpError(429, "Too many verification requests. Please try again later."));
     return;
   }
 
-  req.user = {
-    id: payload.sub,
-    email: payload.email,
-    user_metadata: payload.user_metadata,
-    app_metadata: payload.app_metadata,
-    role: payload.role
-  };
-  return next();
+  try {
+    const supabaseAdmin = getSupabaseAdmin();
+    if (!supabaseAdmin) {
+      next(new HttpError(500, "Supabase configuration is missing for verification fallback"));
+      return;
+    }
+
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    
+    if (error || !user) {
+      next(new HttpError(401, "Invalid or expired session"));
+      return;
+    }
+
+    req.user = user;
+    return next();
+  } catch (err) {
+    console.error("Auth fallback error:", err);
+    next(new HttpError(500, "Internal authentication error"));
+  }
 };
 
 const deriveActiveRoles = (profile) => {
