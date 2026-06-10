@@ -121,7 +121,7 @@ export const sendSessionReminders = async (req, res, next) => {
           user_id
         )
       `)
-      .eq("status", "upcoming")
+      .eq("status", "scheduled")
       .gte("start_time", windowStart)
       .lte("start_time", windowEnd);
 
