@@ -1,7 +1,6 @@
 import express from "express";
 import crypto from "crypto";
 import { sendPushNotification } from "../controllers/notificationController.js";
-import { requireAuth } from "../middlewares/requireAuth.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { HttpError } from "../utils/httpError.js";
 import {
@@ -12,12 +11,16 @@ import {
 
 const router = express.Router();
 
-// Custom middleware to support both CRON/WEBHOOK secret and user auth
+// Custom middleware to strictly verify WEBHOOK secret
 const verifyNotificationAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
   const webhookSecret = process.env.WEBHOOK_SECRET;
 
-  if (webhookSecret && authHeader && authHeader.startsWith("Bearer ")) {
+  if (!webhookSecret) {
+    return next(new HttpError(500, "Webhook secret is not configured on the server"));
+  }
+
+  if (authHeader && authHeader.startsWith("Bearer ")) {
     const providedSecret = authHeader.slice(7);
 
     // Both buffers must be the same length for timingSafeEqual.
@@ -42,8 +45,7 @@ const verifyNotificationAuth = (req, res, next) => {
     }
   }
 
-  // Fallback to standard user auth
-  return requireAuth(req, res, next);
+  return next(new HttpError(401, "Unauthorized webhook access"));
 };
 
 router.post("/send-push", verifyNotificationAuth, asyncHandler(sendPushNotification));
