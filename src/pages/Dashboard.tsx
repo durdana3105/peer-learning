@@ -449,7 +449,7 @@ const Dashboard = () => {
         <Suspense
           fallback={<div className="mt-10 h-72 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl animate-pulse" />}
         >
-          <AnalyticsCharts profile={profile} sessions={upcomingSessions} />
+          <AnalyticsCharts profile={profile} />
         </Suspense>
 
         <RecommendationPanel profile={profile} sessions={upcomingSessions} />
