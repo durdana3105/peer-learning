@@ -130,14 +130,24 @@ export const getRecommendedPartners = async (req, res) => {
       };
     });
 
-    // In a real paginated RPC, getting exact total Count requires a separate count query. 
-    // We'll estimate or just provide length for now since counting 1M rows can also be slow.
+    // Get a proper total count for pagination metadata
+    const { count: totalCount, error: countError } = await supabaseAdmin
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .not("email", "eq", currentUserEmail);
+
+    const total = countError || totalCount === null
+      ? recommendations.length
+      : totalCount;
+
+    const totalPages = Math.ceil(total / limit);
+
     res.status(200).json({
       success: true,
       count: recommendations.length,
-      total: recommendations.length > 0 ? skip + limit + 1 : skip, // Rough pagination cursor hack
+      total,
       page,
-      totalPages: recommendations.length === limit ? page + 1 : page,
+      totalPages,
       recommendations,
     });
   } catch (error) {
