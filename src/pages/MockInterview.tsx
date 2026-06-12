@@ -5,7 +5,6 @@ import { API_BASE_URL } from "@/config/api";
 import { toast } from "sonner";
 import { Loader2, Send, Bot, User, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
-import { supabase } from "@/config/supabaseClient";
 
 type Message = {
   role: "system" | "user" | "assistant";
@@ -79,7 +78,7 @@ const MockInterview = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         credentials: "include",
         body: JSON.stringify({ messages: currentMessages, role }),
@@ -127,7 +126,7 @@ const MockInterview = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         credentials: "include",
         body: JSON.stringify({ messages }),
