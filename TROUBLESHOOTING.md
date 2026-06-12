@@ -69,3 +69,49 @@ Welcome to the troubleshooting guide for Peer Learning! If you encounter problem
 - For OAuth, verify that the Client ID and Secret match the ones configured in your OAuth provider's developer console, and that the callback URL matches your Supabase project's redirect URL.
 - After updating environment variables, restart the development server before testing authentication again.
 - If you encounter a "Failed to fetch" error during signup, verify that your `.env` file contains valid Supabase credentials and that the application has been restarted after any configuration changes.
+
+## 6. Push Notifications Not Delivering
+
+### Symptom: Cron runs but `sent` is always 0
+
+**Check VAPID configuration.** The response body will contain `{ "error": "Missing VAPID push server env" }` if `VAPID_PUBLIC_KEY` or `VAPID_PRIVATE_KEY` are not set in `backend/.env`. Generate keys and set them:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Add to `backend/.env`:
+```env
+VAPID_PUBLIC_KEY=<generated>
+VAPID_PRIVATE_KEY=<generated>
+VAPID_SUBJECT=mailto:admin@yourdomain.com
+```
+
+> Changing these keys invalidates all existing browser subscriptions. Users must re-subscribe.
+
+### Symptom: Cron returns `HTTP 401` or `403`
+
+`CRON_SECRET` is missing or does not match what the scheduler is sending. Verify the env var is set on the server and that the scheduler is passing `Authorization: Bearer <CRON_SECRET>`. Check `[AUDIT]` lines in server logs to confirm the secret type being presented.
+
+### Symptom: Cron returns `HTTP 429` immediately
+
+The 60-second per-route cooldown is active. The cron fired twice within 60 seconds (Vercel's at-least-once guarantee can cause this). Wait 60 seconds and retry. If this blocks manual drain, see the Manual Drain Procedure in `docs/smart-notifications.md`.
+
+### Symptom: Notifications accumulate but are never delivered (queue keeps growing)
+
+1. Confirm the cron scheduler is running and reaching the server (look for `[AUDIT]` log lines).
+2. Check queue depth:
+   ```sql
+   SELECT COUNT(*) FROM notifications WHERE push_sent_at IS NULL;
+   ```
+3. If the queue is large, manually drain it — see `docs/smart-notifications.md` → **Manual drain procedure**.
+
+### Symptom: `sent` is much lower than `processed` on every run
+
+Most subscriptions in `push_subscriptions` are likely expired (browser was uninstalled, permission was revoked, or VAPID keys changed). The cron absorbs individual push failures silently. Check:
+
+```sql
+SELECT COUNT(*) FROM push_subscriptions;
+```
+
+If zero or very low, users need to re-subscribe by visiting the site and granting notification permission again.
