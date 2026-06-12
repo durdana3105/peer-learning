@@ -1,5 +1,6 @@
 import { Search, Plus } from "lucide-react";
 import { CreateSessionDialog } from "@/components/CreateSessionDialog";
+import { useRole } from "@/contexts/RoleContext";
 
 type SessionFiltersProps = {
   tabs: string[];
@@ -7,6 +8,7 @@ type SessionFiltersProps = {
   setSelectedTab: (tab: string) => void;
   search: string;
   setSearch: (search: string) => void;
+  onSessionCreated: () => void;
 };
 
 export function SessionFilters({
@@ -15,7 +17,10 @@ export function SessionFilters({
   setSelectedTab,
   search,
   setSearch,
+  onSessionCreated,
 }: SessionFiltersProps) {
+  const { isMentor } = useRole();
+
   return (
     <>
       <div className="relative mb-6">
@@ -47,16 +52,14 @@ export function SessionFilters({
           ))}
         </div>
 
-        <CreateSessionDialog
-          onSessionCreated={() => {
-            window.location.reload();
-          }}
-        >
-          <button className="flex items-center gap-2 bg-gradient-to-r from-cyan-400 to-purple-500 text-black px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition">
-            <Plus size={20} />
-            Create Session
-          </button>
-        </CreateSessionDialog>
+        {isMentor && (
+          <CreateSessionDialog onSessionCreated={onSessionCreated}>
+            <button className="flex items-center gap-2 bg-gradient-to-r from-cyan-400 to-purple-500 text-black px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition">
+              <Plus size={20} />
+              Create Session
+            </button>
+          </CreateSessionDialog>
+        )}
       </div>
     </>
   );

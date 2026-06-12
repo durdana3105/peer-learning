@@ -187,11 +187,10 @@ describe('Study Rooms API Integration Tests - Issue #408', () => {
        */
       
       const user = { id: 'user-uuid' };
-      const room = { id: 'private-room-uuid', is_private: true };
-      
+
       // Direct insertion as non-creator to private room should fail RLS
       expect(() => {
-        directInsertParticipant(room.id, user.id);
+        directInsertParticipant('private-room-uuid', user.id);
       }).toThrow('RLS policy violation');
     });
 
@@ -263,30 +262,40 @@ describe('Study Rooms API Integration Tests - Issue #408', () => {
  */
 
 const rooms = {
-  'room-uuid': { is_private: false, created_by: 'other' },
+  'room-uuid': { is_private: false, created_by: 'other-creator' },
   'private-room-uuid': { is_private: true, created_by: 'creator-uuid' },
-  'collab-room-uuid': { is_private: false, created_by: 'user1-uuid' }
+  'collab-room-uuid': { is_private: false, created_by: 'user1-uuid' },
 };
 
 const participantsByRoom = {};
 
+// Match studyRooms.test.js createRoom: creators are participants by default.
+for (const [roomId, room] of Object.entries(rooms)) {
+  if (!participantsByRoom[roomId]) participantsByRoom[roomId] = [];
+  if (!participantsByRoom[roomId].some((p) => p.profile_id === room.created_by)) {
+    participantsByRoom[roomId].push({ profile_id: room.created_by });
+  }
+}
+
 function joinPublicRoom(userId, roomId) {
-  if (!rooms[roomId]) {
+  const room = rooms[roomId];
+
+  if (!room) {
     throw new Error('Study room not found');
   }
-  
-  if (rooms[roomId].is_private && rooms[roomId].created_by !== userId) {
+
+  if (room.is_private && room.created_by !== userId) {
     throw new Error('This is a private room. You need an invitation to join');
   }
-  
+
   if (!participantsByRoom[roomId]) participantsByRoom[roomId] = [];
-  if (!participantsByRoom[roomId].find(p => p.profile_id === userId)) {
+  if (!participantsByRoom[roomId].find((p) => p.profile_id === userId)) {
     participantsByRoom[roomId].push({ profile_id: userId });
   }
-  
+
   return {
     success: true,
-    redirectTo: `/rooms/${roomId}`
+    redirectTo: `/rooms/${roomId}`,
   };
 }
 
@@ -300,7 +309,7 @@ function canAccessRoom(userId, roomId) {
   if (!room.is_private) return true;
   if (room.created_by === userId) return true;
   const parts = getRoomParticipants(roomId);
-  return parts.some(p => p.profile_id === userId);
+  return parts.some((p) => p.profile_id === userId);
 }
 
 function addRoomParticipant(roomId, userId) {

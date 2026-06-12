@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { Calendar, Users, Clock, Sparkles } from "lucide-react";
+import { Calendar, Users, Clock, Sparkles, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { generateICS } from "@/utils/calendar";
 
@@ -100,6 +101,15 @@ export function SessionList({
                   ? "Session Full"
                   : "Join Session"}
               </button>
+
+              <Link
+                to={`/sessions/${s.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center justify-center gap-2 bg-white/10 border border-white/10 hover:bg-white/20 px-4 py-3 rounded-2xl transition text-white"
+              >
+                <ExternalLink size={18} />
+                Details
+              </Link>
 
               <button
                 onClick={(e) => {

@@ -33,6 +33,7 @@ export default function Sessions() {
     sendTypingEvent,
     handleLeaveVideo,
     handleJoinVideo,
+    refetchSessions,
   } = useSessions(user);
 
   return (
@@ -54,6 +55,7 @@ export default function Sessions() {
           setSelectedTab={setSelectedTab}
           search={search}
           setSearch={setSearch}
+          onSessionCreated={refetchSessions}
         />
 
         {/* CONTENT */}

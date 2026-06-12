@@ -28,6 +28,7 @@ class MockSupabaseClient {
       is_private: isPrivate,
       created_at: new Date().toISOString(),
     });
+    // Creators are participants by default
     this.participants.set(`${roomId}:${createdBy}`, {
       room_id: roomId,
       profile_id: createdBy,
@@ -42,12 +43,13 @@ class MockSupabaseClient {
 
   // Simulate joining a room
   joinRoom(roomId, userId) {
+    if (!roomId || !userId) {
+      throw new Error('Room ID and user ID are required.');
+    }
+
     const room = this.rooms.get(roomId);
     if (!room) {
       throw new Error('Study room not found.');
-    }
-    if (!userId) {
-      throw new Error('User ID is required.');
     }
 
     // Check if private and user is not creator

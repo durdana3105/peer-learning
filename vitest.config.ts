@@ -11,6 +11,7 @@ export default defineConfig({
     },
     projects: [
       {
+        extends: true,
         test: {
           name: "frontend",
           environment: "jsdom",
@@ -21,6 +22,7 @@ export default defineConfig({
         },
       },
       {
+        extends: true,
         test: {
           name: "backend",
           environment: "node",

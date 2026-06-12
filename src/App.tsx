@@ -34,6 +34,7 @@ const MentorDashboard = React.lazy(() => import("./pages/MentorDashboard"));
 const LearnerDashboard = React.lazy(() => import("./pages/LearnerDashboard"));
 const Discover = React.lazy(() => import("./pages/Discover"));
 const Sessions = React.lazy(() => import("./pages/Sessions"));
+const SessionDetail = React.lazy(() => import("./pages/SessionDetail"));
 const Messages = React.lazy(() => import("./pages/Messages"));
 const Chat = React.lazy(() => import("./pages/Chat"));
 const Login = React.lazy(() => import("./pages/Login"));
@@ -176,6 +177,17 @@ function AppContent() {
               <ProtectedRoute>
                 <WithNav>
                   <Discover />
+                </WithNav>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/sessions/:sessionId"
+            element={
+              <ProtectedRoute>
+                <WithNav>
+                  <SessionDetail />
                 </WithNav>
               </ProtectedRoute>
             }
