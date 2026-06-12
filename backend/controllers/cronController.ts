@@ -12,6 +12,37 @@ const getSupabaseClient = () => {
   return createClient(supabaseUrl, serviceRoleKey);
 };
 
+/*
+ * dispatchPushNotifications
+ *
+ * Bulk-delivers pending push notifications to subscribed browsers.
+ *
+ * Batch cap: fetches at most 100 rows per invocation (oldest-first). A
+ * notification backlog drains at 100 rows/minute assuming a 1-minute cron
+ * schedule. If queue depth grows faster than this, trigger additional manual
+ * runs (after the 60-second cooldown) or mark stale rows sent via SQL — see
+ * docs/smart-notifications.md → "Manual drain procedure".
+ *
+ * Failure absorption: Promise.allSettled is used intentionally so that a
+ * single failing push (network error, expired subscription) does not block
+ * delivery to other recipients. The `sent` vs `processed` delta in the
+ * response reflects failures. Each notification row is stamped with
+ * `push_sent_at` regardless of delivery outcome — there is no automatic retry
+ * for failed pushes.
+ *
+ * Subscription expiry (HTTP 410 / 404): the web-push library returns a
+ * rejection with `statusCode 410` (subscription expired) or `404` (endpoint
+ * not found) when a browser unsubscribes or revokes permission. These
+ * subscriptions should be deleted from `push_subscriptions` to avoid
+ * accumulating dead endpoints. NOTE: this cleanup is currently implemented in
+ * sendPushNotification (notificationController.js) but NOT here. A future
+ * improvement should add equivalent cleanup to this handler.
+ *
+ * @route   POST /api/cron/dispatch-notifications
+ * @access  CRON_SECRET (Authorization: Bearer)
+ * @returns {{ sent: number, processed: number }}
+ */
+
 export const dispatchPushNotifications = async (req, res, next) => {
   try {
     const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
@@ -25,15 +56,27 @@ export const dispatchPushNotifications = async (req, res, next) => {
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
     const supabase = getSupabaseClient();
 
-    const { data: notifications, error } = await supabase
+    // --- Atomic claim --------------------------------------------------
+    // A single UPDATE … RETURNING claims the batch before any push is
+    // dispatched. Postgres guarantees that only one concurrent caller
+    // wins each row; the other sees push_claimed_at already set and its
+    // SELECT returns an empty set.  This replaces the racy
+    // SELECT … WHERE push_sent_at IS NULL pattern.
+    // -------------------------------------------------------------------
+    const claimedAt = new Date().toISOString();
+    const staleThreshold = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+    const { data: notifications, error: claimError } = await supabase
       .from("notifications")
-      .select("id,user_id,title,body,action_url")
+      .update({ push_claimed_at: claimedAt })
       .is("push_sent_at", null)
+      .or(`push_claimed_at.is.null,push_claimed_at.lt.${staleThreshold}`)
+      .select("id,user_id,title,body,action_url")
       .order("created_at", { ascending: true })
       .limit(100);
 
-    if (error) {
-      return res.status(500).json({ error: error.message });
+    if (claimError) {
+      return res.status(500).json({ error: claimError.message });
     }
 
     if (!notifications || notifications.length === 0) {
@@ -42,36 +85,30 @@ export const dispatchPushNotifications = async (req, res, next) => {
 
     const userIds = [...new Set(notifications.map((n) => n.user_id))];
 
-    // Fetch subscriptions for all notification recipients in a single query.
     const { data: allSubscriptions, error: subscriptionsError } = await supabase
       .from("push_subscriptions")
       .select("user_id,endpoint,p256dh,auth")
       .in("user_id", userIds);
 
-    if(subscriptionsError) {
+    if (subscriptionsError) {
       return res.status(500).json({ error: subscriptionsError.message });
     }
 
-    // Group subscriptions by user_id for constant-time lookup during dispatch.
     const subscriptionsByUser = new Map();
-
     for (const subscription of allSubscriptions || []) {
-
-      if(!subscriptionsByUser.has(subscription.user_id)) {
+      if (!subscriptionsByUser.has(subscription.user_id)) {
         subscriptionsByUser.set(subscription.user_id, []);
       }
-
       subscriptionsByUser.get(subscription.user_id).push(subscription);
     }
 
     let sent = 0;
 
     for (const notification of notifications) {
-      
       const subscriptions = subscriptionsByUser.get(notification.user_id) || [];
 
       const pushResults = await Promise.allSettled(
-        (subscriptions || []).map((subscription) =>
+        subscriptions.map((subscription) =>
           webpush.sendNotification(
             {
               endpoint: subscription.endpoint,
@@ -89,12 +126,18 @@ export const dispatchPushNotifications = async (req, res, next) => {
         )
       );
 
-      sent += pushResults.filter((result) => result.status === "fulfilled").length;
+      const anySucceeded = pushResults.some((r) => r.status === "fulfilled");
+      sent += pushResults.filter((r) => r.status === "fulfilled").length;
 
-      await supabase
-        .from("notifications")
-        .update({ push_sent_at: new Date().toISOString() })
-        .eq("id", notification.id);
+      // Only stamp push_sent_at when at least one push succeeded so a
+      // fully-failed notification remains retryable — but push_claimed_at
+      // already prevents concurrent re-delivery regardless.
+      if (anySucceeded) {
+        await supabase
+          .from("notifications")
+          .update({ push_sent_at: new Date().toISOString() })
+          .eq("id", notification.id);
+      }
     }
 
     res.json({ sent, processed: notifications.length });
@@ -121,7 +164,7 @@ export const sendSessionReminders = async (req, res, next) => {
           user_id
         )
       `)
-      .eq("status", "upcoming")
+      .eq("status", "scheduled")
       .gte("start_time", windowStart)
       .lte("start_time", windowEnd);
 
@@ -179,8 +222,14 @@ export const sendMentorshipCheckinReminders = async (req, res, next) => {
     const supabase = getSupabaseClient();
     const now = new Date();
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
-    
-    // Find milestones due in the next 24 hours or overdue, that are not completed
+
+    // Lower bound: only look back 7 days to avoid reprocessing ancient overdue
+    // milestones on every cron run. This prevents unbounded query growth while
+    // still notifying users about recently overdue items. Adjustable if needed.
+    const lookbackDays = 7;
+    const windowStart = new Date(now.getTime() - lookbackDays * 24 * 60 * 60 * 1000).toISOString();
+
+    // Find milestones due within the bounded window [7 days ago … tomorrow]
     const { data: milestones, error } = await supabase
       .from("mentorship_milestones")
       .select(`
@@ -196,7 +245,10 @@ export const sendMentorshipCheckinReminders = async (req, res, next) => {
       `)
       .eq("is_completed", false)
       .not("due_date", "is", null)
-      .lte("due_date", tomorrow);
+      .gte("due_date", windowStart)
+      .lte("due_date", tomorrow)
+      .order("due_date", { ascending: true })
+      .limit(500);
 
     if (error) {
       return res.status(500).json({ error: error.message });
