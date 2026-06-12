@@ -52,8 +52,8 @@ const allowedOrigins = new Set(buildAllowedOrigins());
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g., server-to-server, curl, mobile apps)
-    if (!origin || allowedOrigins.has(origin)) {
+    // Strictly require origin to match the whitelist to prevent no-origin bypasses
+    if (allowedOrigins.has(origin)) {
       callback(null, true);
     } else {
       callback(new Error(`CORS: origin '${origin}' is not allowed`));
