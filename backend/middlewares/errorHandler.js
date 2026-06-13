@@ -11,6 +11,14 @@ export const errorHandler = (err, req, res, next) => {
     });
   }
 
+  // Gracefully handle Multer errors
+  if (err.name === "MulterError") {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({ error: "Payload Too Large: File size limit exceeded" });
+    }
+    return res.status(400).json({ error: err.message });
+  }
+
   console.error("Unhandled error:", err);
 
   if (res.headersSent) {
