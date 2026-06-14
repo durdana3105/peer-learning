@@ -45,10 +45,8 @@ export const errorHandler = (err, req, res, next) => {
 
     const payload = { error: "Validation failed" };
 
-    // Only include field-level details in development
-    if (!isProduction) {
-      payload.details = err.errors;
-    }
+    // Always include field-level validation details for frontend forms
+    payload.details = err.errors;
 
     return res.status(400).json(payload);
   }
