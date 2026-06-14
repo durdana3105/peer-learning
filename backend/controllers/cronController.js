@@ -255,7 +255,7 @@ export const sendMentorshipCheckinReminders = async (req, res, next) => {
       // Notify mentor
       notifications.push({
         user_id: path.mentor_id,
-        type: "mentorship_reminder",
+        type: isOverdue ? "mentorship_reminder_overdue" : "mentorship_reminder_due",
         title,
         body,
         entity_id: m.id,
@@ -265,7 +265,7 @@ export const sendMentorshipCheckinReminders = async (req, res, next) => {
       // Notify mentee
       notifications.push({
         user_id: path.mentee_id,
-        type: "mentorship_reminder",
+        type: isOverdue ? "mentorship_reminder_overdue" : "mentorship_reminder_due",
         title,
         body,
         entity_id: m.id,
