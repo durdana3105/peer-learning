@@ -1,12 +1,5 @@
 import { motion, useScroll } from "framer-motion";
-import {
-  ChevronDown,
-  Sparkles,
-  Twitter,
-  Linkedin,
-  Github,
-  Instagram,
-} from "lucide-react";
+import { ChevronDown, Sparkles, Linkedin, Github, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -386,42 +379,36 @@ export default function Landing() {
             </button>
           </div>
 
-          <div className="flex gap-6">
+          <div className="flex items-center gap-6">
             <a
-              href="https://twitter.com"
+              href="https://github.com/durdana3105"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-slate-400 transition hover:text-cyan-400"
-              aria-label="Twitter"
-            >
-              <Twitter className="h-5 w-5" />
-            </a>
-            <a
-              href="https://linkedin.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-slate-400 transition hover:text-cyan-400"
-              aria-label="LinkedIn"
-            >
-              <Linkedin className="h-5 w-5" />
-            </a>
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-slate-400 transition hover:text-cyan-400"
               aria-label="GitHub"
+              title="GitHub"
+              className="text-slate-400 transition-all duration-300 hover:scale-110 hover:text-cyan-400"
             >
               <Github className="h-5 w-5" />
             </a>
+
             <a
-              href="https://instagram.com"
+              href="https://www.linkedin.com/in/durdana-sultana-499464294"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-slate-400 transition hover:text-cyan-400"
-              aria-label="Instagram"
+              aria-label="LinkedIn"
+              title="LinkedIn"
+              className="text-slate-400 transition-all duration-300 hover:scale-110 hover:text-cyan-400"
             >
-              <Instagram className="h-5 w-5" />
+              <Linkedin className="h-5 w-5" />
+            </a>
+
+            <a
+              href="mailto:durdanasultana06@gmail.com"
+              aria-label="Email"
+              title="Email"
+              className="text-slate-400 transition-all duration-300 hover:scale-110 hover:text-cyan-400"
+            >
+              <Mail className="h-5 w-5" />
             </a>
           </div>
 
