@@ -292,6 +292,11 @@ export const conductMockInterview = async (req, res, next) => {
     if (typeof role !== "string" || !role.trim()) {
       return res.status(400).json({ error: "Role is required" });
     }
+    
+    const safeRole = role.replace(/[^a-zA-Z0-9\s-]/g, "").trim().slice(0, 100);
+    if (!safeRole) {
+      return res.status(400).json({ error: "Invalid role provided" });
+    }
 
     const latestMessage = messages[messages.length - 1].content;
     if (typeof latestMessage !== "string" || latestMessage.length > 2000) {
@@ -303,7 +308,7 @@ export const conductMockInterview = async (req, res, next) => {
     const openRouterMessages = [
       {
         role: "system",
-        content: `You are acting as a strict but fair ${role} conducting a mock interview for a candidate. 
+        content: `You are acting as a strict but fair ${safeRole} conducting a mock interview for a candidate. 
         Follow these rules:
         1. Ask ONLY ONE question at a time.
         2. Wait for the candidate's response before proceeding.
