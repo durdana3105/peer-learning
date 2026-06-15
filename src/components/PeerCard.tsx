@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Star,
@@ -23,6 +24,7 @@ const PeerCard = ({
   onConnect,
   index = 0,
 }: PeerCardProps) => {
+  const navigate = useNavigate();
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -178,6 +180,7 @@ const PeerCard = ({
         <Button
           size="sm"
           variant="outline"
+          onClick={() => navigate(`/profile/${peer.id}`)}
           className="flex-1 rounded-xl border-white/10 bg-white/5 hover:bg-white/10"
         >
           View Profile
