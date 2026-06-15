@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Play, Code, Share, Loader2 } from "lucide-react";
+import { Play, Code, Share, Loader2, Clipboard, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { env } from "@/env";
 
@@ -80,7 +80,18 @@ export function LiveCodeRunner({ onShare }: LiveCodeRunnerProps) {
     onShare(code, language.id, output);
     setIsOpen(false);
   };
-
+  const handleCopyOutput = () => {
+    if (!output) { toast.error("No output to copy"); return; }
+    navigator.clipboard.writeText(output).then(
+      () => toast.success("Output copied!"),
+      () => toast.error("Failed to copy output")
+    );
+  };
+  
+  const handleClearCode = () => {
+    setCode("");
+    setOutput("");
+  };
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -113,6 +124,14 @@ export function LiveCodeRunner({ onShare }: LiveCodeRunnerProps) {
             </select>
 
             <div className="flex gap-2">
+            <button
+    type="button"
+    onClick={handleClearCode}
+    disabled={isRunning}
+   className="flex items-center gap-2 bg-gray-700 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition disabled:opacity-50"
+  >
+     <Trash2 size={16} /> Clear
+   </button>
               <button
                 onClick={runCode}
                 disabled={isRunning}
@@ -142,7 +161,18 @@ export function LiveCodeRunner({ onShare }: LiveCodeRunnerProps) {
               />
             </div>
             <div className="flex flex-col gap-2 h-full">
-              <label className="text-sm font-medium text-gray-400">Output</label>
+            <div className="flex items-center justify-between">
++   <label className="text-sm font-medium text-gray-400">Output</label>
+   {output && (
+     <button
+       onClick={handleCopyOutput}
+       disabled={isRunning}
+       className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 disabled:opacity-50"
+     >
+       <Clipboard size={13} /> Copy
+     </button>
+  )}
+ </div>
               <div className="w-full h-full bg-black text-green-400 font-mono text-sm p-4 rounded-xl border border-gray-800 overflow-y-auto whitespace-pre-wrap">
                 {output || "Output will appear here..."}
               </div>
