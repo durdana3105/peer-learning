@@ -68,12 +68,23 @@ export default function AnonymousDoubts() {
     setSubmitting(false);
   };
 
-  const upvote = (id: string) => {
-    setDoubts(
-      doubts.map((d) => (d.id === id ? { ...d, upvotes: d.upvotes + 1 } : d))
-    );
-  };
-
+  const upvote = async (id: string) => {
+      if (!user) { toast.error("Please log in to upvote."); return; }
+    
+       // Optimistic UI update
+       setDoubts((prev) => prev.map((d) => (d.id === id ? { ...d, upvotes: d.upvotes + 1 } : d)));
+    
+       const { error } = await (supabase as any)
+         .from("doubts")
+         .update({ upvotes: doubts.find((d) => d.id === id)!.upvotes + 1 })
+         .eq("id", id);
+    
+       if (error) {
+         // Rollback on failure
+         setDoubts((prev) => prev.map((d) => (d.id === id ? { ...d, upvotes: d.upvotes - 1 } : d)));
+         toast.error("Failed to register upvote.");
+       }
+    };
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Anonymous Doubt Posting</h1>
