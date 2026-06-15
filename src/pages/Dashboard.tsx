@@ -233,10 +233,15 @@ const Dashboard = () => {
     const fetchSessions = async () => {
       // SECURITY/PERF: Limit fetch to top 4 to prevent downloading 10,000 global sessions
       // which would cause massive browser OOM crashes and render thrashing.
+      if (!user?.id) {
+        setUpcomingSessions([]);
+        return;
+      }
       const { data, error } = await supabase
         .from("sessions")
         .select("*")
         .eq("status", "upcoming")
+        .or(`mentor_id.eq.${user.id},student_id.eq.${user.id}`)
         .limit(4);
 
       if (error || !data) {
@@ -248,7 +253,7 @@ const Dashboard = () => {
     };
 
     fetchSessions();
-  }, []);
+  }, [user?.id]);
 
   const [globalRank, setGlobalRank] = useState<number>(0);
 
@@ -449,7 +454,7 @@ const Dashboard = () => {
         <Suspense
           fallback={<div className="mt-10 h-72 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl animate-pulse" />}
         >
-          <AnalyticsCharts profile={profile} sessions={upcomingSessions} />
+          <AnalyticsCharts profile={profile} />
         </Suspense>
 
         <RecommendationPanel profile={profile} sessions={upcomingSessions} />

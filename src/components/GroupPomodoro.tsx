@@ -74,6 +74,7 @@ export default function GroupPomodoro({ roomId }: GroupPomodoroProps) {
         
         // Timer completed!
         if (diff === 0) {
+          clearInterval(interval);
           handleTimerComplete();
         }
       }, 1000);

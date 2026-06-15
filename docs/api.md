@@ -1,8 +1,8 @@
-# 🔌 API Documentation
+# API Documentation
 
 The Peer Learning Platform primarily relies on the **Supabase JavaScript Client** for interacting with the database, and a custom **Node.js Express Backend** for secure external API interactions (like the AI assistant).
 
-## 📡 Supabase Client APIs
+## Supabase Client APIs
 
 Most data operations are performed directly from the React frontend using the `supabase-js` client. RLS (Row-Level Security) policies in the database ensure these requests are secure.
 
@@ -34,7 +34,7 @@ const sendMessage = async (sessionId: string, content: string, userId: string) =
 };
 ```
 
-## 🤖 Custom Node.js API (AI Integration)
+## Custom Node.js API (AI Integration)
 
 For operations requiring secure handling of external API keys (e.g., OpenAI/OpenRouter), requests are sent to our custom backend.
 
@@ -67,108 +67,66 @@ Generates an AI summary of a chat session.
 - Requires a valid Supabase JWT token.
 - Protected by a custom, in-house rate limiter middleware (`backend/middlewares/rateLimiter.js`) to prevent abuse.
 
-## 🔔 Cron Endpoints
+## Cron Routes (`/api/cron`)
 
-All cron endpoints require `Authorization: Bearer <CRON_SECRET>` and are subject to a 5 req/min per-IP rate limit and a 60-second per-route cooldown. Invocations within the cooldown window return `HTTP 429`.
+These endpoints are triggered by a scheduled cron job and protected by the `CRON_SECRET` environment variable.
 
----
+**Auth**: `Authorization: Bearer <CRON_SECRET>`
+
+All cron requests must supply the `CRON_SECRET` token in the `Authorization` header. Requests without a valid `CRON_SECRET` receive a `401 Unauthorized` response.
 
 ### `POST /api/cron/dispatch-notifications`
 
-Dequeues up to 100 pending push notifications (`push_sent_at IS NULL`, oldest first) and delivers them to all registered browser push subscriptions for each recipient.
+Atomically claims a batch of pending push notifications (up to 100) and dispatches them to subscribed devices. Uses `push_claimed_at` to prevent concurrent invocations from double-delivering the same notification.
 
-**Auth:** `Authorization: Bearer <CRON_SECRET>`
-
-**Response `200`:**
+**Response**:
 ```json
-{
-  "sent": 42,
-  "processed": 45
-}
+{ "sent": 5, "processed": 5 }
 ```
-
-| Field | Description |
-|---|---|
-| `processed` | Number of notification rows fetched (max 100) |
-| `sent` | Number of individual push deliveries that succeeded |
-
-`processed - sent` reflects push failures (expired subscriptions, VAPID misconfiguration, etc.). Individual failures are absorbed and do not block delivery to other recipients. Each notification row is stamped with `push_sent_at` regardless of delivery outcome.
-
-**Error responses:**
-
-| Status | Condition |
-|---|---|
-| `401` | Missing or malformed `Authorization` header |
-| `403` | Secret mismatch |
-| `429` | Rate limit or 60-second cooldown exceeded |
-| `500` | VAPID keys not configured, or Supabase error |
-| `503` | `CRON_SECRET` env var not set on the server |
-
----
 
 ### `POST /api/cron/reminders`
 
-Inserts `session_reminder` notifications for all sessions with `status = 'upcoming'` whose `start_time` falls within the next 14–16 minutes. Idempotent via `upsert` on `(user_id, entity_id, type)`.
+Finds upcoming study sessions starting within the next 15 minutes and inserts `session_reminder` notifications for all participants.
 
-**Auth:** `Authorization: Bearer <CRON_SECRET>`
-
-**Response `200`:**
+**Response**:
 ```json
-{ "inserted": 12 }
+{ "inserted": 3 }
 ```
-
-**Error responses:** same as `/api/cron/dispatch-notifications`.
-
----
 
 ### `POST /api/cron/mentorship-reminders`
 
-Inserts `mentorship_reminder` notifications for incomplete milestones due within 24 hours or already overdue. Notifies both the mentor and mentee. Idempotent via `upsert` on `(user_id, entity_id, type)`.
+Finds incomplete mentorship milestones that are due or overdue within the next 24 hours and inserts `mentorship_reminder` notifications for mentor and mentee.
 
-**Auth:** `Authorization: Bearer <CRON_SECRET>`
-
-**Response `200`:**
+**Response**:
 ```json
-{ "inserted": 4 }
+{ "inserted": 2 }
 ```
 
-**Error responses:** same as `/api/cron/dispatch-notifications`.
+## Notification Routes (`/api/notifications`)
 
----
+These endpoints support two authentication modes: `WEBHOOK_SECRET` for server-to-server calls, and a standard Supabase JWT for user-initiated calls.
 
-## 🔔 Notification Endpoints
+**Auth**: `Authorization: Bearer <WEBHOOK_SECRET>` OR valid Supabase JWT token.
+
+Requests carrying a valid `WEBHOOK_SECRET` bypass user-level auth. Requests without a `WEBHOOK_SECRET` fall back to the standard `requireAuth` middleware which validates the Supabase JWT.
 
 ### `POST /api/notifications/send-push`
 
-Delivers a push notification to a single user's registered browser subscriptions. Stale subscriptions (HTTP 410/404 from the push service) are automatically deleted.
+Sends a browser push notification to all subscribed devices for a given `user_id`.
 
-**Auth:** `Authorization: Bearer <WEBHOOK_SECRET>`
-
-> This endpoint uses a **separate secret** (`WEBHOOK_SECRET`) from the cron endpoints (`CRON_SECRET`). See the Secrets Reference in `docs/smart-notifications.md` for rotation guidance.
-
-**Request body:**
+**Request Body**:
 ```json
 {
   "user_id": "uuid",
-  "title": "string (max 100 chars)",
-  "body": "string (max 500 chars)",
-  "action_url": "/optional/path"
+  "title": "New message",
+  "body": "Alice sent you a message.",
+  "action_url": "/messages"
 }
 ```
 
-**Response `200`:**
+**Response**:
 ```json
-{
-  "sent": 1,
-  "failed": 0
-}
+{ "sent": 1, "failed": 0 }
 ```
 
-**Error responses:**
-
-| Status | Condition |
-|---|---|
-| `400` | Missing `user_id`, `title`, or `body`; payload type invalid; content too long |
-| `401` | Missing or invalid `Authorization` header |
-| `404` | No push subscriptions found for the given `user_id` |
-| `500` | VAPID keys not configured, or Supabase error |
+**Security**: Standard users may only send push notifications to themselves (IDOR prevention). Webhook callers authenticated via `WEBHOOK_SECRET` may send to any user.

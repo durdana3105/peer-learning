@@ -167,7 +167,7 @@ export function useMessages(currentUserId?: string | null) {
             .order("name", { ascending: true })
             .limit(100),
           supabase
-            .from("users")
+            .from("profiles")
             .select("*")
             .neq("id", currentUserId)
             .order("name", { ascending: true })
