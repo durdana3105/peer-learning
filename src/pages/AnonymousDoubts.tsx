@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-
+const MAX_CHARS = 500;
 type Doubt = {
   id: string;
   content: string;
@@ -45,6 +45,7 @@ export default function AnonymousDoubts() {
     const trimmedText = text.trim();
     const trimmedSubject = subject.trim();
     if (!trimmedText || !trimmedSubject) return;
+   if (text.length > MAX_CHARS) { toast.error(`Doubt exceeds ${MAX_CHARS} character limit.`); return; }
     if (!user) { toast.error("Please log in to post a doubt."); return; }
 
     setSubmitting(true);
@@ -79,13 +80,18 @@ export default function AnonymousDoubts() {
 
       {/* Post a Doubt */}
       <div className="border rounded-xl p-4 mb-8 space-y-3">
-        <textarea
-          className="border p-2 w-full rounded resize-none"
-          placeholder="Ask your doubt..."
-          rows={3}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
+    
+
+<div className="relative">
+
+   <span className={`absolute bottom-2 right-2 text-xs select-none ${
+     text.length > MAX_CHARS ? "text-red-500 font-semibold"
+    : text.length >= MAX_CHARS * 0.9 ? "text-amber-500"
+    : "text-slate-400"}`}
+  >
+     {text.length}/{MAX_CHARS}
+   </span>
+ </div>
         <input
           className="border p-2 w-full rounded"
           placeholder="Subject Tag (e.g. React, DSA)"
@@ -102,7 +108,7 @@ export default function AnonymousDoubts() {
         </label>
         <button
           onClick={addDoubt}
-          disabled={submitting || !text.trim() || !subject.trim()}
+          disabled={submitting || !text.trim() || !subject.trim() || text.length > MAX_CHARS}
           className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
         >
           {submitting ? "Posting..." : "Post Doubt"}
