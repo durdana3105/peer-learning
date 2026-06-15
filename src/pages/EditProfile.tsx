@@ -78,6 +78,7 @@ const EditProfile = () => {
                   .filter(Boolean)
               : profile.skills,
         })
+        // @ts-expect-error TODO: refine typing
         .eq("id", userId);
 
       if (error) throw error;

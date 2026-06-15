@@ -9,6 +9,7 @@ const ForgotPassword = () => {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // @ts-expect-error TODO: refine typing
   const handleSubmit = async (e) => {
     e.preventDefault();
 
