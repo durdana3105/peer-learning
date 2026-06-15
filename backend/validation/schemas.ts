@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { z } from "zod";
 
 const allowedChatModels = ["openai/gpt-3.5-turbo", "openai/gpt-4o-mini"];

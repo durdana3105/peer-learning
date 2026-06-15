@@ -38,11 +38,11 @@ const deriveRateLimitKey = (req) => {
   return `ip:${expressIp}|${socketIp}|${ua}`;
 };
 
-export const createRateLimiter = (options = {}) => {
+export const createRateLimiter = (options: any = {}) => {
   const windowMs = options.windowMs || WINDOW_MS;
   const maxRequests = options.maxRequests || MAX_REQUESTS;
   const maxEntries = options.maxEntries || MAX_ENTRIES;
-  const store = new Map();
+  const store = new Map<string, any>();
   let cleanupTime = Date.now();
 
   return (req, res, next) => {

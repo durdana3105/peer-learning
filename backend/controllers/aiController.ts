@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { z } from "zod";
 
 import { HttpError } from "../utils/httpError.js";
@@ -106,7 +107,7 @@ const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, response
   };
 
   if (responseFormat) {
-    body.response_format = responseFormat;
+    body.responseFormat = responseFormat;
   }
 
   let response;

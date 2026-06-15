@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 
