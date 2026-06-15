@@ -108,43 +108,46 @@ const Portfolio = () => {
   }, [form.slug]);
 
   useEffect(() => {
+    let isMounted = true;
+    let timeout: NodeJS.Timeout;
+
     const loadPortfolio = async () => {
       if (!user) {
-        setLoading(false);
+        if (isMounted) setLoading(false);
         return;
       }
 
-      setLoading(true);
+      if (isMounted) setLoading(true);
 
       // Safety timeout: if queries hang, stop loading after 10 seconds
-      const timeout = setTimeout(() => {
-        setLoading(false);
-        toast({
-          title: "Loading timed out",
-          description: "Some data may not have loaded. Please refresh to try again.",
-          variant: "destructive",
-        });
+      timeout = setTimeout(() => {
+        if (isMounted) {
+          setLoading(false);
+          toast({
+            title: "Loading timed out",
+            description: "Some data may not have loaded. Please refresh to try again.",
+            variant: "destructive",
+          });
+        }
       }, 10_000);
 
       try {
-        console.log("Starting parallel load queries for profile and portfolio (user ID:", user.id, ")");
-        // Run both queries in parallel instead of sequentially
+          // Run both queries in parallel instead of sequentially
         const [profileResult, portfolioResult] = await Promise.all([
           supabase
             .from("profiles")
             .select("name, skills")
             .eq("id", user.id)
-            .maybeSingle()
-            .then(res => { console.log("Profile query finished:", res); return res; }),
+            .maybeSingle(),
           supabase
             .from("portfolio_profiles")
             .select("*")
             .eq("profile_id", user.id)
-            .maybeSingle()
-            .then(res => { console.log("Portfolio query finished:", res); return res; }),
+            .maybeSingle(),
         ]);
 
         clearTimeout(timeout);
+        if (!isMounted) return;
 
         const { data: profile, error: profileError } = profileResult;
         const { data: portfolio, error: portfolioError } = portfolioResult;
@@ -194,17 +197,24 @@ const Portfolio = () => {
         }
       } catch (error) {
         clearTimeout(timeout);
+        if (!isMounted) return;
+
         toast({
           title: "Portfolio could not load",
           description: error instanceof Error ? error.message : "Please try again.",
           variant: "destructive",
         });
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     void loadPortfolio();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeout);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
@@ -241,6 +251,32 @@ const Portfolio = () => {
 
     setSaving(true);
 
+    const { data: existingSlugUser, error: slugCheckError } = await supabase
+      .from("portfolio_profiles")
+      .select("profile_id")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    if (slugCheckError) {
+      setSaving(false);
+      toast({
+        title: "Error checking URL",
+        description: "Failed to verify if the URL is available.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (existingSlugUser && existingSlugUser.profile_id !== user.id) {
+      setSaving(false);
+      toast({
+        title: "URL already taken",
+        description: "This public URL is already in use by someone else. Please choose another one.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const payload = {
       profile_id: user.id,
       slug,
@@ -269,7 +305,6 @@ const Portfolio = () => {
     }, 10_000);
 
     try {
-      console.log("Starting portfolio save with payload:", payload);
       const { error } = await supabase
         .from("portfolio_profiles")
         .upsert(payload, { onConflict: "profile_id" });
@@ -290,7 +325,6 @@ const Portfolio = () => {
         return;
       }
 
-      console.log("Portfolio saved successfully in database!");
       setForm((current) => ({ ...current, slug }));
       toast({
         title: "Portfolio saved",
@@ -452,6 +486,7 @@ const Portfolio = () => {
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8 text-slate-300 hover:bg-white/10 hover:text-white"
+                        aria-label={`Remove project ${index + 1}`}
                         onClick={() => setForm({ ...form, projects: form.projects.filter((_, itemIndex) => itemIndex !== index) })}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -512,6 +547,7 @@ const Portfolio = () => {
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8 text-slate-300 hover:bg-white/10 hover:text-white"
+                        aria-label={`Remove achievement ${index + 1}`}
                         onClick={() => setForm({ ...form, achievements: form.achievements.filter((_, itemIndex) => itemIndex !== index) })}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -552,7 +588,7 @@ const Portfolio = () => {
                 <p className="text-xs uppercase tracking-wide text-slate-500">Shareable URL</p>
                 <div className="mt-2 flex items-center gap-2">
                   <p className="min-w-0 flex-1 truncate text-sm text-cyan-200">{publicUrl || "Set a slug to create a URL"}</p>
-                  <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-white hover:bg-white/10" onClick={copyShareLink}>
+                  <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-white hover:bg-white/10" aria-label="Copy shareable link" onClick={copyShareLink}>
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>

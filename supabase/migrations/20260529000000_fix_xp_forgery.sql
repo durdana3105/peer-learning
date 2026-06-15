@@ -6,7 +6,7 @@ REVOKE EXECUTE ON FUNCTION public.increment_user_xp(INT) FROM authenticated;
 
 -- 2. Create the new secure RPC that looks up XP by activity
 CREATE OR REPLACE FUNCTION public.award_activity_xp(_activity_type TEXT) RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_uid UUID := auth.uid();
   v_xp_to_award INT;

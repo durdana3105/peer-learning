@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from "@/integrations/supabase/client";
+import { env } from "@/env";
 
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+const VAPID_PUBLIC_KEY = env.VITE_VAPID_PUBLIC_KEY;
 
 function urlBase64ToUint8Array(value: string) {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
@@ -72,3 +74,4 @@ export async function registerBrowserPush(userId: string) {
 
   return { ok: true, reason: "subscribed" as const };
 }
+

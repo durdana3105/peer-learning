@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-
+import { useQuery } from "@tanstack/react-query";
 type Contributor = {
   login: string;
   avatar_url: string;
@@ -7,14 +6,23 @@ type Contributor = {
 };
 
 function Leaderboard() {
-  const [contributors, setContributors] = useState<Contributor[]>([]);
+  const { data: contributors = [], isLoading } = useQuery<Contributor[]>({
+    queryKey: ["github-contributors"],
+    queryFn: () =>
+      fetch("https://api.github.com/repos/durdana3105/peer-learning/contributors")
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          return res.json();
+        }),
+  });
 
-  useEffect(() => {
-    fetch("https://api.github.com/repos/durdana3105/peer-learning/contributors")
-      .then((res) => res.json())
-      .then((data) => setContributors(data))
-      .catch((err) => console.error(err));
-  }, []);
+  if (isLoading) {
+    return (
+      <div className="mt-8 bg-zinc-900/70 border border-cyan-500/10 rounded-3xl p-8 flex items-center justify-center">
+        <p className="text-cyan-400">Loading leaderboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-8 bg-zinc-900/70 border border-cyan-500/10 rounded-3xl p-8">

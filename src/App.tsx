@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense } from "react";
+import React, { useEffect, Suspense, useState, useRef } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, Router } from "react-router-dom";
 
@@ -7,6 +7,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AuthProvider } from "@/contexts/AuthContext";
+import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import AdminRoute from "@/components/AdminRoute";
@@ -17,7 +18,10 @@ import ProtectedMentorRoute from "@/components/ProtectedMentorRoute";
 import Navbar from "./components/Navbar";
 import Chatbot from "./components/Chatbot";
 import StreakBadge from "./components/StreakBadge";
+import CookieConsentBanner from "./components/CookieConsentBanner";
 import FloatingAI from "./components/FloatingAI";
+import MouseSparkles from "./components/MouseSparkles";
+import BackToTop from "./components/BackToTop";  // ← ADDED THIS LINE
 
 import { useAuth } from "@/contexts/useAuth";
 
@@ -47,10 +51,18 @@ const AIPage = React.lazy(() => import("./pages/aipage"));
 const ContributorDashboard = React.lazy(() => import("./pages/ContributorDashboard"));
 const BecomeMentor = React.lazy(() => import("./pages/BecomeMentor"));
 const Portfolio = React.lazy(() => import("./pages/Portfolio"));
+const AuthCallback = React.lazy(() => import("./pages/AuthCallback"));
 const PublicPortfolio = React.lazy(() => import("./pages/PublicPortfolio"));
 const ResourceHub = React.lazy(() => import("@/pages/ResourceHub"));
 const StudyRooms = React.lazy(() => import("./components/StudyRooms"));
 const Room = React.lazy(() => import("./components/Room"));
+const Contact = React.lazy(() => import("./pages/Contact"));
+const PrivacyPolicy = React.lazy(() => import("./pages/privacy"));
+const CookiesPolicy = React.lazy(() => import("./pages/cookies-policy"));
+const PeerReviewDashboard = React.lazy(() => import("./pages/PeerReviewDashboard"));
+const SubmitForReview = React.lazy(() => import("./pages/SubmitForReview"));
+const ReviewSubmission = React.lazy(() => import("./pages/ReviewSubmission"));
+const MockInterview = React.lazy(() => import("./pages/MockInterview"));
 
 const queryClient = new QueryClient();
 
@@ -68,38 +80,10 @@ const WithNav = ({ children }: { children: React.ReactNode }) => {
 function AppContent() {
   const { user } = useAuth();
 
-  useEffect(() => {
-    const container = document.getElementById("sparkle-container");
-    if (!container) return;
-
-    const createSparkle = (x: number, y: number) => {
-      const sparkle = document.createElement("div");
-      sparkle.className = "sparkle";
-      sparkle.style.left = `${x}px`;
-      sparkle.style.top = `${y}px`;
-      container.appendChild(sparkle);
-
-      setTimeout(() => sparkle.remove(), 800);
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      for (let i = 0; i < 2; i++) {
-        createSparkle(
-          e.clientX + Math.random() * 10 - 5,
-          e.clientY + Math.random() * 10 - 5,
-        );
-      }
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
   return (
     <>
-      <div id="sparkle-container"></div>
-
+      <MouseSparkles />
+      <CookieConsentBanner />
 
       <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#020617]"><div className="h-10 w-10 animate-spin rounded-full border-4 border-cyan-400 border-t-transparent" /></div>}>
         <Routes>
@@ -125,6 +109,11 @@ function AppContent() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/become-mentor" element={<BecomeMentor />} />
           <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
+          <Route path="/contact" element={<WithNav><Contact /></WithNav>} />
+          <Route path="/privacy-policy" element={<WithNav><PrivacyPolicy /></WithNav>} />
+          <Route path="/cookies-policy" element={<WithNav><CookiesPolicy /></WithNav>} />
+
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           <Route
             path="/dashboard"
@@ -281,6 +270,48 @@ function AppContent() {
           />
 
           <Route
+            path="/peer-review"
+            element={
+              <ProtectedRoute>
+                <WithNav>
+                  <PeerReviewDashboard />
+                </WithNav>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/peer-review/new"
+            element={
+              <ProtectedRoute>
+                <WithNav>
+                  <SubmitForReview />
+                </WithNav>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/peer-review/:id"
+            element={
+              <ProtectedRoute>
+                <WithNav>
+                  <ReviewSubmission />
+                </WithNav>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/mock-interview"
+            element={
+              <ProtectedRoute>
+                <WithNav>
+                  <MockInterview />
+                </WithNav>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/profile"
             element={
               <ProtectedRoute>
@@ -301,18 +332,22 @@ function AppContent() {
           <Route
             path="/anonymous-doubts"
             element={
-              <WithNav>
-                <AnonymousDoubts />
-              </WithNav>
+              <ProtectedRoute>
+                <WithNav>
+                  <AnonymousDoubts />
+                </WithNav>
+              </ProtectedRoute>
             }
           />
 
           <Route
             path="/contributor-dashboard"
             element={
-              <WithNav>
-                <ContributorDashboard />
-              </WithNav>
+              <ProtectedRoute>
+                <WithNav>
+                  <ContributorDashboard />
+                </WithNav>
+              </ProtectedRoute>
             }
           />
 
@@ -326,6 +361,8 @@ function AppContent() {
           <FloatingAI />
         </>
       )}
+
+      <BackToTop />  {/* ← ADDED THIS LINE */}
     </>
   );
 }
@@ -339,11 +376,13 @@ function App() {
           <Sonner />
 
           <BrowserRouter>
-            <AuthProvider>
-              <RoleProvider>
-                <AppContent />
-              </RoleProvider>
-            </AuthProvider>
+            <CookieConsentProvider>
+              <AuthProvider>
+                <RoleProvider>
+                  <AppContent />
+                </RoleProvider>
+              </AuthProvider>
+            </CookieConsentProvider>
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>

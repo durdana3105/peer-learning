@@ -88,7 +88,7 @@ CREATE POLICY "study_room_participants_select" ON public.study_room_participants
 CREATE OR REPLACE FUNCTION invite_to_study_room(p_room_id UUID, p_user_email TEXT)
 RETURNS void
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
   v_room_creator UUID;

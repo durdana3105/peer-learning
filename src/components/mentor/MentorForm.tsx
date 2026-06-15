@@ -1,8 +1,8 @@
-import { useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-
 const steps = [
   "Basic Info",
   "Skills",
@@ -10,31 +10,18 @@ const steps = [
   "Mentorship",
   "Success",
 ];
-
-const allSkills = [
-  "DSA",
-  "React",
-  "AI/ML",
-  "Python",
-  "Cybersecurity",
-  "Java",
-  "Web Dev",
-];
-
 const mentorshipOptions = [
   "Live Sessions",
   "Mock Interviews",
   "Career Guidance",
   "Project Mentorship",
 ];
-
 export default function MentorForm() {
   const [step, setStep] = useState(0);
-
   const [loading, setLoading] = useState(false);
-
   const [error, setError] = useState("");
-
+  const [availableSkills, setAvailableSkills] = useState<string[]>([]);
+  const [customSkill, setCustomSkill] = useState("");
   const [formData, setFormData] = useState({
     full_name: "",
     college: "",
@@ -44,7 +31,32 @@ export default function MentorForm() {
     skills: [] as string[],
     mentorship_types: [] as string[],
   });
-
+  useEffect(() => {
+    const fetchSkills = async () => {
+      const { data } = await (supabase as any).from("skills_taxonomy").select("name").order("name");
+      if (data) {
+        setAvailableSkills(data.map(d => d.name));
+      }
+    };
+    fetchSkills();
+  }, []);
+  const handleAddCustomSkill = async () => {
+    const skill = customSkill.trim();
+    if (!skill) return;
+    
+    await (supabase as any).from("skills_taxonomy").insert({ name: skill });
+    
+    if (!availableSkills.includes(skill)) {
+      setAvailableSkills([...availableSkills, skill]);
+    }
+    
+    setFormData((prev) => ({
+      ...prev,
+      skills: prev.skills.includes(skill) ? prev.skills : [...prev.skills, skill],
+    }));
+    
+    setCustomSkill("");
+  };
   const toggleSkill = (skill: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -53,7 +65,6 @@ export default function MentorForm() {
         : [...prev.skills, skill],
     }));
   };
-
   const toggleMentorship = (type: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -63,49 +74,43 @@ export default function MentorForm() {
     }));
   };
   const validateBasicInfo = () => {
-  return (
-    formData.full_name.trim() !== "" &&
-    formData.college.trim() !== "" &&
-    formData.bio.trim() !== ""
-  );
-};
-
-const validateSkills = () => {
-  return formData.skills.length > 0;
-};
-
-const validateExperience = () => {
-  return (
-    formData.github.trim() !== "" &&
-    formData.linkedin.trim() !== ""
-  );
-};
-
-const validateMentorship = () => {
-  return formData.mentorship_types.length > 0;
-};
+    return (
+      formData.full_name.trim() !== "" &&
+      formData.college.trim() !== "" &&
+      formData.bio.trim() !== ""
+    );
+  };
+  const validateSkills = () => {
+    return formData.skills.length > 0;
+  };
+  const validateExperience = () => {
+    return (
+      formData.github.trim() !== "" &&
+      formData.linkedin.trim() !== ""
+    );
+  };
+  const validateMentorship = () => {
+    return formData.mentorship_types.length > 0;
+  };
   const handleSubmit = async () => {
     setLoading(true);
-
-<<<<<<< HEAD
+    setError("");
     let isTimeout = false;
     const timeout = setTimeout(() => {
       isTimeout = true;
       setLoading(false);
-      alert("Submission timed out. Please check your network and try again.");
+      setError("Submission timed out. Please check your network and try again.");
     }, 10_000);
-
     try {
-=======
       const { data: { user } } = await supabase.auth.getUser();
-
+      if (isTimeout) return;
       if (!user) {
+        if (!isTimeout) clearTimeout(timeout);
         setError("You must be logged in to submit an application.");
+        setLoading(false);
         return;
       }
-
->>>>>>> main
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("mentors")
         .insert([
           {
@@ -119,33 +124,26 @@ const validateMentorship = () => {
             mentorship_types: formData.mentorship_types,
           },
         ]);
-
       if (isTimeout) return;
       clearTimeout(timeout);
-
       if (error) {
         console.error(error);
-<<<<<<< HEAD
-        alert("Something went wrong: " + error.message);
-=======
-        setError("Something went wrong!");
->>>>>>> main
+        setError(error.message || "Something went wrong!");
+        setLoading(false);
         return;
       }
-
       setStep(4);
     } catch (err) {
       if (isTimeout) return;
       clearTimeout(timeout);
       console.error(err);
-      alert("Something went wrong. Please try again.");
+      setError("Something went wrong. Please try again.");
     } finally {
       if (!isTimeout) {
         setLoading(false);
       }
     }
   };
-
   return (
     <div className="mx-auto max-w-4xl rounded-[32px] border border-white/10 bg-white/5 p-10 backdrop-blur-2xl">
       
@@ -166,7 +164,6 @@ const validateMentorship = () => {
               </div>
             ))}
           </div>
-
           <div className="h-2 overflow-hidden rounded-full bg-white/10">
             <motion.div
               animate={{
@@ -177,7 +174,6 @@ const validateMentorship = () => {
           </div>
         </div>
       )}
-
       {/* Content */}
       <motion.div
         key={step}
@@ -190,7 +186,6 @@ const validateMentorship = () => {
             <h2 className="text-3xl font-black">
               Basic Information
             </h2>
-
             <input
               placeholder="Full Name"
               value={formData.full_name}
@@ -202,7 +197,6 @@ const validateMentorship = () => {
               }
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
-
             <input
               placeholder="College Name"
               value={formData.college}
@@ -214,7 +208,6 @@ const validateMentorship = () => {
               }
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
-
             <textarea
               placeholder="Short Bio"
               value={formData.bio}
@@ -228,16 +221,14 @@ const validateMentorship = () => {
             />
           </div>
         )}
-
         {/* STEP 2 */}
         {step === 1 && (
           <div>
             <h2 className="text-3xl font-black">
               Skills & Expertise
             </h2>
-
-            <div className="mt-8 flex flex-wrap gap-4">
-              {allSkills.map((skill) => (
+            <div className="mt-8 flex flex-wrap gap-4 mb-6">
+              {availableSkills.map((skill) => (
                 <button
                   type="button"
                   key={skill}
@@ -252,16 +243,32 @@ const validateMentorship = () => {
                 </button>
               ))}
             </div>
+            <div className="flex gap-3">
+              <input
+                type="text"
+                placeholder="Add custom skill..."
+                value={customSkill}
+                onChange={(e) => setCustomSkill(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddCustomSkill()}
+                className="flex-1 rounded-full border border-white/10 bg-white/5 px-5 py-3 outline-none transition focus:border-cyan-400"
+              />
+              <button
+                type="button"
+                onClick={handleAddCustomSkill}
+                className="flex items-center gap-2 rounded-full bg-white/10 px-5 py-3 transition hover:bg-white/20"
+              >
+                <Plus size={20} />
+                Add
+              </button>
+            </div>
           </div>
         )}
-
         {/* STEP 3 */}
         {step === 2 && (
           <div className="space-y-5">
             <h2 className="text-3xl font-black">
               Experience
             </h2>
-
             <input
               placeholder="GitHub Profile"
               value={formData.github}
@@ -273,7 +280,6 @@ const validateMentorship = () => {
               }
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
-
             <input
               placeholder="LinkedIn Profile"
               value={formData.linkedin}
@@ -285,21 +291,18 @@ const validateMentorship = () => {
               }
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
-
             <input
               type="file"
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4"
             />
           </div>
         )}
-
         {/* STEP 4 */}
         {step === 3 && (
           <div>
             <h2 className="text-3xl font-black">
               Mentorship Type
             </h2>
-
             <div className="mt-8 grid gap-4 md:grid-cols-2">
               {mentorshipOptions.map((item) => (
                 <button
@@ -318,7 +321,6 @@ const validateMentorship = () => {
             </div>
           </div>
         )}
-
         {/* SUCCESS */}
         {step === 4 && (
           <div className="space-y-6 py-10 text-center">
@@ -326,11 +328,9 @@ const validateMentorship = () => {
               className="mx-auto text-cyan-400"
               size={90}
             />
-
             <h2 className="text-5xl font-black">
               Application Submitted 🎉
             </h2>
-
             <p className="mx-auto max-w-xl text-lg leading-8 text-slate-300/70">
               Your mentor profile is now under review.
               Once approved, you can start conducting
@@ -348,34 +348,32 @@ const validateMentorship = () => {
       {step !== 4 && (
         <div className="mt-10 flex justify-between">
           <button
+            type="button"
             disabled={step === 0}
             onClick={() => setStep(step - 1)}
             className="rounded-2xl border border-white/10 bg-white/5 px-6 py-3 transition disabled:opacity-30"
           >
             Back
           </button>
-
           {step < 3 ? (
             <button
-             onClick={() => {
-              if (step === 0 && !validateBasicInfo()) {
-              setError("Please fill all basic information fields");
-              return;
-               }
-
-               if (step === 1 && !validateSkills()) {
-                setError("Please select at least one skill");
-                 return;
+              type="button"
+              onClick={() => {
+                if (step === 0 && !validateBasicInfo()) {
+                  setError("Please fill all basic information fields");
+                  return;
                 }
-
+                if (step === 1 && !validateSkills()) {
+                  setError("Please select at least one skill");
+                  return;
+                }
                 if (step === 2 && !validateExperience()) {
-                setError("Please fill GitHub and LinkedIn profiles");
-                return;
+                  setError("Please fill GitHub and LinkedIn profiles");
+                  return;
                 }
-
                 if (step === 3 && !validateMentorship()) {
-                setError("Please select at least one mentorship type");
-                return;
+                  setError("Please select at least one mentorship type");
+                  return;
                 }
                 setError("");
                 setStep(step + 1);
@@ -386,6 +384,7 @@ const validateMentorship = () => {
             </button>
           ) : (
             <button
+              type="button"
               onClick={handleSubmit}
               disabled={loading}
               className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-3 font-semibold text-black transition hover:scale-105 disabled:opacity-50"

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
@@ -171,7 +172,7 @@ export default function Canvas({ roomId }: Props) {
         });
 
       if (data) {
-        strokesRef.current = data;
+        strokesRef.current = data as any;
 
         replayCanvas();
       }

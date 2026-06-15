@@ -1,12 +1,20 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/useAuth';
+import ParticipantCard from "./studyroom/ParticipantCard";
+import StudyTimer from "./studyroom/StudyTimer";
+import ActivityFeed from "./studyroom/ActivityFeed";
 
-import Whiteboard from './Whiteboard/Whiteboard';
+import React, { Suspense } from 'react';
 
-import { MarkdownRenderer } from '@/components/MarkdownRenderer';
-
+const Whiteboard = React.lazy(() => import('./Whiteboard/Whiteboard'));
+const MarkdownRenderer = React.lazy(() =>
+  import('@/components/MarkdownRenderer').then((module) => ({ default: module.MarkdownRenderer }))
+);
+import GroupPomodoro from '@/components/GroupPomodoro';
 
 export default function Room() {
   const { id } = useParams();
@@ -17,6 +25,7 @@ export default function Room() {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [participants, setParticipants] = useState<any[]>([]);
+  const [activities, setActivities] = useState<string[]>([]);
   const [inviteEmail, setInviteEmail] = useState('');
   const [isInviting, setIsInviting] = useState(false);
   const [showInviteUI, setShowInviteUI] = useState(false);
@@ -46,7 +55,13 @@ export default function Room() {
         .on('presence', { event: 'sync' }, () => {
           const newState = roomChannel.presenceState();
           const onlineUsers = Object.values(newState).map((p: any) => p[0]);
+
           setParticipants(onlineUsers);
+
+          setActivities((prev) => [
+            `${onlineUsers.length} participant(s) online`,
+            ...prev,
+          ]);
         })
         .on('postgres_changes', {
           event: 'INSERT',
@@ -57,19 +72,28 @@ export default function Room() {
           fetchMessages(); 
         })
         .subscribe(async (status: string) => {
-          if (status === 'SUBSCRIBED') {
-            // 3. Broadcast the REAL name to everyone in the room!
+         if (status === 'SUBSCRIBED') {
             await roomChannel.track({
               user_id: user.id,
-              name: displayName 
+              name: displayName
             });
+
+            setActivities((prev) => [
+              `${displayName} joined the room`,
+              ...prev,
+            ]);
           }
         });
     };
 
     initializeChat();
 
-    return () => {
+      return () => {
+      setActivities((prev) => [
+        `${user?.email?.split("@")[0] || "User"} left the room`,
+        ...prev,
+      ]);
+
       if (roomChannel) supabase.removeChannel(roomChannel);
     };
   }, [id, user]);
@@ -83,11 +107,30 @@ export default function Room() {
     if (error) {
       console.error("Error fetching room:", error);
       if (error.code === 'PGRST116') {
-        alert("Room not found or you don't have access.");
+        toast.error("Room not found or you don't have access.");
+        navigate('/rooms');
+      }
+      return;
+    }
+    if (!data) return;
+
+    setRoom(data);
+
+    // Auto-register the current user as a participant.
+    // For public rooms this is always allowed.
+    // For private rooms the RPC will throw if the user is not invited/creator.
+    if (user) {
+      const { error: joinError } = await supabase.rpc('join_public_study_room', {
+        p_room_id: id as string,
+      });
+
+      if (joinError) {
+        // User is not authorised to be in this private room
+        console.error("Access denied:", joinError.message);
+        alert(joinError.message || "You don't have access to this room.");
         navigate('/rooms');
       }
     }
-    if (data) setRoom(data);
   };
 
   const fetchMessages = async () => {
@@ -109,7 +152,12 @@ export default function Room() {
     if (!newMessage.trim() || !user) return;
 
     const messageText = newMessage;
-    setNewMessage(''); 
+    setNewMessage('');
+
+    setActivities((prev) => [
+      `You sent a message`,
+      ...prev,
+    ]);
 
     const { error } = await supabase.from('study_room_messages' as any).insert([
       { room_id: id, profile_id: user.id, content: messageText }
@@ -117,23 +165,23 @@ export default function Room() {
     
     if (error) {
       console.error("Database insert error:", error);
-      alert("Failed to send message. Check console for details.");
+      toast.error("Failed to send message. Please try again.");
     }
   };
 
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
     setIsInviting(true);
-    const { error } = await supabase.rpc('invite_to_study_room' as any, {
+    const { error } = await (supabase.rpc as any)('invite_to_study_room', {
       p_room_id: id,
       p_user_email: inviteEmail
     });
     
     if (error) {
       console.error("Invite error:", error);
-      alert(error.message || "Failed to invite user.");
+      toast.error(error.message || "Failed to invite user.");
     } else {
-      alert(`Invited ${inviteEmail} successfully!`);
+      toast.success(`Invited ${inviteEmail} successfully!`);
       setInviteEmail('');
       setShowInviteUI(false);
     }
@@ -149,7 +197,11 @@ export default function Room() {
         <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-800">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-blue-400">{room.topic}</h1>
-            <p className="text-sm text-slate-400 mt-1">Live Study Session</p>
+            <div className="flex gap-4 mt-1 text-sm text-slate-400">
+              <span>📚 Live Study Session</span>
+              <span>👥 {participants.length} Online</span>
+              <span>💬 {messages.length} Messages</span>
+            </div>
           </div>
           <div className="flex gap-3">
             {room.is_private && room.created_by === user?.id && (
@@ -191,6 +243,7 @@ export default function Room() {
 
         <div className="flex-1 flex gap-6 overflow-hidden">
 
+          {/* Chat */}
           <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl flex flex-col overflow-hidden shadow-lg">
             <div className="p-4 border-b border-slate-800 bg-slate-900/80">
               <h2 className="font-semibold text-slate-200">Room Discussion</h2>
@@ -212,7 +265,9 @@ export default function Room() {
                           ? 'bg-blue-600 text-white rounded-br-sm' 
                           : 'bg-slate-800 text-slate-200 rounded-bl-sm border border-slate-700'
                       }`}>
-                        <MarkdownRenderer content={msg.content} />
+                        <Suspense fallback={<span className="text-slate-300">{msg.content}</span>}>
+                          <MarkdownRenderer content={msg.content} />
+                        </Suspense>
                       </div>
                     </div>
                   )
@@ -221,80 +276,60 @@ export default function Room() {
               <div ref={messagesEndRef} />
             </div>
 
+            <form onSubmit={handleSendMessage} className="p-4 border-t border-slate-800 bg-slate-950 flex gap-3">
+              <input 
+                type="text" 
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type your message..." 
+                className="flex-1 bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 transition"
+              />
+              <button 
+                type="submit"
+                disabled={!newMessage.trim()}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+              >
+                Send
+              </button>
+            </form>
+          </div>
 
-  {/* Chat */}
-  <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl flex flex-col overflow-hidden shadow-lg">
-    <div className="p-4 border-b border-slate-800 bg-slate-900/80">
-      <h2 className="font-semibold text-slate-200">Room Discussion</h2>
-    </div>
+          {/* Whiteboard */}
+          <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+            <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800" />}>
+              <Whiteboard roomId={id!} />
+            </Suspense>
+          </div>
+         
+          <div className="w-72 hidden xl:flex flex-col gap-4">
+            <StudyTimer />
+            <ActivityFeed activities={activities} />
+          </div>
 
-    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-900">
-      {messages.length === 0 ? (
-        <div className="text-center text-slate-500 mt-10">Say hi to start the conversation!</div>
-      ) : (
-        messages.map((msg) => {
-          const isMe = msg.profile_id === user?.id;
-          return (
-            <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-              <span className="text-xs text-slate-400 mb-1 ml-1 mr-1">
-                {isMe ? 'You' : (msg.profiles?.name || 'Student')}
-              </span>
-              <div className={`px-4 py-2.5 rounded-2xl max-w-[80%] text-sm md:text-base ${
-                isMe 
-                  ? 'bg-blue-600 text-white rounded-br-sm' 
-                  : 'bg-slate-800 text-slate-200 rounded-bl-sm border border-slate-700'
-              }`}>
-                {msg.content}
+          {/* Participants */}
+          <div className="w-64 flex flex-col gap-6 hidden lg:flex">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl flex-col overflow-hidden shadow-lg flex-1">
+              <div className="p-4 border-b border-slate-800 bg-slate-900/80">
+                <h2 className="font-semibold text-slate-200">
+                  Online ({participants.length})
+                </h2>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {participants.map((p, idx) => (
+                  <ParticipantCard
+                    key={idx}
+                    name={p.name || "Anonymous Student"}
+                    status="online"
+                  />
+                ))}
               </div>
             </div>
-          );
-        })
-      )}
-      <div ref={messagesEndRef} />
-    </div>
+            
+            <GroupPomodoro roomId={id!} />
+          </div>
 
-    <form onSubmit={handleSendMessage} className="p-4 border-t border-slate-800 bg-slate-950 flex gap-3">
-      <input 
-        type="text" 
-        value={newMessage}
-        onChange={(e) => setNewMessage(e.target.value)}
-        placeholder="Type your message..." 
-        className="flex-1 bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 transition"
-      />
-      <button 
-        type="submit"
-        disabled={!newMessage.trim()}
-        className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
-      >
-        Send
-      </button>
-    </form>
-  </div>
-
-  {/* Whiteboard */}
-  <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-    <Whiteboard roomId={id!} />
-  </div>
-
-  {/* Participants */}
-  <div className="w-64 bg-slate-900 border border-slate-800 rounded-xl flex-col hidden lg:flex overflow-hidden shadow-lg">
-    <div className="p-4 border-b border-slate-800 bg-slate-900/80">
-      <h2 className="font-semibold text-slate-200">Online ({participants.length})</h2>
-    </div>
-
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {participants.map((p, idx) => (
-        <div key={idx} className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-          <span className="text-slate-300 text-sm font-medium truncate">
-            {p.name || 'Anonymous Student'}
-          </span>
         </div>
-      ))}
-    </div>
-  </div>
-
-</div>
       </div>
     </div>
   );

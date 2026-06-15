@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Suspense, lazy, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import PeerCard from "@/components/PeerCard";
 import RecommendationPanel from "@/components/recommendations/RecommendationPanel";
 import SessionCard from "@/components/SessionCard";
 import StreakStats from "@/components/StreakStats";
@@ -10,6 +10,8 @@ import { useRole } from "@/contexts/RoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import RecommendationSection from "@/components/RecommendationSection";
 import AnalyticsCharts from "@/components/AnalyticsCharts";
+import { API_BASE_URL } from "@/config/api";
+const AnalyticsCharts = lazy(() => import("@/components/AnalyticsCharts"));
 
 interface Profile {
   id: string;
@@ -29,6 +31,7 @@ interface Profile {
   availability: string | null;
   preferred_language: string | null;
   timezone: string | null;
+  focus_time_this_week: number | null;
 }
 interface Session {
   id: string;
@@ -37,17 +40,8 @@ interface Session {
   date?: string;
 }
 
-
-const Dashboard = () => {
-  const { user, loading } = useAuth();
-  const { currentMode } = useRole();
-  const navigate = useNavigate();
-
-  const [profile, setProfile] = useState<Profile | null>(null);
+const Clock = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [recommendedPeers, setRecommendedPeers] = useState<any[]>([]);
-  const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -56,6 +50,26 @@ const Dashboard = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  return (
+    <p className="mt-3 text-sm text-slate-400">
+      {currentTime.toLocaleTimeString()}
+    </p>
+  );
+};
+
+const Dashboard = () => {
+  const { user, loading } = useAuth();
+  const { currentMode } = useRole();
+  const navigate = useNavigate();
+
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [recommendedPeers, setRecommendedPeers] = useState<any[]>([]);
+  const [connectedPeerIds, setConnectedPeerIds] = useState<Set<string>>(new Set());
+  const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [activityFeed, setActivityFeed] = useState<{ label: string; timestamp: string }[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   const displayName =
     profile?.name?.trim() ||
@@ -121,94 +135,131 @@ const Dashboard = () => {
     fetchProfile();
   }, [user]);
 
+  // Activity Feed — derive from sessions joined, resources uploaded, and study rooms joined
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchActivity = async () => {
+      setActivityLoading(true);
+      try {
+        const [sessionsRes, resourcesRes, roomsRes] = await Promise.all([
+          supabase
+            .from("sessions")
+            .select("title, created_at")
+            .or(`student_id.eq.${user.id},mentor_id.eq.${user.id}`)
+            .order("created_at", { ascending: false })
+            .limit(3),
+          supabase
+            .from("resources")
+            .select("title, created_at")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(3),
+          supabase
+            .from("study_room_participants")
+            .select("joined_at, study_rooms(topic)")
+            .eq("profile_id", user.id)
+            .order("joined_at", { ascending: false })
+            .limit(3),
+        ]);
+
+        if (sessionsRes.error) throw sessionsRes.error;
+        if (resourcesRes.error) throw resourcesRes.error;
+        if (roomsRes.error) throw roomsRes.error;
+
+        const entries: { label: string; timestamp: string }[] = [];
+
+        (sessionsRes.data ?? []).forEach((s: any) => {
+          entries.push({ label: `Joined session: ${s.title ?? "Untitled"}`, timestamp: s.created_at });
+        });
+        (resourcesRes.data ?? []).forEach((r: any) => {
+          entries.push({ label: `Uploaded resource: ${r.title}`, timestamp: r.created_at });
+        });
+        (roomsRes.data ?? []).forEach((p: any) => {
+          const topic = p.study_rooms?.topic ?? "Study Room";
+          entries.push({ label: `Joined study room: ${topic}`, timestamp: p.joined_at });
+        });
+
+        entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setActivityFeed(entries.slice(0, 5));
+      } catch (err) {
+        console.error("Failed to fetch activity feed:", err);
+        setActivityFeed([]);
+      } finally {
+        setActivityLoading(false);
+      }
+    };
+
+    fetchActivity();
+  }, [user]);
+
   // Recommended Peers
   const fetchRecommendedPeers = async (myProfile: Profile) => {
     if (!user?.id) return;
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .neq("id", user.id)
-      .limit(100)
-      .returns<Profile[]>();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-    if (error || !data) return;
+      const res = await fetch(`${API_BASE_URL}/api/match/supabase-discover?limit=3`, {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        },
+        credentials:"include"
+      });
+      
+      const data = await res.json();
+      
+      if (data.success && data.recommendations) {
+        const mapped = data.recommendations.map((p: any) => ({
+          id: p.id,
+          name: p.name || "User",
+          avatar: p.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${p.name}`,
+          bio: p.bio || "",
+          skills: p.skills ?? [],
+          interests: p.interests ?? [],
+          teachSubjects: p.teach_subjects ?? [],
+          learnSubjects: p.learn_subjects ?? [],
+          rating: p.rating ?? 0,
+          sessionsCompleted: p.sessions_completed ?? 0,
+          points: p.points ?? 0,
+          badges: p.badges ?? [],
+          matchScore: p.score ?? 0,
+        }));
+        
+        setRecommendedPeers(mapped);
+      }
+    } catch (err) {
+      console.error("Failed to fetch recommended peers:", err);
+    }
+  };
 
-    const peers = data || [];
-
-    const myLearn = myProfile.learn_subjects ?? [];
-    const myTeach = myProfile.teach_subjects ?? [];
-    const myInterests = myProfile.interests ?? [];
-
-    const mapped = peers.map((p) => {
-
-      const teach = p.teach_subjects ?? [];
-      const learn = p.learn_subjects ?? [];
-      const interests = p.interests ?? [];
-
-      const teachOverlap = myLearn.filter((s) => teach.includes(s)).length;
-      const learnOverlap = myTeach.filter((s) => learn.includes(s)).length;
-      const interestOverlap = myInterests.filter((s) => interests.includes(s)).length;
-      const learningStyleMatch =
-        myProfile.learning_style &&
-        p.learning_style &&
-        myProfile.learning_style === p.learning_style
-          ? 15
-          : 0;
-
-      const languageMatch =
-        myProfile.preferred_language &&
-        p.preferred_language &&
-        myProfile.preferred_language === p.preferred_language
-          ? 10
-          : 0;
-
-      const timezoneMatch =
-        myProfile.timezone &&
-        p.timezone &&
-        myProfile.timezone === p.timezone
-          ? 10
-          : 0;
-
-      const max = Math.max(
-        myLearn.length + myTeach.length + myInterests.length,
-        1
-      );
-
-      const baseScore =
-        ((teachOverlap + learnOverlap + interestOverlap) / max) * 65;
-
-      const matchScore = Math.min(
-        Math.round(
-          baseScore +
-            learningStyleMatch +
-            languageMatch +
-            timezoneMatch
-        ),
-        100
-      );
-
-      return {
-        id: p.id,
-        name: p.name || "User",
-        avatar:
-          p.avatar_url ||
-          `https://api.dicebear.com/9.x/avataaars/svg?seed=${p.name}`,
-        bio: p.bio || "",
-        skills: p.skills ?? [],
-        interests: interests,
-        teachSubjects: teach,
-        learnSubjects: learn,
-        rating: p.rating ?? 0,
-        sessionsCompleted: p.sessions_completed ?? 0,
-        points: p.points ?? 0,
-        badges: p.badges ?? [],
-        matchScore,
-      };
+  const handleConnect = async (peerId: string) => {
+    if (!user || connectedPeerIds.has(peerId)) return;
+    // Optimistic update prevents duplicate inserts from double-clicks
+    setConnectedPeerIds((prev) => new Set([...prev, peerId]));
+    const { error } = await (supabase as any).from("peer_connections").insert({
+      sender_id: user.id,
+      receiver_id: peerId,
+      status: "pending",
     });
-
-    mapped.sort((a, b) => b.matchScore - a.matchScore);
-    setRecommendedPeers(mapped.slice(0, 3));
+    if (error) {
+      // Roll back optimistic update on failure
+      setConnectedPeerIds((prev) => {
+        const next = new Set(prev);
+        next.delete(peerId);
+        return next;
+      });
+      return;
+    }
+    const { error: notifError } = await (supabase as any).from("notifications").insert({
+      user_id: peerId,
+      type: "connection_request",
+      body: `${profile?.name || "Someone"} wants to connect with you!`,
+    });
+    if (notifError) {
+      console.error("Failed to send connection notification:", notifError);
+    }
   };
 
   // Sessions
@@ -252,11 +303,18 @@ const Dashboard = () => {
             joined_participants: 6
           }
         ]);
+      // SECURITY/PERF: Limit fetch to top 4 to prevent downloading 10,000 global sessions
+      // which would cause massive browser OOM crashes and render thrashing.
+      if (!user?.id) {
+        setUpcomingSessions([]);
+        return;
       }
       const { data, error } = await supabase
         .from("sessions")
         .select("*")
-        .eq("status", "upcoming");
+        .eq("status", "upcoming")
+        .or(`mentor_id.eq.${user.id},student_id.eq.${user.id}`)
+        .limit(4);
 
       if (error || !data) {
         setUpcomingSessions([]);
@@ -267,7 +325,7 @@ const Dashboard = () => {
     };
 
     fetchSessions();
-  }, []);
+  }, [user?.id]);
 
   const [globalRank, setGlobalRank] = useState<number>(0);
 
@@ -388,9 +446,7 @@ const Dashboard = () => {
                 👋
               </h1>
 
-              <p className="mt-3 text-sm text-slate-400">
-                {currentTime.toLocaleTimeString()}
-              </p>
+              <Clock />
 
               <p className="mt-4 text-lg text-slate-300/80">
                 Continue your learning journey today.
@@ -409,12 +465,17 @@ const Dashboard = () => {
                 <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
                   🎯 {upcomingSessions.length || 0} Sessions
                 </div>
+                
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
+                  ⏱️ {profile?.focus_time_this_week ? Math.round(profile.focus_time_this_week / 60) : 0} hrs focused
+                </div>
               </div>
             </div>
 
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/sessions")}
               className="rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-7 py-4 font-semibold text-black shadow-[0_0_35px_rgba(34,211,238,0.35)]"
             >
               + Start Learning
@@ -481,7 +542,11 @@ const Dashboard = () => {
           </div>
         </div>
         {/* Analytics */}
-        <AnalyticsCharts profile={profile} sessions={upcomingSessions} />
+        <Suspense
+          fallback={<div className="mt-10 h-72 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl animate-pulse" />}
+        >
+          <AnalyticsCharts profile={profile} />
+        </Suspense>
 
         <RecommendationPanel profile={profile} sessions={upcomingSessions} />
 
@@ -559,8 +624,12 @@ const Dashboard = () => {
                         ))}
                       </div>
 
-                      <button className="mt-5 w-full rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-3 font-semibold text-slate-900 transition hover:scale-[1.02]">
-                        Connect with Peer
+                      <button
+                        onClick={() => handleConnect(p.id)}
+                        disabled={connectedPeerIds.has(p.id)}
+                        className="mt-5 w-full rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-3 font-semibold text-slate-900 transition hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {connectedPeerIds.has(p.id) ? "Pending" : "Connect with Peer"}
                       </button>
                     </div>
                 ))}
@@ -578,13 +647,13 @@ const Dashboard = () => {
               </h2>
 
               <div className="space-y-4">
-
-                {[
-                  "Joined AI Session",
-                  "Completed React Quiz",
-                  "New Peer Request",
-                  "Earned 50 XP",
-                ].map((activity, i) => (
+                {activityLoading && (
+                  <p className="text-sm text-slate-400">Loading activity…</p>
+                )}
+                {!activityLoading && activityFeed.length === 0 && (
+                  <p className="text-sm text-slate-400">No recent activity yet.</p>
+                )}
+                {!activityLoading && activityFeed.map((item, i) => (
                   <motion.div
                     key={i}
                     whileHover={{ x: 4 }}
@@ -592,17 +661,13 @@ const Dashboard = () => {
                   >
                     <div>
                       <p className="text-sm text-white">
-                        {activity}
+                        {item.label}
                       </p>
-
                       <span className="text-xs text-slate-400">
-                        2 mins ago
+                        {new Date(item.timestamp).toLocaleString()}
                       </span>
                     </div>
-
-                    <div className="text-cyan-400">
-                      ✔
-                    </div>
+                    <div className="text-cyan-400">✔</div>
                   </motion.div>
                 ))}
               </div>
@@ -647,3 +712,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

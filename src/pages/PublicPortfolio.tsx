@@ -64,6 +64,16 @@ const parseGithubUsername = (url: string) => {
 
 const normalizeArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 
+const sanitizeUrl = (url: string | null | undefined): string => {
+  if (!url) return "";
+  const trimmed = url.trim();
+  const lower = trimmed.toLowerCase();
+  if (lower.startsWith("javascript:") || lower.startsWith("data:") || lower.startsWith("vbscript:")) {
+    return "";
+  }
+  return trimmed;
+};
+
 const PublicPortfolio = () => {
   const { slug } = useParams();
   const [portfolio, setPortfolio] = useState<PortfolioRow | null>(null);
@@ -79,10 +89,6 @@ const PublicPortfolio = () => {
     setLoading(true);
 
     try {
-      console.log("Fetching public portfolio for slug:", slug);
-
-      console.log("STEP 1");
-
 const { data: portfolioData, error: portfolioError } = await supabase
   .from("portfolio_profiles")
   .select(`
@@ -99,10 +105,6 @@ const { data: portfolioData, error: portfolioError } = await supabase
   .eq("is_published", true)
   .maybeSingle();
 
-console.log("STEP 2");
-console.log("Portfolio data:", portfolioData);
-console.log("Portfolio error:", portfolioError);
-
       if (portfolioError) {
         throw portfolioError;
       }
@@ -112,11 +114,6 @@ console.log("Portfolio error:", portfolioError);
         setPortfolio(null);
         return;
       }
-
-      console.log(
-        "Fetching profile for profile_id:",
-        portfolioData.profile_id
-      );
 
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
@@ -131,9 +128,6 @@ console.log("Portfolio error:", portfolioError);
         .eq("id", portfolioData.profile_id)
         .maybeSingle();
 
-      console.log("Profile data:", profileData);
-      console.log("Profile error:", profileError);
-
       if (profileError) {
         console.error("Profile query failed:", profileError);
       }
@@ -143,13 +137,13 @@ console.log("Portfolio error:", portfolioError);
 
       setPortfolio({
         headline: portfolioData.headline || "",
-        github_url: portfolioData.github_url || "",
-        linkedin_url: portfolioData.linkedin_url || "",
+        github_url: sanitizeUrl(portfolioData.github_url),
+        linkedin_url: sanitizeUrl(portfolioData.linkedin_url),
         skills: portfolioData.skills || [],
         achievements: normalizeArray<Achievement>(
           portfolioData.achievements
         ),
-        projects: normalizeArray<Project>(portfolioData.projects),
+        projects: normalizeArray<Project>(portfolioData.projects).map(p => ({ ...p, url: sanitizeUrl(p.url) })),
         learning_progress: {
           focus:
             typeof progress?.focus === "string"

@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { memo, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Trophy,
@@ -10,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import {
   calculateLevel,
@@ -29,6 +31,71 @@ interface LeaderboardEntry {
   updated_at?: string;
 }
 
+type LeaderboardRowProps = {
+  entry: LeaderboardEntry;
+  index: number;
+  isCurrentUser: boolean;
+};
+
+const LeaderboardRow = memo(({ entry, index, isCurrentUser }: LeaderboardRowProps) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      whileHover={{ scale: 1.01 }}
+      className={`rounded-3xl border p-5 backdrop-blur-xl transition-all duration-300 ${
+        isCurrentUser
+          ? "border-cyan-400 bg-cyan-500/10 shadow-[0_0_30px_rgba(6,182,212,0.2)]"
+          : "border-white/10 bg-white/5 hover:border-cyan-500/20"
+      }`}
+    >
+      <div className="flex flex-col gap-4 md:flex-row md:items-center">
+        <div
+          className={`flex h-12 w-12 items-center justify-center rounded-2xl font-bold ${
+            index < 3
+              ? "bg-gradient-to-r from-cyan-400 to-blue-500 text-black"
+              : "bg-white/10 text-white"
+          }`}
+        >
+          #{index + 1}
+        </div>
+
+        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white/10 text-xl font-bold">
+          {entry.avatar_url ? (
+            <img
+              src={entry.avatar_url}
+              alt={entry.username}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            entry.username.charAt(0)
+          )}
+        </div>
+
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-bold">{entry.username}</h3>
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-gray-400">
+            <span>🔥 {entry.streak} day streak</span>
+            <span>📚 {entry.sessions_joined} sessions</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 rounded-2xl bg-cyan-500/10 px-4 py-3">
+          <Flame className="h-5 w-5 text-yellow-400" />
+          <div>
+            <p className="text-xs text-gray-400">XP</p>
+            <h2 className="text-xl font-black text-cyan-400">{entry.xp}</h2>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+
 const Leaderboard = () => {
 
   const { user } = useAuth();
@@ -39,6 +106,7 @@ const Leaderboard = () => {
   const [myRank, setMyRank] = useState<number>(0);
   const [myEntry, setMyEntry] = useState<LeaderboardEntry | null>(null);
   const [totalLearners, setTotalLearners] = useState<number>(0);
+  const listParentRef = useRef<HTMLDivElement | null>(null);
 
   // FETCH LEADERBOARD
   const fetchLeaderboard = async () => {
@@ -204,6 +272,13 @@ const Leaderboard = () => {
 
   // myRank and myEntry are now fetched as state from the server
 
+  const listVirtualizer = useVirtualizer({
+    count: entries.length,
+    getScrollElement: () => listParentRef.current,
+    estimateSize: () => 180,
+    overscan: 6,
+  });
+
   // LOADING
   if (loading) {
 
@@ -309,6 +384,33 @@ const Leaderboard = () => {
           </div>
 
         </div>
+        {/* SCORING INFO */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-10 rounded-3xl border border-cyan-500/20 bg-cyan-500/5 p-6 backdrop-blur-xl"
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <Star className="h-5 w-5 text-yellow-400" />
+            <h3 className="text-lg font-bold text-cyan-300">
+              How does ranking work?
+            </h3>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-sm font-semibold text-white">📚 Join a Study Session</p>
+              <p className="mt-1 text-xs text-gray-400">Earn XP every time you join a live study session with peers.</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-sm font-semibold text-white">💬 Answer Peer Doubts</p>
+              <p className="mt-1 text-xs text-gray-400">Help others by answering questions in Anonymous Doubts to gain XP.</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-sm font-semibold text-white">🔥 Maintain Your Streak</p>
+              <p className="mt-1 text-xs text-gray-400">Log in and stay active daily to build your streak and boost your rank.</p>
+            </div>
+          </div>
+        </motion.div>
 
         {/* FILTERS */}
         <div className="mt-10 flex flex-wrap gap-3">
@@ -428,169 +530,34 @@ const Leaderboard = () => {
         )}
 
         {/* FULL LEADERBOARD */}
-        <div className="mt-16 space-y-5">
+        <div ref={listParentRef} className="mt-16 h-[1200px] overflow-y-auto pr-2">
+          <div style={{ height: `${listVirtualizer.getTotalSize()}px`, position: "relative" }}>
+            {listVirtualizer.getVirtualItems().map((virtualItem) => {
+              const entry = entries[virtualItem.index];
 
-          {entries.map((entry, index) => (
-
-            <motion.div
-              key={entry.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              whileHover={{ scale: 1.01 }}
-              transition={{ delay: index * 0.03 }}
-              className={`rounded-3xl border p-5 backdrop-blur-xl transition-all duration-300 ${
-                entry.user_id === user?.id
-                  ? "border-cyan-400 bg-cyan-500/10 shadow-[0_0_30px_rgba(6,182,212,0.2)]"
-                  : "border-white/10 bg-white/5 hover:border-cyan-500/20"
-              }`}
-            >
-
-              <div className="flex flex-col gap-4 md:flex-row md:items-center">
-
-                {/* RANK */}
+              return (
                 <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-2xl font-bold ${
-                    index < 3
-                      ? "bg-gradient-to-r from-cyan-400 to-blue-500 text-black"
-                      : "bg-white/10 text-white"
-                  }`}
+                  key={entry.id}
+                  ref={listVirtualizer.measureElement}
+                  data-index={virtualItem.index}
+                  style={{
+                    transform: `translateY(${virtualItem.start}px)`,
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                  }}
+                  className="pb-5"
                 >
-
-                  #{index + 1}
-
+                  <LeaderboardRow
+                    entry={entry}
+                    index={virtualItem.index}
+                    isCurrentUser={entry.user_id === user?.id}
+                  />
                 </div>
-
-                {/* AVATAR */}
-                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white/10 text-xl font-bold">
-
-                  {entry.avatar_url ? (
-
-                    <img
-                      src={entry.avatar_url}
-                      alt={entry.username}
-                      className="h-full w-full object-cover"
-                    />
-
-                  ) : (
-
-                    entry.username.charAt(0)
-
-                  )}
-
-                </div>
-
-                {/* INFO */}
-                <div className="flex-1">
-
-                  <div className="flex items-center gap-3">
-
-                    <h3 className="text-lg font-bold">
-                      {entry.username}
-                    </h3>
-
-                    {entry.user_id === user?.id && (
-
-                      <Badge className="border border-cyan-400/20 bg-cyan-500/10 text-cyan-300">
-
-                        YOU
-
-                      </Badge>
-
-                    )}
-
-                    <Badge className="bg-pink-500/20 text-pink-300 border border-pink-500/20">
-
-                      Level {calculateLevel(entry.xp)}
-
-                    </Badge>
-
-                  </div>
-
-                  <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-gray-400">
-
-                    <span>🔥 {entry.streak} day streak</span>
-
-                    <span>
-                      📚 {entry.sessions_joined} sessions
-                    </span>
-
-                  </div>
-
-                  {/* XP BAR */}
-                  <div className="mt-4">
-
-                    <div className="mb-2 flex items-center justify-between text-xs text-gray-400">
-
-                      <span>
-                        XP Progress
-                      </span>
-
-                      <span>
-                        {calculateProgress(entry.xp)}/100
-                      </span>
-
-                    </div>
-
-                    <div className="h-2 overflow-hidden rounded-full bg-white/10">
-
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"
-                        style={{
-                          width: `${calculateProgress(entry.xp)}%`,
-                        }}
-                      />
-
-                    </div>
-
-                  </div>
-
-                  {/* BADGES */}
-                  <div className="mt-3 flex flex-wrap gap-2">
-
-                    {(entry.badges || []).map((badge) => (
-
-                      <Badge
-                        key={badge}
-                        className="border border-cyan-500/20 bg-cyan-500/10 text-cyan-300"
-                      >
-
-                        <Star className="mr-1 h-3 w-3" />
-
-                        {badge}
-
-                      </Badge>
-
-                    ))}
-
-                  </div>
-
-                </div>
-
-                {/* XP CARD */}
-                <div className="flex items-center gap-2 rounded-2xl bg-cyan-500/10 px-4 py-3">
-
-                  <Flame className="h-5 w-5 text-yellow-400" />
-
-                  <div>
-
-                    <p className="text-xs text-gray-400">
-                      XP
-                    </p>
-
-                    <h2 className="text-xl font-black text-cyan-400">
-                      {entry.xp}
-                    </h2>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </motion.div>
-
-          ))}
-
+              );
+            })}
+          </div>
         </div>
 
         {/* EMPTY STATE */}
@@ -619,3 +586,4 @@ const Leaderboard = () => {
 };
 
 export default Leaderboard;
+

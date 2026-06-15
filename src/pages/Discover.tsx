@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -11,6 +12,9 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { NotificationsDropdown } from "@/components/NotificationsDropdown";
+import { Check } from "lucide-react";
+import { API_BASE_URL } from "@/config/api";
 
 const filters = [
   "All",
@@ -41,6 +45,62 @@ const cardVariants = {
   },
 };
 
+const DiscoverPeerCard = memo(({ user, isOnline, onConnect, isConnected }: any) => {
+  return (
+    <motion.div
+      variants={cardVariants}
+      whileHover={{
+        scale: 1.03,
+        y: -5,
+      }}
+      className="relative overflow-hidden rounded-[30px] p-6 border border-white/10 bg-white/5 backdrop-blur-2xl hover:border-cyan-400/40 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300"
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 opacity-0 hover:opacity-100 transition" />
+
+      <div className="relative z-10 flex items-center gap-4 mb-5">
+        <div className="relative">
+          <img
+            src={user.avatar_url || "https://i.pravatar.cc/150"}
+            alt={user.name}
+            loading="lazy"
+            decoding="async"
+            className="w-16 h-16 rounded-full object-cover border-2 border-cyan-400"
+          />
+
+          {isOnline && (
+            <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-400 rounded-full border-2 border-[#020617]" />
+          )}
+        </div>
+
+        <div>
+          <h2 className="text-xl font-bold">{user.name}</h2>
+          <p className="text-gray-400 text-sm">{user.bio || "Passionate learner 🚀"}</p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-5">
+        {(Array.isArray(user.skills) ? user.skills : (user.skills?.split(",") || [])).map((skill: string, index: number) => (
+          <span key={index} className="bg-cyan-500/10 border border-cyan-400/10 text-cyan-300 px-3 py-1 rounded-full text-sm">
+            {typeof skill === 'string' ? skill.trim() : skill}
+          </span>
+        ))}
+      </div>
+
+      <button
+        onClick={() => onConnect(user.id)}
+        disabled={isConnected}
+        className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold transition ${
+          isConnected
+            ? "bg-white/10 text-gray-400 cursor-not-allowed border border-white/10"
+            : "bg-gradient-to-r from-cyan-400 to-purple-500 text-black hover:opacity-90"
+        }`}
+      >
+        {isConnected ? "Pending" : "Connect"}
+      </button>
+    </motion.div>
+  );
+});
+
 const Discover = () => {
   const [currentUser, setCurrentUser] =
     useState<any>(null);
@@ -55,6 +115,9 @@ const Discover = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All");
 
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const [connections, setConnections] = useState<string[]>([]);
+
   // DEBOUNCE SEARCH
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -63,9 +126,9 @@ const Discover = () => {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // FETCH USERS
+  // 1. FETCH INITIAL DATA (User Profile & Connections) - Runs ONCE on mount
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
         const { data } = await supabase.auth.getUser();
         const user = data?.user;
@@ -107,83 +170,112 @@ const Discover = () => {
         // Server-side skill filter
         if (selectedFilter !== "All") {
           query = query.ilike("skills", `%${selectedFilter}%`);
+        // FETCH CONNECTIONS
+        const { data: conns } = await (supabase as any)
+          .from("peer_connections")
+          .select("sender_id, receiver_id")
+          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
+        
+        if (conns) {
+          const connectedIds = conns.map((c: any) => c.sender_id === user.id ? c.receiver_id : c.sender_id);
+          setConnections(connectedIds);
         }
-
-        const { data: allUsers } = await query;
-
-        setUsers(allUsers || []);
       } catch (err) {
-        console.log(err);
+        console.error("Error fetching initial data:", err);
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  // 2. FETCH PEERS FROM BACKEND - Runs on search/filter change
+  useEffect(() => {
+    const fetchPeers = async () => {
+      // PERF: Don't fetch peers until the user profile has securely loaded
+      if (!currentUser) return;
+      
+      setLoading(true);
+      try {
+        const searchParams = new URLSearchParams();
+        if (debouncedSearch.trim()) searchParams.append("search", debouncedSearch.trim());
+        if (selectedFilter !== "All") searchParams.append("filter", selectedFilter);
+        searchParams.append("limit", "100");
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const res = await fetch(`${API_BASE_URL}/api/match/supabase-discover?${searchParams.toString()}`, {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`
+            },
+            credentials:"include"
+          });
+          const apiData = await res.json();
+          if (apiData.success) {
+            setUsers(apiData.recommendations || []);
+            setFilteredUsers(apiData.recommendations || []);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching peers:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, [debouncedSearch, selectedFilter]);
+    fetchPeers();
+  }, [debouncedSearch, selectedFilter, currentUser]);
 
-  // MATCH SCORE
-  const getMatchScore = (user: any) => {
-    if (!currentUser) return 0;
-
-    const userSkills = Array.isArray(user.skills)
-      ? user.skills.map((s: string) => s.toLowerCase())
-      : (user.skills?.split(",") || []).map((s: string) => s.trim().toLowerCase());
-
-    const myGoals = Array.isArray(currentUser.learning_goals)
-      ? currentUser.learning_goals.map((s: string) => s.toLowerCase())
-      : (currentUser.learning_goals?.split(",") || []).map((s: string) => s.trim().toLowerCase());
-
-    return userSkills.filter((skill: string) =>
-      myGoals.includes(skill)
-    ).length;
-  };
-
-  // FILTER & SCORE USERS (client-side match scoring only)
+  // PRESENCE
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser?.id) return;
 
-    const matched = users
-      .map((u) => ({
-        ...u,
-        score: getMatchScore(u),
-      }));
+    const channel = supabase.channel('online-users', {
+      config: {
+        presence: {
+          key: currentUser.id,
+        },
+      },
+    });
 
-    // SEARCH
-    if (search) {
-      matched = matched.filter((u) => {
-        const skillsStr = Array.isArray(u.skills)
-          ? u.skills.join(" ").toLowerCase()
-          : (u.skills || "").toLowerCase();
-        return (
-          u.name?.toLowerCase().includes(search.toLowerCase()) ||
-          skillsStr.includes(search.toLowerCase())
-        );
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const activeIds = Object.keys(state);
+        setOnlineUsers(activeIds);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ online_at: new Date().toISOString() });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser?.id]);
+
+  // Match scoring has been moved to the Node.js backend to prevent O(N) payload bloat and severe UI jank
+
+  const handleConnect = useCallback(async (peerId: string) => {
+    if (!currentUser || connections.includes(peerId)) return;
+
+    setConnections((prev) => [...prev, peerId]);
+
+    const { error } = await (supabase as any).from("peer_connections").insert({
+      sender_id: currentUser.id,
+      receiver_id: peerId,
+      status: 'pending'
+    });
+
+    if (!error) {
+      await (supabase as any).from("notifications").insert({
+        user_id: peerId,
+        type: 'system',
+        title: 'New Connection Request',
+        body: `${currentUser.name || 'Someone'} wants to connect with you!`,
       });
     }
-
-    // FILTERS
-    if (selectedFilter !== "All") {
-      matched = matched.filter((u) => {
-        const skillsList = Array.isArray(u.skills)
-          ? u.skills.map((s: string) => s.toLowerCase())
-          : (u.skills?.split(",") || []).map((s: string) => s.trim().toLowerCase());
-        return skillsList.some((skill: string) =>
-          skill.includes(selectedFilter.toLowerCase())
-        );
-      });
-    }
-
-    // DEFAULT BUBBLE
-    // If no search and no filter are active, only show recommended peers (score > 0)
-    if (!search && selectedFilter === "All") {
-      matched = matched.filter((u) => u.score > 0);
-    }
-
-    matched.sort((a, b) => b.score - a.score);
-
-    setFilteredUsers(matched);
-  }, [users, currentUser]);
+  }, [connections, currentUser]);
 
   return (
     <div className="min-h-screen bg-[#020617] text-white overflow-hidden">
@@ -207,9 +299,7 @@ const Discover = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="bg-white/10 backdrop-blur-xl border border-white/10 p-3 rounded-full hover:bg-white/20 transition">
-              <Bell size={20} />
-            </button>
+            <NotificationsDropdown />
 
             <img
               src={
@@ -217,6 +307,8 @@ const Discover = () => {
                 "https://i.pravatar.cc/150"
               }
               alt="avatar"
+              loading="lazy"
+              decoding="async"
               className="w-12 h-12 rounded-full border-2 border-cyan-400 object-cover"
             />
           </div>
@@ -334,114 +426,13 @@ const Discover = () => {
             className="grid md:grid-cols-3 gap-6"
           >
             {filteredUsers.map((u) => (
-              <motion.div
+              <DiscoverPeerCard
                 key={u.id}
-                variants={cardVariants}
-                whileHover={{
-                  scale: 1.03,
-                  y: -5,
-                }}
-                className="relative overflow-hidden rounded-[30px] p-6 border border-white/10 bg-white/5 backdrop-blur-2xl hover:border-cyan-400/40 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300"
-              >
-                {/* GLOW */}
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 opacity-0 hover:opacity-100 transition" />
-
-                {/* TOP */}
-                <div className="relative z-10 flex items-center gap-4 mb-5">
-                  <div className="relative">
-                    <img
-                      src={
-                        u.avatar_url ||
-                        "https://i.pravatar.cc/150"
-                      }
-                      alt={u.name}
-                      className="w-16 h-16 rounded-full object-cover border-2 border-cyan-400"
-                    />
-
-                    {/* ONLINE */}
-                    <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-400 rounded-full border-2 border-[#020617]" />
-                  </div>
-
-                  <div>
-                    <h2 className="text-xl font-bold">
-                      {u.name}
-                    </h2>
-
-                    <p className="text-gray-400 text-sm">
-                      {u.bio ||
-                        "Passionate learner 🚀"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* STREAK */}
-                <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-400/20 text-orange-300 px-4 py-2 rounded-xl mb-5 w-fit">
-                  <Zap size={16} />
-                  12 Day Learning Streak
-                </div>
-
-                {/* SKILLS */}
-                <div className="flex flex-wrap gap-2 mb-5">
-                  {(Array.isArray(u.skills) ? u.skills : (u.skills?.split(",") || [])).map(
-                    (
-                      skill: string,
-                      index: number
-                    ) => (
-                      <span
-                        key={index}
-                        className="bg-cyan-500/10 border border-cyan-400/10 text-cyan-300 px-3 py-1 rounded-full text-sm"
-                      >
-                        {typeof skill === 'string' ? skill.trim() : skill}
-                      </span>
-                    )
-                  )}
-                </div>
-
-                {/* GOALS */}
-                <div className="mb-5">
-                  <p className="text-gray-400 text-sm mb-2">
-                    Learning Goals
-                  </p>
-
-                  <p className="text-sm leading-relaxed text-gray-200">
-                    {u.learning_goals}
-                  </p>
-                </div>
-
-                {/* MATCH */}
-                <div className="mb-6">
-                  <div className="flex justify-between mb-2">
-                    <p className="text-sm text-gray-400">
-                      Compatibility
-                    </p>
-
-                    <div className="bg-cyan-500/10 text-cyan-300 px-3 py-1 rounded-full text-sm border border-cyan-400/20">
-                      {u.score * 25}% Match 🔥
-                    </div>
-                  </div>
-
-                  <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{
-                        width: 0,
-                      }}
-                      animate={{
-                        width: `${u.score * 25}%`,
-                      }}
-                      transition={{
-                        duration: 1,
-                      }}
-                      className="h-3 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full"
-                    />
-                  </div>
-                </div>
-
-                {/* BUTTON */}
-                <button className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-400 to-purple-500 text-black py-3 rounded-2xl font-bold hover:opacity-90 transition">
-                  <UserPlus size={18} />
-                  Connect
-                </button>
-              </motion.div>
+                user={u}
+                isOnline={onlineUsers.includes(u.id)}
+                onConnect={handleConnect}
+                isConnected={connections.includes(u.id)}
+              />
             ))}
           </motion.div>
         )}
@@ -451,3 +442,4 @@ const Discover = () => {
 };
 
 export default Discover;
+

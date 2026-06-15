@@ -1,9 +1,15 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { memo, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, MessageCircle, Search, Send } from "lucide-react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
+import { toast } from "sonner";
 import { AuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { useAwardXP } from "@/hooks/useAwardXP";
+const MarkdownRenderer = React.lazy(() =>
+  import("@/components/MarkdownRenderer").then((module) => ({ default: module.MarkdownRenderer }))
+);
 
 type Profile = {
   id: string;
@@ -38,6 +44,76 @@ type ChatMessage = {
   read_at?: string | null;
 };
 
+type ConversationRowProps = {
+  user: Profile;
+  isOnline: boolean;
+  isSelected: boolean;
+  onSelect: (user: Profile) => void;
+};
+
+const ConversationRow = memo(({ user, isOnline, isSelected, onSelect }: ConversationRowProps) => {
+  return (
+    <button
+      onClick={() => onSelect(user)}
+      className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
+        isSelected
+          ? "border-cyan-400/60 bg-cyan-400/10"
+          : "border-transparent hover:border-white/10 hover:bg-white/5"
+      }`}
+    >
+      <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-cyan-500 text-sm font-semibold text-slate-950">
+        {getInitial(user)}
+        <span
+          className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-slate-900 ${
+            isOnline ? "bg-emerald-400" : "bg-slate-500"
+          }`}
+        />
+      </div>
+      <div className="min-w-0">
+        <p className="truncate font-medium">{getDisplayName(user)}</p>
+        <p className={isOnline ? "text-xs text-emerald-300" : "text-xs text-slate-500"}>
+          {isOnline ? "Online" : "Offline"}
+        </p>
+      </div>
+    </button>
+  );
+});
+
+type ChatBubbleProps = {
+  message: ChatMessage;
+  isMine: boolean;
+  timeLabel: string;
+  markdownRenderer: React.ComponentType<{ content: string; className?: string }>;
+};
+
+const ChatBubble = memo(
+  React.forwardRef<HTMLDivElement, ChatBubbleProps>(function ChatBubble(
+    { message, isMine, timeLabel, markdownRenderer: Markdown },
+    ref
+  ) {
+    const body = message.content || message.text || "";
+
+    return (
+      <div ref={ref} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+        <div
+          className={`max-w-[82%] rounded-2xl px-4 py-3 shadow-sm md:max-w-[68%] ${
+            isMine
+              ? "rounded-br-md bg-cyan-400 text-slate-950"
+              : "rounded-bl-md border border-white/10 bg-white/10 text-white"
+          }`}
+        >
+          <Suspense fallback={<p className="whitespace-pre-wrap break-words text-sm leading-6">{body}</p>}>
+            <Markdown content={body} className="whitespace-pre-wrap break-words text-sm leading-6" />
+          </Suspense>
+          <p className={`mt-1 text-[11px] ${isMine ? "text-slate-700" : "text-slate-400"}`}>
+            {timeLabel}
+          </p>
+        </div>
+      </div>
+    );
+  })
+);
+
 const getDisplayName = (profile?: Profile | null) =>
   profile?.name || profile?.email?.split("@")[0] || "Learner";
 
@@ -58,10 +134,14 @@ const Chat = () => {
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [typingUserId, setTypingUserId] = useState<string | null>(null);
   const [showConversationList, setShowConversationList] = useState(true);
+  const awardXP = useAwardXP();
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stopTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const conversationsParentRef = useRef<HTMLDivElement | null>(null);
+  const messagesParentRef = useRef<HTMLDivElement | null>(null);
+  const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const filteredUsers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -73,9 +153,25 @@ const Chat = () => {
     );
   }, [search, users]);
 
+  const conversationVirtualizer = useVirtualizer({
+    count: filteredUsers.length,
+    getScrollElement: () => conversationsParentRef.current,
+    estimateSize: () => 88,
+    overscan: 8,
+  });
+
+  const messageVirtualizer = useVirtualizer({
+    count: messages.length,
+    getScrollElement: () => messagesParentRef.current,
+    estimateSize: () => 88,
+    overscan: 12,
+  });
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, typingUserId]);
+    if (messages.length > 0) {
+      messageVirtualizer.scrollToIndex(messages.length - 1, { align: "end" });
+    }
+  }, [messages.length, messageVirtualizer]);
 
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -91,7 +187,7 @@ const Chat = () => {
           .order("name", { ascending: true })
           .limit(100),
         supabase
-          .from("users")
+          .from("profiles")
           .select("*")
           .neq("id", currentUser.id)
           .order("name", { ascending: true })
@@ -193,7 +289,7 @@ const Chat = () => {
 
       const { data, error } = await supabase
         .from("messages")
-        .select("id,sender_id,receiver_id,content,text,created_at,read_at")
+        .select("id,sender_id,receiver_id,content,text,created_at")
         .or(
           `and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedUser.id}),and(sender_id.eq.${selectedUser.id},receiver_id.eq.${currentUser.id})`
         )
@@ -277,10 +373,12 @@ const Chat = () => {
         }
       })
       .subscribe();
+    typingChannelRef.current = typingChannel;
 
     return () => {
       supabase.removeChannel(messageChannel);
       supabase.removeChannel(typingChannel);
+      typingChannelRef.current = null;
 
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
@@ -288,25 +386,21 @@ const Chat = () => {
     };
   }, [currentUser?.id, selectedUser?.id]);
 
-  const sendTypingStatus = async (isTyping: boolean) => {
-    if (!currentUser?.id || !selectedUser?.id) return;
+  const sendTypingStatus = useCallback(async (isTyping: boolean) => {
+    if (!typingChannelRef.current) return;
 
-    await supabase
-      .channel(`chat-typing-${[currentUser.id, selectedUser.id].sort().join("-")}`, {
-        config: { private: true },
-      })
-      .send({
-        type: "broadcast",
-        event: "typing",
-        payload: {
-          senderId: currentUser.id,
-          receiverId: selectedUser.id,
-          isTyping,
-        },
-      });
-  };
+    await typingChannelRef.current.send({
+      type: "broadcast",
+      event: "typing",
+      payload: {
+        senderId: currentUser?.id,
+        receiverId: selectedUser?.id,
+        isTyping,
+      },
+    });
+  }, []);
 
-  const handleMessageChange = (value: string) => {
+  const handleMessageChange = useCallback((value: string) => {
     setMessageText(value);
     sendTypingStatus(Boolean(value.trim()));
 
@@ -317,15 +411,15 @@ const Chat = () => {
     stopTypingTimeoutRef.current = setTimeout(() => {
       sendTypingStatus(false);
     }, 1200);
-  };
+  }, [sendTypingStatus]);
 
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     const content = messageText.trim();
 
     if (!content || !currentUser?.id || !selectedUser?.id) return;
 
     if (content.length > 2000) {
-      alert("Message exceeds maximum length of 2000 characters.");
+      toast.error("Message exceeds maximum length of 2000 characters.");
       return;
     }
 
@@ -342,8 +436,10 @@ const Chat = () => {
     if (error) {
       setMessageText(content);
       console.error("Failed to send message:", error.message);
+    } else {
+      awardXP.mutate({ activity: "chat_message" });
     }
-  };
+  }, [currentUser?.id, messageText, selectedUser?.id, sendTypingStatus, awardXP]);
 
   const selectUser = useCallback((user: Profile) => {
     setSelectedUser(user);
@@ -390,7 +486,7 @@ const Chat = () => {
             </label>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-3">
+          <div ref={conversationsParentRef} className="flex-1 overflow-y-auto p-3">
             {loadingUsers ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((item) => (
@@ -402,36 +498,31 @@ const Chat = () => {
                 No learners found.
               </div>
             ) : (
-              <div className="space-y-2">
-                {filteredUsers.map((user) => {
-                  const isOnline = onlineUsers.includes(user.id);
-                  const isSelected = selectedUser?.id === user.id;
+              <div style={{ height: `${conversationVirtualizer.getTotalSize()}px`, position: "relative" }}>
+                {conversationVirtualizer.getVirtualItems().map((virtualItem) => {
+                  const user = filteredUsers[virtualItem.index];
 
                   return (
-                    <button
+                    <div
                       key={user.id}
-                      onClick={() => selectUser(user)}
-                      className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
-                        isSelected
-                          ? "border-cyan-400/60 bg-cyan-400/10"
-                          : "border-transparent hover:border-white/10 hover:bg-white/5"
-                      }`}
+                      data-index={virtualItem.index}
+                      ref={conversationVirtualizer.measureElement}
+                      style={{
+                        transform: `translateY(${virtualItem.start}px)`,
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                      }}
+                      className="pb-2"
                     >
-                      <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-cyan-500 text-sm font-semibold text-slate-950">
-                        {getInitial(user)}
-                        <span
-                          className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-slate-900 ${
-                            isOnline ? "bg-emerald-400" : "bg-slate-500"
-                          }`}
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">{getDisplayName(user)}</p>
-                        <p className={isOnline ? "text-xs text-emerald-300" : "text-xs text-slate-500"}>
-                          {isOnline ? "Online" : "Offline"}
-                        </p>
-                      </div>
-                    </button>
+                      <ConversationRow
+                        user={user}
+                        isOnline={onlineUsers.includes(user.id)}
+                        isSelected={selectedUser?.id === user.id}
+                        onSelect={selectUser}
+                      />
+                    </div>
                   );
                 })}
               </div>
@@ -472,7 +563,7 @@ const Chat = () => {
                 </div>
               </header>
 
-              <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5">
+              <div ref={messagesParentRef} className="flex-1 overflow-y-auto px-4 py-5">
                 {loadingMessages ? (
                   <div className="space-y-4">
                     <div className="h-14 w-56 animate-pulse rounded-2xl bg-white/10" />
@@ -483,39 +574,48 @@ const Chat = () => {
                     Start the conversation with {getDisplayName(selectedUser)}.
                   </div>
                 ) : (
-                  messages.map((message) => {
-                    const isMine = message.sender_id === currentUser.id;
-                    const body = message.content || message.text || "";
+                  <div style={{ height: `${messageVirtualizer.getTotalSize()}px`, position: "relative" }}>
+                    {messageVirtualizer.getVirtualItems().map((virtualItem) => {
+                      const message = messages[virtualItem.index];
+                      const isMine = message.sender_id === currentUser.id;
 
-                    return (
-                      <div key={message.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                      return (
                         <div
-                          className={`max-w-[82%] rounded-2xl px-4 py-3 shadow-sm md:max-w-[68%] ${
-                            isMine
-                              ? "rounded-br-md bg-cyan-400 text-slate-950"
-                              : "rounded-bl-md border border-white/10 bg-white/10 text-white"
-                          }`}
+                          key={message.id}
+                          data-index={virtualItem.index}
+                          ref={messageVirtualizer.measureElement}
+                          style={{
+                            transform: `translateY(${virtualItem.start}px)`,
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                          }}
+                          className="pb-4"
                         >
-                          <MarkdownRenderer content={body} className="whitespace-pre-wrap break-words text-sm leading-6" />
-                          <p className={`mt-1 text-[11px] ${isMine ? "text-slate-700" : "text-slate-400"}`}>
-                            {message.created_at
-                              ? new Date(message.created_at).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
-                              : "Just now"}
-                          </p>
+                          <ChatBubble
+                            message={message}
+                            isMine={isMine}
+                            timeLabel={
+                              message.created_at
+                                ? new Date(message.created_at).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })
+                                : "Just now"
+                            }
+                            markdownRenderer={MarkdownRenderer as React.ComponentType<{ content: string; className?: string }>}
+                          />
                         </div>
-                      </div>
-                    );
-                  })
+                      );
+                    })}
+                  </div>
                 )}
 
                 {typingUserId === selectedUser.id && (
                   <div className="text-sm text-cyan-300">{getDisplayName(selectedUser)} is typing...</div>
                 )}
 
-                <div ref={messagesEndRef} />
               </div>
 
               <div className="border-t border-white/10 p-4">
@@ -555,3 +655,4 @@ const Chat = () => {
 };
 
 export default Chat;
+

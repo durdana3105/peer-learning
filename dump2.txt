@@ -1,0 +1,627 @@
+﻿--- 20260531000001_fix_join_session_status.sql ---
+-- Fix Logic Flaw / Joining Ended Sessions in join_session RPC
+
+CREATE OR REPLACE FUNCTION public.join_session(p_session_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_seat_limit integer;
+  v_participants integer;
+  v_status text;
+BEGIN
+  -- Validate the session exists and fetch its limits and status, locking the row to prevent race conditions
+  SELECT seat_limit, participants, status INTO v_seat_limit, v_participants, v_status
+  FROM public.sessions
+  WHERE id = p_session_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Session not found.';
+  END IF;
+
+  -- Verify the session's status
+  IF v_status NOT IN ('scheduled', 'live') THEN
+    RAISE EXCEPTION 'Cannot join a session that is %.', v_status;
+  END IF;
+
+  -- Check if seat limit is reached
+  IF v_seat_limit IS NOT NULL AND v_participants >= v_seat_limit THEN
+    RAISE EXCEPTION 'Session is full.';
+  END IF;
+
+  -- Insert the participant
+  BEGIN
+    INSERT INTO public.session_participants (session_id, user_id)
+    VALUES (p_session_id, auth.uid());
+  EXCEPTION WHEN unique_violation THEN
+    -- Already joined
+    RETURN;
+  END;
+
+  -- Increment the participants count
+  UPDATE public.sessions
+  SET participants = participants + 1
+  WHERE id = p_session_id;
+
+END;
+$$;
+
+--- 20260529000004_secure_study_rooms.sql ---
+-- 1. Add is_private flag
+ALTER TABLE public.study_rooms 
+ADD COLUMN is_private BOOLEAN NOT NULL DEFAULT false;
+
+-- 2. Create participants table
+CREATE TABLE public.study_room_participants (
+  room_id UUID REFERENCES public.study_rooms(id) ON DELETE CASCADE,
+  profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  joined_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  PRIMARY KEY (room_id, profile_id)
+);
+
+ALTER TABLE public.study_room_participants ENABLE ROW LEVEL SECURITY;
+
+-- 3. Update RLS on study_rooms
+DROP POLICY IF EXISTS "study_rooms_select" ON public.study_rooms;
+
+CREATE POLICY "study_rooms_select" ON public.study_rooms
+  FOR SELECT TO authenticated
+  USING (
+    not is_private 
+    OR created_by = auth.uid() 
+    OR EXISTS (
+      SELECT 1 FROM public.study_room_participants 
+      WHERE room_id = id AND profile_id = auth.uid()
+    )
+  );
+
+-- 4. Update RLS on study_room_messages
+DROP POLICY IF EXISTS "study_room_messages_select" ON public.study_room_messages;
+
+CREATE POLICY "study_room_messages_select" ON public.study_room_messages
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.study_rooms 
+      WHERE id = room_id 
+      AND (
+        not is_private 
+        OR created_by = auth.uid() 
+        OR EXISTS (
+          SELECT 1 FROM public.study_room_participants 
+          WHERE room_id = study_rooms.id AND profile_id = auth.uid()
+        )
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "study_room_messages_insert" ON public.study_room_messages;
+
+CREATE POLICY "study_room_messages_insert" ON public.study_room_messages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    auth.uid() = profile_id
+    AND EXISTS (
+      SELECT 1 FROM public.study_rooms 
+      WHERE id = room_id 
+      AND (
+        not is_private 
+        OR created_by = auth.uid() 
+        OR EXISTS (
+          SELECT 1 FROM public.study_room_participants 
+          WHERE room_id = study_rooms.id AND profile_id = auth.uid()
+        )
+      )
+    )
+  );
+
+-- 5. RLS on study_room_participants
+CREATE POLICY "study_room_participants_select" ON public.study_room_participants
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.study_rooms 
+      WHERE id = room_id 
+      AND (
+        not is_private 
+        OR created_by = auth.uid() 
+        OR EXISTS (
+          SELECT 1 FROM public.study_room_participants srp
+          WHERE srp.room_id = study_rooms.id AND srp.profile_id = auth.uid()
+        )
+      )
+    )
+  );
+
+-- 6. RPC for invites
+CREATE OR REPLACE FUNCTION invite_to_study_room(p_room_id UUID, p_user_email TEXT)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_room_creator UUID;
+  v_invitee_id UUID;
+BEGIN
+  -- Verify the caller is the creator
+  SELECT created_by INTO v_room_creator
+  FROM public.study_rooms
+  WHERE id = p_room_id;
+
+  IF v_room_creator != auth.uid() THEN
+    RAISE EXCEPTION 'Only the room creator can invite participants';
+  END IF;
+
+  -- Find the invitee by email (case-insensitive)
+  SELECT id INTO v_invitee_id
+  FROM auth.users
+  WHERE lower(email) = lower(p_user_email);
+
+  IF v_invitee_id IS NULL THEN
+    RAISE EXCEPTION 'User with this email not found';
+  END IF;
+
+  -- Insert into participants
+  INSERT INTO public.study_room_participants (room_id, profile_id)
+  VALUES (p_room_id, v_invitee_id)
+  ON CONFLICT DO NOTHING;
+END;
+$$;
+
+--- 20260529000007_secure_tick_session_statuses.sql ---
+-- Fix tick_session_statuses RPC Denial of Service (DoS) vulnerability
+-- Implements a global throttling mechanism using a single-row config table and NOWAIT locking
+-- to prevent concurrent execution and ensure the heavy UPDATE queries run at most once every 15 seconds.
+
+CREATE TABLE IF NOT EXISTS public.system_config (
+  id integer PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  last_session_tick timestamptz NOT NULL DEFAULT 'epoch'::timestamptz
+);
+
+-- Ensure the single row exists
+INSERT INTO public.system_config (id) VALUES (1) ON CONFLICT DO NOTHING;
+
+-- Secure the tick function
+CREATE OR REPLACE FUNCTION public.tick_session_statuses()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_last_tick timestamptz;
+BEGIN
+  -- Try to acquire a row-level lock without waiting.
+  -- If another process is currently running this function, it will throw lock_not_available.
+  BEGIN
+    SELECT last_session_tick INTO v_last_tick
+    FROM public.system_config
+    WHERE id = 1
+    FOR UPDATE NOWAIT;
+  EXCEPTION
+    WHEN lock_not_available THEN
+      -- Another transaction is currently executing the tick, abort silently
+      RETURN;
+  END;
+
+  -- If it was ticked within the last 15 seconds, skip execution
+  IF now() - v_last_tick < interval '15 seconds' THEN
+    RETURN;
+  END;
+
+  -- Update the last tick timestamp
+  UPDATE public.system_config SET last_session_tick = now() WHERE id = 1;
+
+  -- Scheduled → live when start time has passed
+  UPDATE sessions
+  SET status = 'live'
+  WHERE status = 'scheduled'
+    AND scheduled_at IS NOT NULL
+    AND scheduled_at <= now();
+
+  -- Live → ended when (scheduled_at + duration_minutes) has passed
+  UPDATE sessions
+  SET status = 'ended'
+  WHERE status = 'live'
+    AND scheduled_at IS NOT NULL
+    AND (scheduled_at + (duration_minutes * interval '1 minute')) <= now();
+END;
+$$;
+
+--- 20260528000001_gamification_rpc_functions.sql ---
+-- Migration: Add missing gamification RPC functions for streak management
+-- Adds 'previous_streak' column to allow restoring broken streaks.
+-- Creates 'update_daily_streak' and 'restore_user_streak' functions.
+
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS previous_streak INTEGER NOT NULL DEFAULT 0;
+
+-- 1. update_daily_streak
+CREATE OR REPLACE FUNCTION public.update_daily_streak()
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_current_streak integer;
+  v_last_active date;
+  v_points integer;
+  v_new_streak integer;
+  v_previous_streak integer;
+  v_xp_earned integer := 0;
+  v_today date := current_date;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT streak, last_active, points, previous_streak
+  INTO v_current_streak, v_last_active, v_points, v_previous_streak
+  FROM public.profiles
+  WHERE id = v_user_id;
+
+  IF v_last_active = v_today THEN
+    -- Already logged in today
+    RETURN json_build_object('streak', v_current_streak, 'xpEarned', 0);
+  END IF;
+
+  IF v_last_active = v_today - interval '1 day' THEN
+    -- Logged in yesterday, increment streak
+    v_new_streak := v_current_streak + 1;
+    v_xp_earned := 20 + (v_new_streak * 2); -- Base 20 + bonus
+    
+    UPDATE public.profiles
+    SET 
+      streak = v_new_streak,
+      last_active = v_today,
+      points = COALESCE(points, 0) + v_xp_earned,
+      last_active_at = now()
+    WHERE id = v_user_id;
+  ELSE
+    -- Streak broken (missed at least one day) or first login
+    v_new_streak := 1;
+    v_xp_earned := 20;
+
+    UPDATE public.profiles
+    SET 
+      previous_streak = CASE WHEN v_current_streak > 0 THEN v_current_streak ELSE previous_streak END,
+      streak = v_new_streak,
+      last_active = v_today,
+      points = COALESCE(points, 0) + v_xp_earned,
+      last_active_at = now()
+    WHERE id = v_user_id;
+  END IF;
+
+  RETURN json_build_object('streak', v_new_streak, 'xpEarned', v_xp_earned);
+END;
+$$;
+
+-- 2. restore_user_streak
+CREATE OR REPLACE FUNCTION public.restore_user_streak()
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_current_streak integer;
+  v_previous_streak integer;
+  v_points integer;
+  v_restoration_used boolean;
+  v_restoration_date date;
+  v_new_streak integer;
+  v_today date := current_date;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RETURN json_build_object('success', false, 'message', 'Not authenticated');
+  END IF;
+
+  SELECT streak, previous_streak, points, restoration_used_today, restoration_date
+  INTO v_current_streak, v_previous_streak, v_points, v_restoration_used, v_restoration_date
+  FROM public.profiles
+  WHERE id = v_user_id;
+
+  -- Check if already restored today
+  IF v_restoration_used AND v_restoration_date = v_today THEN
+    RETURN json_build_object('success', false, 'message', 'Streak already restored today');
+  END IF;
+
+  -- Check if previous streak is actually higher
+  IF v_previous_streak <= v_current_streak THEN
+    RETURN json_build_object('success', false, 'message', 'No higher previous streak to restore');
+  END IF;
+
+  -- Check points (costs 100 XP)
+  IF COALESCE(v_points, 0) < 100 THEN
+    RETURN json_build_object('success', false, 'message', 'Not enough XP (100 required)');
+  END IF;
+
+  -- Perform restoration
+  v_new_streak := v_previous_streak + 1; -- Restore the old streak + today's login
+
+  UPDATE public.profiles
+  SET 
+    streak = v_new_streak,
+    previous_streak = 0, -- Consume the previous streak
+    points = points - 100,
+    restoration_used_today = true,
+    restoration_date = v_today
+  WHERE id = v_user_id;
+
+  RETURN json_build_object(
+    'success', true, 
+    'message', 'Streak successfully restored!', 
+    'newStreak', v_new_streak
+  );
+END;
+$$;
+
+--- 20260529000003_add_leaderboard_pagination.sql ---
+-- Drop the old function since we're changing the signature (adding parameters with defaults)
+DROP FUNCTION IF EXISTS public.get_leaderboard(text);
+
+-- Create the new function with pagination parameters
+CREATE OR REPLACE FUNCTION public.get_leaderboard(
+  _timeframe text,
+  _limit int DEFAULT 100,
+  _offset int DEFAULT 0
+)
+RETURNS TABLE (
+  id uuid,
+  user_id uuid,
+  username text,
+  avatar_url text,
+  xp bigint,
+  streak int,
+  sessions_joined int,
+  badges text[],
+  updated_at text
+) LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  IF _timeframe = 'All Time' THEN
+    RETURN QUERY
+    SELECT l.id, l.user_id, l.username, l.avatar_url, l.xp::bigint, l.streak, l.sessions_joined, l.badges, ''::text AS updated_at
+    FROM public.leaderboard l
+    ORDER BY l.xp DESC
+    LIMIT _limit OFFSET _offset;
+  ELSIF _timeframe = 'Weekly' THEN
+    RETURN QUERY
+    SELECT l.id, l.user_id, l.username, l.avatar_url, COALESCE(SUM(t.amount), 0)::bigint AS xp, l.streak, l.sessions_joined, l.badges, ''::text AS updated_at
+    FROM public.leaderboard l
+    JOIN public.xp_transactions t ON l.user_id = t.user_id
+    WHERE t.created_at >= date_trunc('week', now())
+    GROUP BY l.id, l.user_id, l.username, l.avatar_url, l.streak, l.sessions_joined, l.badges
+    ORDER BY xp DESC
+    LIMIT _limit OFFSET _offset;
+  ELSIF _timeframe = 'Monthly' THEN
+    RETURN QUERY
+    SELECT l.id, l.user_id, l.username, l.avatar_url, COALESCE(SUM(t.amount), 0)::bigint AS xp, l.streak, l.sessions_joined, l.badges, ''::text AS updated_at
+    FROM public.leaderboard l
+    JOIN public.xp_transactions t ON l.user_id = t.user_id
+    WHERE t.created_at >= date_trunc('month', now())
+    GROUP BY l.id, l.user_id, l.username, l.avatar_url, l.streak, l.sessions_joined, l.badges
+    ORDER BY xp DESC
+    LIMIT _limit OFFSET _offset;
+  ELSE
+    RETURN QUERY
+    SELECT l.id, l.user_id, l.username, l.avatar_url, l.xp::bigint, l.streak, l.sessions_joined, l.badges, ''::text AS updated_at
+    FROM public.leaderboard l
+    ORDER BY l.xp DESC
+    LIMIT _limit OFFSET _offset;
+  END IF;
+END;
+$$;
+
+-- Assign permissions
+REVOKE ALL ON FUNCTION public.get_leaderboard(text, int, int) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_leaderboard(text, int, int) TO authenticated;
+
+--- 20260528_get_user_rank_with_filter.sql ---
+CREATE OR REPLACE FUNCTION get_user_rank(p_user_id UUID, p_filter TEXT DEFAULT 'All Time')
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_user_xp INTEGER;
+  v_rank INTEGER;
+  v_cutoff TIMESTAMP;
+BEGIN
+  -- Get the user's XP
+  SELECT xp INTO v_user_xp
+  FROM public.leaderboard
+  WHERE user_id = p_user_id;
+
+  IF v_user_xp IS NULL THEN
+    RETURN 0;
+  END IF;
+
+  -- Determine cutoff date based on filter
+  IF p_filter = 'This Week' THEN
+    v_cutoff := current_timestamp - interval '7 days';
+  ELSIF p_filter = 'This Month' THEN
+    v_cutoff := current_timestamp - interval '1 month';
+  ELSE
+    v_cutoff := '1970-01-01'::timestamp;
+  END IF;
+
+  -- Calculate rank (count of users with strictly more XP updated after cutoff + 1)
+  SELECT COUNT(*) + 1 INTO v_rank
+  FROM public.leaderboard
+  WHERE xp > v_user_xp AND updated_at >= v_cutoff;
+
+  RETURN v_rank;
+END;
+$$;
+
+--- 20260529000001_secure_leaderboard_join.sql ---
+-- Migration: 20260529000001_secure_leaderboard_join.sql
+
+-- 1. Create secure RPC
+CREATE OR REPLACE FUNCTION public.join_leaderboard(_username TEXT, _avatar_url TEXT) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_uid UUID := auth.uid();
+  v_exists BOOLEAN;
+BEGIN
+  IF v_uid IS NULL THEN RETURN; END IF;
+
+  SELECT EXISTS(SELECT 1 FROM public.leaderboard WHERE user_id = v_uid) INTO v_exists;
+  
+  IF NOT v_exists THEN
+    INSERT INTO public.leaderboard (user_id, username, avatar_url, xp, streak, sessions_joined, badges)
+    VALUES (v_uid, _username, _avatar_url, 0, 1, 0, ARRAY['Beginner']);
+  END IF;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.join_leaderboard(TEXT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.join_leaderboard(TEXT, TEXT) TO authenticated;
+
+-- 2. Drop the policy that allowed client-side inserts
+DROP POLICY IF EXISTS "Users can insert own leaderboard row" ON public.leaderboard;
+
+--- 20260526_secure_gamification.sql ---
+-- Migration: 20260526_secure_gamification.sql
+-- Description: Creates secure backend RPCs for gamification logic (streak calculation, restoration, XP increments)
+
+CREATE OR REPLACE FUNCTION public.get_badge(_xp INT) RETURNS TEXT
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF _xp >= 2000 THEN RETURN 'Legend'; END IF;
+  IF _xp >= 1000 THEN RETURN 'Master'; END IF;
+  IF _xp >= 500 THEN RETURN 'Pro'; END IF;
+  IF _xp >= 200 THEN RETURN 'Advanced'; END IF;
+  IF _xp >= 50 THEN RETURN 'Learner'; END IF;
+  RETURN 'Beginner';
+END;
+$$;
+
+-- 1. increment_user_xp
+-- Prevents users from giving themselves arbitrary XP. Limited to max 200 per call for safety.
+CREATE OR REPLACE FUNCTION public.increment_user_xp(_amount INT) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_uid UUID := auth.uid();
+  v_current_xp INT;
+  v_new_xp INT;
+BEGIN
+  IF v_uid IS NULL THEN RETURN; END IF;
+  IF _amount > 200 THEN _amount := 200; END IF; -- sanity check limit
+  IF _amount <= 0 THEN RETURN; END IF;
+  
+  -- Update profiles table
+  UPDATE public.profiles SET points = COALESCE(points, 0) + _amount WHERE id = v_uid;
+  
+  -- Update leaderboard table and calculate badge
+  SELECT xp INTO v_current_xp FROM public.leaderboard WHERE user_id = v_uid;
+  IF FOUND THEN
+    v_new_xp := COALESCE(v_current_xp, 0) + _amount;
+    UPDATE public.leaderboard SET xp = v_new_xp, badges = ARRAY[public.get_badge(v_new_xp)] WHERE user_id = v_uid;
+  END IF;
+END;
+$$;
+
+-- 2. update_daily_streak
+-- Prevents manipulation of streaks and XP earned from streak visits.
+CREATE OR REPLACE FUNCTION public.update_daily_streak() RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_uid UUID := auth.uid();
+  v_last_active TEXT;
+  v_streak INT;
+  v_points INT;
+  v_today TEXT := to_char(now(), 'YYYY-MM-DD');
+  v_new_streak INT;
+  v_xp_earned INT;
+  v_diff INT;
+BEGIN
+  IF v_uid IS NULL THEN RETURN '{"streak": 0, "xpEarned": 0}'::jsonb; END IF;
+
+  SELECT streak, last_active, points INTO v_streak, v_last_active, v_points FROM public.profiles WHERE id = v_uid;
+  
+  IF NOT FOUND THEN RETURN '{"streak": 0, "xpEarned": 0}'::jsonb; END IF;
+  
+  IF v_streak IS NULL THEN v_streak := 0; END IF;
+  IF v_points IS NULL THEN v_points := 0; END IF;
+  
+  IF v_last_active = v_today THEN
+    v_new_streak := GREATEST(v_streak, 1);
+    v_xp_earned := 0;
+  ELSIF v_last_active IS NOT NULL AND v_last_active != '' THEN
+    v_diff := DATE_PART('day', v_today::date - v_last_active::date);
+    IF v_diff = 1 THEN
+      v_new_streak := v_streak + 1;
+    ELSE
+      v_new_streak := 1;
+    END IF;
+    -- calc logic: min(50 + streak * 10, 200)
+    v_xp_earned := LEAST(50 + (v_new_streak * 10), 200);
+  ELSE
+    v_new_streak := 1;
+    v_xp_earned := LEAST(50 + (v_new_streak * 10), 200);
+  END IF;
+
+  UPDATE public.profiles SET streak = v_new_streak, last_active = v_today, points = v_points + v_xp_earned WHERE id = v_uid;
+  
+  RETURN jsonb_build_object('streak', v_new_streak, 'xpEarned', v_xp_earned);
+END;
+$$;
+
+-- 3. restore_user_streak
+-- Prevents bypassing the 100 XP cost or the once-per-day restriction.
+CREATE OR REPLACE FUNCTION public.restore_user_streak() RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_uid UUID := auth.uid();
+  v_streak INT;
+  v_points INT;
+  v_restoration_used BOOLEAN;
+  v_restoration_date TEXT;
+  v_today TEXT := to_char(now(), 'YYYY-MM-DD');
+BEGIN
+  IF v_uid IS NULL THEN RETURN '{"success": false, "message": "Not authenticated"}'::jsonb; END IF;
+
+  SELECT streak, points, restoration_used_today, restoration_date 
+  INTO v_streak, v_points, v_restoration_used, v_restoration_date 
+  FROM public.profiles WHERE id = v_uid;
+  
+  IF NOT FOUND THEN RETURN '{"success": false, "message": "Profile not found"}'::jsonb; END IF;
+  
+  IF v_streak IS NULL THEN v_streak := 0; END IF;
+  IF v_points IS NULL THEN v_points := 0; END IF;
+  
+  IF v_restoration_used AND v_restoration_date = v_today THEN
+    RETURN '{"success": false, "message": "You already used restoration today. Try again tomorrow!"}'::jsonb;
+  END IF;
+  
+  IF v_points < 100 THEN
+    RETURN jsonb_build_object('success', false, 'message', 'You need 100 XP to restore. You have ' || v_points || ' XP.');
+  END IF;
+  
+  UPDATE public.profiles 
+  SET streak = v_streak + 1, 
+      points = v_points - 100, 
+      restoration_used_today = true, 
+      restoration_date = v_today 
+  WHERE id = v_uid;
+  
+  RETURN jsonb_build_object('success', true, 'message', 'Streak restored! 🔥 New streak: ' || (v_streak + 1) || ' days', 'newStreak', v_streak + 1);
+END;
+$$;
+
+-- Assign permissions
+REVOKE ALL ON FUNCTION public.get_badge(INT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_badge(INT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_badge(INT) TO service_role;
+
+REVOKE ALL ON FUNCTION public.increment_user_xp(INT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.increment_user_xp(INT) TO authenticated;
+
+REVOKE ALL ON FUNCTION public.update_daily_streak() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.update_daily_streak() TO authenticated;
+
+REVOKE ALL ON FUNCTION public.restore_user_streak() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.restore_user_streak() TO authenticated;
+

@@ -1,0 +1,546 @@
+--- Missing RLS ---
+Table system_config might be missing RLS (or enabled in another file, check manually)
+
+--- Policies ---
+[20260403063915_adc67827-4e14-47b7-8e16-eac33b8aa748.sql] profiles (select): Anyone can view profiles
+USING (true)
+
+[20260403063915_adc67827-4e14-47b7-8e16-eac33b8aa748.sql] profiles (insert): Users can insert own profile
+WITH CHECK (auth.uid() = id)
+
+[20260403063915_adc67827-4e14-47b7-8e16-eac33b8aa748.sql] profiles (update): Users can update own profile
+USING (auth.uid() = id)
+
+[20260403063915_adc67827-4e14-47b7-8e16-eac33b8aa748.sql] profiles (delete): Users can delete own profile
+USING (auth.uid() = id)
+
+[20260404054320_b139e90b-bc69-4367-9d48-8f9d5b134731.sql] user_roles (select): Admins can view all roles
+USING (public.has_role(auth.uid(), 'admin'))
+
+[20260404054320_b139e90b-bc69-4367-9d48-8f9d5b134731.sql] user_roles (insert): Admins can manage roles
+WITH CHECK (public.has_role(auth.uid(), 'admin'))
+
+[20260404054320_b139e90b-bc69-4367-9d48-8f9d5b134731.sql] user_roles (delete): Admins can delete roles
+USING (public.has_role(auth.uid(), 'admin'))
+
+[20260517_create_chat_system.sql] conversations (select): Users can read their conversations
+using (
+  exists (
+    select 1
+    from public.conversation_participants cp
+    where cp.conversation_id = conversations.id
+      and cp.user_id = auth.uid()
+  )
+)
+
+[20260517_create_chat_system.sql] conversation_participants (select): Users can read conversation participants
+using (user_id = auth.uid())
+
+[20260517_create_chat_system.sql] messages (select): Users can read their direct messages
+using (
+  sender_id = auth.uid()
+  or receiver_id = auth.uid()
+  or exists (
+    select 1
+    from public.conversation_participants cp
+    where cp.conversation_id = messages.conversation_id
+      and cp.user_id = auth.uid()
+  )
+)
+
+[20260517_create_chat_system.sql] messages (insert): Users can send direct messages
+with check (sender_id = auth.uid())
+
+[20260518120000_study_rooms_mvp.sql] study_rooms (select): Anyone can read study rooms
+USING (true)
+
+[20260518120000_study_rooms_mvp.sql] study_rooms (insert): Users can create study rooms
+WITH CHECK (created_by = auth.uid())
+
+[20260518120000_study_rooms_mvp.sql] study_rooms (update): Only creator can update study room
+USING (created_by = auth.uid())
+WITH CHECK (created_by = auth.uid())
+
+[20260518120000_study_rooms_mvp.sql] study_rooms (delete): Only creator can delete study room
+USING (created_by = auth.uid())
+
+[20260518120000_study_rooms_mvp.sql] study_room_messages (select): Anyone can read room messages
+USING (true)
+
+[20260518120000_study_rooms_mvp.sql] study_room_messages (insert): Users can send room messages
+WITH CHECK (profile_id = auth.uid())
+
+[20260518120000_study_rooms_mvp.sql] study_room_messages (update): Author can update own message
+USING (profile_id = auth.uid())
+WITH CHECK (profile_id = auth.uid())
+
+[20260518120000_study_rooms_mvp.sql] study_room_messages (delete): Author can delete own message
+USING (profile_id = auth.uid())
+
+[20260518_app_bootstrap_and_notifications.sql] users (select): Authenticated users can view users
+using (true)
+
+[20260518_app_bootstrap_and_notifications.sql] users (insert): Users can insert own user row
+with check (auth.uid() = id)
+
+[20260518_app_bootstrap_and_notifications.sql] users (update): Users can update own user row
+using (auth.uid() = id)
+with check (auth.uid() = id)
+
+[20260518_app_bootstrap_and_notifications.sql] sessions (select): Authenticated users can view sessions
+using (true)
+
+[20260518_app_bootstrap_and_notifications.sql] sessions (insert): Authenticated users can create sessions
+with check (mentor_id is null or mentor_id = auth.uid())
+
+[20260518_app_bootstrap_and_notifications.sql] sessions (update): Mentors can update own sessions
+using (mentor_id = auth.uid())
+with check (mentor_id = auth.uid())
+
+[20260518_app_bootstrap_and_notifications.sql] mentors (insert): Users can insert mentor applications
+with check (user_id is null or user_id = auth.uid())
+
+[20260518_app_bootstrap_and_notifications.sql] mentors (select): Users can view own mentor applications
+using (user_id is null or user_id = auth.uid())
+
+[20260518_app_bootstrap_and_notifications.sql] chat_messages (select): Users can read own chat messages
+using (user_id = auth.uid())
+
+[20260518_app_bootstrap_and_notifications.sql] chat_messages (insert): Users can insert own chat messages
+with check (user_id is null or user_id = auth.uid())
+
+[20260518_app_bootstrap_and_notifications.sql] messages (select): Authenticated users can read session messages
+using (
+  session_id is not null
+  or sender_id = auth.uid()
+  or receiver_id = auth.uid()
+)
+
+[20260518_app_bootstrap_and_notifications.sql] messages (insert): Authenticated users can send session messages
+with check (
+  user_id = auth.uid()
+  or sender_id = auth.uid()
+)
+
+[20260518_app_bootstrap_and_notifications.sql] leaderboard (select): Authenticated users can view leaderboard
+using (true)
+
+[20260518_app_bootstrap_and_notifications.sql] leaderboard (insert): Users can insert own leaderboard row
+with check (user_id = auth.uid())
+
+[20260518_app_bootstrap_and_notifications.sql] leaderboard (update): Users can update own leaderboard row
+using (user_id = auth.uid())
+    with check (user_id = auth.uid())
+
+[20260518_app_bootstrap_and_notifications.sql] notifications (select): Users can read own notifications
+using (auth.uid() = user_id)
+
+[20260518_app_bootstrap_and_notifications.sql] notifications (update): Users can update own notifications
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id)
+
+[20260518_app_bootstrap_and_notifications.sql] notifications (delete): Users can delete own notifications
+using (auth.uid() = user_id)
+
+[20260518_notification_automation.sql] session_participants (select): Users can view own session participation
+using (user_id = auth.uid())
+
+[20260518_notification_automation.sql] session_participants (insert): Users can join sessions
+with check (user_id = auth.uid())
+
+[20260518_notification_automation.sql] session_participants (delete): Users can leave own sessions
+using (user_id = auth.uid())
+
+[20260525_fix_chat_messages_rls.sql] chat_messages (select): Users can read own chat messages
+using (user_id = auth.uid())
+
+[20260525_fix_chat_messages_rls.sql] chat_messages (insert): Users can insert own chat messages
+with check (user_id = auth.uid())
+
+[20260526000001_study_rooms_rls.sql] study_rooms (select): study_rooms_select
+USING (true)
+
+[20260526000001_study_rooms_rls.sql] study_rooms (insert): study_rooms_insert
+WITH CHECK (auth.uid() = created_by)
+
+[20260526000001_study_rooms_rls.sql] study_rooms (update): study_rooms_update
+USING (auth.uid() = created_by)
+  WITH CHECK (auth.uid() = created_by)
+
+[20260526000001_study_rooms_rls.sql] study_rooms (delete): study_rooms_delete
+USING (auth.uid() = created_by)
+
+[20260526000001_study_rooms_rls.sql] study_room_messages (select): study_room_messages_select
+USING (true)
+
+[20260526000001_study_rooms_rls.sql] study_room_messages (insert): study_room_messages_insert
+WITH CHECK (auth.uid() = profile_id)
+
+[20260526000001_study_rooms_rls.sql] study_room_messages (delete): study_room_messages_delete
+USING (auth.uid() = profile_id)
+
+[20260526000002_profiles_update_column_restriction.sql] profiles (update): profiles_update
+USING (auth.uid() = id)
+  WITH CHECK (
+    auth.uid() = id
+    AND is_mentor IS NOT DISTINCT FROM (
+      SELECT is_mentor FROM public.profiles WHERE id = auth.uid()
+    )
+    AND points IS NOT DISTINCT FROM (
+      SELECT points FROM public.profiles WHERE id = auth.uid()
+    )
+    AND rating IS NOT DISTINCT FROM (
+      SELECT rating FROM public.profiles WHERE id = auth.uid()
+    )
+    AND badges IS NOT DISTINCT FROM (
+      SELECT badges FROM public.profiles WHERE id = auth.uid()
+    )
+    AND sessions_completed IS NOT DISTINCT FROM (
+      SELECT sessions_completed FROM public.profiles WHERE id = auth.uid()
+    )
+  )
+
+[20260527000002_fix_rls_null_bypass_chat_mentors.sql] chat_messages (select): Users can read own chat messages
+USING (user_id = auth.uid())
+
+[20260527000002_fix_rls_null_bypass_chat_mentors.sql] chat_messages (insert): Users can insert own chat messages
+WITH CHECK (user_id = auth.uid())
+
+[20260527000002_fix_rls_null_bypass_chat_mentors.sql] mentors (insert): Users can insert mentor applications
+WITH CHECK (user_id = auth.uid())
+
+[20260527000002_fix_rls_null_bypass_chat_mentors.sql] mentors (select): Users can view own mentor applications
+USING (user_id = auth.uid())
+
+[20260527000003_fix_sessions_rls_mentor_only.sql] sessions (insert): Mentors can create sessions
+WITH CHECK (
+  mentor_id = auth.uid()
+  AND EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND is_mentor = true
+  )
+)
+
+[20260528000000_fix_messages_spoofing_vulnerability.sql] messages (insert): Users can insert direct messages
+WITH CHECK (
+  session_id IS NULL 
+  AND sender_id = auth.uid()
+)
+
+[20260528000000_fix_messages_spoofing_vulnerability.sql] messages (insert): Users can insert session messages
+WITH CHECK (
+  session_id IS NOT NULL 
+  AND user_id = auth.uid()
+)
+
+[20260528000002_harden_streak_columns_rls.sql] profiles (update): profiles_update
+USING (auth.uid() = id)
+  WITH CHECK (
+    auth.uid() = id
+    AND is_mentor IS NOT DISTINCT FROM (
+      SELECT is_mentor FROM public.profiles WHERE id = auth.uid()
+    )
+    AND points IS NOT DISTINCT FROM (
+      SELECT points FROM public.profiles WHERE id = auth.uid()
+    )
+    AND rating IS NOT DISTINCT FROM (
+      SELECT rating FROM public.profiles WHERE id = auth.uid()
+    )
+    AND badges IS NOT DISTINCT FROM (
+      SELECT badges FROM public.profiles WHERE id = auth.uid()
+    )
+    AND sessions_completed IS NOT DISTINCT FROM (
+      SELECT sessions_completed FROM public.profiles WHERE id = auth.uid()
+    )
+    -- Newly protected gamification/streak columns:
+    AND streak IS NOT DISTINCT FROM (
+      SELECT streak FROM public.profiles WHERE id = auth.uid()
+    )
+    AND previous_streak IS NOT DISTINCT FROM (
+      SELECT previous_streak FROM public.profiles WHERE id = auth.uid()
+    )
+    AND last_active IS NOT DISTINCT FROM (
+      SELECT last_active FROM public.profiles WHERE id = auth.uid()
+    )
+    AND restoration_used_today IS NOT DISTINCT FROM (
+      SELECT restoration_used_today FROM public.profiles WHERE id = auth.uid()
+    )
+    AND restoration_date IS NOT DISTINCT FROM (
+      SELECT restoration_date FROM public.profiles WHERE id = auth.uid()
+    )
+  )
+
+[20260528_session_summaries.sql] session_summaries (select): Users can read session summaries
+using (true)
+
+[20260528_session_summaries.sql] session_summaries (insert): Authenticated users can insert session summaries
+with check (true)
+
+[20260529000004_fix_messages_realtime_leak.sql] messages (select): Users can read their direct messages
+USING (
+  (session_id IS NULL AND (sender_id = auth.uid() OR receiver_id = auth.uid()))
+)
+
+[20260529000004_fix_messages_realtime_leak.sql] messages (select): Users can read session messages
+USING (
+  (session_id IS NOT NULL)
+)
+
+[20260529000004_secure_study_rooms.sql] study_rooms (select): study_rooms_select
+USING (
+    not is_private 
+    OR created_by = auth.uid() 
+    OR EXISTS (
+      SELECT 1 FROM public.study_room_participants 
+      WHERE room_id = id AND profile_id = auth.uid()
+    )
+  )
+
+[20260529000004_secure_study_rooms.sql] study_room_messages (select): study_room_messages_select
+USING (
+    EXISTS (
+      SELECT 1 FROM public.study_rooms 
+      WHERE id = room_id 
+      AND (
+        not is_private 
+        OR created_by = auth.uid() 
+        OR EXISTS (
+          SELECT 1 FROM public.study_room_participants 
+          WHERE room_id = study_rooms.id AND profile_id = auth.uid()
+        )
+      )
+    )
+  )
+
+[20260529000004_secure_study_rooms.sql] study_room_messages (insert): study_room_messages_insert
+WITH CHECK (
+    auth.uid() = profile_id
+    AND EXISTS (
+      SELECT 1 FROM public.study_rooms 
+      WHERE id = room_id 
+      AND (
+        not is_private 
+        OR created_by = auth.uid() 
+        OR EXISTS (
+          SELECT 1 FROM public.study_room_participants 
+          WHERE room_id = study_rooms.id AND profile_id = auth.uid()
+        )
+      )
+    )
+  )
+
+[20260529000004_secure_study_rooms.sql] study_room_participants (select): study_room_participants_select
+USING (
+    EXISTS (
+      SELECT 1 FROM public.study_rooms 
+      WHERE id = room_id 
+      AND (
+        not is_private 
+        OR created_by = auth.uid() 
+        OR EXISTS (
+          SELECT 1 FROM public.study_room_participants srp
+          WHERE srp.room_id = study_rooms.id AND srp.profile_id = auth.uid()
+        )
+      )
+    )
+  )
+
+[20260530000000_peer_connections.sql] peer_connections (select): Users can view own connections
+using (auth.uid() = sender_id or auth.uid() = receiver_id)
+
+[20260530000000_peer_connections.sql] peer_connections (insert): Users can insert own connection requests
+with check (auth.uid() = sender_id)
+
+[20260530000000_peer_connections.sql] peer_connections (update): Users can update own connections
+using (auth.uid() = sender_id or auth.uid() = receiver_id)
+with check (auth.uid() = sender_id or auth.uid() = receiver_id)
+
+[20260530000001_skills_taxonomy.sql] skills_taxonomy (select): Authenticated users can read skills
+using (true)
+
+[20260530000001_skills_taxonomy.sql] skills_taxonomy (insert): Authenticated users can insert skills
+with check (true)
+
+[20260531000000_fix_peer_connections_idor.sql] peer_connections (update): Users can update own connections
+USING (auth.uid() = receiver_id)
+
+[20260531000002_fix_session_summaries_access.sql] session_summaries (insert): Authenticated users can insert session summaries
+WITH CHECK (
+  auth.uid() = user_id AND
+  (
+    EXISTS (SELECT 1 FROM public.session_participants sp WHERE sp.session_id = session_id AND sp.user_id = auth.uid())
+    OR
+    EXISTS (SELECT 1 FROM public.sessions s WHERE s.id = session_id AND s.mentor_id = auth.uid())
+  )
+)
+
+[20260531000004_fix_sessions_role_bypass.sql] sessions (insert): Mentors can create sessions
+WITH CHECK (
+  mentor_id = auth.uid()
+  AND EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND is_mentor = true
+  )
+)
+
+[20260531000004_fix_sessions_role_bypass.sql] sessions (update): Mentors can update own sessions
+USING (
+  mentor_id = auth.uid()
+  AND EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND is_mentor = true
+  )
+)
+WITH CHECK (
+  mentor_id = auth.uid()
+  AND EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND is_mentor = true
+  )
+)
+
+[20260531000005_fix_sessions_update_columns.sql] sessions (update): Mentors can update own sessions
+USING (
+  mentor_id = auth.uid()
+  AND EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND is_mentor = true
+  )
+)
+WITH CHECK (
+  mentor_id = auth.uid()
+  AND EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND is_mentor = true
+  )
+  -- Column restrictions: prevent modification of server-controlled and sensitive fields
+  AND id IS NOT DISTINCT FROM (
+    SELECT id FROM public.sessions WHERE id = sessions.id
+  )
+  AND participants IS NOT DISTINCT FROM (
+    SELECT participants FROM public.sessions WHERE id = sessions.id
+  )
+  AND created_at IS NOT DISTINCT FROM (
+    SELECT created_at FROM public.sessions WHERE id = sessions.id
+  )
+  AND status IS NOT DISTINCT FROM (
+    SELECT status FROM public.sessions WHERE id = sessions.id
+  )
+)
+
+[20260601000005_fix_mentors_admin_update.sql] mentors (update): Users can update own mentor applications
+USING (user_id = auth.uid())
+WITH CHECK (user_id = auth.uid())
+
+[20260601000005_fix_mentors_admin_update.sql] mentors (select): Admins can view all mentor applications
+USING (public.has_role(auth.uid(), 'admin'))
+
+[20260601000005_fix_mentors_admin_update.sql] mentors (update): Admins can update all mentor applications
+USING (public.has_role(auth.uid(), 'admin'))
+
+
+--- Functions ---
+[20260403063915_adc67827-4e14-47b7-8e16-eac33b8aa748.sql] update_updated_at_column()
+Modifiers: SET search_path = public;
+
+CREATE TRIGGER update_profiles_updated_at
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Auto-create profile on signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+
+[20260404054320_b139e90b-bc69-4367-9d48-8f9d5b134731.sql] has_role(_user_id UUID, _role app_role)
+Modifiers: STABLE
+SECURITY DEFINER
+SET search_path = public
+
+[20260518_notification_automation.sql] notify_direct_message()
+Modifiers: security definer set search_path = public;
+
+drop trigger if exists on_direct_message_notification on public.messages;
+create trigger on_direct_message_notification
+after insert on public.messages
+for each row
+execute function public.notify_direct_message();
+
+create or replace function public.notify_new_session()
+returns trigger
+
+[20260523_admin_profiles_rpc.sql] admin_get_all_profiles()
+Modifiers: SECURITY DEFINER
+SET search_path = public
+
+[20260524_messages_read_state.sql] mark_messages_as_read(message_ids uuid[])
+Modifiers: security definer
+set search_path = public
+
+[20260526_ledger_gamification.sql] increment_user_xp(_amount INT)
+Modifiers: SECURITY DEFINER
+
+[20260526_ledger_gamification.sql] update_daily_streak()
+Modifiers: SECURITY DEFINER
+
+[20260526_ledger_gamification.sql] get_leaderboard(_timeframe text)
+Modifiers: SECURITY DEFINER
+
+[20260526_secure_gamification.sql] get_badge(_xp INT)
+Modifiers: 
+
+[20260526_secure_gamification.sql] increment_user_xp(_amount INT)
+Modifiers: SECURITY DEFINER
+
+[20260526_secure_gamification.sql] update_daily_streak()
+Modifiers: SECURITY DEFINER
+
+[20260526_secure_gamification.sql] restore_user_streak()
+Modifiers: SECURITY DEFINER
+
+[20260527000001_atomic_xp_increment.sql] increment_xp(
+  target_user_id uuid,
+  xp_amount integer
+)
+Modifiers: SECURITY INVOKER
+
+[20260527120000_session_scheduling.sql] tick_session_statuses()
+Modifiers: SECURITY DEFINER
+
+[20260527_get_user_rank.sql] get_user_rank(p_user_id UUID)
+Modifiers: SECURITY DEFINER
+
+[20260528000001_gamification_rpc_functions.sql] update_daily_streak()
+Modifiers: SECURITY DEFINER
+
+[20260528000001_gamification_rpc_functions.sql] restore_user_streak()
+Modifiers: SECURITY DEFINER
+
+[20260528_get_user_rank_with_filter.sql] get_user_rank(p_user_id UUID, p_filter TEXT DEFAULT 'All Time')
+Modifiers: SECURITY DEFINER
+
+[20260529000000_fix_xp_forgery.sql] award_activity_xp(_activity_type TEXT)
+Modifiers: SECURITY DEFINER
+
+[20260529000001_secure_leaderboard_join.sql] join_leaderboard(_username TEXT, _avatar_url TEXT)
+Modifiers: SECURITY DEFINER
+
+[20260529000003_add_leaderboard_pagination.sql] get_leaderboard(
+  _timeframe text,
+  _limit int DEFAULT 100,
+  _offset int DEFAULT 0
+)
+Modifiers: SECURITY DEFINER
+
+[20260529000004_secure_study_rooms.sql] invite_to_study_room(p_room_id UUID, p_user_email TEXT)
+Modifiers: SECURITY DEFINER
+
+[20260529000007_secure_tick_session_statuses.sql] tick_session_statuses()
+Modifiers: SECURITY DEFINER
+
+[20260529000008_add_session_seat_limits.sql] join_session(p_session_id UUID)
+Modifiers: SECURITY DEFINER
+
+[20260531000001_fix_join_session_status.sql] join_session(p_session_id UUID)
+Modifiers: SECURITY DEFINER
+

@@ -1,5 +1,5 @@
 import { memo, useContext, useMemo, useState } from "react";
-import { Archive, Code, Download, FileText, Loader2, Trash2 } from "lucide-react";
+import { Archive, Bookmark, Code, Download, FileText, Loader2, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -10,6 +10,8 @@ import type { Resource } from "@/types/resource";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useResourceInteractions } from "@/hooks/useResourceInteractions";
+import { cn } from "@/lib/utils";
 
 type ResourceCardProps = {
   resource: Resource;
@@ -33,6 +35,11 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const isOwner = currentUser?.id === resource.uploaded_by;
+
+  const { vote, isSaved, toggleVote, toggleSave } = useResourceInteractions(
+    resource.id,
+    currentUser?.id
+  );
 
   const resourceIcon = useMemo(() => {
     if (["py", "js", "ts"].includes(resource.file_type)) {
@@ -78,6 +85,30 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
     onDelete();
   };
 
+  const handleVote = async (type: 1 | -1) => {
+    if (!currentUser) {
+      toast.error("Please login to vote");
+      return;
+    }
+    try {
+      await toggleVote(vote === type ? null : type);
+    } catch (e) {
+      toast.error("Failed to register vote");
+    }
+  };
+
+  const handleSave = async () => {
+    if (!currentUser) {
+      toast.error("Please login to save resources");
+      return;
+    }
+    try {
+      await toggleSave(!isSaved);
+    } catch (e) {
+      toast.error("Failed to save resource");
+    }
+  };
+
   return (
     <Card className="flex h-full flex-col">
       <CardHeader className="space-y-4">
@@ -93,6 +124,16 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
               </Badge>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(isSaved && "text-primary")}
+            onClick={handleSave}
+            aria-label={isSaved ? "Unsave resource" : "Save resource"}
+            title={isSaved ? "Unsave resource" : "Save resource"}
+          >
+            <Bookmark className="h-5 w-5" fill={isSaved ? "currentColor" : "none"} />
+          </Button>
         </div>
       </CardHeader>
 
@@ -119,23 +160,46 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
         </div>
       </CardContent>
 
-      <CardFooter className="mt-auto flex flex-wrap gap-2">
-        <Button onClick={handleDownload} disabled={isDownloading || isDeleting} className="flex-1">
-          {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-          {isDownloading ? "Downloading..." : "Download"}
-        </Button>
-
-        {isOwner ? (
-          <Button
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={isDeleting || isDownloading}
-            className="flex-1"
+      <CardFooter className="mt-auto flex flex-col gap-3">
+        <div className="flex items-center gap-2 w-full justify-start border-b pb-3">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={cn("gap-1.5", vote === 1 && "text-green-600 bg-green-50")}
+            onClick={() => handleVote(1)}
           >
-            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-            {isDeleting ? "Deleting..." : "Delete"}
+            <ThumbsUp className="h-4 w-4" fill={vote === 1 ? "currentColor" : "none"} />
+            <span className="text-xs font-medium">{resource.upvotes_count || 0}</span>
           </Button>
-        ) : null}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={cn("gap-1.5", vote === -1 && "text-red-600 bg-red-50")}
+            onClick={() => handleVote(-1)}
+          >
+            <ThumbsDown className="h-4 w-4" fill={vote === -1 ? "currentColor" : "none"} />
+            <span className="text-xs font-medium">{resource.downvotes_count || 0}</span>
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap gap-2 w-full">
+          <Button onClick={handleDownload} disabled={isDownloading || isDeleting} className="flex-1">
+            {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {isDownloading ? "Downloading..." : "Download"}
+          </Button>
+
+          {isOwner ? (
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting || isDownloading}
+              className="flex-1"
+            >
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          ) : null}
+        </div>
       </CardFooter>
     </Card>
   );

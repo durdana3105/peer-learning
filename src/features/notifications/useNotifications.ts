@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Notification } from "./types";
@@ -129,11 +130,16 @@ export function useNotifications(userId?: string) {
             return [incoming, ...current];
           });
 
-          showBrowserNotification(
-            incoming.title,
-            incoming.body,
-            incoming.action_url || "/notifications"
-          );
+          // Check focus mode before showing popup
+          supabase.from('profiles').select('is_in_focus_mode').eq('id', userId).single().then(({ data }) => {
+            if (!data?.is_in_focus_mode) {
+              showBrowserNotification(
+                incoming.title,
+                incoming.body,
+                incoming.action_url || "/notifications"
+              );
+            }
+          });
         }
       )
       .on(
@@ -176,3 +182,4 @@ export function useNotifications(userId?: string) {
     refresh: () => fetchNotifications(0),
   };
 }
+

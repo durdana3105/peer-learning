@@ -1,4 +1,6 @@
+import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 
@@ -22,7 +24,8 @@ const avatars = [
   "https://api.dicebear.com/7.x/adventurer/svg?seed=Sophia",
 ];
 
-const EditProfile = () => {
+const Profile = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   const [profile, setProfile] = useState<any>({
@@ -75,27 +78,33 @@ const EditProfile = () => {
   // SAVE PROFILE
   const handleSave = async () => {
     setLoading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const user = data?.session?.user;
+      if (!user) {
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
 
-    const { data } = await supabase.auth.getSession();
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          name: profile.name,
+          bio: profile.bio,
+          skills: Array.isArray(profile.skills) ? profile.skills : profile.skills.split(",").map((s: string) => s.trim()).filter(Boolean),
+          avatar_url: profile.avatar_url,
+        })
+        .eq("id", user.id);
 
-    const user = data?.session?.user;
-
-    if (!user) return;
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        name: profile.name,
-        bio: profile.bio,
-        skills: Array.isArray(profile.skills) ? profile.skills : profile.skills.split(",").map((s: string) => s.trim()),
-        avatar_url: profile.avatar_url,
-      })
-      .eq("id", user.id);
-
-    setLoading(false);
-
-    if (!error) {
-      alert("Profile Updated Successfully 🚀");
+      if (error) {
+        toast.error("Failed to update profile: " + error.message);
+      } else {
+        toast.success("Profile updated successfully!");
+      }
+    } catch (err: any) {
+      toast.error("An unexpected error occurred: " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -126,7 +135,12 @@ const EditProfile = () => {
             </div>
 
             <h1 className="text-5xl font-bold mb-3">Edit Profile</h1>
-
+            <button
+              onClick={() => navigate('/profile')}
+              className="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-gray-300 px-4 py-2 rounded-full hover:border-cyan-400/50 hover:text-cyan-300 transition mt-2"
+            >
+              ← Back to Profile
+            </button>
             <p className="text-gray-400 text-lg">
               Build your learning identity 🚀
             </p>
@@ -168,11 +182,10 @@ const EditProfile = () => {
                       avatar_url: avatar,
                     })
                   }
-                  className={`relative rounded-full p-1 transition-all ${
-                    profile.avatar_url === avatar
-                      ? "bg-gradient-to-r from-cyan-400 to-purple-500"
-                      : "bg-white/10"
-                  }`}
+                  className={`relative rounded-full p-1 transition-all ${profile.avatar_url === avatar
+                    ? "bg-gradient-to-r from-cyan-400 to-purple-500"
+                    : "bg-white/10"
+                    }`}
                 >
                   <img
                     src={avatar}
@@ -293,7 +306,7 @@ const EditProfile = () => {
               <Trophy className="text-yellow-400" size={28} />
               <h2 className="text-3xl font-bold">Trophy Room</h2>
             </div>
-            
+
             <div className="space-y-10">
               {/* BADGES */}
               <div>
@@ -305,11 +318,10 @@ const EditProfile = () => {
                       <motion.div
                         key={badge.id}
                         whileHover={isUnlocked ? { scale: 1.05 } : {}}
-                        className={`relative overflow-hidden rounded-2xl p-5 border transition-all ${
-                          isUnlocked 
-                            ? "bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.15)]" 
-                            : "bg-white/5 border-white/5 opacity-60 grayscale"
-                        }`}
+                        className={`relative overflow-hidden rounded-2xl p-5 border transition-all ${isUnlocked
+                          ? "bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.15)]"
+                          : "bg-white/5 border-white/5 opacity-60 grayscale"
+                          }`}
                       >
                         {!isUnlocked && (
                           <div className="absolute top-3 right-3 text-gray-500">
@@ -321,13 +333,13 @@ const EditProfile = () => {
                           {badge.name.substring(badge.name.indexOf(' ') + 1)}
                         </h4>
                         <p className="text-xs text-gray-400 mt-1">{badge.description}</p>
-                        
+
                         {/* Progress Bar for Locked */}
                         {!isUnlocked && (
                           <div className="mt-3">
                             <div className="w-full bg-black/50 rounded-full h-1.5 mb-1 overflow-hidden">
-                              <div 
-                                className="bg-gray-500 h-1.5 rounded-full" 
+                              <div
+                                className="bg-gray-500 h-1.5 rounded-full"
                                 style={{ width: `${Math.min(100, (profile.xp / badge.xpRequired) * 100)}%` }}
                               />
                             </div>
@@ -350,11 +362,10 @@ const EditProfile = () => {
                       <motion.div
                         key={achievement.id}
                         whileHover={isUnlocked ? { y: -5 } : {}}
-                        className={`rounded-2xl p-4 border flex flex-col items-center text-center transition-all ${
-                          isUnlocked 
-                            ? "bg-cyan-500/10 border-cyan-400/30 shadow-[0_0_15px_rgba(34,211,238,0.1)]" 
-                            : "bg-white/5 border-white/5 opacity-50 grayscale"
-                        }`}
+                        className={`rounded-2xl p-4 border flex flex-col items-center text-center transition-all ${isUnlocked
+                          ? "bg-cyan-500/10 border-cyan-400/30 shadow-[0_0_15px_rgba(34,211,238,0.1)]"
+                          : "bg-white/5 border-white/5 opacity-50 grayscale"
+                          }`}
                       >
                         <div className="text-3xl mb-2">{achievement.icon}</div>
                         <h4 className={`font-bold text-sm ${isUnlocked ? "text-cyan-300" : "text-gray-500"}`}>
@@ -389,4 +400,4 @@ const EditProfile = () => {
   );
 };
 
-export default EditProfile;
+export default Profile;

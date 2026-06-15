@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
-
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { API_BASE_URL } from "@/config/api";
 interface Partner {
   _id: string;
   name: string;
@@ -10,35 +11,21 @@ interface Partner {
 }
 
 const SuggestedPartners = () => {
-  const [partners, setPartners] = useState<Partner[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchPartners = async () => {
-      try {
-        const response = await fetch(
-          "http://localhost:5000/api/match/recommendations",
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
-
-        const data = await response.json();
-
-        if (data.success) {
-          setPartners(data.recommendations);
+  const { data: partners = [], isLoading: loading } = useQuery<Partner[]>({
+    queryKey: ["suggested-partners"],
+    queryFn: async () => {
+      const response = await fetch(
+        `${API_BASE_URL}/api/match/recommendations`,
+        {
+          credentials: "include",
         }
-      } catch (error) {
-        console.error("Error fetching partners:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPartners();
-  }, []);
+      );
+      
+      if (!response.ok) throw new Error("Failed to fetch");
+      const data = await response.json();
+      return data.success ? data.recommendations : [];
+    },
+  });
 
   if (loading) {
     return (

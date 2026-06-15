@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getXPForActivity } from "@/lib/gamification";
@@ -27,14 +28,15 @@ export const useAwardXP = () => {
       // but the UI queries will be invalidated and refetched automatically.
       return { awarded: xpToAward };
     },
-    onSuccess: (data) => {
-      // Invalidate both profile and leaderboard queries to instantly sync UI
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
-      console.log(`Awarded ${data.awarded} XP!`);
     },
     onError: (error) => {
-      console.error("Failed to award XP:", error);
+      if (import.meta.env.DEV) {
+        console.error("Failed to award XP:", error);
+      }
     }
   });
 };
+

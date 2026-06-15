@@ -17,7 +17,7 @@ RETURNS TABLE (
   sessions_joined int,
   badges text[],
   updated_at text
-) LANGUAGE plpgsql SECURITY DEFINER AS $$
+) LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
   IF _timeframe = 'All Time' THEN
     RETURN QUERY

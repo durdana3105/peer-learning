@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAwardXP } from "@/hooks/useAwardXP";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -54,6 +55,7 @@ const formSchema = z
     time: z.string().min(1, "Time is required."),
     durationPreset: z.number().optional(),
     durationCustom: z.string().optional(),
+    seatLimit: z.string().optional(),
   })
   .refine(
     (v) => {
@@ -85,6 +87,7 @@ export function CreateSessionDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<number>(60);
   const [useCustom, setUseCustom] = useState(false);
+  const awardXP = useAwardXP();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -93,6 +96,7 @@ export function CreateSessionDialog({
       description: "",
       time: "12:00",
       durationPreset: 60,
+      seatLimit: "",
     },
   });
 
@@ -122,6 +126,7 @@ export function CreateSessionDialog({
       scheduledAt.setHours(hours, minutes, 0, 0);
 
       const durationMinutes = resolveDurationMinutes(values);
+      const seatLimit = values.seatLimit && values.seatLimit.trim() !== "" ? parseInt(values.seatLimit, 10) : null;
 
       const { error } = await supabase.from("sessions").insert({
         title: values.title,
@@ -130,6 +135,7 @@ export function CreateSessionDialog({
         duration_minutes: durationMinutes,
         status: "scheduled",
         mentor_id: user.id,
+        seat_limit: seatLimit,
       });
 
       if (error) throw error;
@@ -143,6 +149,7 @@ export function CreateSessionDialog({
       setSelectedPreset(60);
       setUseCustom(false);
       setOpen(false);
+      awardXP.mutate({ activity: "host_session" });
       onSessionCreated();
     } catch (error: unknown) {
       const msg =
@@ -230,6 +237,7 @@ export function CreateSessionDialog({
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
+                            type="button"
                             variant="outline"
                             className={cn(
                               "w-full pl-3 text-left font-normal bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white",
@@ -342,6 +350,27 @@ export function CreateSessionDialog({
                 />
               )}
             </div>
+
+            {/* Seat Limit */}
+            <FormField
+              control={form.control}
+              name="seatLimit"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Seat Limit (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      placeholder="e.g. 50"
+                      className={inputCls}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-400" />
+                </FormItem>
+              )}
+            />
 
             <Button
               type="submit"

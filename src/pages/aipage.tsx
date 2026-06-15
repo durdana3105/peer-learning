@@ -1,11 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { Bot, Send, User } from "lucide-react";
-<<<<<<< HEAD
-// Imported your mock profile data structures directly into the engine
-import { currentUser, peers } from "../data/mockData";
-=======
 import { supabase } from "@/integrations/supabase/client";
->>>>>>> 5da66c6bf301b7e68fd17add37fb48636449739c
+import { API_BASE_URL } from "@/config/api";
 
 const AIPage = () => {
   const [messages, setMessages] = useState<any[]>([
@@ -39,73 +36,31 @@ const AIPage = () => {
     setLoading(true);
 
     try {
-<<<<<<< HEAD
-      // Prompt engineering representing our scoring calculation rules
-      const systemContext = `
-        You are an advanced AI Mentor Recommendation Engine integrated into a Peer Learning platform.
-         Your primary job is to process user search queries and suggest the best peer matches using an algorithmic ranking mindset.
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const formattedMessages = [...messages, userMessage].map((msg: any) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
 
-        CURRENT LOGGED-IN USER PROFILE:
-        - Name: ${currentUser.name}
-        - Bio: ${currentUser.bio}
-        - Current Skills: ${currentUser.skills.join(", ")}
-        - Core Interests: ${currentUser.interests.join(", ")}
-        - Subjects They Can Teach: ${currentUser.teachSubjects.join(", ")}
-        - Subjects They Want to Learn: ${currentUser.learnSubjects.join(", ")}
-
-        AVAILABLE PEER MENTORS DATABASE IN THE NETWORK:
-        ${JSON.stringify(peers, null, 2)}
-
-        MATCHING ALGORITHM SCORING MATRIX CRITERIA (Out of 100 max points):
-        1. Skill Matching (Primary - Max 50 pts): Evaluate if the peer's 'teachSubjects' or 'skills' intersects with what the user wants to learn ('learnSubjects' or search query context).
-        2. Interest Analysis (Secondary - Max 30 pts): Check if the peer's 'learnSubjects' intersects with what the current user can teach (A beautiful mutual skill swap trade!).
-        3. Alignment Bonus (Max 20 pts): Shared structural domain interests (e.g., UI/UX, Web Dev, Machine Learning, Python).
-
-        OUTPUT PRESENTATION DIRECTIVES:
-        - If the user explicitly asks for recommendations or matching mentors, rank the eligible candidates from highest dynamic percentage match score to lowest.
-        - Clearly explain the reason behind the match score so the user knows why they are paired up (e.g., Mention what subjects they can trade!).
-        - Adopt a friendly, motivational tech community assistant persona. Keep recommendations clear, scannable, and clean.
-      `;
-
-      const response = await fetch(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer": "http://localhost:5173",
-            "X-Title": "Peer Learning AI",
-          },
-          body: JSON.stringify({
-            model: "openai/gpt-3.5-turbo",
-            messages: [
-              {
-                role: "system",
-                content: systemContext,
-              },
-              {
-                role: "user",
-                content: prompt,
-              },
-            ],
-            max_tokens: 400,
-            temperature: 0.6,
-          }),
-        }
-      );
-
-      const data = await response.json();
-      console.log("AI SYSTEM MATCH ENGINE RESPONSE:", data);
-=======
-      const { data, error } = await supabase.functions.invoke("ai-chat", {
-        body: { prompt }
+      const res = await fetch(`${API_BASE_URL}/api/ai/ask`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        credentials:"include",
+        body: JSON.stringify({
+          messages: formattedMessages,
+        }),
       });
 
-      if (error) throw error;
->>>>>>> 5da66c6bf301b7e68fd17add37fb48636449739c
-
-      const aiReply = data?.choices?.[0]?.message?.content;
+      if (!res.ok) {
+        throw new Error("Failed to get response");
+      }
+      
+      const data = await res.json();
+      const aiReply = data?.answer;
 
       setMessages((prev: any) => [
         ...prev,
@@ -115,7 +70,7 @@ const AIPage = () => {
         },
       ]);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setMessages((prev: any) => [
         ...prev,
         {
@@ -238,6 +193,7 @@ const AIPage = () => {
 
           <button
             onClick={sendMessage}
+            aria-label="Send message"
             className="bg-cyan-400 hover:bg-cyan-300 transition text-black p-4 rounded-2xl"
           >
             <Send size={20} />
