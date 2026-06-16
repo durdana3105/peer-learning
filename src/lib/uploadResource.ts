@@ -78,6 +78,7 @@ export const uploadResource = async (
     .insert({
       title,
       description,
+      // @ts-expect-error TODO: refine typing
       file_url: filePath,
       file_type: fileType,
       file_size: file.size,
@@ -98,6 +99,7 @@ export const uploadResource = async (
 
   return {
     success: true,
+    // @ts-expect-error TODO: refine typing
     data: data as Resource,
   };
 };
