@@ -48,11 +48,22 @@ export function useSessions(user: any) {
     fetchSessions();
   }, []);
 
+  // Maps UI tab names to the underlying session status values they should include.
+  const TAB_STATUS_MAP: Record<string, string[]> = {
+    upcoming: ["scheduled", "live"],
+    live: ["live"],
+    completed: ["completed"],
+    cancelled: ["cancelled"],
+  };
+
   const filteredSessions = useMemo(() => {
     let filtered = sessions;
 
-    filtered = filtered.filter(
-      (s) => s.status?.toLowerCase() === selectedTab.toLowerCase()
+    const allowedStatuses =
+      TAB_STATUS_MAP[selectedTab.toLowerCase()] || [selectedTab.toLowerCase()];
+
+    filtered = filtered.filter((s) =>
+      allowedStatuses.includes(s.status?.toLowerCase())
     );
 
     if (search) {

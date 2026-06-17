@@ -108,7 +108,7 @@ export function SessionList({
                     s.title || "Peer Learning Session",
                     s.description || "Join us for a collaborative learning session.",
                     s.scheduled_at ? new Date(s.scheduled_at) : new Date(),
-                    1
+                    s.duration_minutes || 60
                   );
                 }}
                 className="bg-white/10 border border-white/10 hover:bg-white/20 p-3 rounded-2xl transition text-white"

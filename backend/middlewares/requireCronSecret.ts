@@ -8,43 +8,67 @@ import { HttpError } from "../utils/httpError.js";
  */
 const BACKGROUND_WINDOW_MS = 60_000;
 const BACKGROUND_MAX_REQUESTS = 5;
-const backgroundRateCounts = new Map();
 
-export const isBackgroundRateLimited = (ip) => {
-  const now = Date.now();
-  const entry = backgroundRateCounts.get(ip);
+/**
+ * Factory that returns an independent rate-limiter closure backed by its
+ * own Map instance. Callers (cron routes, notification routes) must each
+ * call createBackgroundRateLimiter() to get an isolated limiter so that
+ * one endpoint's traffic cannot exhaust another's budget.
+ *
+ * @param {number} windowMs   - Rolling window duration in ms (default 60 000)
+ * @param {number} maxRequests - Max allowed requests per window (default 5)
+ * @returns {(ip: string) => boolean}
+ */
+export const createBackgroundRateLimiter = (
+  windowMs = BACKGROUND_WINDOW_MS,
+  maxRequests = BACKGROUND_MAX_REQUESTS
+) => {
+  const counts = new Map();
 
-  if (!entry || now - entry.windowStart >= BACKGROUND_WINDOW_MS) {
-    backgroundRateCounts.set(ip, { count: 1, windowStart: now });
+  return (ip) => {
+    const now = Date.now();
+    const entry = counts.get(ip);
+
+    if (!entry || now - entry.windowStart >= windowMs) {
+      counts.set(ip, { count: 1, windowStart: now });
+      return false;
+    }
+
+    if (entry.count >= maxRequests) {
+      return true;
+    }
+
+    entry.count += 1;
     return false;
-  }
-
-  if (entry.count >= BACKGROUND_MAX_REQUESTS) {
-    return true;
-  }
-
-  entry.count += 1;
-  return false;
+  };
 };
 
 /**
- * Cooldown tracker: prevents re-invocation of expensive cron jobs
- * within a minimum interval, regardless of authentication.
+ * Factory that returns an independent cooldown-tracker closure backed by
+ * its own Map instance. Same isolation rationale as createBackgroundRateLimiter.
+ *
+ * @param {number} cooldownMs - Minimum interval between executions (default 60 000)
+ * @returns {(routeKey: string) => boolean}
  */
-const COOLDOWN_MS = 60_000;
-const lastExecutions = new Map();
+export const createCooldownTracker = (cooldownMs = 60_000) => {
+  const lastExecutions = new Map();
 
-export const isOnCooldown = (routeKey) => {
-  const now = Date.now();
-  const lastRun = lastExecutions.get(routeKey);
+  return (routeKey) => {
+    const now = Date.now();
+    const lastRun = lastExecutions.get(routeKey);
 
-  if (lastRun && now - lastRun < COOLDOWN_MS) {
-    return true;
-  }
+    if (lastRun && now - lastRun < cooldownMs) {
+      return true;
+    }
 
-  lastExecutions.set(routeKey, now);
-  return false;
+    lastExecutions.set(routeKey, now);
+    return false;
+  };
 };
+
+// ── Cron-route instances (used by requireCronSecret below) ────────────────────────
+const cronRateLimiter = createBackgroundRateLimiter();
+const cronCooldown = createCooldownTracker();
 
 /**
  * Audit log function to track background endpoint invocations.
@@ -82,9 +106,9 @@ export const requireCronSecret = (req, res, next) => {
     return;
   }
 
-  // Layer 1: Rate limiting
+  // Layer 1: Rate limiting — uses cron-private limiter instance
   const clientIp = req.socket?.remoteAddress || req.ip || "unknown";
-  if (isBackgroundRateLimited(clientIp)) {
+  if (cronRateLimiter(clientIp)) {
     next(new HttpError(429, "Too many requests to cron endpoint. Please wait."));
     return;
   }
@@ -98,8 +122,6 @@ export const requireCronSecret = (req, res, next) => {
 
   const providedSecret = authHeader.slice(7);
 
-  // Both buffers must be the same length for timingSafeEqual.
-  // Hash both to normalize length and add an extra layer of protection.
   const expectedHash = crypto.createHash("sha256").update(cronSecret).digest();
   const providedHash = crypto.createHash("sha256").update(providedSecret).digest();
 
@@ -108,9 +130,9 @@ export const requireCronSecret = (req, res, next) => {
     return;
   }
 
-  // Layer 3: Cooldown deduplication
+  // Layer 3: Cooldown deduplication — uses cron-private cooldown instance
   const routeKey = `${req.method}:${req.originalUrl}`;
-  if (isOnCooldown(routeKey)) {
+  if (cronCooldown(routeKey)) {
     next(new HttpError(429, "This job was executed recently. Please wait before re-triggering."));
     return;
   }

@@ -136,11 +136,12 @@ const Navbar = () => {
           : []),
       ]
     : [
-        {
-          to: "/",
-          label: "Home",
-          icon: BookOpen,
-        },
+       {
+  to: "/",
+  label: "Home",
+  icon: BookOpen,
+  onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' })
+},
         {
           to: "/#features",
           label: "Features",
@@ -228,16 +229,17 @@ const Navbar = () => {
             );
           }
 
-          return (
-            <Link
-              key={link.to}
-              to={link.to}
-              className={className}
-            >
-              <Icon size={16} />
-              {link.label}
-            </Link>
-          );
+         return (
+  <Link
+    key={link.to}
+    to={link.to}
+    className={className}
+   onClick={link.onClick}
+  >
+    <Icon size={16} />
+    {link.label}
+  </Link>
+);
         })}
 
 
@@ -411,10 +413,13 @@ const Navbar = () => {
               const Icon = link.icon;
 
               return (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => setMobileOpen(false)}
+               <Link
+              key={link.to}
+              to={link.to}
+               onClick={() => {
+                link.onClick?.();
+                setMobileOpen(false);
+             }}
                   className="flex items-center gap-3 rounded-xl bg-white/5 px-3 py-4 text-base text-gray-300 transition hover:bg-white/10 hover:text-white"
                 >
 
