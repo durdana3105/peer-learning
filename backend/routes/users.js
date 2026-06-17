@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { fileTypeFromFile } from "file-type";
+import { requireAuth } from "../middlewares/requireAuth.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,7 +71,7 @@ const safeUnlink = (filePath) => {
 };
 
 // User profile photo upload endpoint
-router.post("/upload-photo", uploadProfilePhoto, async (req, res) => {
+router.post("/upload-photo", requireAuth, uploadProfilePhoto, async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded or invalid file type." });
   }

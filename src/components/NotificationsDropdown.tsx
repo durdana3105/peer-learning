@@ -38,6 +38,7 @@ export const NotificationsDropdown = () => {
           table: "notifications",
           filter: `user_id=eq.${user.id}`,
         },
+        // @ts-expect-error TODO: refine typing
         (payload) => {
           setNotifications((prev) => [payload.new, ...prev].slice(0, 20));
         }

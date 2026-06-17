@@ -35,6 +35,7 @@ export default function MentorForm() {
     const fetchSkills = async () => {
       const { data } = await (supabase as any).from("skills_taxonomy").select("name").order("name");
       if (data) {
+        // @ts-expect-error TODO: refine typing
         setAvailableSkills(data.map(d => d.name));
       }
     };
@@ -348,6 +349,7 @@ export default function MentorForm() {
       {step !== 4 && (
         <div className="mt-10 flex justify-between">
           <button
+            type="button"
             disabled={step === 0}
             onClick={() => setStep(step - 1)}
             className="rounded-2xl border border-white/10 bg-white/5 px-6 py-3 transition disabled:opacity-30"
@@ -356,22 +358,23 @@ export default function MentorForm() {
           </button>
           {step < 3 ? (
             <button
-             onClick={() => {
-              if (step === 0 && !validateBasicInfo()) {
-              setError("Please fill all basic information fields");
-              return;
-               }
-               if (step === 1 && !validateSkills()) {
-                setError("Please select at least one skill");
-                 return;
+              type="button"
+              onClick={() => {
+                if (step === 0 && !validateBasicInfo()) {
+                  setError("Please fill all basic information fields");
+                  return;
+                }
+                if (step === 1 && !validateSkills()) {
+                  setError("Please select at least one skill");
+                  return;
                 }
                 if (step === 2 && !validateExperience()) {
-                setError("Please fill GitHub and LinkedIn profiles");
-                return;
+                  setError("Please fill GitHub and LinkedIn profiles");
+                  return;
                 }
                 if (step === 3 && !validateMentorship()) {
-                setError("Please select at least one mentorship type");
-                return;
+                  setError("Please select at least one mentorship type");
+                  return;
                 }
                 setError("");
                 setStep(step + 1);
@@ -382,6 +385,7 @@ export default function MentorForm() {
             </button>
           ) : (
             <button
+              type="button"
               onClick={handleSubmit}
               disabled={loading}
               className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-3 font-semibold text-black transition hover:scale-105 disabled:opacity-50"

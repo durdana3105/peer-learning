@@ -35,6 +35,7 @@ export function SessionFilters({
           {tabs.map((tab) => (
             <button
               key={tab}
+              type="button"
               onClick={() => setSelectedTab(tab)}
               className={`px-6 py-3 rounded-2xl transition-all whitespace-nowrap ${
                 selectedTab === tab
@@ -52,7 +53,10 @@ export function SessionFilters({
             window.location.reload();
           }}
         >
-          <button className="flex items-center gap-2 bg-gradient-to-r from-cyan-400 to-purple-500 text-black px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition">
+          <button
+            type="button"
+            className="flex items-center gap-2 bg-gradient-to-r from-cyan-400 to-purple-500 text-black px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition"
+          >
             <Plus size={20} />
             Create Session
           </button>

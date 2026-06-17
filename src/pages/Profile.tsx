@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 
 import { Camera, Save, Sparkles, User, Flame, Zap, Trophy, Lock } from "lucide-react";
 import StreakStats from "@/components/StreakStats";
+import { AvatarUpload } from "@/components/AvatarUpload";
 
 import {
   calculateLevel,
@@ -152,17 +153,11 @@ const Profile = () => {
 
             {/* CURRENT AVATAR */}
             <div className="flex justify-center mb-8">
-              <div className="relative">
-                <img
-                  src={profile.avatar_url}
-                  alt="avatar"
-                  className="w-36 h-36 rounded-full border-4 border-cyan-400 object-cover shadow-2xl shadow-cyan-500/20"
-                />
-
-                <div className="absolute bottom-2 right-2 bg-cyan-400 p-3 rounded-full">
-                  <Camera size={20} className="text-black" />
-                </div>
-              </div>
+              <AvatarUpload
+                currentAvatarUrl={profile.avatar_url}
+                onUploadSuccess={(url) => setProfile({ ...profile, avatar_url: url })}
+                onUploadError={(error) => alert(error)}
+              />
             </div>
 
             {/* AVATAR OPTIONS */}
