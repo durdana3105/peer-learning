@@ -14,6 +14,64 @@ export type Database = {
   }
   public: {
     Tables: {
+      portfolio_profiles: {
+        Row: {
+          id: string
+          profile_id: string
+          slug: string
+          is_published: boolean
+          headline: string
+          github_url: string
+          linkedin_url: string
+          skills: any[]
+          achievements: any[]
+          projects: any[]
+          learning_progress: any
+          created_at: string
+          updated_at: string
+                  is_in_focus_mode: boolean | null
+          badges: any[] | null
+          xp: number | null
+}
+        Insert: {
+          id?: string
+          profile_id: string
+          slug: string
+          is_published?: boolean
+          headline?: string
+          github_url?: string
+          linkedin_url?: string
+          skills?: any[]
+          achievements?: any[]
+          projects?: any[]
+          learning_progress?: any
+          created_at?: string
+          updated_at?: string
+                  is_in_focus_mode?: boolean | null
+          badges?: any[] | null
+          xp?: number | null
+}
+        Update: {
+          id?: string
+          profile_id?: string
+          slug?: string
+          is_published?: boolean
+          headline?: string
+          github_url?: string
+          linkedin_url?: string
+          skills?: any[]
+          achievements?: any[]
+          projects?: any[]
+          learning_progress?: any
+          created_at?: string
+          updated_at?: string
+                  is_in_focus_mode?: boolean | null
+          badges?: any[] | null
+          xp?: number | null
+}
+        Relationships: []
+      }
+
       mentorship_paths: {
         Row: {
           id: string
@@ -191,15 +249,27 @@ export type Database = {
         Row: {
           created_at: string
           id: number
-        }
+                  user_id: string
+          role: string
+          text: string
+          message: string | null
+}
         Insert: {
           created_at?: string
           id?: number
-        }
+                  user_id?: string
+          role?: string
+          text?: string
+          message?: string | null
+}
         Update: {
           created_at?: string
           id?: number
-        }
+                  user_id?: string
+          role?: string
+          text?: string
+          message?: string | null
+}
         Relationships: []
       }
       messages: {
@@ -210,7 +280,8 @@ export type Database = {
           receiver_id: string | null
           sender_id: string | null
           text: string | null
-        }
+                  message: string | null
+}
         Insert: {
           content?: string | null
           created_at?: string | null
@@ -218,7 +289,8 @@ export type Database = {
           receiver_id?: string | null
           sender_id?: string | null
           text?: string | null
-        }
+                  message?: string | null
+}
         Update: {
           content?: string | null
           created_at?: string | null
@@ -226,7 +298,8 @@ export type Database = {
           receiver_id?: string | null
           sender_id?: string | null
           text?: string | null
-        }
+                  message?: string | null
+}
         Relationships: []
       }
       leaderboard: {
@@ -303,7 +376,8 @@ export type Database = {
           availability: string | null
           preferred_language: string | null
           timezone: string | null
-        }
+                  xp: number | null
+}
         Insert: {
           avatar_url?: string | null
           bio?: string | null
@@ -331,7 +405,9 @@ export type Database = {
           availability?: string | null
           preferred_language?: string | null
           timezone?: string | null
-        }
+                  is_in_focus_mode?: boolean | null
+          xp?: number | null
+}
         Update: {
           avatar_url?: string | null
           bio?: string | null
@@ -359,7 +435,9 @@ export type Database = {
           availability?: string | null
           preferred_language?: string | null
           timezone?: string | null
-        }
+                  is_in_focus_mode?: boolean | null
+          xp?: number | null
+}
         Relationships: []
       }
       resources: {
@@ -372,7 +450,10 @@ export type Database = {
           file_type: string
           user_id: string
           created_at: string
-        }
+                  file_url: string | null
+          file_size: number | null
+          uploaded_by: string | null
+}
         Insert: {
           id?: string
           title: string
@@ -382,7 +463,10 @@ export type Database = {
           file_type: string
           user_id: string
           created_at?: string
-        }
+                  file_url?: string | null
+          file_size?: number | null
+          uploaded_by?: string | null
+}
         Update: {
           id?: string
           title?: string
@@ -392,7 +476,10 @@ export type Database = {
           file_type?: string
           user_id?: string
           created_at?: string
-        }
+                  file_url?: string | null
+          file_size?: number | null
+          uploaded_by?: string | null
+}
         Relationships: []
       }
       resource_votes: {
@@ -425,19 +512,28 @@ export type Database = {
           resource_id: string
           user_id: string
           created_at: string
-        }
+                  file_url: string | null
+          file_size: number | null
+          uploaded_by: string | null
+}
         Insert: {
           id?: string
           resource_id: string
           user_id: string
           created_at?: string
-        }
+                  file_url?: string | null
+          file_size?: number | null
+          uploaded_by?: string | null
+}
         Update: {
           id?: string
           resource_id?: string
           user_id?: string
           created_at?: string
-        }
+                  file_url?: string | null
+          file_size?: number | null
+          uploaded_by?: string | null
+}
         Relationships: []
       }
       study_rooms: {
@@ -447,21 +543,33 @@ export type Database = {
           created_by: string | null
           created_at: string
           is_private: boolean
-        }
+                  timer_state: string | null
+          timer_end_time: string | null
+          timer_work_duration: number | null
+          timer_break_duration: number | null
+}
         Insert: {
           id?: string
           topic: string
           created_by?: string | null
           created_at?: string
           is_private?: boolean
-        }
+                  timer_state?: string | null
+          timer_end_time?: string | null
+          timer_work_duration?: number | null
+          timer_break_duration?: number | null
+}
         Update: {
           id?: string
           topic?: string
           created_by?: string | null
           created_at?: string
           is_private?: boolean
-        }
+                  timer_state?: string | null
+          timer_end_time?: string | null
+          timer_work_duration?: number | null
+          timer_break_duration?: number | null
+}
         Relationships: [
           {
             foreignKeyName: "study_rooms_created_by_fkey"
@@ -479,21 +587,24 @@ export type Database = {
           profile_id: string | null
           content: string
           created_at: string
-        }
+                  message: string | null
+}
         Insert: {
           id?: string
           room_id?: string | null
           profile_id?: string | null
           content: string
           created_at?: string
-        }
+                  message?: string | null
+}
         Update: {
           id?: string
           room_id?: string | null
           profile_id?: string | null
           content?: string
           created_at?: string
-        }
+                  message?: string | null
+}
         Relationships: [
           {
             foreignKeyName: "study_room_messages_profile_id_fkey"

@@ -4,9 +4,18 @@ import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 
+type Notification = {
+  id: string;
+  user_id: string;
+  title: string;
+  body: string;
+  read: boolean;
+  created_at?: string;
+};
+
 export const NotificationsDropdown = () => {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -38,8 +47,7 @@ export const NotificationsDropdown = () => {
           table: "notifications",
           filter: `user_id=eq.${user.id}`,
         },
-        // @ts-expect-error TODO: refine typing
-        (payload) => {
+        (payload: { new: Notification }) => {
           setNotifications((prev) => [payload.new, ...prev].slice(0, 20));
         }
       )

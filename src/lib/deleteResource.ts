@@ -23,7 +23,6 @@ export const deleteResource = async (
     .from("resources")
     .select("id, file_url")
     .eq("id", resourceId)
-    // @ts-expect-error TODO: refine typing
     .eq("uploaded_by", user.id)
     .single();
 
@@ -35,7 +34,7 @@ export const deleteResource = async (
   // to prevent mismatched storage/DB deletions.
   const { error: storageError } = await supabase.storage
     .from("resources")
-    // @ts-expect-error TODO: refine typing
+        // @ts-expect-error TODO: refine typing
     .remove([resource.file_url]);
 
   if (storageError) {
@@ -45,7 +44,6 @@ export const deleteResource = async (
   const { error: deleteError } = await supabase
     .from("resources")
     .delete()
-    // @ts-expect-error TODO: refine typing
     .eq("id", resource.id);
 
   if (deleteError) {

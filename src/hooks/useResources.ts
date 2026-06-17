@@ -49,18 +49,15 @@ export const useResources = (filters?: ResourceFilters) => {
           return;
         }
         
-        // @ts-expect-error TODO: refine typing
-        const { data: savedData, error: savedError } = await safeSupabaseCall(
-          // @ts-expect-error TODO: refine typing
-          () => supabase.from("saved_resources").select("resource_id").eq("user_id", user.id).abortSignal(controller.signal)
-        );
+        const { data: savedData, error: savedError } = (await safeSupabaseCall(
+          async () => await supabase.from("saved_resources").select("resource_id").eq("user_id", user.id).abortSignal(controller.signal)
+        )) as any;
         
         if (savedError) throw savedError;
         
         savedResourceIds = savedData?.map((item: any) => item.resource_id) || [];
         
-        // @ts-expect-error TODO: refine typing
-        if (savedResourceIds.length === 0) {
+        if (!savedResourceIds || savedResourceIds.length === 0) {
           setResources([]);
           setLoading(false);
           return;
@@ -88,11 +85,10 @@ export const useResources = (filters?: ResourceFilters) => {
         query = query.in("id", savedResourceIds);
       }
 
-      const data = await safeSupabaseCall(
-        // @ts-expect-error TODO: refine typing
-        () => query.abortSignal(controller.signal),
+      const data = (await safeSupabaseCall(
+        async () => await query.abortSignal(controller.signal),
         { fallbackMessage: "Unable to load resources." },
-      );
+      )) as any;
 
       if (!isMountedRef.current || requestId !== requestIdRef.current || controller.signal.aborted) {
         return;

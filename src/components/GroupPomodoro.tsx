@@ -40,14 +40,10 @@ export default function GroupPomodoro({ roomId, creatorId }: GroupPomodoroProps)
         .single();
 
       if (!error && data && active) {
-        // @ts-expect-error TODO: refine typing
-        setTimerState(data.timer_state || 'idle');
-        // @ts-expect-error TODO: refine typing
-        setEndTime(data.timer_end_time ? new Date(data.timer_end_time) : null);
-        // @ts-expect-error TODO: refine typing
-        setWorkDuration(data.timer_work_duration || 25);
-        // @ts-expect-error TODO: refine typing
-        setBreakDuration(data.timer_break_duration || 5);
+        setTimerState(((data as any) || {}).timer_state || 'work');
+        setEndTime(((data as any) || {}).timer_end_time ? new Date(((data as any) || {}).timer_end_time as string) : null);
+        setWorkDuration((data as any).timer_work_duration || 25);
+        setBreakDuration((data as any).timer_break_duration || 5);
       }
     };
 
