@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { API_BASE_URL } from "@/config/api";
 import type { Resource } from "@/types/resource";
 
 const MAX_FILE_SIZE = 52428800;
@@ -62,14 +63,44 @@ export const uploadResource = async (
   const timestamp = Date.now();
   const filePath = `${userId}/${timestamp}_${sanitizeFilename(file.name)}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from("resources")
-    .upload(filePath, file);
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("folder", "resources");
+  formData.append("filePath", filePath);
 
-  if (uploadError) {
+  const session = await supabase.auth.getSession();
+  const token = session.data.session?.access_token;
+
+  let uploadResponse;
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/upload`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      return {
+        success: false,
+        error: `Server error: ${res.status} - ${errText}`,
+      };
+    }
+
+    uploadResponse = await res.json();
+  } catch (err: any) {
     return {
       success: false,
-      error: uploadError.message,
+      error: err.message || "Failed to upload file to backend.",
+    };
+  }
+
+  if (!uploadResponse.success) {
+    return {
+      success: false,
+      error: "Upload failed: " + JSON.stringify(uploadResponse),
     };
   }
 
@@ -89,8 +120,6 @@ export const uploadResource = async (
     .single();
 
   if (error || !data) {
-    await supabase.storage.from("resources").remove([filePath]);
-
     return {
       success: false,
       error: error?.message || "Failed to save resource metadata",

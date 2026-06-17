@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Play, Square, Coffee, Clock } from 'lucide-react';
@@ -41,40 +41,25 @@ export default function FocusTimer() {
     fetchProfileState();
   }, [user]);
 
-  // Timer logic
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
-    if (isActive && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (isActive && timeLeft === 0) {
-      handleTimerComplete();
-    }
-    
-    return () => clearInterval(interval);
-  }, [isActive, timeLeft]);
-
-  const handleTimerComplete = async () => {
+  const handleTimerComplete = useCallback(async () => {
     if (!isBreak) {
-      // Completed a work session
       toast({
         title: "Focus Session Complete! 🎉",
         description: `Great job focusing for ${workDuration} minutes! Time for a break.`,
       });
-      
+
       setIsBreak(true);
       setTimeLeft(breakDuration * 60);
-      
-      // Add to analytics
+
       if (user) {
         const newFocusTime = focusTimeThisWeek + workDuration;
         setFocusTimeThisWeek(newFocusTime);
-        await updateProfile(false, newFocusTime); // Turn off focus mode during break
+        await supabase
+          .from('profiles')
+          .update({ is_in_focus_mode: false, focus_time_this_week: newFocusTime })
+          .eq('id', user.id);
       }
     } else {
-      // Completed a break
       toast({
         title: "Break Over!",
         description: "Ready for another focus session?",
@@ -83,7 +68,22 @@ export default function FocusTimer() {
       setIsActive(false);
       setTimeLeft(workDuration * 60);
     }
-  };
+  }, [isBreak, workDuration, breakDuration, focusTimeThisWeek, user, toast]);
+
+  // Timer logic
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (isActive && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (isActive && timeLeft === 0) {
+      handleTimerComplete();
+    }
+
+    return () => clearInterval(interval);
+  }, [isActive, timeLeft, handleTimerComplete]);
 
   const updateProfile = async (inFocus: boolean, focusTime?: number) => {
     if (!user) return;
