@@ -211,8 +211,7 @@ export function useMessages(currentUserId?: string | null) {
           schema: "public",
           table: "profiles",
         },
-        (payload) => {
-          // @ts-expect-error TODO: refine typing
+        (payload: any) => {
           if (payload.new && payload.new.id && payload.new.id !== currentUserId) {
             setProfiles((prev) => {
               const updated = normalizeProfile(payload.new as ProfileRow);
@@ -252,8 +251,7 @@ export function useMessages(currentUserId?: string | null) {
         .limit(100);
 
       if (!error && data) {
-        // @ts-expect-error TODO: refine typing
-        setMessages((data as MessageRow[]).reverse());
+        setMessages([...(data as any[])].reverse());
       } else if (error) {
         console.error("Failed to load messages:", error.message);
       }
@@ -334,8 +332,7 @@ export function useMessages(currentUserId?: string | null) {
     if (unreadIds.length === 0) return;
 
     const markAsRead = async () => {
-      // @ts-expect-error TODO: refine typing
-      const { error } = await supabase.rpc("mark_messages_as_read", {
+      const { error } = await (supabase as any).rpc("mark_messages_as_read", {
         message_ids: unreadIds,
       });
 
@@ -390,12 +387,11 @@ export function useMessages(currentUserId?: string | null) {
     }
 
     if (data) {
+      const newMessage = data as unknown as MessageRow;
       setMessages((previous) =>
-        // @ts-expect-error TODO: refine typing
-        previous.some((message) => message.id === data.id)
+        previous.some((message) => message.id === newMessage.id)
           ? previous
-          // @ts-expect-error TODO: refine typing
-          : [...previous, data as MessageRow]
+          : [...previous, newMessage]
       );
       awardXP.mutate({ activity: "chat_message" });
     }

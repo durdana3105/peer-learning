@@ -63,7 +63,7 @@ const Navbar = () => {
           .single();
 
         if (profile) {
-          // @ts-expect-error TODO: refine typing
+        // @ts-expect-error TODO: refine typing
           setProfileName(profile.name);
         }
 
