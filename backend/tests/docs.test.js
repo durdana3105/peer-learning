@@ -12,7 +12,16 @@ import { resolve } from "path";
  * cronRoutes.js or notificationRoutes.js.
  */
 
-const repoRoot = existsSync(resolve(process.cwd(), "docs/api.md")) ? process.cwd() : resolve(process.cwd(), "..");
+let repoRoot = process.cwd();
+if (existsSync(resolve(repoRoot, "docs/api.md"))) {
+  // Already at root
+} else if (existsSync(resolve(repoRoot, "..", "docs/api.md"))) {
+  repoRoot = resolve(repoRoot, "..");
+} else if (existsSync(resolve(repoRoot, "..", "..", "docs/api.md"))) {
+  repoRoot = resolve(repoRoot, "..", "..");
+} else {
+  repoRoot = resolve(repoRoot, "..");
+}
 const apiDoc = readFileSync(resolve(repoRoot, "docs/api.md"), "utf-8");
 const notifDoc = readFileSync(resolve(repoRoot, "docs/smart-notifications.md"), "utf-8");
 

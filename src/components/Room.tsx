@@ -326,7 +326,7 @@ export default function Room() {
               </div>
             </div>
             
-            <GroupPomodoro roomId={id!} />
+           <GroupPomodoro roomId={id!} creatorId={room.created_by} />
           </div>
 
         </div>

@@ -69,13 +69,14 @@ export const getRecommendedPartners = async (req, res) => {
       return res.status(500).json({ success: false, message: "Supabase client not configured" });
     }
 
+    const currentUserId = req.user.id;
     const currentUserEmail = req.user.email;
     
     // Fetch current user from Supabase profiles
     const { data: currentUser, error: currentUserError } = await supabaseAdmin
       .from('profiles')
       .select('skills, interests, teach_subjects, learn_subjects')
-      .eq('email', currentUserEmail)
+      .eq('id', currentUserId)
       .single();
 
     if (currentUserError || !currentUser) {
@@ -257,14 +258,15 @@ export const getSupabaseDiscover = async (req, res) => {
         score += (studyBuddyMatches / myGoals.length) * ALIGNMENT_WEIGHT;
       }
 
-      let percentage = Math.min(Math.round((score / maxPossibleScore) * 100), 100);
+      const percentage = Math.min(Math.round((score / maxPossibleScore) * 100), 100);
 
-      const teachOverlap = myGoals.filter((s) => (p.teach_subjects || []).includes(s)).length;
-      const learnOverlap = mySkills.filter((s) => (p.learn_subjects || []).includes(s)).length;
+      const teachOverlap   = myGoals.filter((s) => (p.teach_subjects || []).includes(s)).length;
+      const learnOverlap   = mySkills.filter((s) => (p.learn_subjects || []).includes(s)).length;
       const interestOverlap = (currentUser.interests || []).filter((s) => (p.interests || []).includes(s)).length;
-      const learningStyleMatch = currentUser.learning_style && p.learning_style && currentUser.learning_style === p.learning_style ? 15 : 0;
-      const languageMatch = currentUser.preferred_language && p.preferred_language && currentUser.preferred_language === p.preferred_language ? 10 : 0;
-      const timezoneMatch = currentUser.timezone && p.timezone && currentUser.timezone === p.timezone ? 10 : 0;
+      const hasBaseOverlap = teachOverlap + learnOverlap + interestOverlap > 0;
+      const learningStyleMatch = hasBaseOverlap && currentUser.learning_style && p.learning_style && currentUser.learning_style === p.learning_style ? 15 : 0;
+      const languageMatch      = hasBaseOverlap && currentUser.preferred_language && p.preferred_language && currentUser.preferred_language === p.preferred_language ? 10 : 0;
+      const timezoneMatch      = hasBaseOverlap && currentUser.timezone && p.timezone && currentUser.timezone === p.timezone ? 10 : 0;
 
       const maxExtra = Math.max((currentUser.learn_subjects || []).length + (currentUser.teach_subjects || []).length + (currentUser.interests || []).length, 1);
       const baseScore = ((teachOverlap + learnOverlap + interestOverlap) / maxExtra) * 65;

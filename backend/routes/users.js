@@ -73,7 +73,7 @@ const safeUnlink = (filePath) => {
 };
 
 // User profile photo upload endpoint
-router.post("/upload-photo", uploadProfilePhoto, async (req, res) => {
+router.post("/upload-photo", requireAuth, uploadProfilePhoto, async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded or invalid file type." });
   }
