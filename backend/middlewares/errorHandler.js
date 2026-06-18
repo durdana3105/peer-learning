@@ -25,9 +25,8 @@ const SAFE_STATUS_MESSAGES = {
  *
  * Security strategy:
  *   - HttpError instances (intentionally thrown by our code) have safe, controlled messages.
- *     These are always returned to the client.
- *   - ZodError instances are validation errors. In production, only a generic
- *     "Validation failed" message is returned. In development, full field-level details are included.
+ *     These are always returned to the client. Validation errors arrive wrapped in HttpError 
+ *     objects from the validation middleware, and their details are always exposed.
  *   - All other unexpected errors (library crashes, DB errors, etc.) are fully masked
  *     in production with a generic status message. Verbose details are only shown in development.
  *   - Full error details are always logged server-side with the request ID for debugging.
@@ -39,18 +38,15 @@ export const errorHandler = (err, req, res, next) => {
 
   const requestId = req.requestId || "unknown";
 
-  // --- Zod Validation Errors ---
-  if (err instanceof ZodError || err.name === "ZodError") {
-    console.warn(`[${requestId}] Validation Error:`, err.errors || err.message);
-
-    const payload = { error: "Validation failed" };
-
-    // Always include field-level validation details for frontend forms
-    payload.details = err.errors;
-
-    return res.status(400).json(payload);
+  // Gracefully handle Multer errors
+  if (err.name === "MulterError") {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({ error: "Payload Too Large: File size limit exceeded" });
+    }
+    return res.status(400).json({ error: err.message });
   }
 
+  console.error("Unhandled error:", err);
   // --- Known HttpError (intentionally thrown by our code) ---
   if (err instanceof HttpError) {
     const status = err.statusCode || 500;
@@ -58,8 +54,7 @@ export const errorHandler = (err, req, res, next) => {
 
     const payload = { error: err.message };
 
-    // Only include details in development (details may contain internal info)
-    if (!isProduction && err.details) {
+    if (err.details) {
       payload.details = err.details;
     }
 

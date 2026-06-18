@@ -1,0 +1,1 @@
+In backend/middlewares/errorHandler.js, Zod validation errors are caught but their detailed field-level error messages (err.errors) are hidden in production environments. The server only responds with a generic 'Validation failed' error. This makes it impossible for the frontend to display meaningful validation feedback to users when they submit forms with invalid data.

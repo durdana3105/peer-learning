@@ -1,5 +1,5 @@
 import { Search, Plus } from "lucide-react";
-import { CreateSessionDialog } from "@/components/CreateSessionDialog";
+import { CreateSessionDialog } from "@/components/CreateSession/CreateSessionDialog";
 
 type SessionFiltersProps = {
   tabs: string[];

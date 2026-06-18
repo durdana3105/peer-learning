@@ -141,6 +141,7 @@ const Chat = () => {
   const stopTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const conversationsParentRef = useRef<HTMLDivElement | null>(null);
   const messagesParentRef = useRef<HTMLDivElement | null>(null);
+  const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const filteredUsers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -372,10 +373,12 @@ const Chat = () => {
         }
       })
       .subscribe();
+    typingChannelRef.current = typingChannel;
 
     return () => {
       supabase.removeChannel(messageChannel);
       supabase.removeChannel(typingChannel);
+      typingChannelRef.current = null;
 
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
@@ -384,22 +387,18 @@ const Chat = () => {
   }, [currentUser?.id, selectedUser?.id]);
 
   const sendTypingStatus = useCallback(async (isTyping: boolean) => {
-    if (!currentUser?.id || !selectedUser?.id) return;
+    if (!typingChannelRef.current) return;
 
-    await supabase
-      .channel(`chat-typing-${[currentUser.id, selectedUser.id].sort().join("-")}`, {
-        config: { private: true },
-      })
-      .send({
-        type: "broadcast",
-        event: "typing",
-        payload: {
-          senderId: currentUser.id,
-          receiverId: selectedUser.id,
-          isTyping,
-        },
-      });
-  }, [currentUser?.id, selectedUser?.id]);
+    await typingChannelRef.current.send({
+      type: "broadcast",
+      event: "typing",
+      payload: {
+        senderId: currentUser?.id,
+        receiverId: selectedUser?.id,
+        isTyping,
+      },
+    });
+  }, []);
 
   const handleMessageChange = useCallback((value: string) => {
     setMessageText(value);

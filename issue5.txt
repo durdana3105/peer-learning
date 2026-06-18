@@ -1,0 +1,1 @@
+In backend/routes/users.js, the POST /upload-photo endpoint is not protected by the requireAuth middleware. As a result, any unauthenticated user can upload files (up to 5MB) to the server. This can lead to uncontrolled disk space consumption and potential Denial of Service (DoS).

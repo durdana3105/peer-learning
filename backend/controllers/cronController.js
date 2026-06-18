@@ -83,10 +83,14 @@ export const dispatchPushNotifications = async (req, res, next) => {
     if (subError) {
       const notificationIds = notifications.map((n) => n.id);
       if (notificationIds.length > 0) {
-        await supabase
-          .from("notifications")
-          .update({ push_claimed_at: null })
-          .in("id", notificationIds);
+        try {
+          await supabase
+            .from("notifications")
+            .update({ push_claimed_at: null })
+            .in("id", notificationIds);
+        } catch (rollbackError) {
+          console.error("Failed to rollback claimed notifications:", rollbackError);
+        }
       }
       return res.status(500).json({ error: subError.message });
     }
@@ -296,6 +300,25 @@ export const sendMentorshipCheckinReminders = async (req, res, next) => {
     }
 
     res.json({ inserted: notifications.length });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetWeeklyFocusTime = async (req, res, next) => {
+  try {
+    const supabase = getSupabaseClient();
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ focus_time_this_week: 0 })
+      .neq("focus_time_this_week", 0);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ reset: true });
   } catch (error) {
     next(error);
   }

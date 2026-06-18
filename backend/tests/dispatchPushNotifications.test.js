@@ -55,7 +55,13 @@ const makeSupabaseMock = () => {
           return resolve({ data: batch.map(r => ({ ...r })), error: null });
         }
 
-        if (table === "notifications" && _operation === "update" && _filters["id__in"]) {
+        if (
+          table === "notifications" && 
+          _operation === "update" && 
+          _filters["id__in"] && 
+          _payload && 
+          _payload.push_claimed_at === null
+        ) {
           const ids = _filters["id__in"];
           ids.forEach(id => claimedIds.delete(id));
           return resolve({ data: null, error: null });
@@ -141,6 +147,7 @@ describe("dispatchPushNotifications — race condition", () => {
 
     // Reset shared DB state
     claimedIds = new Set();
+    forceSubscriptionError = false;
     dbRows = Array.from({ length: 5 }, (_, i) => ({
       id: `notif-${i}`,
       user_id: `user-${i}`,
