@@ -89,7 +89,7 @@ const ResourceHub = () => {
   );
 
   const renderSkeletons = () =>
-    Array.from({ length: 3 }).map((_, index) => (
+    Array.from({ length: 6 }).map((_, index) => (
       <Card key={index} className="flex h-full flex-col">
         <CardContent className="space-y-4 p-6">
           <div className="flex items-start gap-3">
