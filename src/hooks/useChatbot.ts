@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { API_BASE_URL } from "@/config/api";
 
 export type Message = {
-  role: string;
+  role: "user" | "assistant";
   text: string;
   user_id?: string;
   created_at?: string;
@@ -47,7 +47,7 @@ export function useChatbot() {
         .eq("user_id" as any, session.user.id)
         .order("created_at", { ascending: true });
 
-      if (data) setMessages(data as any[]);
+      if (data) setMessages(data as Message[]);
     };
     loadChats();
   }, []);
