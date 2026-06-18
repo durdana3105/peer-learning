@@ -17,6 +17,13 @@ interface GroupPomodoroProps {
   creatorId: string | null;
 }
 
+interface StudyRoomTimerState {
+  timer_state: 'idle' | 'work' | 'break' | null;
+  timer_end_time: string | null;
+  timer_work_duration: number | null;
+  timer_break_duration: number | null;
+}
+
 export default function GroupPomodoro({ roomId, creatorId }: GroupPomodoroProps) {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -46,14 +53,19 @@ export default function GroupPomodoro({ roomId, creatorId }: GroupPomodoroProps)
         }
 
         if (data && active) {
-          // @ts-expect-error TODO: refine typing
-          setTimerState(data.timer_state || 'idle');
-          // @ts-expect-error TODO: refine typing
-          setEndTime(data.timer_end_time ? new Date(data.timer_end_time) : null);
-          // @ts-expect-error TODO: refine typing
-          setWorkDuration(data.timer_work_duration || 25);
-          // @ts-expect-error TODO: refine typing
-          setBreakDuration(data.timer_break_duration || 5);
+          const timerData = data as unknown as StudyRoomTimerState;
+
+          setTimerState(timerData.timer_state || 'idle');
+
+          setEndTime(
+            timerData.timer_end_time
+              ? new Date(timerData.timer_end_time)
+              : null
+          );
+
+          setWorkDuration(timerData.timer_work_duration || 25);
+
+          setBreakDuration(timerData.timer_break_duration || 5);
         }
       } catch (err: any) {
         logError(err, { context: "GroupPomodoro.fetchTimerState", roomId });
