@@ -1,8 +1,29 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Shield, Database, Lock, Globe, Users, FileText } from "lucide-react";
 
 export default function PrivacyPolicy() {
+    const shouldReduceMotion = useReducedMotion();
+
+  const heroAnimation = shouldReduceMotion
+    ? {
+        initial: { opacity: 1 },
+        animate: { opacity: 1 },
+      }
+    : {
+        initial: { opacity: 0, y: 30 },
+        animate: { opacity: 1, y: 0 },
+      };
+
+  const contentAnimation = shouldReduceMotion
+    ? {
+        initial: { opacity: 1 },
+        animate: { opacity: 1 },
+      }
+    : {
+        initial: { opacity: 0, y: 40 },
+        animate: { opacity: 1, y: 0 },
+      };
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#020617] text-white">
       {/* Grid Background */}
@@ -24,9 +45,9 @@ export default function PrivacyPolicy() {
 
       <div className="relative z-10 px-6 py-24">
         {/* Hero Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
+       <motion.div
+  initial={heroAnimation.initial}
+  animate={heroAnimation.animate}
           transition={{ duration: 0.6 }}
           className="mx-auto max-w-5xl text-center"
         >
@@ -59,16 +80,16 @@ export default function PrivacyPolicy() {
 
         {/* Main Content */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
+  initial={contentAnimation.initial}
+  animate={contentAnimation.animate}
           transition={{ delay: 0.15, duration: 0.7 }}
           className="mx-auto mt-14 max-w-5xl rounded-[32px] border border-cyan-500/20 bg-white/[0.04] p-8 shadow-[0_0_60px_rgba(34,211,238,0.08)] backdrop-blur-xl md:p-14"
         >
           {/* Quick Navigation */}
           <div className="mb-12 rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-            <h3 className="mb-5 text-lg font-semibold text-cyan-300">
-              Quick Navigation
-            </h3>
+           <h2 className="mb-5 text-lg font-semibold text-cyan-300">
+  Quick Navigation
+</h2>
 
             <div className="grid gap-3 text-sm text-slate-300 md:grid-cols-2">
               <a href="#information" className="hover:text-cyan-300 transition">
