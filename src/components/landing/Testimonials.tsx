@@ -1,8 +1,25 @@
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Sparkles, ArrowRight } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  ArrowRight,
+  CheckCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
+
+interface Testimonial {
+  text: string;
+  name: string;
+  role: string;
+  rating: number;
+  avatar: string;
+  verified: boolean;
+  skills: string[];
+  outcome: string;
+}
 
 export function Testimonials() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -14,6 +31,101 @@ export function Testimonials() {
   const [review, setReview] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
+  const testimonials: Testimonial[] = [
+    {
+      text: "PeerLearn helped me crack my first internship interview.",
+      name: "Aisha Khan",
+      role: "AIML Student",
+      rating: 5,
+      avatar: "https://i.pravatar.cc/150?img=32",
+      verified: true,
+      skills: ["Machine Learning", "Python", "DSA"],
+      outcome: "Secured Internship at Google",
+    },
+    {
+      text: "I started mentoring juniors and improved my communication skills.",
+      name: "Rahul Sharma",
+      role: "Senior Mentor",
+      rating: 5,
+      avatar: "https://i.pravatar.cc/150?img=64",
+      verified: true,
+      skills: ["Mentoring", "System Design", "Leadership"],
+      outcome: "Became a Top-Rated Mentor",
+    },
+    {
+      text: "Found amazing teammates for hackathons and projects.",
+      name: "John Patel",
+      role: "Web Developer",
+      rating: 4,
+      avatar: "https://i.pravatar.cc/150?img=45",
+      verified: true,
+      skills: ["React", "Next.js", "Tailwind"],
+      outcome: "Won 2 Hackathons",
+    },
+    {
+      text: "Built a polished project portfolio with mentor guidance.",
+      name: "Maya Singh",
+      role: "Frontend Developer",
+      rating: 5,
+      avatar: "https://i.pravatar.cc/150?img=47",
+      verified: true,
+      skills: ["TypeScript", "Framer Motion", "UI/UX"],
+      outcome: "3 Projects Added to Portfolio",
+    },
+    {
+      text: "Mentors gave real-world advice that helped my internship prep.",
+      name: "Priya Malhotra",
+      role: "ML Intern",
+      rating: 5,
+      avatar: "https://i.pravatar.cc/150?img=33",
+      verified: true,
+      skills: ["TensorFlow", "Computer Vision", "Research"],
+      outcome: "Improved DSA Rating by 450",
+    },
+    {
+      text: "Great community for interview practice and study groups.",
+      name: "Gautam Reddy",
+      role: "DSA Enthusiast",
+      rating: 4,
+      avatar: "https://i.pravatar.cc/150?img=68",
+      verified: true,
+      skills: ["LeetCode", "Competitive Programming"],
+      outcome: "First Open Source Contribution",
+    },
+
+    // Duplicates for seamless infinite loop
+    {
+      text: "PeerLearn helped me crack my first internship interview.",
+      name: "Aisha Khan",
+      role: "AIML Student",
+      rating: 5,
+      avatar: "https://i.pravatar.cc/150?img=32",
+      verified: true,
+      skills: ["Machine Learning", "Python", "DSA"],
+      outcome: "Secured Internship at Google",
+    },
+    {
+      text: "I started mentoring juniors and improved my communication skills.",
+      name: "Rahul Sharma",
+      role: "Senior Mentor",
+      rating: 5,
+      avatar: "https://i.pravatar.cc/150?img=64",
+      verified: true,
+      skills: ["Mentoring", "System Design", "Leadership"],
+      outcome: "Became a Top-Rated Mentor",
+    },
+    {
+      text: "Found amazing teammates for hackathons and projects.",
+      name: "John Patel",
+      role: "Web Developer",
+      rating: 4,
+      avatar: "https://i.pravatar.cc/150?img=45",
+      verified: true,
+      skills: ["React", "Next.js", "Tailwind"],
+      outcome: "Won 2 Hackathons",
+    },
+  ];
+
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -24,7 +136,7 @@ export function Testimonials() {
       if (!testimonialPausedRef.current) {
         const loopPoint = el.scrollWidth / 2;
         if (loopPoint > 0) {
-          el.scrollLeft += 2; // Smooth 60fps scrolling
+          el.scrollLeft += 2;
           if (el.scrollLeft >= loopPoint) {
             el.scrollLeft -= loopPoint;
           }
@@ -47,11 +159,9 @@ export function Testimonials() {
     <section className="container relative px-6 py-24">
       <h2 className="mb-16 flex flex-wrap items-center justify-center gap-3 text-center text-5xl font-black leading-none sm:text-6xl">
         <span className="text-slate-700">Learners</span>
-
         <span role="img" aria-label="heart" className="text-5xl sm:text-6xl">
           ❤️
         </span>
-
         <span className="bg-gradient-to-r from-violet-600 to-indigo-500 bg-clip-text text-transparent">
           Peer Learning
         </span>
@@ -100,75 +210,50 @@ export function Testimonials() {
         className="no-scrollbar flex gap-8 overflow-x-auto py-2 md:py-0"
         style={{ scrollBehavior: "smooth" }}
       >
-        {[
-          {
-            text: "PeerLearn helped me crack my first internship interview.",
-            name: "Aisha",
-            role: "AIML Student",
-            rating: 5,
-          },
-          {
-            text: "I started mentoring juniors and improved my communication skills.",
-            name: "Rahul",
-            role: "Senior Mentor",
-            rating: 5,
-          },
-          {
-            text: "Found amazing teammates for hackathons and projects.",
-            name: "John",
-            role: "Web Developer",
-            rating: 4,
-          },
-          {
-            text: "Built a polished project portfolio with mentor guidance.",
-            name: "Maya",
-            role: "Frontend Developer",
-            rating: 5,
-          },
-          {
-            text: "Mentors gave real-world advice that helped my internship prep.",
-            name: "Priya",
-            role: "ML Intern",
-            rating: 5,
-          },
-          {
-            text: "Great community for interview practice and study groups.",
-            name: "Gautam",
-            role: "DSA Enthusiast",
-            rating: 4,
-          },
-
-          // duplicate for infinite loop
-          {
-            text: "PeerLearn helped me crack my first internship interview.",
-            name: "Aisha",
-            role: "AIML Student",
-            rating: 5,
-          },
-          {
-            text: "I started mentoring juniors and improved my communication skills.",
-            name: "Rahul",
-            role: "Senior Mentor",
-            rating: 5,
-          },
-          {
-            text: "Found amazing teammates for hackathons and projects.",
-            name: "John",
-            role: "Web Developer",
-            rating: 4,
-          },
-        ].map((t, i) => (
+        {testimonials.map((t, i) => (
           <motion.div
             key={`${t.name}-${i}`}
             whileHover={{ y: -10 }}
-            className="min-w-[20rem] md:min-w-[24rem] flex-shrink-0"
+            className="min-w-[20rem] md:min-w-[26rem] flex-shrink-0"
           >
             <div className="rounded-3xl bg-gradient-to-br from-cyan-500/20 via-blue-500/10 to-indigo-500/12 p-[1px]">
               <motion.div
-                className="rounded-3xl border border-white/12 bg-[#061224]/70 p-8 backdrop-blur-xl shadow-[0_12px_40px_rgba(34,211,238,0.06)]"
+                className="rounded-3xl border border-white/12 bg-[#061224]/70 p-8 backdrop-blur-xl shadow-[0_12px_40px_rgba(34,211,238,0.06)] h-full flex flex-col"
                 whileHover={{ y: -6 }}
               >
-                <div className="mb-4 flex items-center gap-2">
+                {/* Avatar & Info */}
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={t.avatar}
+                      alt={`${t.name}'s avatar`}
+                      className="h-14 w-14 rounded-full border-2 border-white/20 object-cover"
+                    />
+                    {t.verified && (
+                      <div className="absolute -bottom-0.5 -right-0.5 rounded-full bg-emerald-500 p-1 ring-2 ring-[#061224]">
+                        <CheckCircle className="h-3.5 w-3.5 text-white" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="min-w-0 flex-1 pt-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-slate-100 truncate">
+                        {t.name}
+                      </h4>
+                      {t.verified && (
+                        <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
+                          <CheckCircle className="h-3 w-3" />
+                          VERIFIED
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-300 truncate">{t.role}</p>
+                  </div>
+                </div>
+
+                {/* Rating */}
+                <div className="mb-5 flex items-center gap-2">
                   <span
                     aria-hidden
                     className="text-base tracking-wide text-yellow-400"
@@ -176,22 +261,33 @@ export function Testimonials() {
                     {"★".repeat(t.rating)}
                     {"☆".repeat(5 - t.rating)}
                   </span>
-
                   <span className="text-sm text-slate-300">{t.rating}/5</span>
                 </div>
 
-                <p className="flex items-start gap-3 text-lg leading-9 text-slate-100/95">
+                {/* Learning Outcome */}
+                <div className="mb-4 inline-flex items-center rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-1 text-sm text-cyan-300">
+                  <span className="mr-2">🚀</span>
+                  {t.outcome}
+                </div>
+
+                {/* Testimonial Text */}
+                <p className="flex-1 text-lg leading-9 text-slate-100/95">
                   <span className="text-3xl leading-none text-cyan-400/90">
                     “
                   </span>
-
-                  <span>{t.text}</span>
+                  {t.text}
                 </p>
 
-                <div className="mt-6">
-                  <h4 className="font-bold text-slate-100">{t.name}</h4>
-
-                  <p className="text-sm text-slate-300">{t.role}</p>
+                {/* Skill Tags */}
+                <div className="mt-6 flex flex-wrap gap-2">
+                  {t.skills.map((skill, idx) => (
+                    <span
+                      key={idx}
+                      className="rounded-md bg-white/5 px-3 py-1 text-xs text-slate-300 border border-white/10"
+                    >
+                      {skill}
+                    </span>
+                  ))}
                 </div>
               </motion.div>
             </div>
@@ -232,30 +328,22 @@ export function Testimonials() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-
               if (!review.trim()) {
                 toast.error("Please enter your feedback.");
                 return;
               }
-
               setSubmitted(true);
-
-              setTimeout(() => {
-                setSubmitted(false);
-              }, 3000);
-
+              setTimeout(() => setSubmitted(false), 3000);
               setName("");
               setRating(0);
               setReview("");
             }}
             className="space-y-7"
           >
-            {/* Name */}
             <div>
               <label className="mb-3 block text-sm font-semibold text-slate-300">
                 Your Name (Optional)
               </label>
-
               <input
                 type="text"
                 value={name}
@@ -265,12 +353,10 @@ export function Testimonials() {
               />
             </div>
 
-            {/* Rating */}
             <div>
               <label className="mb-3 block text-sm font-semibold text-slate-300">
                 Rating (Optional)
               </label>
-
               <div className="flex gap-3">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <motion.button
@@ -291,18 +377,15 @@ export function Testimonials() {
               </div>
             </div>
 
-            {/* Feedback */}
             <div>
               <div className="mb-3 flex items-center justify-between">
                 <label className="block text-sm font-semibold text-slate-300">
                   Your Feedback
                 </label>
-
                 <span className="text-xs text-slate-500">
                   {review.length}/500
                 </span>
               </div>
-
               <textarea
                 rows={6}
                 maxLength={500}
@@ -313,7 +396,6 @@ export function Testimonials() {
               />
             </div>
 
-            {/* Submit */}
             <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center">
               <Button
                 type="submit"
@@ -339,13 +421,13 @@ export function Testimonials() {
 
       <style>{`
         .no-scrollbar::-webkit-scrollbar {
-        display: none;}
-
-      .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;}
-`     }
-      </style>
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </section>
   );
 }
