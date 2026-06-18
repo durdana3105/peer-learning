@@ -84,7 +84,7 @@ export const aiSchemas = {
           content: z.string().trim().min(1).max(2000),
         })
       ).min(1).max(50),
-      role: z.string().trim().min(1).max(200),
+      role: z.enum(["Software Engineer", "Product Manager", "DevOps Engineer", "Data Scientist"]),
     }),
   },
   mockInterviewReport: {
