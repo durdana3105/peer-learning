@@ -5,6 +5,11 @@ type DeleteResourceResult =
   | { success: true }
   | { success: false; error: string };
 
+type ResourceRecord = {
+  id: string;
+  file_url: string;
+};
+
 export const deleteResource = async (
   resourceId: string
 ): Promise<DeleteResourceResult> => {
@@ -15,7 +20,10 @@ export const deleteResource = async (
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return { success: false, error: "You must be signed in to delete a resource." };
+      return {
+        success: false,
+        error: "You must be signed in to delete a resource.",
+      };
     }
 
     // Fetch the resource and verify ownership in a single query.
@@ -29,16 +37,21 @@ export const deleteResource = async (
       .eq("uploaded_by", user.id)
       .single();
 
-    if (fetchError || !resource) {
-      return { success: false, error: "Resource not found or you do not have permission to delete it." };
+    const typedResource = resource as ResourceRecord | null;
+
+    if (fetchError || !typedResource) {
+      return {
+        success: false,
+        error:
+          "Resource not found or you do not have permission to delete it.",
+      };
     }
 
     // Use the file_url from the database row, not from caller input,
     // to prevent mismatched storage/DB deletions.
     const { error: storageError } = await supabase.storage
       .from("resources")
-      // @ts-expect-error TODO: refine typing
-      .remove([resource.file_url]);
+      .remove([typedResource.file_url]);
 
     if (storageError) {
       return { success: false, error: storageError.message };
@@ -47,8 +60,7 @@ export const deleteResource = async (
     const { error: deleteError } = await supabase
       .from("resources")
       .delete()
-      // @ts-expect-error TODO: refine typing
-      .eq("id", resource.id);
+      .eq("id", typedResource.id);
 
     if (deleteError) {
       return { success: false, error: deleteError.message };
@@ -57,6 +69,12 @@ export const deleteResource = async (
     return { success: true };
   } catch (err: any) {
     logError(err, { context: "deleteResource", resourceId });
-    return { success: false, error: err.message || "An unexpected error occurred while deleting the resource." };
+
+    return {
+      success: false,
+      error:
+        err.message ||
+        "An unexpected error occurred while deleting the resource.",
+    };
   }
 };
