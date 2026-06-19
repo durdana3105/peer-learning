@@ -1,115 +1,16 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar, List } from "lucide-react";
 import type { ScheduledSession } from "@/hooks/useSessionStatus";
-import { generateICS } from "@/utils/calendar";
+import { EventBlock } from "./EventBlock";
+import { ListRow } from "./ListRow";
 
-// ── helpers ───────────────────────────────────────────────────
-const STATUS_COLOR: Record<string, string> = {
-  scheduled: "bg-cyan-500/20 border-cyan-400/30 text-cyan-300",
-  live: "bg-red-500/20 border-red-400/30 text-red-300",
-  ended: "bg-white/5 border-white/10 text-gray-400",
-};
-
-function statusLabel(s: string) {
-  if (s === "live") return "🔴 LIVE";
-  if (s === "ended") return "Ended";
-  return "Scheduled";
-}
-
-// ── Session event block ────────────────────────────────────────
-function EventBlock({
-  session,
-  onClick,
-}: {
-  session: ScheduledSession;
-  onClick: () => void;
-}) {
-  const time = session.scheduled_at
-    ? format(parseISO(session.scheduled_at), "p")
-    : "—";
-
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left px-2 py-1.5 rounded-lg border text-xs mb-1 truncate transition-all hover:brightness-110 ${
-        STATUS_COLOR[session.status] ?? STATUS_COLOR.scheduled
-      }`}
-    >
-      <span className="font-semibold block truncate">{session.title}</span>
-      <span className="opacity-70">{time}</span>
-    </button>
-  );
-}
-
-// ── List row ──────────────────────────────────────────────────
-function ListRow({
-  session,
-  onClick,
-}: {
-  session: ScheduledSession;
-  onClick: () => void;
-}) {
-  const dt = session.scheduled_at ? parseISO(session.scheduled_at) : null;
-
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left flex items-center gap-4 p-4 rounded-2xl border backdrop-blur-xl transition-all hover:brightness-110 ${
-        STATUS_COLOR[session.status] ?? STATUS_COLOR.scheduled
-      }`}
-    >
-      {/* Date block */}
-      <div className="shrink-0 w-14 text-center">
-        {dt ? (
-          <>
-            <div className="text-xs uppercase opacity-60">
-              {format(dt, "MMM")}
-            </div>
-            <div className="text-2xl font-bold leading-none">
-              {format(dt, "d")}
-            </div>
-            <div className="text-xs opacity-60">{format(dt, "EEE")}</div>
-          </>
-        ) : (
-          <span className="text-xs opacity-50">TBD</span>
-        )}
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="font-bold truncate">{session.title}</div>
-        <div className="text-xs opacity-70 mt-0.5 truncate">
-          {dt ? format(dt, "p") : ""} · {session.duration_minutes} min
-        </div>
-        {session.tags?.length ? (
-          <div className="flex flex-wrap gap-1 mt-1">
-            {session.tags.slice(0, 3).map((tag) => (
-              <span
-                key={tag}
-                className="bg-white/10 px-2 py-0.5 rounded-full text-[10px]"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        ) : null}
-      </div>
-
-      <div className="shrink-0 text-xs font-semibold">
-        {statusLabel(session.status)}
-      </div>
-    </button>
-  );
-}
-
-// ── Props ─────────────────────────────────────────────────────
 interface CalendarViewProps {
   sessions: ScheduledSession[];
   onSelectSession: (session: ScheduledSession) => void;
 }
 
-// ── Main component ────────────────────────────────────────────
-export function CalendarView({ sessions, onSelectSession }: CalendarViewProps) {
+export default function CalendarView({ sessions, onSelectSession }: CalendarViewProps) {
   const [view, setView] = useState<"week" | "list">("week");
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 }) // Mon
@@ -143,6 +44,10 @@ export function CalendarView({ sessions, onSelectSession }: CalendarViewProps) {
         ),
     [sessions]
   );
+
+  const handleSelectSession = useCallback((session: ScheduledSession) => {
+    onSelectSession(session);
+  }, [onSelectSession]);
 
   return (
     <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-3xl p-5">
@@ -181,7 +86,7 @@ export function CalendarView({ sessions, onSelectSession }: CalendarViewProps) {
           {view === "week" && (
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setWeekStart((d) => addDays(d, -7))}
+               onClick={() => setWeekStart((d) => addDays(d, -7))}
                 className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
               >
                 <ChevronLeft size={16} />
@@ -249,7 +154,7 @@ export function CalendarView({ sessions, onSelectSession }: CalendarViewProps) {
                     <EventBlock
                       key={s.id}
                       session={s}
-                      onClick={() => onSelectSession(s)}
+                      onClick={() => handleSelectSession(s)}
                     />
                   ))}
                 </div>
@@ -271,7 +176,7 @@ export function CalendarView({ sessions, onSelectSession }: CalendarViewProps) {
               <ListRow
                 key={s.id}
                 session={s}
-                onClick={() => onSelectSession(s)}
+                onClick={() => handleSelectSession(s)}
               />
             ))
           )}
@@ -280,5 +185,3 @@ export function CalendarView({ sessions, onSelectSession }: CalendarViewProps) {
     </div>
   );
 }
-
-export default CalendarView;

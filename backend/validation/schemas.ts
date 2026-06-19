@@ -166,6 +166,17 @@ export const matchSchemas = {
         .refine((val) => val === undefined || (/^\d+$/.test(val) && parseInt(val) >= 1 && parseInt(val) <= 100), {
           message: "limit must be an integer between 1 and 100",
         }),
+      page: z
+        .string()
+        .optional()
+        .refine(
+          (val) =>
+            val === undefined ||
+            (/^\d+$/.test(val) && parseInt(val, 10) >= 1 && parseInt(val, 10) <= 1000),
+          {
+            message: "page must be an integer between 1 and 1000",
+          }
+        ),
     }),
   },
 };
