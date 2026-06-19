@@ -5,6 +5,7 @@ import { Play, Square, Coffee, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
+import { logError } from '@/utils/logger';
 
 const WORK_MIN = 1;
 const WORK_MAX = 120;
@@ -33,17 +34,31 @@ export default function GroupPomodoro({ roomId, creatorId }: GroupPomodoroProps)
     let active = true;
 
     const fetchTimerState = async () => {
-      const { data, error } = await supabase
-        .from('study_rooms' as any)
-        .select('timer_state, timer_end_time, timer_work_duration, timer_break_duration')
-        .eq('id', roomId)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('study_rooms' as any)
+          .select('timer_state, timer_end_time, timer_work_duration, timer_break_duration')
+          .eq('id', roomId)
+          .single();
 
-      if (!error && data && active) {
-        setTimerState(((data as any) || {}).timer_state || 'work');
-        setEndTime(((data as any) || {}).timer_end_time ? new Date(((data as any) || {}).timer_end_time as string) : null);
-        setWorkDuration((data as any).timer_work_duration || 25);
-        setBreakDuration((data as any).timer_break_duration || 5);
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        if (data && active) {
+          setTimerState(((data as any) || {}).timer_state || 'idle');
+          setEndTime(((data as any) || {}).timer_end_time ? new Date(((data as any) || {}).timer_end_time as string) : null);
+          setWorkDuration((data as any).timer_work_duration || 25);
+          setBreakDuration((data as any).timer_break_duration || 5);
+        }
+      } catch (err: any) {
+        logError(err, { context: "GroupPomodoro.fetchTimerState", roomId });
+        toast({
+          title: "Failed to load timer",
+          description: err.message || "Could not sync the room's timer state.",
+          variant: "destructive",
+        });
+      }
       }
     };
 
@@ -85,20 +100,25 @@ export default function GroupPomodoro({ roomId, creatorId }: GroupPomodoroProps)
         ? new Date(Date.now() + clampedDuration * 60 * 1000).toISOString()
         : null;
 
-    const { error } = await supabase
-      .from('study_rooms' as any)
-      .update({
-        timer_state: newState,
-        timer_end_time: newEndTime,
-        timer_work_duration: work,
-        timer_break_duration: brk,
-      })
-      .eq('id', roomId);
+    try {
+      const { error } = await supabase
+        .from('study_rooms' as any)
+        .update({
+          timer_state: newState,
+          timer_end_time: newEndTime,
+          timer_work_duration: work,
+          timer_break_duration: brk,
+        })
+        .eq('id', roomId);
 
-    if (error) {
+      if (error) {
+        throw new Error(error.message);
+      }
+    } catch (err: any) {
+      logError(err, { context: "GroupPomodoro.setGroupTimer", roomId, newState });
       toast({
         title: 'Timer update failed',
-        description: 'Could not sync the timer. Please try again.',
+        description: err.message || 'Could not sync the timer. Please try again.',
         variant: 'destructive',
       });
     }
