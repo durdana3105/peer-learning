@@ -4,6 +4,7 @@ import {
   dispatchPushNotifications,
   sendSessionReminders,
   sendMentorshipCheckinReminders,
+  resetWeeklyFocusTime,
 } from "../controllers/cronController.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
@@ -35,6 +36,12 @@ router.post(
   "/mentorship-reminders",
   requireCronSecret,
   asyncHandler(sendMentorshipCheckinReminders)
+);
+
+router.post(
+  "/reset-weekly-focus",
+  requireCronSecret,
+  asyncHandler(resetWeeklyFocusTime)
 );
 
 export default router;

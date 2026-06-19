@@ -56,26 +56,16 @@ export const dispatchPushNotifications = async (req, res, next) => {
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
     const supabase = getSupabaseClient();
 
-    // --- Atomic claim --------------------------------------------------
-    // A single UPDATE … RETURNING claims the batch before any push is
-    // dispatched. Postgres guarantees that only one concurrent caller
-    // wins each row; the other sees push_claimed_at already set and its
-    // SELECT returns an empty set.  This replaces the racy
-    // SELECT … WHERE push_sent_at IS NULL pattern.
-    // -------------------------------------------------------------------
+    // Atomically claim a batch of pending notifications so concurrent invocations
+    // cannot double-deliver the same notification (race-condition prevention).
     const claimedAt = new Date().toISOString();
-    const staleThreshold = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-
-    const { data: notifications, error: claimError } = await supabase
+    const { data: notifications, error } = await supabase
       .from("notifications")
       .update({ push_claimed_at: claimedAt })
-      .is("push_sent_at", null)
-      .or(`push_claimed_at.is.null,push_claimed_at.lt.${staleThreshold}`)
-      .select("id,user_id,title,body,action_url")
-      .order("created_at", { ascending: true })
-      .limit(100);
+      .is("push_claimed_at", null)
+      .select("id,user_id,title,body,action_url");
 
-    if (claimError) {
+    if (Error) {
       return res.status(500).json({ error: claimError.message });
     }
 
@@ -83,29 +73,28 @@ export const dispatchPushNotifications = async (req, res, next) => {
       return res.json({ sent: 0, processed: 0 });
     }
 
+    // Batch-fetch all push subscriptions for the claimed notifications in one query.
     const userIds = [...new Set(notifications.map((n) => n.user_id))];
-
-    const { data: allSubscriptions, error: subscriptionsError } = await supabase
+    const { data: allSubscriptions, error: subError } = await supabase
       .from("push_subscriptions")
       .select("user_id,endpoint,p256dh,auth")
       .in("user_id", userIds);
 
-    if (subscriptionsError) {
-      return res.status(500).json({ error: subscriptionsError.message });
+    if (subError) {
+      return res.status(500).json({ error: subError.message });
     }
 
-    const subscriptionsByUser = new Map();
-    for (const subscription of allSubscriptions || []) {
-      if (!subscriptionsByUser.has(subscription.user_id)) {
-        subscriptionsByUser.set(subscription.user_id, []);
-      }
-      subscriptionsByUser.get(subscription.user_id).push(subscription);
+    // Group subscriptions by user_id for O(1) lookup per notification.
+    const subsByUser = {};
+    for (const sub of allSubscriptions || []) {
+      if (!subsByUser[sub.user_id]) subsByUser[sub.user_id] = [];
+      subsByUser[sub.user_id].push(sub);
     }
 
     let sent = 0;
 
     for (const notification of notifications) {
-      const subscriptions = subscriptionsByUser.get(notification.user_id) || [];
+      const subscriptions = subsByUser[notification.user_id] || [];
 
       const pushResults = await Promise.allSettled(
         subscriptions.map((subscription) =>
@@ -300,6 +289,25 @@ export const sendMentorshipCheckinReminders = async (req, res, next) => {
     }
 
     res.json({ inserted: notifications.length });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetWeeklyFocusTime = async (req, res, next) => {
+  try {
+    const supabase = getSupabaseClient();
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ focus_time_this_week: 0 })
+      .neq("focus_time_this_week", 0);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ reset: true });
   } catch (error) {
     next(error);
   }

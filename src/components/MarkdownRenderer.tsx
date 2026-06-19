@@ -1,29 +1,29 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import DOMPurify from 'dompurify';
+import remarkGfm from 'remark-gfm';
+import rehypeSanitize from 'rehype-sanitize';
+import type { PluggableList } from 'unified';
 
 interface MarkdownRendererProps {
   content: string;
   className?: string;
 }
 
-export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className = '' }) => {
-  // Sanitize the raw markdown/HTML content first
-  const sanitizedContent = useMemo(() => {
-    return DOMPurify.sanitize(content, {
-      ALLOWED_TAGS: [
-        'b', 'i', 'em', 'strong', 'a', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'ul', 'ol', 'li', 'code', 'pre', 'blockquote', 'hr', 'br', 'span', 'div'
-      ],
-      ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'className'],
-    });
-  }, [content]);
+const remarkPlugins: PluggableList = [remarkGfm];
+const rehypePlugins: PluggableList = [rehypeSanitize];
 
-  return (
-    <div className={`prose prose-invert max-w-none ${className}`}>
-      <ReactMarkdown>{sanitizedContent}</ReactMarkdown>
-    </div>
-  );
-};
+export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
+  content,
+  className = '',
+}) => (
+  <div className={`prose prose-invert max-w-none ${className}`}>
+    <ReactMarkdown
+      remarkPlugins={remarkPlugins}
+      rehypePlugins={rehypePlugins}
+    >
+      {content}
+    </ReactMarkdown>
+  </div>
+);
 
 export default MarkdownRenderer;

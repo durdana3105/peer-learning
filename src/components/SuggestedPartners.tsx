@@ -4,7 +4,6 @@ import { API_BASE_URL } from "@/config/api";
 interface Partner {
   _id: string;
   name: string;
-  email: string;
   skills: string[];
   interests: string[];
   compatibilityScore: number;
@@ -56,10 +55,6 @@ const SuggestedPartners = () => {
                 {partner.compatibilityScore}% Match
               </span>
             </div>
-
-            <p className="text-sm text-gray-400 mb-2">
-              {partner.email}
-            </p>
 
             <div className="mb-3">
               <h4 className="font-medium text-white mb-1">

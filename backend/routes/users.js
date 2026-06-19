@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { fileTypeFromFile } from "file-type";
+import { requireAuth } from "../middlewares/requireAuth.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,13 +22,13 @@ const storage = multer.diskStorage({
     cb(null, profilesDir);
   },
   filename: function (req, file, cb) {
+    const userId = req.user?.id ?? 'unknown'
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname))
+    cb(null, `profile-${userId}-${uniqueSuffix}${path.extname(file.originalname)}`)
   }
 });
 
 // Configure multer with file size limits and MIME type validation
-// Fixes Issue #693: Prevent DoS via large files and restrict to images
 const upload = multer({ 
   storage: storage,
   limits: { 
@@ -70,7 +71,7 @@ const safeUnlink = (filePath) => {
 };
 
 // User profile photo upload endpoint
-router.post("/upload-photo", uploadProfilePhoto, async (req, res) => {
+router.post("/upload-photo", requireAuth, uploadProfilePhoto, async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded or invalid file type." });
   }

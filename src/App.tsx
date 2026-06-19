@@ -15,14 +15,13 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import ProtectedMentorRoute from "@/components/ProtectedMentorRoute";
 
 // Global layout components – rendered on every page, keep static
-import Navbar from "./components/Navbar";
-import Chatbot from "./components/Chatbot";
+import Navbar from "./components/Navbar/Navbar";
+import Chatbot from "./components/Chatbot/Chatbot";
 import StreakBadge from "./components/StreakBadge";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import FloatingAI from "./components/FloatingAI";
 import MouseSparkles from "./components/MouseSparkles";
 import BackToTop from "./components/BackToTop";  // ← ADDED THIS LINE
-
 import { useAuth } from "@/contexts/useAuth";
 
 // Lazy-loaded page & route-specific components (code-split per route)
@@ -55,7 +54,7 @@ const AuthCallback = React.lazy(() => import("./pages/AuthCallback"));
 const PublicPortfolio = React.lazy(() => import("./pages/PublicPortfolio"));
 const ResourceHub = React.lazy(() => import("@/pages/ResourceHub"));
 const StudyRooms = React.lazy(() => import("./components/StudyRooms"));
-const Room = React.lazy(() => import("./components/Room"));
+const Room = React.lazy(() => import("./components/Room/Room"));
 const Contact = React.lazy(() => import("./pages/Contact"));
 const PrivacyPolicy = React.lazy(() => import("./pages/privacy"));
 const CookiesPolicy = React.lazy(() => import("./pages/cookies-policy"));
@@ -64,6 +63,10 @@ const SubmitForReview = React.lazy(() => import("./pages/SubmitForReview"));
 const ReviewSubmission = React.lazy(() => import("./pages/ReviewSubmission"));
 const MockInterview = React.lazy(() => import("./pages/MockInterview"));
 const InterviewHistory = React.lazy(() => import("./pages/InterviewHistory"));
+const TermsAndConditions = React.lazy(
+  () => import("./pages/TermsAndConditions")
+);
+
 const queryClient = new QueryClient();
 
 const WithNav = ({ children }: { children: React.ReactNode }) => {
@@ -112,7 +115,7 @@ function AppContent() {
           <Route path="/contact" element={<WithNav><Contact /></WithNav>} />
           <Route path="/privacy-policy" element={<WithNav><PrivacyPolicy /></WithNav>} />
           <Route path="/cookies-policy" element={<WithNav><CookiesPolicy /></WithNav>} />
-
+           <Route path="/terms-and-conditions" element={<WithNav><TermsAndConditions /></WithNav>} />
           <Route path="/auth/callback" element={<AuthCallback />} />
 
           <Route

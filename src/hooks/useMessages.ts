@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAwardXP } from "@/hooks/useAwardXP";
+import { toast } from "@/hooks/use-toast";
+import { logError } from "@/utils/logger";
 
 export type ProfileSummary = {
   id: string;
@@ -78,6 +80,7 @@ export function useMessages(currentUserId?: string | null) {
   const [selectedUser, setSelectedUser] = useState<ProfileSummary | null>(null);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
 
   const awardXP = useAwardXP();
@@ -152,48 +155,60 @@ export function useMessages(currentUserId?: string | null) {
       setSelectedUser(null);
       setLoadingUsers(false);
       setLoadingMessages(false);
+      setError(null);
       return;
     }
 
     const getUsers = async () => {
       setLoadingUsers(true);
+      setError(null);
 
-      const [{ data: profileData, error: profileError }, { data: userData, error: userError }] =
-        await Promise.all([
-          supabase
-            .from("profiles")
-            .select("*")
-            .neq("id", currentUserId)
-            .order("name", { ascending: true })
-            .limit(100),
-          supabase
-            .from("users")
-            .select("*")
-            .neq("id", currentUserId)
-            .order("name", { ascending: true })
-            .limit(100),
-        ]);
+      try {
+        const [{ data: profileData, error: profileError }, { data: userData, error: userError }] =
+          await Promise.all([
+            supabase
+              .from("profiles")
+              .select("*")
+              .neq("id", currentUserId)
+              .order("name", { ascending: true })
+              .limit(100),
+            supabase
+              .from("profiles")
+              .select("*")
+              .neq("id", currentUserId)
+              .order("name", { ascending: true })
+              .limit(100),
+          ]);
 
-      const mergedUsers = mergeProfiles(
-        (profileData ?? []).map((row) => row as ProfileSummary),
-        (userData ?? []) as UserRow[]
-      );
+        const mergedUsers = mergeProfiles(
+          (profileData ?? []).map((row) => row as ProfileSummary),
+          (userData ?? []) as UserRow[]
+        );
 
-      if (mergedUsers.length > 0) {
-        setProfiles(mergedUsers);
-      } else {
-        setProfiles([]);
+        if (mergedUsers.length > 0) {
+          setProfiles(mergedUsers);
+        } else {
+          setProfiles([]);
+        }
+
+        if (profileError && !userData?.length) {
+          throw new Error(profileError.message);
+        }
+
+        if (userError && !profileData?.length) {
+          throw new Error(userError.message);
+        }
+      } catch (err: any) {
+        logError(err, { context: "useMessages.getUsers" });
+        setError("Failed to load profiles");
+        toast({
+          title: "Failed to load profiles",
+          description: err.message || "An unexpected error occurred",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingUsers(false);
       }
-
-      if (profileError && !userData?.length) {
-        console.error("Failed to load profiles:", profileError.message);
-      }
-
-      if (userError && !profileData?.length) {
-        console.error("Failed to load users:", userError.message);
-      }
-
-      setLoadingUsers(false);
     };
 
     getUsers();
@@ -212,6 +227,7 @@ export function useMessages(currentUserId?: string | null) {
           table: "profiles",
         },
         (payload) => {
+          // @ts-expect-error TODO: refine typing
           if (payload.new && payload.new.id && payload.new.id !== currentUserId) {
             setProfiles((prev) => {
               const updated = normalizeProfile(payload.new as ProfileRow);
@@ -242,21 +258,35 @@ export function useMessages(currentUserId?: string | null) {
 
     const loadMessages = async () => {
       setLoadingMessages(true);
+      setError(null);
 
-      const { data, error } = await supabase
-        .from("messages")
-        .select("id,sender_id,receiver_id,content,text,message,created_at,read_at")
-        .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
-        .order("created_at", { ascending: false })
-        .limit(100);
+      try {
+        const { data, error: queryError } = await supabase
+          .from("messages")
+          .select("id,sender_id,receiver_id,content,text,message,created_at,read_at")
+          .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
+          .order("created_at", { ascending: false })
+          .limit(100);
 
-      if (!error && data) {
-        setMessages((data as MessageRow[]).reverse());
-      } else if (error) {
-        console.error("Failed to load messages:", error.message);
+        if (queryError) {
+          throw new Error(queryError.message);
+        }
+
+        if (data) {
+          // @ts-expect-error TODO: refine typing
+          setMessages((data as MessageRow[]).reverse());
+        }
+      } catch (err: any) {
+        logError(err, { context: "useMessages.loadMessages" });
+        setError("Failed to load messages");
+        toast({
+          title: "Failed to load messages",
+          description: err.message || "An unexpected error occurred",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingMessages(false);
       }
-
-      setLoadingMessages(false);
     };
 
     loadMessages();
@@ -332,22 +362,31 @@ export function useMessages(currentUserId?: string | null) {
     if (unreadIds.length === 0) return;
 
     const markAsRead = async () => {
-      const { error } = await supabase.rpc("mark_messages_as_read", {
-        message_ids: unreadIds,
-      });
+      try {
+        // @ts-expect-error TODO: refine typing
+        const { error: rpcError } = await supabase.rpc("mark_messages_as_read", {
+          message_ids: unreadIds,
+        });
 
-      if (error) {
-        console.error("Failed to mark messages as read:", error.message);
-        return;
+        if (rpcError) {
+          throw new Error(rpcError.message);
+        }
+
+        setMessages((previous) =>
+          previous.map((message) =>
+            unreadIds.includes(message.id)
+              ? { ...message, read_at: message.read_at ?? new Date().toISOString() }
+              : message
+          )
+        );
+      } catch (err: any) {
+        logError(err, { context: "useMessages.markAsRead" });
+        toast({
+          title: "Failed to mark messages as read",
+          description: err.message || "An unexpected error occurred",
+          variant: "destructive",
+        });
       }
-
-      setMessages((previous) =>
-        previous.map((message) =>
-          unreadIds.includes(message.id)
-            ? { ...message, read_at: message.read_at ?? new Date().toISOString() }
-            : message
-        )
-      );
     };
 
     void markAsRead();
@@ -366,35 +405,50 @@ export function useMessages(currentUserId?: string | null) {
     if (!content || !selectedUser || !currentUserId) return false;
 
     if (content.length > 1000) {
-      console.error("Message exceeds the 1000 character limit.");
+      toast({
+        title: "Message too long",
+        description: "Message exceeds the 1000 character limit.",
+        variant: "destructive",
+      });
       return false;
     }
 
-    const { data, error } = await supabase
-      .from("messages")
-      .insert({
-        sender_id: currentUserId,
-        receiver_id: selectedUser.id,
-        content,
-        text: content,
-      })
-      .select("id,sender_id,receiver_id,content,text,message,created_at,read_at")
-      .single();
+    try {
+      const { data, error: insertError } = await supabase
+        .from("messages")
+        .insert({
+          sender_id: currentUserId,
+          receiver_id: selectedUser.id,
+          content,
+          text: content,
+        })
+        .select("id,sender_id,receiver_id,content,text,message,created_at,read_at")
+        .single();
 
-    if (error) {
-      console.error("Failed to send message:", error.message);
+      if (insertError) {
+        throw new Error(insertError.message);
+      }
+
+      if (data) {
+        setMessages((previous) =>
+          // @ts-expect-error TODO: refine typing
+          previous.some((message) => message.id === data.id)
+            ? previous
+            // @ts-expect-error TODO: refine typing
+            : [...previous, data as MessageRow]
+        );
+        awardXP.mutate({ activity: "chat_message" });
+      }
+      return true;
+    } catch (err: any) {
+      logError(err, { context: "useMessages.sendMessage" });
+      toast({
+        title: "Failed to send message",
+        description: err.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
       return false;
     }
-
-    if (data) {
-      setMessages((previous) =>
-        previous.some((message) => message.id === data.id)
-          ? previous
-          : [...previous, data as MessageRow]
-      );
-      awardXP.mutate({ activity: "chat_message" });
-    }
-    return true;
   }, [currentUserId, selectedUser, awardXP]);
 
   return {
@@ -404,6 +458,7 @@ export function useMessages(currentUserId?: string | null) {
     setSelectedUser,
     loadingUsers,
     loadingMessages,
+    error,
     onlineUserIds,
     conversationSummaries,
     threadMessages,
