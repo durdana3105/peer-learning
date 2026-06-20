@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import { Link } from "react-router-dom";
 import { BookOpen, Menu, X } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -8,10 +8,12 @@ import { DesktopNav } from "./DesktopNav";
 import { MobileNav } from "./MobileNav";
 import { UserMenu } from "./UserMenu";
 
-export default function Navbar() {
+const Navbar = memo(function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, profileName, isAdmin, handleLogout } = useNavbarProfile();
   const { setTheme } = useTheme();
+
+  const toggleMobileMenu = useCallback(() => setMobileOpen((prev) => !prev), []);
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#050816]/80 backdrop-blur-xl">
@@ -47,7 +49,7 @@ export default function Navbar() {
 
         {/* MOBILE BUTTON */}
         <button
-          onClick={() => setMobileOpen(!mobileOpen)}
+          onClick={toggleMobileMenu}
           className="rounded-lg border border-white/10 bg-white/5 p-3 text-white md:hidden active:scale-95"
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
@@ -67,4 +69,6 @@ export default function Navbar() {
       )}
     </nav>
   );
-}
+});
+
+export default Navbar;
