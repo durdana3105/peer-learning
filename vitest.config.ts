@@ -11,6 +11,9 @@ export default defineConfig({
     },
     projects: [
       {
+        resolve: {
+          alias: { "@": path.resolve(__dirname, "./src") },
+        },
         test: {
           name: "frontend",
           environment: "jsdom",

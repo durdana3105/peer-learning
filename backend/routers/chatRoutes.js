@@ -8,6 +8,15 @@ import { validate } from "../middlewares/validate.js";
 import { chatSchemas } from "../validation/schemas.js";
 
 dotenv.config();
+const router = express.Router();
+
+/**
+ * SECURITY: Validate OPENROUTER_API_KEY at module initialization
+ * This prevents the application from starting with invalid configuration.
+ * Previously used a fallback to "dummy-key" which could enable silent
+ * configuration failures and potential security issues.
+ */
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || (process.env.NODE_ENV === "test" ? "dummy-key-for-tests" : undefined);
 
 const router = express.Router();
 

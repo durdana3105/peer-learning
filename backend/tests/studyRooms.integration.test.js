@@ -2,9 +2,6 @@
  * Integration Tests: Study Rooms API with Public/Private Workflows
  * Tests the complete flow from UI interaction to database state
  */
-
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-
 /**
  * Integration Test: Complete User Flow for Study Rooms
  * This simulates real user interactions with the study room system
@@ -216,7 +213,7 @@ describe('Study Rooms API Integration Tests - Issue #408', () => {
        */
       
       const creator = { id: 'creator-uuid' };
-      const room = { id: 'room-uuid', is_private: true, created_by: creator.id };
+      const room = { id: 'private-room-uuid', is_private: true, created_by: creator.id };
       
       // Creator can directly insert
       const result = directInsertParticipantAsCreator(room.id, creator.id);
@@ -259,6 +256,22 @@ describe('Study Rooms API Integration Tests - Issue #408', () => {
 });
 
 /**
+ * Mock database state
+ */
+const mockRooms = {
+  'room-uuid': { id: 'room-uuid', is_private: false, created_by: 'other' },
+  'private-room-uuid': { id: 'private-room-uuid', is_private: true, created_by: 'creator-uuid' },
+  'collab-room-uuid': { id: 'collab-room-uuid', is_private: false, created_by: 'user1-uuid' }
+};
+
+const participantsStore = new Set();
+
+// Automatically add room creators to their rooms to match real behavior
+participantsStore.add('room-uuid:other');
+participantsStore.add('private-room-uuid:creator-uuid');
+participantsStore.add('collab-room-uuid:user1-uuid');
+
+/**
  * Mock functions for testing
  */
 
@@ -271,18 +284,20 @@ const rooms = {
 const participantsByRoom = {};
 
 function joinPublicRoom(userId, roomId) {
-  if (!rooms[roomId]) {
+  if (!roomId || !userId) {
+    throw new Error('Room ID and User ID are required');
+  }
+  
+  const room = mockRooms[roomId];
+  if (!room) {
     throw new Error('Study room not found');
   }
   
-  if (rooms[roomId].is_private && rooms[roomId].created_by !== userId) {
+  if (room.is_private && room.created_by !== userId) {
     throw new Error('This is a private room. You need an invitation to join');
   }
   
-  if (!participantsByRoom[roomId]) participantsByRoom[roomId] = [];
-  if (!participantsByRoom[roomId].find(p => p.profile_id === userId)) {
-    participantsByRoom[roomId].push({ profile_id: userId });
-  }
+  participantsStore.add(`${roomId}:${userId}`);
   
   return {
     success: true,
@@ -291,33 +306,42 @@ function joinPublicRoom(userId, roomId) {
 }
 
 function getRoomParticipants(roomId) {
-  return participantsByRoom[roomId] || [];
+  const list = [];
+  for (const item of participantsStore) {
+    const [rId, uId] = item.split(':');
+    if (rId === roomId) {
+      list.push({ room_id: rId, profile_id: uId });
+    }
+  }
+  return list;
 }
 
 function canAccessRoom(userId, roomId) {
-  const room = rooms[roomId];
+  const room = mockRooms[roomId];
   if (!room) return false;
+  
   if (!room.is_private) return true;
   if (room.created_by === userId) return true;
-  const parts = getRoomParticipants(roomId);
-  return parts.some(p => p.profile_id === userId);
+  
+  return participantsStore.has(`${roomId}:${userId}`);
 }
 
 function addRoomParticipant(roomId, userId) {
-  if (!participantsByRoom[roomId]) participantsByRoom[roomId] = [];
-  participantsByRoom[roomId].push({ profile_id: userId });
+  participantsStore.add(`${roomId}:${userId}`);
   return true;
 }
 
 function directInsertParticipant(roomId, userId) {
-  const room = rooms[roomId];
+  const room = mockRooms[roomId];
   if (room && room.is_private) {
     throw new Error('RLS policy violation');
   }
+  participantsStore.add(`${roomId}:${userId}`);
   return { success: true };
 }
 
 function directInsertParticipantAsCreator(roomId, creatorId) {
+  participantsStore.add(`${roomId}:${creatorId}`);
   return { success: true };
 }
 
