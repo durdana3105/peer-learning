@@ -244,8 +244,8 @@ export function useMessages(
           table: "profiles",
         },
         (payload) => {
-          // @ts-expect-error TODO: refine typing
-          if (payload.new && payload.new.id && payload.new.id !== currentUserId) {
+          const newPayload = payload.new as any;
+          if (newPayload && newPayload.id && newPayload.id !== currentUserId) {
             setProfiles((prev) => {
               const updated = normalizeProfile(payload.new as ProfileRow);
               const index = prev.findIndex((p) => p.id === updated.id);
@@ -380,8 +380,7 @@ export function useMessages(
 
     const markAsRead = async () => {
       try {
-        // @ts-expect-error TODO: refine typing
-        const { error: rpcError } = await supabase.rpc("mark_messages_as_read", {
+        const { error: rpcError } = await (supabase as any).rpc("mark_messages_as_read", {
           message_ids: unreadIds,
         });
 
@@ -448,11 +447,9 @@ export function useMessages(
 
       if (data) {
         setMessages((previous) =>
-          // @ts-expect-error TODO: refine typing
           previous.some((message) => message.id === data.id)
             ? previous
-            // @ts-expect-error TODO: refine typing
-            : [...previous, data as MessageRow]
+            : [...previous, data as unknown as MessageRow]
         );
         awardXP.mutate({ activity: "chat_message" });
       }

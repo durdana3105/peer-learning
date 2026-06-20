@@ -176,14 +176,10 @@ const Leaderboard = () => {
 
       if (myData) {
         const enrichedEntry = {
-          // @ts-expect-error TODO: refine typing
           ...myData,
           badges:
-            // @ts-expect-error TODO: refine typing
             myData.badges && myData.badges.length > 0
-              // @ts-expect-error TODO: refine typing
               ? myData.badges
-              // @ts-expect-error TODO: refine typing
               : [getBadgeByXP(myData.xp)],
         } as LeaderboardEntry;
 

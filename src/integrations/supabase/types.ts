@@ -440,6 +440,62 @@ export type Database = {
         }
         Relationships: []
       }
+      portfolio_profiles: {
+        Row: {
+          id: string
+          profile_id: string
+          slug: string
+          headline: string
+          github_url: string
+          linkedin_url: string
+          skills: string[]
+          achievements: Json
+          projects: Json
+          learning_progress: Json
+          is_published: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          slug: string
+          headline?: string
+          github_url?: string
+          linkedin_url?: string
+          skills?: string[]
+          achievements?: Json
+          projects?: Json
+          learning_progress?: Json
+          is_published?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          slug?: string
+          headline?: string
+          github_url?: string
+          linkedin_url?: string
+          skills?: string[]
+          achievements?: Json
+          projects?: Json
+          learning_progress?: Json
+          is_published?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_profiles_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       study_rooms: {
         Row: {
           id: string
@@ -447,6 +503,10 @@ export type Database = {
           created_by: string | null
           created_at: string
           is_private: boolean
+          timer_state: string | null
+          timer_end_time: string | null
+          timer_work_duration: number | null
+          timer_break_duration: number | null
         }
         Insert: {
           id?: string
@@ -454,6 +514,10 @@ export type Database = {
           created_by?: string | null
           created_at?: string
           is_private?: boolean
+          timer_state?: string | null
+          timer_end_time?: string | null
+          timer_work_duration?: number | null
+          timer_break_duration?: number | null
         }
         Update: {
           id?: string
@@ -461,6 +525,10 @@ export type Database = {
           created_by?: string | null
           created_at?: string
           is_private?: boolean
+          timer_state?: string | null
+          timer_end_time?: string | null
+          timer_work_duration?: number | null
+          timer_break_duration?: number | null
         }
         Relationships: [
           {
