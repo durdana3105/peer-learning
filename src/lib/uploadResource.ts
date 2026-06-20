@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { API_BASE_URL } from "@/config/api";
+import { logError } from "@/utils/logger";
 import type { Resource } from "@/types/resource";
 
 const MAX_FILE_SIZE = 52428800;
@@ -91,6 +92,7 @@ export const uploadResource = async (
 
     uploadResponse = await res.json();
   } catch (err: any) {
+    logError(err, { context: "uploadResource.fetch" });
     return {
       success: false,
       error: err.message || "Failed to upload file to backend.",
@@ -104,29 +106,38 @@ export const uploadResource = async (
     };
   }
 
-  const { data, error } = await supabase
-    .from("resources")
-    .insert({
-      title,
-      description,
-      file_url: filePath,
-      file_type: fileType,
-      file_size: file.size,
-      tags,
-      uploaded_by: userId,
-    } as any)
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("resources")
+      .insert({
+        title,
+        description,
+        file_url: filePath,
+        file_type: fileType,
+        file_size: file.size,
+        tags,
+        uploaded_by: userId,
+      } as any)
+      .select()
+      .single();
 
-  if (error || !data) {
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data) {
+      throw new Error("No data returned from insert");
+    }
+
+    return {
+      success: true,
+      data: data as Resource,
+    };
+  } catch (err: any) {
+    logError(err, { context: "uploadResource.insert", filePath });
     return {
       success: false,
-      error: error?.message || "Failed to save resource metadata",
+      error: err.message || "Failed to save resource metadata",
     };
   }
-
-  return {
-    success: true,
-    data: data as Resource,
-  };
 };

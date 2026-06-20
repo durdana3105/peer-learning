@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { isAbortError, normalizeError, safeSupabaseCall } from "@/lib/http";
+import { logError } from "@/utils/logger";
 import type { Resource } from "@/types/resource";
 
 type ResourceFilters = {
@@ -101,6 +102,7 @@ export const useResources = (filters?: ResourceFilters) => {
       }
 
       const normalized = normalizeError(caughtError, "Unable to load resources.");
+      logError(caughtError, { context: "useResources.fetchResources", normalizedMessage: normalized.message });
 
       setError(normalized.message);
       setResources([]);
