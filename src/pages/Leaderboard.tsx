@@ -160,7 +160,7 @@ const Leaderboard = () => {
 
     // Fetch total learner count efficiently (head-only count)
     const { count } = await supabase
-      .from("leaderboard" as any)
+      .from("leaderboard")
       .select("*", { count: "exact", head: true });
 
     setTotalLearners(count || 0);
@@ -169,7 +169,7 @@ const Leaderboard = () => {
     if (user) {
       // Get the current user's entry
       const { data: myData } = await supabase
-        .from("leaderboard" as any)
+        .from("leaderboard")
         .select("*")
         .eq("user_id", user.id)
         .single();

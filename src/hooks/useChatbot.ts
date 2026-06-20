@@ -60,7 +60,7 @@ export function useChatbot() {
     if (!session?.user) return;
 
     const userId = session.user.id;
-    const userMsg = { role: "user", text: input, user_id: userId };
+    const userMsg: Message = { role: "user", text: input, user_id: userId };
 
     const updatedMessages = [...messages, userMsg];
 
@@ -94,13 +94,13 @@ export function useChatbot() {
 
       const data = await res.json();
       const botReply = data?.reply || "No response 😅";
-      const botMsg = { role: "assistant", text: botReply, user_id: userId };
+      const botMsg: Message = { role: "assistant", text: botReply, user_id: userId };
 
       // Smoother typing effect (chunked rendering)
       let currentText = "";
       const chunkSize = 3;
 
-      setMessages((prev) => [...prev, { role: "assistant", text: "" }]);
+      setMessages((prev) => [...prev, { role: "assistant", text: "", user_id: userId } as Message]);
 
       for (let i = 0; i < botReply.length; i += chunkSize) {
         if (!isMounted.current) break;
@@ -113,14 +113,15 @@ export function useChatbot() {
           updated[updated.length - 1] = {
             role: "assistant",
             text: currentText,
-          };
+            user_id: userId
+          } as Message;
           return updated;
         });
       }
 
       await supabase.from("chat_messages").insert([botMsg]);
     } catch (err) {
-      const errorMsg = { role: "assistant", text: "Something went wrong. Please try again.", user_id: userId };
+      const errorMsg: Message = { role: "assistant", text: "Something went wrong. Please try again.", user_id: userId };
       setMessages((prev) => [...prev, errorMsg]);
       await supabase.from("chat_messages").insert([errorMsg]);
     }

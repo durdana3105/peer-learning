@@ -118,7 +118,7 @@ const Dashboard = () => {
           supabase
             .from("resources")
             .select("title, created_at")
-            .eq("user_id", user.id)
+            .eq("uploaded_by", user.id)
             .order("created_at", { ascending: false })
             .limit(3),
           supabase
