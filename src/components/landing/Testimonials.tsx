@@ -1,7 +1,5 @@
 import { motion } from "framer-motion";
 import {
-  ChevronLeft,
-  ChevronRight,
   Sparkles,
   ArrowRight,
   CheckCircle,
@@ -167,36 +165,7 @@ export function Testimonials() {
         </span>
       </h2>
 
-      {/* Scroll Buttons */}
-      <button
-        aria-label="Scroll testimonials left"
-        onClick={() => {
-          const el = scrollRef.current;
-          if (el)
-            el.scrollBy({
-              left: -el.clientWidth * 0.7,
-              behavior: "smooth",
-            });
-        }}
-        className="absolute left-2 top-[38%] z-20 -translate-y-1/2 rounded-full border border-white/20 bg-black/40 p-2 text-slate-100 shadow-lg backdrop-blur hover:bg-black/60"
-      >
-        <ChevronLeft className="h-5 w-5" />
-      </button>
-
-      <button
-        aria-label="Scroll testimonials right"
-        onClick={() => {
-          const el = scrollRef.current;
-          if (el)
-            el.scrollBy({
-              left: el.clientWidth * 0.7,
-              behavior: "smooth",
-            });
-        }}
-        className="absolute right-2 top-[38%] z-20 -translate-y-1/2 rounded-full border border-white/20 bg-black/40 p-2 text-slate-100 shadow-lg backdrop-blur hover:bg-black/60"
-      >
-        <ChevronRight className="h-5 w-5" />
-      </button>
+      
 
       {/* Testimonials Carousel */}
       <div

@@ -63,6 +63,24 @@ export const chatSchemas = {
   },
 };
 
+export const ALLOWED_INTERVIEW_ROLES = [
+    "Software Engineer",
+    "Frontend Engineer",
+    "Backend Engineer",
+    "Full Stack Engineer",
+    "Data Scientist",
+    "Data Engineer",
+    "Machine Learning Engineer",
+    "DevOps Engineer",
+    "Site Reliability Engineer",
+    "Product Manager",
+    "Engineering Manager",
+    "QA Engineer",
+    "Security Engineer",
+    "Mobile Engineer",
+    "Cloud Architect",
+  ];
+
 export const aiSchemas = {
   askAI: {
     body: z.object({
@@ -84,7 +102,12 @@ export const aiSchemas = {
           content: z.string().trim().min(1).max(2000),
         })
       ).min(1).max(50),
-      role: z.string().trim().min(1).max(200),
+      role: z.string().trim().min(1).max(100)
+        .regex(/^[a-zA-Z0-9 ,\-_]+$/, "Role contains invalid characters")
+        .refine((val) => ALLOWED_INTERVIEW_ROLES.includes(val), {
+            message: `Role must be one of: ${ALLOWED_INTERVIEW_ROLES.join(", ")}`,
+          }
+        ),
     }),
   },
   mockInterviewReport: {

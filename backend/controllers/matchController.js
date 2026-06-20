@@ -105,7 +105,7 @@ export const getRecommendedPartners = async (req, res) => {
       target_interests: currentUser.interests || [],
       target_teach: currentUser.teach_subjects || [],
       target_learn: currentUser.learn_subjects || [],
-      page_limit: limit,
+      page_limit: limit + 1,
       page_offset: skip
     });
 
@@ -131,15 +131,16 @@ export const getRecommendedPartners = async (req, res) => {
       };
     });
 
-    // In a real paginated RPC, getting exact total Count requires a separate count query. 
-    // We'll estimate or just provide length for now since counting 1M rows can also be slow.
+    // Fetch limit+1 rows so we can set hasNextPage without a separate COUNT query.
+    // The extra row is trimmed before returning; it only signals whether more results exist.
+   const hasNextPage = recommendations.length > limit;
+
     res.status(200).json({
       success: true,
-      count: recommendations.length,
-      total: recommendations.length > 0 ? skip + limit + 1 : skip, // Rough pagination cursor hack
+      count: Math.min(recommendations.length, limit),
       page,
-      totalPages: recommendations.length === limit ? page + 1 : page,
-      recommendations,
+      hasNextPage,
+      recommendations: recommendations.slice(0, limit),
     });
   } catch (error) {
     console.error("Recommendation Error:", error);

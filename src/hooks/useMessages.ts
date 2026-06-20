@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, Dispatch, SetStateAction } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAwardXP } from "@/hooks/useAwardXP";
 import { toast } from "@/hooks/use-toast";
@@ -42,6 +42,21 @@ export type ConversationSummary = {
   isOnline: boolean;
 };
 
+export type UseMessagesResult = {
+  profiles: ProfileSummary[];
+  messages: MessageRow[];
+  selectedUser: ProfileSummary | null;
+  setSelectedUser: Dispatch<SetStateAction<ProfileSummary | null>>;
+  loadingUsers: boolean;
+  loadingMessages: boolean;
+  error: string | null;
+  onlineUserIds: string[];
+  conversationSummaries: ConversationSummary[];
+  threadMessages: MessageRow[];
+  selectedConversation: ConversationSummary | null;
+  sendMessage: (content: string) => Promise<boolean>;
+};
+
 const normalizeProfile = (row: ProfileRow | UserRow): ProfileSummary => ({
   id: row.id,
   name: row.name,
@@ -74,7 +89,9 @@ const isThreadMessage = (message: MessageRow, currentUserId: string, otherUserId
   );
 };
 
-export function useMessages(currentUserId?: string | null) {
+export function useMessages(
+  currentUserId?: string | null
+): UseMessagesResult {
   const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [selectedUser, setSelectedUser] = useState<ProfileSummary | null>(null);
@@ -273,8 +290,8 @@ export function useMessages(currentUserId?: string | null) {
         }
 
         if (data) {
-          // @ts-expect-error TODO: refine typing
-          setMessages((data as MessageRow[]).reverse());
+          const typedMessages = data as unknown as MessageRow[];
+          setMessages(typedMessages.reverse());
         }
       } catch (err: any) {
         logError(err, { context: "useMessages.loadMessages" });

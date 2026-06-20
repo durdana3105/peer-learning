@@ -14,6 +14,10 @@ type ResourceFilters = {
   savedOnly?: boolean;
 };
 
+type SavedResource = {
+  resource_id: string;
+};
+
 export const useResources = (filters?: ResourceFilters) => {
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,9 +62,11 @@ export const useResources = (filters?: ResourceFilters) => {
         
         if (savedError) throw savedError;
         
-        savedResourceIds = savedData?.map((item: any) => item.resource_id) || [];
+        savedResourceIds =
+          (savedData as SavedResource[] | null)?.map(
+            (item) => item.resource_id
+          ) || [];
         
-        // @ts-expect-error TODO: refine typing
         if (savedResourceIds.length === 0) {
           setResources([]);
           setLoading(false);
@@ -137,7 +143,3 @@ export const useResources = (filters?: ResourceFilters) => {
     refetch: fetchResources,
   };
 };
-
-
-
-

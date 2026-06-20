@@ -226,8 +226,7 @@ const Portfolio = () => {
       isMounted = false;
       clearTimeout(timeout);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, user?.email, toast]);
 
   const updateAchievement = (index: number, achievement: Achievement) => {
     setForm((current) => ({

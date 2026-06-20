@@ -17,18 +17,24 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      onUploadError("Please select a valid image file.");
+      onUploadError(
+        "Please select a valid image file (JPG, PNG, GIF, or WebP)."
+      );
       return;
     }
 
     // Client-side pre-check for 50MB (though backend enforces it as well)
     if (file.size > 50 * 1024 * 1024) {
-      onUploadError("Image size must be less than 50MB.");
+      onUploadError(
+        "Image is too large. Please upload an image smaller than 50MB."
+      );
       return;
     }
 
@@ -37,9 +43,14 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
     try {
       const session = await supabase.auth.getSession();
       const token = session.data.session?.access_token;
-      
+
       const user = session.data.session?.user;
-      if (!user) throw new Error("Not authenticated");
+
+      if (!user) {
+        throw new Error(
+          "You must be signed in before uploading a profile picture."
+        );
+      }
 
       const timestamp = Date.now();
       const filePath = `${user.id}/${timestamp}_avatar`;
@@ -59,20 +70,41 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(`Upload failed: ${res.status} ${text}`);
+
+        if (res.status === 401) {
+          throw new Error(
+            "Your session has expired. Please sign in again and retry the upload."
+          );
+        }
+
+        if (res.status === 413) {
+          throw new Error(
+            "Image is too large. Please upload an image smaller than 50MB."
+          );
+        }
+
+        throw new Error(
+          `Unable to upload your profile picture. Please try again. (${res.status})`
+        );
       }
 
       const uploadResponse = await res.json();
-      
+
       if (uploadResponse.success && uploadResponse.data?.url) {
         onUploadSuccess(uploadResponse.data.url);
       } else {
-        throw new Error("Invalid response from server");
+        throw new Error(
+          "The server returned an unexpected response. Please try again."
+        );
       }
     } catch (err: any) {
-      onUploadError(err.message || "Failed to upload avatar");
+      onUploadError(
+        err.message ||
+          "Unable to upload your profile picture. Please try again later."
+      );
     } finally {
       setIsUploading(false);
+
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }

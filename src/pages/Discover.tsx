@@ -376,8 +376,25 @@ const Discover = () => {
             {[1, 2, 3].map((item) => (
               <div
                 key={item}
-                className="h-72 rounded-[28px] bg-white/5 animate-pulse border border-white/10"
-              />
+                className="rounded-[30px] p-6 border border-white/10 bg-white/5 animate-pulse"
+              >
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="w-16 h-16 rounded-full bg-white/10" />
+
+                  <div className="flex-1">
+                    <div className="h-5 w-32 rounded bg-white/10 mb-2" />
+                    <div className="h-4 w-24 rounded bg-white/10" />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-5">
+                  <div className="h-7 w-16 rounded-full bg-white/10" />
+                  <div className="h-7 w-20 rounded-full bg-white/10" />
+                  <div className="h-7 w-14 rounded-full bg-white/10" />
+                </div>
+
+                <div className="h-12 rounded-2xl bg-white/10" />
+              </div>
             ))}
           </div>
         ) : filteredUsers.length === 0 ? (

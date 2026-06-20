@@ -3,10 +3,18 @@ import { useState, useEffect, useRef } from "react";
 import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
+interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  body: string;
+  read: boolean;
+  created_at: string;
+}
 
 export const NotificationsDropdown = () => {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -22,7 +30,7 @@ export const NotificationsDropdown = () => {
         .limit(20);
 
       if (data) {
-        setNotifications(data);
+        setNotifications(data as Notification[]);
       }
     };
 
@@ -40,7 +48,9 @@ export const NotificationsDropdown = () => {
         },
         // @ts-expect-error TODO: refine typing
         (payload) => {
-          setNotifications((prev) => [payload.new, ...prev].slice(0, 20));
+          setNotifications((prev) =>
+            [payload.new as Notification, ...prev].slice(0, 20)
+          );
         }
       )
       .subscribe();

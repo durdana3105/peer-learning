@@ -152,7 +152,9 @@ describe("getRecommendedPartners", () => {
   // -------------------------------------------------------------------------
   // Pagination
   // -------------------------------------------------------------------------
-  it("passes correct page_limit and page_offset to the RPC", async () => {
+  it("passes limit+1 as page_limit and correct page_offset to the RPC", async () => {
+    // The controller fetches one extra row (limit+1) to determine hasNextPage
+    // without needing a separate COUNT query.
     const req = {
       user: { email: CURRENT_USER_EMAIL },
       query: { page: "3", limit: "5" },
@@ -164,10 +166,88 @@ describe("getRecommendedPartners", () => {
     expect(mockRpc).toHaveBeenCalledWith(
       "match_users",
       expect.objectContaining({
-        page_limit: 5,
-        page_offset: 10, // (3 - 1) * 5
+        page_limit: 6,       // limit+1 = 5+1
+        page_offset: 10,     // (3 - 1) * 5
       })
     );
+  });
+
+  it("hasNextPage is false when RPC returns fewer rows than limit", async () => {
+    // 2 rows returned, limit defaults to 20 → not a full page → no next page
+    const req = { user: { email: CURRENT_USER_EMAIL }, query: {} };
+    const res = createRes();
+
+    await getRecommendedPartners(req, res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.hasNextPage).toBe(false);
+  });
+
+  it("hasNextPage is false when RPC returns empty results", async () => {
+    mockRpc.mockResolvedValueOnce({ data: [], error: null });
+
+    const req = { user: { email: CURRENT_USER_EMAIL }, query: {} };
+    const res = createRes();
+
+    await getRecommendedPartners(req, res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.hasNextPage).toBe(false);
+  });
+
+  it("hasNextPage is true and recommendations are trimmed to limit when RPC returns limit+1 rows", async () => {
+    // Simulate RPC returning limit+1 rows (the extra sentinel row)
+    const limit = 5;
+    const extraRows = Array.from({ length: limit + 1 }, (_, i) => ({
+      id: `uuid-${i}`,
+      name: `User ${i}`,
+      skills: [],
+      interests: [],
+      teach_subjects: [],
+      learn_subjects: [],
+      compatibility_score: 10,
+    }));
+    mockRpc.mockResolvedValueOnce({ data: extraRows, error: null });
+
+    const req = {
+      user: { email: CURRENT_USER_EMAIL },
+      query: { limit: String(limit) },
+    };
+    const res = createRes();
+
+    await getRecommendedPartners(req, res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.hasNextPage).toBe(true);
+    expect(body.recommendations).toHaveLength(limit); // extra row trimmed
+    expect(body.count).toBe(limit);
+  });
+
+  it("hasNextPage is false when RPC returns exactly limit rows (no extra sentinel)", async () => {
+    // Exactly limit rows returned means there was no (limit+1)th row → end of results
+    const limit = 5;
+    const exactRows = Array.from({ length: limit }, (_, i) => ({
+      id: `uuid-${i}`,
+      name: `User ${i}`,
+      skills: [],
+      interests: [],
+      teach_subjects: [],
+      learn_subjects: [],
+      compatibility_score: 10,
+    }));
+    mockRpc.mockResolvedValueOnce({ data: exactRows, error: null });
+
+    const req = {
+      user: { email: CURRENT_USER_EMAIL },
+      query: { limit: String(limit) },
+    };
+    const res = createRes();
+
+    await getRecommendedPartners(req, res);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.hasNextPage).toBe(false);
+    expect(body.recommendations).toHaveLength(limit);
   });
 
   // -------------------------------------------------------------------------
