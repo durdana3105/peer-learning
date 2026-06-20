@@ -3,7 +3,13 @@ import { useChatbot } from "@/hooks/useChatbot";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 
+/**
+ * Chatbot component that provides a floating AI assistant interface.
+ * The complex conversational logic and state management are abstracted into the `useChatbot` hook
+ * to keep this component focused purely on presentation and user interactions.
+ */
 export default function Chatbot() {
+  // Manages the visibility of the chatbot window
   const [isOpen, setIsOpen] = useState(false);
   const { messages, input, setInput, loading, chatEndRef, sendMessage } =
     useChatbot();
@@ -39,6 +45,7 @@ export default function Chatbot() {
               </div>
             )}
 
+            {/* Empty div used as an anchor for auto-scrolling to the bottom when new messages arrive */}
             <div ref={chatEndRef}></div>
           </div>
 
