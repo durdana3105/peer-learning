@@ -2,11 +2,13 @@ import { useState } from "react";
 import { useChatbot } from "@/hooks/useChatbot";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
+import { useTranslation } from "react-i18next";
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const { messages, input, setInput, loading, chatEndRef, sendMessage } =
     useChatbot();
+  const { t } = useTranslation("common");
 
   return (
     <>
@@ -23,7 +25,7 @@ export default function Chatbot() {
         <div className="fixed bottom-20 left-5 z-[10000] w-80 h-[450px] bg-black text-white rounded-2xl shadow-2xl flex flex-col border border-gray-700">
           {/* Header */}
           <div className="p-3 border-b border-gray-700 flex justify-between items-center">
-            <span className="font-semibold">AI Assistant</span>
+            <span className="font-semibold">{t("chatbot.title")}</span>
             <button onClick={() => setIsOpen(false)}>✖</button>
           </div>
 
@@ -35,7 +37,7 @@ export default function Chatbot() {
 
             {loading && (
               <div className="bg-gray-800 p-2 rounded-lg text-sm animate-pulse">
-                AI is typing...
+                {t("chatbot.typing")}
               </div>
             )}
 

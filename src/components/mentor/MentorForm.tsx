@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Loader2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
 const steps = [
   "Basic Info",
   "Skills",
@@ -20,6 +21,7 @@ export default function MentorForm() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { t } = useTranslation("common");
   const [availableSkills, setAvailableSkills] = useState<string[]>([]);
   const [customSkill, setCustomSkill] = useState("");
   const [formData, setFormData] = useState({
@@ -100,14 +102,14 @@ export default function MentorForm() {
     const timeout = setTimeout(() => {
       isTimeout = true;
       setLoading(false);
-      setError("Submission timed out. Please check your network and try again.");
+      setError(t("mentorForm.errorTimeout"));
     }, 10_000);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (isTimeout) return;
       if (!user) {
         if (!isTimeout) clearTimeout(timeout);
-        setError("You must be logged in to submit an application.");
+        setError(t("mentorForm.errorLogin"));
         setLoading(false);
         return;
       }
@@ -129,7 +131,7 @@ export default function MentorForm() {
       clearTimeout(timeout);
       if (error) {
         console.error(error);
-        setError(error.message || "Something went wrong!");
+        setError(error.message || t("mentorForm.errorGeneric"));
         setLoading(false);
         return;
       }
@@ -138,7 +140,7 @@ export default function MentorForm() {
       if (isTimeout) return;
       clearTimeout(timeout);
       console.error(err);
-      setError("Something went wrong. Please try again.");
+      setError(t("mentorForm.errorGeneric"));
     } finally {
       if (!isTimeout) {
         setLoading(false);
@@ -185,10 +187,10 @@ export default function MentorForm() {
         {step === 0 && (
           <div className="space-y-5">
             <h2 className="text-3xl font-black">
-              Basic Information
+              {t("mentorForm.basicInfoTitle")}
             </h2>
             <input
-              placeholder="Full Name"
+              placeholder={t("mentorForm.fullNamePlaceholder")}
               value={formData.full_name}
               onChange={(e) =>
                 setFormData({
@@ -199,7 +201,7 @@ export default function MentorForm() {
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
             <input
-              placeholder="College Name"
+              placeholder={t("mentorForm.collegePlaceholder")}
               value={formData.college}
               onChange={(e) =>
                 setFormData({
@@ -210,7 +212,7 @@ export default function MentorForm() {
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
             <textarea
-              placeholder="Short Bio"
+              placeholder={t("mentorForm.bioPlaceholder")}
               value={formData.bio}
               onChange={(e) =>
                 setFormData({
@@ -226,7 +228,7 @@ export default function MentorForm() {
         {step === 1 && (
           <div>
             <h2 className="text-3xl font-black">
-              Skills & Expertise
+              {t("mentorForm.skillsTitle")}
             </h2>
             <div className="mt-8 flex flex-wrap gap-4 mb-6">
               {availableSkills.map((skill) => (
@@ -247,7 +249,7 @@ export default function MentorForm() {
             <div className="flex gap-3">
               <input
                 type="text"
-                placeholder="Add custom skill..."
+                placeholder={t("mentorForm.addSkillPlaceholder")}
                 value={customSkill}
                 onChange={(e) => setCustomSkill(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddCustomSkill()}
@@ -259,7 +261,7 @@ export default function MentorForm() {
                 className="flex items-center gap-2 rounded-full bg-white/10 px-5 py-3 transition hover:bg-white/20"
               >
                 <Plus size={20} />
-                Add
+                {t("mentorForm.addBtn")}
               </button>
             </div>
           </div>
@@ -268,10 +270,10 @@ export default function MentorForm() {
         {step === 2 && (
           <div className="space-y-5">
             <h2 className="text-3xl font-black">
-              Experience
+              {t("mentorForm.experienceTitle")}
             </h2>
             <input
-              placeholder="GitHub Profile"
+              placeholder={t("mentorForm.githubPlaceholder")}
               value={formData.github}
               onChange={(e) =>
                 setFormData({
@@ -282,7 +284,7 @@ export default function MentorForm() {
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
             <input
-              placeholder="LinkedIn Profile"
+              placeholder={t("mentorForm.linkedinPlaceholder")}
               value={formData.linkedin}
               onChange={(e) =>
                 setFormData({
@@ -302,7 +304,7 @@ export default function MentorForm() {
         {step === 3 && (
           <div>
             <h2 className="text-3xl font-black">
-              Mentorship Type
+              {t("mentorForm.mentorshipTitle")}
             </h2>
             <div className="mt-8 grid gap-4 md:grid-cols-2">
               {mentorshipOptions.map((item) => (
@@ -330,12 +332,10 @@ export default function MentorForm() {
               size={90}
             />
             <h2 className="text-5xl font-black">
-              Application Submitted 🎉
+              {t("mentorForm.successTitle")}
             </h2>
             <p className="mx-auto max-w-xl text-lg leading-8 text-slate-300/70">
-              Your mentor profile is now under review.
-              Once approved, you can start conducting
-              mentorship sessions on PeerLearn.
+              {t("mentorForm.successText")}
             </p>
           </div>
         )}
@@ -354,26 +354,26 @@ export default function MentorForm() {
             onClick={() => setStep(step - 1)}
             className="rounded-2xl border border-white/10 bg-white/5 px-6 py-3 transition disabled:opacity-30"
           >
-            Back
+            {t("mentorForm.backBtn")}
           </button>
           {step < 3 ? (
             <button
               type="button"
               onClick={() => {
                 if (step === 0 && !validateBasicInfo()) {
-                  setError("Please fill all basic information fields");
+                  setError(t("mentorForm.errorBasicInfo"));
                   return;
                 }
                 if (step === 1 && !validateSkills()) {
-                  setError("Please select at least one skill");
+                  setError(t("mentorForm.errorSkills"));
                   return;
                 }
                 if (step === 2 && !validateExperience()) {
-                  setError("Please fill GitHub and LinkedIn profiles");
+                  setError(t("mentorForm.errorExperience"));
                   return;
                 }
                 if (step === 3 && !validateMentorship()) {
-                  setError("Please select at least one mentorship type");
+                  setError(t("mentorForm.errorMentorship"));
                   return;
                 }
                 setError("");
@@ -381,7 +381,7 @@ export default function MentorForm() {
               }}
               className="rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-3 font-semibold text-black transition hover:scale-105"
             >
-              Continue
+              {t("mentorForm.continueBtn")}
             </button>
           ) : (
             <button
@@ -396,10 +396,10 @@ export default function MentorForm() {
                     className="animate-spin"
                     size={18}
                   />
-                  Submitting...
+                  {t("mentorForm.submitting")}
                 </>
               ) : (
-                "Submit Application"
+                t("mentorForm.submitBtn")
               )}
             </button>
           )}

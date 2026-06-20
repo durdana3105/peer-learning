@@ -1,0 +1,68 @@
+{
+  "forgotPassword": {
+    "title": "¿Olvidaste tu contraseña?",
+    "subtitle": "No te preocupes. Ingresa tu correo electrónico y te enviaremos un enlace seguro para restablecerla.",
+    "emailPlaceholder": "Ingresa tu correo electrónico",
+    "sending": "Enviando...",
+    "sendLink": "Enviar Enlace",
+    "error": "Algo salió mal. Por favor, inténtalo de nuevo.",
+    "backToLogin": "Volver al inicio de sesión",
+    "successTitle": "Revisa tu correo",
+    "successSubtitle1": "Hemos enviado un enlace a:",
+    "successSubtitle2": "Por favor, revisa tu bandeja de entrada (y la carpeta de spam) y sigue las instrucciones.",
+    "returnToLogin": "Volver al inicio de sesión"
+  },
+  "editProfile": {
+    "title": "Editar Perfil",
+    "subtitle": "Actualiza tu información pública del perfil.",
+    "back": "Volver al Perfil",
+    "fullName": "Nombre Completo",
+    "namePlaceholder": "Tu nombre",
+    "charsLeft": "{{count}} caracteres restantes",
+    "bio": "Biografía",
+    "bioPlaceholder": "Cuéntales a los demás un poco sobre ti...",
+    "skills": "Habilidades",
+    "skillsPlaceholder": "ej. React, Python, Machine Learning",
+    "skillsHelper": "Separa las habilidades con comas.",
+    "saving": "Guardando…",
+    "saveChanges": "Guardar Cambios",
+    "successMsg": "¡Perfil actualizado con éxito!",
+    "errorNameLength": "El nombre debe tener menos de 50 caracteres.",
+    "errorBioLength": "La biografía debe tener menos de 300 caracteres.",
+    "errorUpdate": "Error al actualizar el perfil. Por favor, inténtalo de nuevo."
+  },
+  "createSession": {
+    "title": "Programar una Sesión",
+    "subtitle": "Elige una fecha y hora al menos con 1 hora de antelación. Tus compañeros lo verán en el calendario."
+  },
+  "chatbot": {
+    "title": "Asistente de IA",
+    "typing": "La IA está escribiendo..."
+  },
+  "mentorForm": {
+    "basicInfoTitle": "Información Básica",
+    "fullNamePlaceholder": "Nombre Completo",
+    "collegePlaceholder": "Nombre de la Universidad",
+    "bioPlaceholder": "Biografía Corta",
+    "skillsTitle": "Habilidades y Experiencia",
+    "addSkillPlaceholder": "Agregar habilidad...",
+    "addBtn": "Agregar",
+    "experienceTitle": "Experiencia",
+    "githubPlaceholder": "Perfil de GitHub",
+    "linkedinPlaceholder": "Perfil de LinkedIn",
+    "mentorshipTitle": "Tipo de Mentoría",
+    "successTitle": "Solicitud Enviada 🎉",
+    "successText": "Tu perfil de mentor ahora está en revisión. Una vez aprobado, podrás comenzar a realizar sesiones.",
+    "backBtn": "Atrás",
+    "continueBtn": "Continuar",
+    "submitBtn": "Enviar Solicitud",
+    "submitting": "Enviando...",
+    "errorBasicInfo": "Por favor, completa todos los campos de información básica",
+    "errorSkills": "Por favor, selecciona al menos una habilidad",
+    "errorExperience": "Por favor, completa los perfiles de GitHub y LinkedIn",
+    "errorMentorship": "Por favor, selecciona al menos un tipo de mentoría",
+    "errorLogin": "Debes iniciar sesión para enviar una solicitud.",
+    "errorGeneric": "¡Algo salió mal!",
+    "errorTimeout": "El envío agotó el tiempo de espera. Verifica tu red y vuelve a intentarlo."
+  }
+}
