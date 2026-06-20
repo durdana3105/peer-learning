@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { leaderboardService } from "@/services/leaderboardService";
 
 import {
   calculateLevel,
@@ -113,37 +114,7 @@ const Leaderboard = () => {
 
     setLoading(true);
 
-    let query = supabase
-      .from("leaderboard" as any)
-      .select("*");
-
-    if (filter === "Weekly") {
-
-      const lastWeek = new Date();
-
-      lastWeek.setDate(lastWeek.getDate() - 7);
-
-      query = query.gte(
-        "updated_at",
-        lastWeek.toISOString()
-      );
-    }
-
-    if (filter === "Monthly") {
-
-      const lastMonth = new Date();
-
-      lastMonth.setMonth(lastMonth.getMonth() - 1);
-
-      query = query.gte(
-        "updated_at",
-        lastMonth.toISOString()
-      );
-    }
-
-    const { data, error } = await query
-      .order("xp", { ascending: false })
-      .limit(50);
+    const { data, error } = await leaderboardService.getLeaderboardEntries(filter.toLowerCase().replace(" ", "_"));
 
     if (!error && data) {
 
@@ -159,41 +130,28 @@ const Leaderboard = () => {
     }
 
     // Fetch total learner count efficiently (head-only count)
-    const { count } = await supabase
-      .from("leaderboard" as any)
-      .select("*", { count: "exact", head: true });
+    const { count } = await leaderboardService.getLeaderboardCount();
 
     setTotalLearners(count || 0);
 
     // Fetch current user's rank separately so it's always accurate
     if (user) {
       // Get the current user's entry
-      const { data: myData } = await supabase
-        .from("leaderboard" as any)
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
+      const { data: myData } = await leaderboardService.getUserLeaderboardEntry(user.id);
 
       if (myData) {
         const enrichedEntry = {
-          // @ts-expect-error TODO: refine typing
           ...myData,
           badges:
-            // @ts-expect-error TODO: refine typing
             myData.badges && myData.badges.length > 0
-              // @ts-expect-error TODO: refine typing
               ? myData.badges
-              // @ts-expect-error TODO: refine typing
               : [getBadgeByXP(myData.xp)],
         } as LeaderboardEntry;
 
         setMyEntry(enrichedEntry);
 
         // Fetch user's exact rank via RPC to avoid pulling data
-        const { data: rpcRank } = await supabase.rpc("get_user_rank", {
-          p_user_id: user.id,
-          p_filter: filter,
-        });
+        const { data: rpcRank } = await leaderboardService.getUserRank(user.id, filter.toLowerCase().replace(" ", "_"));
 
         setMyRank(rpcRank || 0);
       } else {
@@ -210,23 +168,16 @@ const Leaderboard = () => {
 
     if (!user) return;
 
-    const { data: existingUser } = await supabase
-      .from("leaderboard" as any)
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
+    const { data: existingUser } = await leaderboardService.getUserLeaderboardEntry(user.id);
 
     if (!existingUser) {
 
-      await (supabase as any).rpc("join_leaderboard", {
-        _username:
-          user.user_metadata?.name ||
-          user.email?.split("@")[0] ||
-          "Anonymous",
-
-        _avatar_url:
-          user.user_metadata?.avatar_url || null,
-      });
+      await leaderboardService.joinLeaderboard(
+        user.user_metadata?.name ||
+        user.email?.split("@")[0] ||
+        "Anonymous",
+        user.user_metadata?.avatar_url || null
+      );
     }
   };
 

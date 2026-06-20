@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { portfolioService } from "@/services/portfolioService";
 
 type Achievement = {
   title: string;
@@ -132,21 +132,7 @@ const Portfolio = () => {
       }, 10_000);
 
       try {
-          // Run both queries in parallel instead of sequentially
-        const [profileResult, portfolioResult] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("name, skills")
-            .eq("id", user.id)
-            .maybeSingle(),
-          supabase
-            // @ts-expect-error TODO: refine typing
-            .from("portfolio_profiles")
-            .select("*")
-            // @ts-expect-error TODO: refine typing
-            .eq("profile_id", user.id)
-            .maybeSingle(),
-        ]);
+        const { profileResult, portfolioResult } = await portfolioService.getPortfolioAndProfile(user.id);
 
         clearTimeout(timeout);
         if (!isMounted) return;
@@ -174,29 +160,20 @@ const Portfolio = () => {
         }
 
         if (portfolio) {
-          // @ts-expect-error TODO: refine typing
           const progress = portfolio.learning_progress as Partial<LearningProgress> | null;
           setForm({
-            // @ts-expect-error TODO: refine typing
             slug: portfolio.slug,
-            // @ts-expect-error TODO: refine typing
             headline: portfolio.headline || "",
-            // @ts-expect-error TODO: refine typing
             github_url: portfolio.github_url || "",
-            // @ts-expect-error TODO: refine typing
             linkedin_url: portfolio.linkedin_url || "",
-            // @ts-expect-error TODO: refine typing
             skills: normalizeList(portfolio.skills).join(", "),
-            // @ts-expect-error TODO: refine typing
             achievements: normalizeAchievements(portfolio.achievements),
-            // @ts-expect-error TODO: refine typing
             projects: normalizeProjects(portfolio.projects),
             learning_progress: {
               focus: typeof progress?.focus === "string" ? progress.focus : "",
               completed: Number(progress?.completed || 0),
               goal: Number(progress?.goal || 100),
             },
-            // @ts-expect-error TODO: refine typing
             is_published: portfolio.is_published,
           });
         } else {
@@ -261,13 +238,7 @@ const Portfolio = () => {
 
     setSaving(true);
 
-    const { data: existingSlugUser, error: slugCheckError } = await supabase
-      // @ts-expect-error TODO: refine typing
-      .from("portfolio_profiles")
-      .select("profile_id")
-      // @ts-expect-error TODO: refine typing
-      .eq("slug", slug)
-      .maybeSingle();
+    const { data: existingSlugUser, error: slugCheckError } = await portfolioService.getPortfolioSlugOwner(slug);
 
     if (slugCheckError) {
       setSaving(false);
@@ -279,7 +250,6 @@ const Portfolio = () => {
       return;
     }
 
-    // @ts-expect-error TODO: refine typing
     if (existingSlugUser && existingSlugUser.profile_id !== user.id) {
       setSaving(false);
       toast({
@@ -318,10 +288,7 @@ const Portfolio = () => {
     }, 10_000);
 
     try {
-      const { error } = await supabase
-        // @ts-expect-error TODO: refine typing
-        .from("portfolio_profiles")
-        .upsert(payload, { onConflict: "profile_id" });
+      const { error } = await portfolioService.upsertPortfolio(payload);
 
       if (isTimeout) {
         console.warn("Portfolio save completed, but it already timed out locally.");

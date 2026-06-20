@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { supabase } from "@/integrations/supabase/client";
+import { portfolioService } from "@/services/portfolioService";
 
 type Achievement = {
   title: string;
@@ -89,24 +89,7 @@ const PublicPortfolio = () => {
     setLoading(true);
 
     try {
-const { data: portfolioData, error: portfolioError } = await supabase
-  // @ts-expect-error TODO: refine typing
-  .from("portfolio_profiles")
-  .select(`
-    profile_id,
-    headline,
-    github_url,
-    linkedin_url,
-    skills,
-    achievements,
-    projects,
-    learning_progress
-  `)
-  // @ts-expect-error TODO: refine typing
-  .eq("slug", slug)
-  // @ts-expect-error TODO: refine typing
-  .eq("is_published", true)
-  .maybeSingle();
+      const { portfolioData, profileData, error: portfolioError } = await portfolioService.getPublicPortfolioBySlug(slug);
 
       if (portfolioError) {
         throw portfolioError;
@@ -118,42 +101,14 @@ const { data: portfolioData, error: portfolioError } = await supabase
         return;
       }
 
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select(`
-          name,
-          bio,
-          avatar_url,
-          badges,
-          points,
-          sessions_completed
-        `)
-        // @ts-expect-error TODO: refine typing
-        .eq("id", portfolioData.profile_id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error("Profile query failed:", profileError);
-      }
-
-      const progress =
-        // @ts-expect-error TODO: refine typing
-        portfolioData.learning_progress as Partial<LearningProgress> | null;
+      const progress = portfolioData.learning_progress as Partial<LearningProgress> | null;
 
       setPortfolio({
-        // @ts-expect-error TODO: refine typing
         headline: portfolioData.headline || "",
-        // @ts-expect-error TODO: refine typing
         github_url: sanitizeUrl(portfolioData.github_url),
-        // @ts-expect-error TODO: refine typing
         linkedin_url: sanitizeUrl(portfolioData.linkedin_url),
-        // @ts-expect-error TODO: refine typing
         skills: portfolioData.skills || [],
-        achievements: normalizeArray<Achievement>(
-          // @ts-expect-error TODO: refine typing
-          portfolioData.achievements
-        ),
-        // @ts-expect-error TODO: refine typing
+        achievements: normalizeArray<Achievement>(portfolioData.achievements),
         projects: normalizeArray<Project>(portfolioData.projects).map(p => ({ ...p, url: sanitizeUrl(p.url) })),
         learning_progress: {
           focus:

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, Dispatch, SetStateAction } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { messagesService } from "@/services/messagesService";
 import { useAwardXP } from "@/hooks/useAwardXP";
 import { toast } from "@/hooks/use-toast";
 import { logError } from "@/utils/logger";
@@ -181,21 +182,9 @@ export function useMessages(
       setError(null);
 
       try {
-        const [{ data: profileData, error: profileError }, { data: userData, error: userError }] =
-          await Promise.all([
-            supabase
-              .from("profiles")
-              .select("*")
-              .neq("id", currentUserId)
-              .order("name", { ascending: true })
-              .limit(100),
-            supabase
-              .from("profiles")
-              .select("*")
-              .neq("id", currentUserId)
-              .order("name", { ascending: true })
-              .limit(100),
-          ]);
+        const { profileResult, userResult } = await messagesService.getUsers(currentUserId);
+        const { data: profileData, error: profileError } = profileResult;
+        const { data: userData, error: userError } = userResult;
 
         const mergedUsers = mergeProfiles(
           (profileData ?? []).map((row) => row as ProfileSummary),
@@ -278,12 +267,7 @@ export function useMessages(
       setError(null);
 
       try {
-        const { data, error: queryError } = await supabase
-          .from("messages")
-          .select("id,sender_id,receiver_id,content,text,message,created_at,read_at")
-          .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
-          .order("created_at", { ascending: false })
-          .limit(100);
+        const { data, error: queryError } = await messagesService.getMessages(currentUserId);
 
         if (queryError) {
           throw new Error(queryError.message);
@@ -380,10 +364,7 @@ export function useMessages(
 
     const markAsRead = async () => {
       try {
-        // @ts-expect-error TODO: refine typing
-        const { error: rpcError } = await supabase.rpc("mark_messages_as_read", {
-          message_ids: unreadIds,
-        });
+        const { error: rpcError } = await messagesService.markMessagesAsRead(unreadIds);
 
         if (rpcError) {
           throw new Error(rpcError.message);
@@ -431,16 +412,7 @@ export function useMessages(
     }
 
     try {
-      const { data, error: insertError } = await supabase
-        .from("messages")
-        .insert({
-          sender_id: currentUserId,
-          receiver_id: selectedUser.id,
-          content,
-          text: content,
-        })
-        .select("id,sender_id,receiver_id,content,text,message,created_at,read_at")
-        .single();
+      const { data, error: insertError } = await messagesService.sendMessage(currentUserId, selectedUser.id, content);
 
       if (insertError) {
         throw new Error(insertError.message);
