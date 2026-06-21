@@ -7,7 +7,7 @@ const Notifications = () => {
 
   useEffect(() => {
     const fetchAlerts = async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("sessions")
         .select("*")
         .eq("status", "upcoming")
