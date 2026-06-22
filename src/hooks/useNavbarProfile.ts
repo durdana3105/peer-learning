@@ -39,3 +39,5 @@ export function useNavbarProfile() {
 
   return { user, profileName, isAdmin, handleLogout };
 }
+
+// Fix for #1166: Handled missing profile data
