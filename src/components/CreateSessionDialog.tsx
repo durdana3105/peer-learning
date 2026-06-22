@@ -44,6 +44,9 @@ const DURATION_PRESETS = [
   { label: "2 hours", value: 120 },
 ];
 
+const MIN_CUSTOM_DURATION = 15;
+const MAX_CUSTOM_DURATION = 480;
+
 // ── Validation schema ──────────────────────────────────────────
 const formSchema = z
   .object({
@@ -53,22 +56,58 @@ const formSchema = z
       .min(10, "Description must be at least 10 characters."),
     date: z.date({ required_error: "A date is required." }),
     time: z.string().min(1, "Time is required."),
+    useCustom: z.boolean().default(false),
     durationPreset: z.number().optional(),
     durationCustom: z.string().optional(),
     seatLimit: z.string().optional(),
   })
-  .refine(
-    (v) => {
-      const [h, m] = v.time.split(":").map(Number);
-      const dt = new Date(v.date);
-      dt.setHours(h, m, 0, 0);
-      return dt.getTime() >= addHours(new Date(), 1).getTime();
-    },
-    {
-      message: "Session must be scheduled at least 1 hour from now.",
-      path: ["time"],
+  .superRefine((v, ctx) => {
+    // ── Scheduled time must be at least 1 hour from now ──
+    const [h, m] = v.time.split(":").map(Number);
+    const dt = new Date(v.date);
+    dt.setHours(h, m, 0, 0);
+    if (dt.getTime() < addHours(new Date(), 1).getTime()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Session must be scheduled at least 1 hour from now.",
+        path: ["time"],
+      });
     }
-  );
+
+    // ── Custom duration must be a valid number in range ──
+    if (v.useCustom) {
+      const raw = (v.durationCustom ?? "").trim();
+
+      if (raw === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Enter a custom duration in minutes.",
+          path: ["durationCustom"],
+        });
+      } else {
+        const num = Number(raw);
+        if (!Number.isFinite(num) || !Number.isInteger(num)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Duration must be a whole number of minutes.",
+            path: ["durationCustom"],
+          });
+        } else if (num < MIN_CUSTOM_DURATION) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Duration must be at least ${MIN_CUSTOM_DURATION} minutes.`,
+            path: ["durationCustom"],
+          });
+        } else if (num > MAX_CUSTOM_DURATION) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Duration cannot exceed ${MAX_CUSTOM_DURATION} minutes.`,
+            path: ["durationCustom"],
+          });
+        }
+      }
+    }
+  });
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -86,7 +125,6 @@ export function CreateSessionDialog({
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<number>(60);
-  const [useCustom, setUseCustom] = useState(false);
   const awardXP = useAwardXP();
 
   const form = useForm<FormValues>({
@@ -95,15 +133,20 @@ export function CreateSessionDialog({
       title: "",
       description: "",
       time: "12:00",
+      useCustom: false,
       durationPreset: 60,
+      durationCustom: "",
       seatLimit: "",
     },
   });
 
+  const useCustom = form.watch("useCustom");
+
   const resolveDurationMinutes = (values: FormValues): number => {
-    if (useCustom) {
-      const c = parseInt(values.durationCustom ?? "", 10);
-      return isNaN(c) || c < 15 ? 60 : c;
+    if (values.useCustom) {
+      // Schema guarantees durationCustom is a valid integer in range by
+      // the time we get here, so it is safe to parse directly.
+      return parseInt(values.durationCustom as string, 10);
     }
     return selectedPreset;
   };
@@ -147,7 +190,6 @@ export function CreateSessionDialog({
 
       form.reset();
       setSelectedPreset(60);
-      setUseCustom(false);
       setOpen(false);
       awardXP.mutate({ activity: "host_session" });
       onSessionCreated();
@@ -302,7 +344,8 @@ export function CreateSessionDialog({
                     type="button"
                     onClick={() => {
                       setSelectedPreset(p.value);
-                      setUseCustom(false);
+                      form.setValue("useCustom", false);
+                      form.clearErrors("durationCustom");
                     }}
                     className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                       !useCustom && selectedPreset === p.value
@@ -316,7 +359,7 @@ export function CreateSessionDialog({
                 ))}
                 <button
                   type="button"
-                  onClick={() => setUseCustom(true)}
+                  onClick={() => form.setValue("useCustom", true)}
                   className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                     useCustom
                       ? "bg-gradient-to-r from-cyan-400 to-purple-500 text-black"
@@ -336,9 +379,9 @@ export function CreateSessionDialog({
                       <FormControl>
                         <Input
                           type="number"
-                          min={15}
-                          max={480}
-                          placeholder="Minutes (e.g. 45)"
+                          min={MIN_CUSTOM_DURATION}
+                          max={MAX_CUSTOM_DURATION}
+                          placeholder={`Minutes (${MIN_CUSTOM_DURATION}–${MAX_CUSTOM_DURATION})`}
                           className={inputCls}
                           {...field}
                         />
