@@ -24,13 +24,13 @@ const storage = multer.diskStorage({
     cb(null, profilesDir);
   },
   filename: function (req, file, cb) {
+    const userId = req.user?.id ?? 'unknown'
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname))
+    cb(null, `profile-${userId}-${uniqueSuffix}${path.extname(file.originalname)}`)
   }
 });
 
 // Configure multer with file size limits and MIME type validation
-// Fixes Issue #693: Prevent DoS via large files and restrict to images
 const upload = multer({ 
   storage: storage,
   limits: { 

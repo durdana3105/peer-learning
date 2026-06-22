@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync } from "fs";
-import { resolve } from "path";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 
 /**
  * Documentation completeness smoke-tests.
@@ -12,16 +13,10 @@ import { resolve } from "path";
  * cronRoutes.js or notificationRoutes.js.
  */
 
-let repoRoot = process.cwd();
-if (existsSync(resolve(repoRoot, "docs/api.md"))) {
-  // Already at root
-} else if (existsSync(resolve(repoRoot, "..", "docs/api.md"))) {
-  repoRoot = resolve(repoRoot, "..");
-} else if (existsSync(resolve(repoRoot, "..", "..", "docs/api.md"))) {
-  repoRoot = resolve(repoRoot, "..", "..");
-} else {
-  repoRoot = resolve(repoRoot, "..");
-}
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const repoRoot = resolve(__dirname, "../../");
 const apiDoc = readFileSync(resolve(repoRoot, "docs/api.md"), "utf-8");
 const notifDoc = readFileSync(resolve(repoRoot, "docs/smart-notifications.md"), "utf-8");
 

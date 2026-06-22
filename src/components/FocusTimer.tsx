@@ -56,7 +56,7 @@ export default function FocusTimer() {
         setFocusTimeThisWeek(newFocusTime);
         await supabase
           .from('profiles')
-          .update({ is_in_focus_mode: false, focus_time_this_week: newFocusTime })
+          .update({ is_in_focus_mode: false, focus_time_this_week: newFocusTime } as any)
           .eq('id', user.id);
       }
     } else {

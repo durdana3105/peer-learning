@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Users can insert mentor applications" ON mentors; CREATE POLICY "Users can insert mentor applications" ON mentors FOR INSERT WITH CHECK (user_id = auth.uid());

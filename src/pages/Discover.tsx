@@ -25,6 +25,8 @@ const filters = [
   "Python",
 ];
 
+const PAGE_SIZE = 12;
+
 const containerVariants = {
   hidden: {},
   show: {
@@ -61,7 +63,7 @@ const DiscoverPeerCard = memo(({ user, isOnline, onConnect, isConnected }: any) 
         <div className="relative">
           <img
             src={user.avatar_url || "https://i.pravatar.cc/150"}
-            alt={user.name}
+            alt={`${user.name || "User"} profile picture`}
             loading="lazy"
             decoding="async"
             className="w-16 h-16 rounded-full object-cover border-2 border-cyan-400"
@@ -118,6 +120,8 @@ const Discover = () => {
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [connections, setConnections] = useState<string[]>([]);
 
+  const [page, setPage] = useState(1);
+
   // DEBOUNCE SEARCH
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -125,6 +129,12 @@ const Discover = () => {
     }, 400);
     return () => clearTimeout(timer);
   }, [search]);
+
+  // RESET PAGINATION whenever the active search/filter changes so users
+  // always land on page 1 of the new result set
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, selectedFilter]);
 
   // 1. FETCH INITIAL DATA (User Profile & Connections) - Runs ONCE on mount
   useEffect(() => {
@@ -233,6 +243,18 @@ const Discover = () => {
 
   // Match scoring has been moved to the Node.js backend to prevent O(N) payload bloat and severe UI jank
 
+  // Client-side pagination: slice the already-fetched filteredUsers array
+  // into pages of PAGE_SIZE instead of rendering all 100 cards at once.
+  const pagedUsers = useMemo(() => {
+    return filteredUsers.slice(0, page * PAGE_SIZE);
+  }, [filteredUsers, page]);
+
+  const remainingCount = filteredUsers.length - pagedUsers.length;
+
+  const handleLoadMore = useCallback(() => {
+    setPage((prev) => prev + 1);
+  }, []);
+
   const handleConnect = useCallback(async (peerId: string) => {
     if (!currentUser || connections.includes(peerId)) return;
 
@@ -283,7 +305,7 @@ const Discover = () => {
                 currentUser?.avatar_url ||
                 "https://i.pravatar.cc/150"
               }
-              alt="avatar"
+              alt={`${currentUser?.name || "Current user"} profile picture`}
               loading="lazy"
               decoding="async"
               className="w-12 h-12 rounded-full border-2 border-cyan-400 object-cover"
@@ -376,8 +398,25 @@ const Discover = () => {
             {[1, 2, 3].map((item) => (
               <div
                 key={item}
-                className="h-72 rounded-[28px] bg-white/5 animate-pulse border border-white/10"
-              />
+                className="rounded-[30px] p-6 border border-white/10 bg-white/5 animate-pulse"
+              >
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="w-16 h-16 rounded-full bg-white/10" />
+
+                  <div className="flex-1">
+                    <div className="h-5 w-32 rounded bg-white/10 mb-2" />
+                    <div className="h-4 w-24 rounded bg-white/10" />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-5">
+                  <div className="h-7 w-16 rounded-full bg-white/10" />
+                  <div className="h-7 w-20 rounded-full bg-white/10" />
+                  <div className="h-7 w-14 rounded-full bg-white/10" />
+                </div>
+
+                <div className="h-12 rounded-2xl bg-white/10" />
+              </div>
             ))}
           </div>
         ) : filteredUsers.length === 0 ? (
@@ -396,22 +435,35 @@ const Discover = () => {
             </p>
           </div>
         ) : (
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            className="grid md:grid-cols-3 gap-6"
-          >
-            {filteredUsers.map((u) => (
-              <DiscoverPeerCard
-                key={u.id}
-                user={u}
-                isOnline={onlineUsers.includes(u.id)}
-                onConnect={handleConnect}
-                isConnected={connections.includes(u.id)}
-              />
-            ))}
-          </motion.div>
+          <>
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="grid md:grid-cols-3 gap-6"
+            >
+              {pagedUsers.map((u) => (
+                <DiscoverPeerCard
+                  key={u.id}
+                  user={u}
+                  isOnline={onlineUsers.includes(u.id)}
+                  onConnect={handleConnect}
+                  isConnected={connections.includes(u.id)}
+                />
+              ))}
+            </motion.div>
+
+            {remainingCount > 0 && (
+              <div className="flex justify-center mt-10">
+                <button
+                  onClick={handleLoadMore}
+                  className="px-8 py-3 rounded-2xl font-bold bg-white/5 border border-white/10 hover:border-cyan-400/40 hover:bg-white/10 transition"
+                >
+                  Load More ({remainingCount} remaining)
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -419,4 +471,3 @@ const Discover = () => {
 };
 
 export default Discover;
-

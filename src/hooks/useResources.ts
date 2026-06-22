@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { isAbortError, normalizeError, safeSupabaseCall } from "@/lib/http";
+import { logError } from "@/utils/logger";
 import type { Resource } from "@/types/resource";
 
 type ResourceFilters = {
@@ -11,6 +12,10 @@ type ResourceFilters = {
   tags?: string[];
   fileType?: string;
   savedOnly?: boolean;
+};
+
+type SavedResource = {
+  resource_id: string;
 };
 
 export const useResources = (filters?: ResourceFilters) => {
@@ -49,17 +54,17 @@ export const useResources = (filters?: ResourceFilters) => {
           return;
         }
         
-        // @ts-expect-error TODO: refine typing
         const { data: savedData, error: savedError } = await safeSupabaseCall(
-          // @ts-expect-error TODO: refine typing
-          () => supabase.from("saved_resources").select("resource_id").eq("user_id", user.id).abortSignal(controller.signal)
+          () => (supabase as any).from("saved_resources").select("resource_id").eq("user_id", user.id).abortSignal(controller.signal)
         );
         
         if (savedError) throw savedError;
         
-        savedResourceIds = savedData?.map((item: any) => item.resource_id) || [];
+        savedResourceIds =
+          (savedData as SavedResource[] | null)?.map(
+            (item) => item.resource_id
+          ) || [];
         
-        // @ts-expect-error TODO: refine typing
         if (savedResourceIds.length === 0) {
           setResources([]);
           setLoading(false);
@@ -89,8 +94,7 @@ export const useResources = (filters?: ResourceFilters) => {
       }
 
       const data = await safeSupabaseCall(
-        // @ts-expect-error TODO: refine typing
-        () => query.abortSignal(controller.signal),
+        () => (query as any).abortSignal(controller.signal),
         { fallbackMessage: "Unable to load resources." },
       );
 
@@ -105,6 +109,7 @@ export const useResources = (filters?: ResourceFilters) => {
       }
 
       const normalized = normalizeError(caughtError, "Unable to load resources.");
+      logError(caughtError, { context: "useResources.fetchResources", normalizedMessage: normalized.message });
 
       setError(normalized.message);
       setResources([]);
@@ -135,7 +140,3 @@ export const useResources = (filters?: ResourceFilters) => {
     refetch: fetchResources,
   };
 };
-
-
-
-
