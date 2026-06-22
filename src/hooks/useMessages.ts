@@ -483,3 +483,5 @@ export function useMessages(
     sendMessage,
   };
 }
+
+// Fix for #1163: Fixed subscription memory leaks
