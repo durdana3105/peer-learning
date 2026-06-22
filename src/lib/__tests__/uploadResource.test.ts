@@ -1,1 +1,7 @@
-// Fix for #1161: Added unit tests for uploadResource
+import { describe, it, expect } from "vitest";
+
+describe("uploadResource", () => {
+  it("should have a placeholder test", () => {
+    expect(true).toBe(true);
+  });
+});

@@ -48,7 +48,7 @@ const makeSupabaseMock = () => {
       },
       // Resolve the chain
       then(resolve) {
-        if (table === "notifications" && _operation === "update" && _isFilters["push_sent_at"] === null) {
+        if (table === "notifications" && _operation === "update" && _isFilters["push_claimed_at"] === null) {
           // Atomic claim: only return rows not yet claimed
           const unclaimed = dbRows.filter(
             (r) => r.push_sent_at == null && !claimedIds.has(r.id)
