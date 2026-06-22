@@ -151,12 +151,16 @@ const Login = () => {
           </p>
 
           <div className="mt-8 flex gap-4">
-            <Button className="rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-6 text-black font-semibold hover:scale-105 transition-all">
+            <Button 
+              onClick={() => navigate("/signup")}
+              className="rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-6 text-black font-semibold hover:scale-105 transition-all"
+            >
               Join as Learner
             </Button>
 
             <Button
               variant="outline"
+              onClick={() => navigate("/become-mentor")}
               className="rounded-xl border-cyan-400/20 bg-white/5 px-8 py-6 text-cyan-300 hover:bg-cyan-500/10"
             >
               Become a Mentor
