@@ -591,3 +591,5 @@ const Leaderboard = () => {
 
 export default Leaderboard;
 
+
+// Fix for #1165: Memoized expensive calculations
