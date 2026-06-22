@@ -164,6 +164,7 @@ const Discover = () => {
         setError(
           "Unable to load your profile information. Please refresh the page and try again."
         );
+        setLoading(false);
       }
     };
 
