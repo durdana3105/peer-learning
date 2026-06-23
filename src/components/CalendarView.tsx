@@ -125,7 +125,10 @@ export function CalendarView({ sessions, onSelectSession }: CalendarViewProps) {
     for (const day of weekDays) {
       const key = format(day, "yyyy-MM-dd");
       map[key] = sessions.filter(
-        (s) => s.scheduled_at && isSameDay(parseISO(s.scheduled_at), day)
+        (s) =>
+          s.status !== "ended" &&
+          s.scheduled_at &&
+          isSameDay(parseISO(s.scheduled_at), day)
       );
     }
     return map;
