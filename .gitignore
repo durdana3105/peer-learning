@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# This project standardizes on npm (package-lock.json).
+# Ignore lockfiles from other package managers to avoid conflicts.
+bun.lock
+bun.lockb
+yarn.lock
+pnpm-lock.yaml
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

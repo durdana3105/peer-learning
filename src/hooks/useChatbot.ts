@@ -44,7 +44,7 @@ export function useChatbot() {
       const { data } = await supabase
         .from("chat_messages")
         .select("*")
-        .eq("user_id" as any, session.user.id)
+        .eq("user_id", session.user.id)
         .order("created_at", { ascending: true });
 
       if (data) setMessages(data as Message[]);
@@ -89,11 +89,11 @@ export function useChatbot() {
       });
 
       if (!res.ok) {
-        throw new Error(`Request failed with status ${res.status}`);
+        throw new Error(`Request failed with status ${res.status}: ${res.statusText}`);
       }
 
       const data = await res.json();
-      const botReply = data?.reply || "No response 😅";
+      const botReply = data?.answer || "No response 😅";
       const botMsg = { role: "assistant", text: botReply, user_id: userId };
 
       // Smoother typing effect (chunked rendering)
@@ -120,6 +120,7 @@ export function useChatbot() {
 
       await supabase.from("chat_messages").insert([botMsg]);
     } catch (err) {
+      console.error("Chatbot error:", err);
       const errorMsg = { role: "assistant", text: "Something went wrong. Please try again.", user_id: userId };
       setMessages((prev) => [...prev, errorMsg]);
       await supabase.from("chat_messages").insert([errorMsg]);

@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Users can insert direct messages" ON messages; CREATE POLICY "Users can insert direct messages" ON messages FOR INSERT WITH CHECK (sender_id = auth.uid()); ALTER TABLE messages ALTER COLUMN created_at SET DEFAULT now();

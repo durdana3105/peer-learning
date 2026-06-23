@@ -13,6 +13,8 @@ export default function Chatbot() {
       {/* 💬 Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Open AI Assistant"
+        title="Open AI Assistant"
         className="fixed bottom-5 left-5 z-[10000] bg-black text-white p-4 rounded-full shadow-xl hover:scale-110 transition"
       >
         💬
@@ -20,11 +22,25 @@ export default function Chatbot() {
 
       {/* 💻 Chatbox */}
       {isOpen && (
-        <div className="fixed bottom-20 left-5 z-[10000] w-80 h-[450px] bg-black text-white rounded-2xl shadow-2xl flex flex-col border border-gray-700">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="chatbot-title"
+          className="fixed bottom-20 left-5 z-[10000] w-80 h-[450px] bg-black text-white rounded-2xl shadow-2xl flex flex-col border border-gray-700"
+        >
           {/* Header */}
           <div className="p-3 border-b border-gray-700 flex justify-between items-center">
-            <span className="font-semibold">AI Assistant</span>
-            <button onClick={() => setIsOpen(false)}>✖</button>
+            <span id="chatbot-title" className="font-semibold">
+              AI Assistant
+            </span>
+
+            <button
+              onClick={() => setIsOpen(false)}
+              aria-label="Close AI Assistant"
+              title="Close AI Assistant"
+            >
+              ✖
+            </button>
           </div>
 
           {/* Messages */}

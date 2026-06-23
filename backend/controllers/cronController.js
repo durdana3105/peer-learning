@@ -83,10 +83,15 @@ export const dispatchPushNotifications = async (req, res, next) => {
     if (subError) {
       const notificationIds = notifications.map((n) => n.id);
       if (notificationIds.length > 0) {
-        await supabase
+        const { error: rollbackError } = await supabase
           .from("notifications")
           .update({ push_claimed_at: null })
           .in("id", notificationIds);
+        if (rollbackError) {
+          return res.status(500).json({
+            error: `Subscription fetch failed, and rollback failed: ${rollbackError.message}`,
+          });
+        }
       }
       return res.status(500).json({ error: subError.message });
     }

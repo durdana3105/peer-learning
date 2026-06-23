@@ -4,10 +4,6 @@
 
 ![Peer Learning Banner](https://img.shields.io/badge/Peer-Learning%20Platform-blueviolet?style=for-the-badge)
 
-![Forks](https://img.shields.io/github/forks/durdana3105/peer-learning?style=social)
-![Issues](https://img.shields.io/github/issues/durdana3105/peer-learning)
-![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg)
-
 A modern peer-to-peer learning platform where students can connect, collaborate, share knowledge, and grow together through interactive learning sessions, real-time messaging, AI assistance, and community engagement.
 
 ---
@@ -37,11 +33,12 @@ A modern peer-to-peer learning platform where students can connect, collaborate,
   * [🏆 Leaderboard System](#%F0%9F%8F%86-leaderboard-system)
   * [📊 Personalized Dashboard](#%F0%9F%93%8A-personalized-dashboard)
   * [⚡ Modern Responsive UI](#%E2%9A%A1-modern-responsive-ui)
-- [🌍 Community Reach](#%F0%9F%8C%8D-community-reach)
 - [📸 Screenshots](#%F0%9F%93%B8-screenshots)
+- [📸 Application Preview](#%F0%9F%93%B8-application-preview)
   * [🏠 Home Page](#%F0%9F%8F%A0-home-page)
   * [🔐 Authentication](#%F0%9F%94%90-authentication)
   * [👨‍🏫 Become a Mentor](#%F0%9F%91%A8%E2%80%8D%F0%9F%8F%AB-become-a-mentor)
+  * [🤖 AI Assistant](#%F0%9F%A4%96-ai-assistant)
   * [Demo Video](#demo-video)
 - [🧠 Problem Statement](#%F0%9F%A7%A0-problem-statement)
 - [🛠️ Tech Stack](#%F0%9F%9B%A0%EF%B8%8F-tech-stack)
@@ -77,129 +74,88 @@ A modern peer-to-peer learning platform where students can connect, collaborate,
 
 ---
 
-## ✨ Features
+# ✨ Features
 
-### 🔐 Authentication System
-
+## 🔐 Authentication System
 - Secure Signup & Login
 - Protected Routes
 - User Session Management
 
-### 👤 User Profiles
-
+## 👤 User Profiles
 - Personalized User Profiles
 - Skills & Interests Showcase
 - Learning Preferences
 
-### 🔍 Peer Discovery
-
+## 🔍 Peer Discovery
 - Find peers based on skills
 - Connect with learners worldwide
 - Smart matching system
 
-### 📚 Learning Sessions
-
+## 📚 Learning Sessions
 - Create study sessions
 - Join collaborative learning groups
 - Interactive peer discussions
 
-### 💬 Real-Time Chat
-
+## 💬 Real-Time Chat
 - Instant messaging system
 - Community interaction
 - Smooth communication experience
 
-### 🤖 AI-Powered Assistance
-
+## 🤖 AI-Powered Assistance
 - AI chatbot for learning support
 - Smart recommendations
 - Enhanced user guidance
 
-### 🏆 Leaderboard System
+## 🏆 Leaderboard System
+- Rankings based on activity.
+- Community engagement rewards.
+- Motivation through gamification.
 
-- Rankings based on activity
-- Community engagement rewards
-- Motivation through gamification
-
-### 📊 Personalized Dashboard
-
+## 📊 Personalized Dashboard
 - Track learning progress
 - Session overview
 - Activity management
 
-### ⚡ Modern Responsive UI
-
+## ⚡ Modern Responsive UI
 - Fully responsive design
 - Mobile-friendly interface
 - Smooth user experience
 
 ---
 
-## 🎯 Why Peer Learning Platform?
+# 📸 Screenshots
 
-- Encourages collaborative learning
-- Helps students find mentors
-- Provides AI-powered assistance
-- Creates active learning communities
+# 📸 Application Preview
 
----
+## 🏠 Home Page
 
-## 🌍 Community Reach
-
-The Peer Learning Platform is built around active student learning communities, helping learners connect with peers who share similar goals and interests.
-
-<div align="center">
-
-| Community | Members |
-|------------|----------:|
-| 🤖 AI/ML Community | 4.8k+ |
-| ⚔️ DSA Warriors | 6.1k+ |
-| 🌐 Web Dev Hub | 5.4k+ |
-| 🚀 Hackathon Teams | 3.2k+ |
-| 🎯 Interview Prep | 4.1k+ |
-
-</div>
-
-### 📈 Growing Learning Network
-
-- 👥 **23.6k+ members** across 5 active communities
-- 🤝 Connect with learners, mentors, and collaborators
-- 📚 Share knowledge through peer-to-peer learning
-- 🚀 Build teams for hackathons and projects
-- 🎯 Prepare together for interviews and career growth
-
-> Empowering students through collaborative learning, mentorship, and community-driven growth.
+<img width="100%" alt="Home Page" src="./src/screenshots/home.png">
 
 ---
 
-## 📸 Screenshots
+## 🔐 Authentication
 
-### 🏠 Home Page
-
-![Home_Page](src/screenshots/home.png)
+<img width="100%" alt="Login Page" src="./src/screenshots/login.png">
 
 ---
 
-### 🔐 Authentication
+## 👨‍🏫 Become a Mentor
 
-![Home_Page](src/screenshots/login.png)
-
----
-
-### 👨‍🏫 Become a Mentor
-
-![Become-Mentor_Page](src/screenshots/become-mentor.png)
+<img width="100%" alt="Become a Mentor" src="./src/screenshots/become-mentor.png">
 
 ---
 
+
+## 🤖 AI Assistant
+
+<img width="100%" alt="AI Assistant" src="./src/screenshots/ai-chat.png">
+
+---
 ## Demo Video
-
- [Watch Demo](
+ [Watch Demo ](
  https://github.com/user-attachments/assets/6af694a1-e98d-4d31-b99f-eeacddab3ebc)
 
- ---
-
-## 🧠 Problem Statement
+# 🧠 Problem Statement
 
 Many students struggle to find suitable learning partners, mentors, and collaborative study environments.
 
@@ -207,31 +163,27 @@ The **Peer Learning Platform** solves this challenge by enabling students to con
 
 ---
 
-## 🛠️ Tech Stack
+# 🛠️ Tech Stack
 
-### 🎨 Frontend
-
+# 🎨 Frontend
 - React.js
 - TypeScript
 - JavaScript
 - Tailwind CSS
 
-### ⚙️ Backend
-
+# ⚙️ Backend
 - Supabase
 - PostgreSQL
 
-### 🔐 Authenticate
-
+# 🔐 Authentication
 - Supabase Authentication
 
-### 🚀 Deploy
-
+# 🚀 Deployment
 - Vercel
 
 ---
 
-## 🏗️ System Architecture
+# 🏗️ System Architecture
 
 ```mermaid
 graph TD
@@ -271,7 +223,7 @@ graph TD
 
 ---
 
-## 📂 Project Structure
+# 📂 Project Structure
 
 ```bash
 peer-learning-platform/
@@ -298,8 +250,7 @@ peer-learning-platform/
 └── README.md             # Project documentation
 ```
 
-## 📝 Where to add new features?
-
+### 📝 Where to add new features?
 - **New UI Element**: Add a reusable component in `src/components/`.
 - **New Page/Route**: Create a new view in `src/pages/` and add it to the router in `App.tsx`.
 - **New Database Query**: Add the Supabase logic inside `src/integrations/supabase/` or `src/services/`.
@@ -307,9 +258,9 @@ peer-learning-platform/
 
 ---
 
-## ⚙️ Installation & Setup
+# ⚙️ Installation & Setup
 
-### 1️⃣ Clone the Repository
+## 1️⃣ Clone the Repository
 
 ```bash
 git clone https://github.com/durdana3105/peer-learning.git
@@ -317,7 +268,7 @@ git clone https://github.com/durdana3105/peer-learning.git
 
 ---
 
-### 2️⃣ Navigate to Project Directory
+## 2️⃣ Navigate to Project Directory
 
 ```bash
 cd peer-learning
@@ -325,7 +276,7 @@ cd peer-learning
 
 ---
 
-### 3️⃣ Install Dependencies
+## 3️⃣ Install Dependencies
 
 ```bash
 npm install
@@ -333,7 +284,7 @@ npm install
 
 ---
 
-### 4️⃣ Configure Environment Variables
+## 4️⃣ Configure Environment Variables
 
 A `.env.example` file is provided in the root of the repository with all required variable names and placeholder values. Copy it to `.env` before running the project:
 
@@ -344,7 +295,6 @@ cp .env.example .env
 Then fill in your actual values in `.env`. You can get your Supabase credentials from [https://supabase.com/dashboard](https://supabase.com/dashboard).
 
 Create a `.env` file in the root directory and add:
-
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -361,15 +311,13 @@ npm run dev
 ---
 
 ## 📚 Technical Documentation
-
 For deeper technical insights, please refer to our dedicated documentation:
-
 - [🗄️ Database Architecture & Schema](./docs/database.md)
 - [🔌 API Documentation](./docs/api.md)
 
 ---
 
-## 🚀 Deployment
+# 🚀 Deployment
 
 This project can be easily deployed on:
 
@@ -385,29 +333,26 @@ npm run build
 
 ---
 
-## 🛠️ Troubleshooting
+# 🛠️ Troubleshooting
 
 If you encounter issues during setup, installation, or configuration, please refer to our [Troubleshooting Guide](TROUBLESHOOTING.md) for solutions to common problems.
 
 ---
 
-## 🗺️ Feature Roadmap
+# 🗺️ Feature Roadmap
 
-Our development roadmap is structured to provide clear visibility into the project's priorities and progress.
+Our development roadmap is structured to provide clear visibility into the project's priorities and progress. 
 
 ### Completed ✅
-
 - **🔐 Secure Authentication**: Email/Password and OAuth integration.
 - **📚 Real-Time Chat & Study Sessions**: Live messaging and collaborative learning environments.
 - **🏆 Gamification System**: XP, levels, leaderboards, and streak counts.
 
 ### In Progress 🚧
-
 - **📅 Session Scheduling**: Plan study sessions ahead of time. (Target: Q3)
 - **🧠 AI-based Peer Recommendations**: Smart matching system for peers. (Target: Q3)
 
 ### Planned 📌
-
 - **🎥 Video Calling Integration**: Seamless face-to-face peer collaboration. (Target: Q4)
 - **🔔 Real-time Notifications**: Alerts for new messages and upcoming sessions. (Target: Q4)
 - **🧑‍🏫 Mentor Matching System**: Dedicated workflows for connecting students with mentors. (Target: Q1 2027)
@@ -416,11 +361,11 @@ Our development roadmap is structured to provide clear visibility into the proje
 
 ---
 
-## 🤝 Contributing
+# 🤝 Contributing
 
 Contributions are welcome 🚀
 
-### Steps to Contribute
+## Steps to Contribute
 
 1. Fork the repository
 2. Create a new branch
@@ -429,24 +374,24 @@ Contributions are welcome 🚀
 git checkout -b feature-name
 ```
 
-3.Make your changes
-4.Commit your changes
+3. Make your changes
+4. Commit your changes
 
 ```bash
 git commit -m "Add your message"
 ```
 
-5.Push to GitHub
+5. Push to GitHub
 
 ```bash
 git push origin feature-name
 ```
 
-6.Open a Pull Request 🎉
+6. Open a Pull Request 🎉
 
 ---
 
-## 💖 Contributors
+# 💖 Contributors
 
 Thanks to all the amazing people who contribute to **Peer Learning** 🚀
 
@@ -458,15 +403,14 @@ Thanks to all the amazing people who contribute to **Peer Learning** 🚀
 
 ---
 
-## 👩‍💻 Author
+# 👩‍💻 Author
 
-### Durdana Sultana
-
+## Durdana Sultana
 Computer Science (AI & ML) Student
 
 ---
 
-## ⭐ Support
+# ⭐ Support
 
 If you like this project, please give it a ⭐ on GitHub.
 
@@ -485,40 +429,34 @@ If you like this project, please give it a ⭐ on GitHub.
 ## ❓ FAQ
 
 ### Q: How do I set up the project locally?
-
 A: Clone the repo, install dependencies, copy `.env.example` to `.env`, fill in Supabase values, then run the development server.
 
 ```bash
 git clone https://github.com/durdana3105/peer-learning.git
 cd peer-learning
-bun install
+npm install
 cp .env.example .env
 # Update .env with your Supabase values
-bun run dev
+npm run dev
 ```
 
-If you do not use Bun, `npm install` and `npm run dev` are valid alternatives.
+> **Note:** This project standardizes on **npm**. The committed lockfile is `package-lock.json`, and CI/deployment run `npm ci`. Please do not commit lockfiles from other package managers (e.g. `bun.lock`, `bun.lockb`, `yarn.lock`, `pnpm-lock.yaml`).
 
 ### Q: What environment variables are required?
-
 A: Your frontend needs `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (or supported aliases such as `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
 
 The backend uses `SUPABASE_URL` and either `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_ANON_KEY` as well as `OPENROUTER_API_KEY` for AI chat and `SITE_URL` where applicable.
 
 ### Q: How should I configure Supabase?
-
 A: Create a Supabase project and copy the project URL and anon key into `.env`. Enable Supabase Auth, add the required authentication providers, and make sure your auth redirect URL matches your local or deployed site.
 
 ### Q: How can I deploy this project?
-
 A: This repository is configured for Vercel deployment. Deploy the frontend and backend to Vercel, then add the same Supabase environment variables to your Vercel project settings.
 
-For local deployment, ensure your `.env` variables are correct and run `bun run dev` for development or `bun run build` then `bun run preview` for production preview.
+For local deployment, ensure your `.env` variables are correct and run `npm run dev` for development or `npm run build` then `npm run preview` for production preview.
 
 ### Q: Why does authentication fail even though I set up Supabase?
-
 A: Common causes:
-
 - `.env` variables are missing, wrong, or not loaded.
 - The site URL in Supabase Auth settings does not match your local URL (`http://localhost:5173`) or deployed URL.
 - OAuth provider callback URLs are not configured correctly.
@@ -526,17 +464,15 @@ A: Common causes:
 Verify the keys and URLs carefully in both Supabase and the app.
 
 ### Q: What should I do if the app still fails to start?
-
 A: Check these steps:
-
 - Confirm `.env.example` was copied to `.env` and values were filled.
-- Run `bun install` again after deleting `node_modules` if dependencies appear broken.
-- Make sure Node/Bun versions are compatible with the repo.
+- Run `npm install` again after deleting `node_modules` if dependencies appear broken.
+- Make sure your Node.js version is compatible with the repo (CI uses Node 20.x).
 - Look for console errors from the frontend or backend and verify the Supabase credentials.
 
 ---
 
-## 📜 License
+# 📜 License
 
 This project is licensed under the MIT License.
 

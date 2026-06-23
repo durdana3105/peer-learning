@@ -7,8 +7,6 @@ import googleIcon from "@/assets/google-icon.svg";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 
 import { useAuth } from "@/contexts/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -23,7 +21,6 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
 
@@ -154,12 +151,16 @@ const Login = () => {
           </p>
 
           <div className="mt-8 flex gap-4">
-            <Button className="rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-6 text-black font-semibold hover:scale-105 transition-all">
+            <Button 
+              onClick={() => navigate("/signup")}
+              className="rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-6 text-black font-semibold hover:scale-105 transition-all"
+            >
               Join as Learner
             </Button>
 
             <Button
               variant="outline"
+              onClick={() => navigate("/become-mentor")}
               className="rounded-xl border-cyan-400/20 bg-white/5 px-8 py-6 text-cyan-300 hover:bg-cyan-500/10"
             >
               Become a Mentor
@@ -267,18 +268,7 @@ const Login = () => {
               </p>
             )}
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={rememberMe}
-                  onCheckedChange={(c) => setRememberMe(!!c)}
-                />
-
-                <Label className="text-slate-300">
-                  Remember me
-                </Label>
-              </div>
-
+            <div className="flex justify-end">
               <Link
                 to="/forgot-password"
                 className="text-sm text-cyan-400 hover:text-cyan-300"

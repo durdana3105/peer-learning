@@ -140,6 +140,7 @@ describe("dispatchPushNotifications — race condition", () => {
     vi.stubEnv("VAPID_PRIVATE_KEY", "vapid-private");
 
     // Reset shared DB state
+    forceSubscriptionError = false;
     claimedIds = new Set();
     dbRows = Array.from({ length: 5 }, (_, i) => ({
       id: `notif-${i}`,
