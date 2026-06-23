@@ -105,7 +105,7 @@ export const getRecommendedPartners = async (req, res) => {
       target_interests: currentUser.interests || [],
       target_teach: currentUser.teach_subjects || [],
       target_learn: currentUser.learn_subjects || [],
-      page_limit: limit,
+      page_limit: limit + 1,
       page_offset: skip
     });
 
@@ -131,15 +131,16 @@ export const getRecommendedPartners = async (req, res) => {
       };
     });
 
-    // In a real paginated RPC, getting exact total Count requires a separate count query. 
-    // We'll estimate or just provide length for now since counting 1M rows can also be slow.
+    // Fetch limit+1 rows so we can set hasNextPage without a separate COUNT query.
+    // The extra row is trimmed before returning; it only signals whether more results exist.
+   const hasNextPage = recommendations.length > limit;
+
     res.status(200).json({
       success: true,
-      count: recommendations.length,
-      total: recommendations.length > 0 ? skip + limit + 1 : skip, // Rough pagination cursor hack
+      count: Math.min(recommendations.length, limit),
       page,
-      totalPages: recommendations.length === limit ? page + 1 : page,
-      recommendations,
+      hasNextPage,
+      recommendations: recommendations.slice(0, limit),
     });
   } catch (error) {
     console.error("Recommendation Error:", error);
@@ -152,10 +153,9 @@ export const getSupabaseDiscover = async (req, res) => {
     const userId = req.user.id;
     const search = req.query.search || "";
     const filter = req.query.filter || "All";
-    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limit = Math.min(parseInt(req.query.limit, 10) || 100, 100);
+    const page = Math.min(Math.max(1, parseInt(req.query.page, 10) || 1), 1000);
+    const limit = Math.min(Math.max(1, parseInt(req.query.limit, 10) || 100), 100);
     const skip = (page - 1) * limit;
-
     const supabaseAdmin = getSupabaseAdmin();
 
     // Fetch only the columns used for compatibility scoring so we avoid
@@ -175,7 +175,7 @@ export const getSupabaseDiscover = async (req, res) => {
       .from("profiles")
       .select("id, name, skills, interests, learning_goals, teach_subjects, learn_subjects, learning_style, preferred_language, timezone")
       .neq("id", userId)
-      .range(skip, skip + limit - 1);
+      .range(skip, skip + limit);
 
     if (search.trim()) {
       // Keep only alphanumeric chars, spaces, and hyphens.
@@ -271,8 +271,12 @@ export const getSupabaseDiscover = async (req, res) => {
 
     matched.sort((a, b) => b.score - a.score);
 
+    const hasNextPage = matched.length > limit;
+
     res.status(200).json({
       success: true,
+      page,
+      hasNextPage,
       recommendations: matched.slice(0, limit),
     });
   } catch (error) {
