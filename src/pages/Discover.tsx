@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { useInView } from "react-intersection-observer";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -115,6 +116,13 @@ const Discover = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All");
 
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [fetchingMore, setFetchingMore] = useState(false);
+  const { ref: observerRef, inView } = useInView({
+    threshold: 0.1,
+  });
+
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [connections, setConnections] = useState<string[]>([]);
 
@@ -165,10 +173,10 @@ const Discover = () => {
     fetchInitialData();
   }, []);
 
-  // 2. FETCH PEERS FROM BACKEND - Runs on search/filter change
+  // 2. FETCH PEERS FROM BACKEND - Runs on search/filter change (Reset page)
   useEffect(() => {
+    setPage(1);
     const fetchPeers = async () => {
-      // PERF: Don't fetch peers until the user profile has securely loaded
       if (!currentUser) return;
       
       setLoading(true);
@@ -176,7 +184,8 @@ const Discover = () => {
         const searchParams = new URLSearchParams();
         if (debouncedSearch.trim()) searchParams.append("search", debouncedSearch.trim());
         if (selectedFilter !== "All") searchParams.append("filter", selectedFilter);
-        searchParams.append("limit", "100");
+        searchParams.append("limit", "20");
+        searchParams.append("page", "1");
 
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
@@ -190,6 +199,7 @@ const Discover = () => {
           if (apiData.success) {
             setUsers(apiData.recommendations || []);
             setFilteredUsers(apiData.recommendations || []);
+            setHasNextPage(apiData.hasNextPage);
           }
         }
       } catch (err) {
@@ -201,6 +211,44 @@ const Discover = () => {
 
     fetchPeers();
   }, [debouncedSearch, selectedFilter, currentUser]);
+
+  // 3. FETCH MORE PEERS (Infinite Scroll)
+  useEffect(() => {
+    if (inView && hasNextPage && !loading && !fetchingMore) {
+      const fetchMore = async () => {
+        setFetchingMore(true);
+        const nextPage = page + 1;
+        try {
+          const searchParams = new URLSearchParams();
+          if (debouncedSearch.trim()) searchParams.append("search", debouncedSearch.trim());
+          if (selectedFilter !== "All") searchParams.append("filter", selectedFilter);
+          searchParams.append("limit", "20");
+          searchParams.append("page", nextPage.toString());
+
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            const res = await fetch(`${API_BASE_URL}/api/match/supabase-discover?${searchParams.toString()}`, {
+              headers: { Authorization: `Bearer ${session.access_token}` },
+              credentials: "include"
+            });
+            const apiData = await res.json();
+            if (apiData.success) {
+              setUsers((prev) => [...prev, ...apiData.recommendations]);
+              setFilteredUsers((prev) => [...prev, ...apiData.recommendations]);
+              setHasNextPage(apiData.hasNextPage);
+              setPage(nextPage);
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching more peers:", err);
+        } finally {
+          setFetchingMore(false);
+        }
+      };
+
+      fetchMore();
+    }
+  }, [inView, hasNextPage, loading, fetchingMore, page, debouncedSearch, selectedFilter]);
 
   // PRESENCE
   useEffect(() => {
@@ -413,22 +461,35 @@ const Discover = () => {
             </p>
           </div>
         ) : (
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            className="grid md:grid-cols-3 gap-6"
-          >
-            {filteredUsers.map((u) => (
-              <DiscoverPeerCard
-                key={u.id}
-                user={u}
-                isOnline={onlineUsers.includes(u.id)}
-                onConnect={handleConnect}
-                isConnected={connections.includes(u.id)}
-              />
-            ))}
-          </motion.div>
+          <>
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="grid md:grid-cols-3 gap-6"
+            >
+              {filteredUsers.map((u) => (
+                <DiscoverPeerCard
+                  key={u.id}
+                  user={u}
+                  isOnline={onlineUsers.includes(u.id)}
+                  onConnect={handleConnect}
+                  isConnected={connections.includes(u.id)}
+                />
+              ))}
+            </motion.div>
+            
+            {/* Infinite Scroll Trigger */}
+            <div ref={observerRef} className="py-8 flex justify-center">
+              {fetchingMore && (
+                <div className="flex gap-2">
+                  <div className="w-3 h-3 bg-cyan-400 rounded-full animate-bounce" />
+                  <div className="w-3 h-3 bg-purple-400 rounded-full animate-bounce delay-100" />
+                  <div className="w-3 h-3 bg-cyan-400 rounded-full animate-bounce delay-200" />
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>
