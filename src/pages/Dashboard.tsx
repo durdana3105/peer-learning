@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useRole } from "@/contexts/RoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import { API_BASE_URL } from "@/config/api";
+import { Skeleton } from "@/components/ui/skeleton";
 const AnalyticsCharts = lazy(() => import("@/components/AnalyticsCharts"));
 
 interface Profile {
@@ -66,8 +67,11 @@ const Dashboard = () => {
   const [connectedPeerIds, setConnectedPeerIds] = useState<Set<string>>(new Set());
   const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [activityFeed, setActivityFeed] = useState<{ label: string; timestamp: string }[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [peersLoading, setPeersLoading] = useState(false);
 
   const displayName =
     profile?.name?.trim() ||
@@ -162,6 +166,7 @@ const Dashboard = () => {
   // Recommended Peers
   const fetchRecommendedPeers = async (myProfile: Profile) => {
     if (!user?.id) return;
+    setPeersLoading(true);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -197,6 +202,8 @@ const Dashboard = () => {
       }
     } catch (err) {
       console.error("Failed to fetch recommended peers:", err);
+    } finally {
+      setPeersLoading(false);
     }
   };
 
@@ -231,12 +238,11 @@ const Dashboard = () => {
   // Sessions
   useEffect(() => {
     const fetchSessions = async () => {
-      // SECURITY/PERF: Limit fetch to top 4 to prevent downloading 10,000 global sessions
-      // which would cause massive browser OOM crashes and render thrashing.
       if (!user?.id) {
         setUpcomingSessions([]);
         return;
       }
+      setSessionsLoading(true);
       const { data, error } = await supabase
         .from("sessions")
         .select("*")
@@ -246,10 +252,10 @@ const Dashboard = () => {
 
       if (error || !data) {
         setUpcomingSessions([]);
-        return;
+      } else {
+        setUpcomingSessions(data);
       }
-
-      setUpcomingSessions(data);
+      setSessionsLoading(false);
     };
 
     fetchSessions();
@@ -260,6 +266,7 @@ const Dashboard = () => {
   // Leaderboard
   useEffect(() => {
     const fetchLeaderboardData = async () => {
+      setLeaderboardLoading(true);
       // 1. Fetch top 5 for the mini-leaderboard
       const { data } = await supabase
         .from("profiles")
@@ -276,6 +283,7 @@ const Dashboard = () => {
         });
         setGlobalRank(rankData || 0);
       }
+      setLeaderboardLoading(false);
     };
 
     fetchLeaderboardData();
@@ -463,7 +471,13 @@ const Dashboard = () => {
                 📅 Upcoming Sessions
               </h2>
 
-              {upcomingSessions.length > 0 ? (
+              {sessionsLoading ? (
+                <div className="space-y-4">
+                  {[1, 2].map((i) => (
+                    <Skeleton key={i} className="h-24 w-full rounded-2xl bg-white/10" />
+                  ))}
+                </div>
+              ) : upcomingSessions.length > 0 ? (
                 upcomingSessions.map((s) => (
                   <SessionCard key={s.id} session={s} />
                 ))
@@ -481,55 +495,63 @@ const Dashboard = () => {
                 👥 Recommended Peers
               </h2>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {recommendedPeers.map((p, i) => (
-                  <div
-                      key={p.id}
-                      className="rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-slate-900/70 to-slate-800/40 p-5 backdrop-blur-xl"
-                    >
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-white">
-                          {p.name}
-                        </h3>
-
-                        <div className="rounded-full bg-cyan-500/20 px-3 py-1 text-sm font-semibold text-cyan-300">
-                         {p.matchScore}% •{" "}
-                          {p.matchScore >= 90
-                            ? "Perfect Match"
-                            : p.matchScore >= 70
-                            ? "Strong Match"
-                            : p.matchScore >= 50
-                            ? "Good Match"
-                            : "Compatible"}
-                        </div>
-                      </div>
-
-                      <p className="mt-2 text-sm text-slate-400">
-                        🤖 Smart AI matching based on skills, learning goals,
-                        interests, timezone compatibility, and learning style.
-                      </p>
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {p.skills?.slice(0, 4).map((skill: string, idx: number) => (
-                          <span
-                            key={idx}
-                            className="rounded-full bg-purple-500/20 px-3 py-1 text-xs text-purple-300"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-
-                      <button
-                        onClick={() => handleConnect(p.id)}
-                        disabled={connectedPeerIds.has(p.id)}
-                        className="mt-5 w-full rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-3 font-semibold text-slate-900 transition hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
+              {peersLoading ? (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {[1, 2].map((i) => (
+                    <Skeleton key={i} className="h-48 rounded-3xl bg-white/10" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {recommendedPeers.map((p, i) => (
+                    <div
+                        key={p.id}
+                        className="rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-slate-900/70 to-slate-800/40 p-5 backdrop-blur-xl"
                       >
-                        {connectedPeerIds.has(p.id) ? "Pending" : "Connect with Peer"}
-                      </button>
-                    </div>
-                ))}
-              </div>
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-white">
+                            {p.name}
+                          </h3>
+
+                          <div className="rounded-full bg-cyan-500/20 px-3 py-1 text-sm font-semibold text-cyan-300">
+                           {p.matchScore}% •{" "}
+                            {p.matchScore >= 90
+                              ? "Perfect Match"
+                              : p.matchScore >= 70
+                              ? "Strong Match"
+                              : p.matchScore >= 50
+                              ? "Good Match"
+                              : "Compatible"}
+                          </div>
+                        </div>
+
+                        <p className="mt-2 text-sm text-slate-400">
+                          🤖 Smart AI matching based on skills, learning goals,
+                          interests, timezone compatibility, and learning style.
+                        </p>
+
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {p.skills?.slice(0, 4).map((skill: string, idx: number) => (
+                            <span
+                              key={idx}
+                              className="rounded-full bg-purple-500/20 px-3 py-1 text-xs text-purple-300"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+
+                        <button
+                          onClick={() => handleConnect(p.id)}
+                          disabled={connectedPeerIds.has(p.id)}
+                          className="mt-5 w-full rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-3 font-semibold text-slate-900 transition hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {connectedPeerIds.has(p.id) ? "Pending" : "Connect with Peer"}
+                        </button>
+                      </div>
+                  ))}
+                </div>
+              )}
             </section>
           </div>
 
@@ -544,13 +566,16 @@ const Dashboard = () => {
               </h2>
 
               <div className="space-y-4">
-                {activityLoading && (
-                  <p className="text-sm text-slate-400">Loading activity…</p>
-                )}
-                {!activityLoading && activityFeed.length === 0 && (
+                {activityLoading ? (
+                  <>
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} className="h-16 w-full rounded-2xl bg-white/10" />
+                    ))}
+                  </>
+                ) : activityFeed.length === 0 ? (
                   <p className="text-sm text-slate-400">No recent activity yet.</p>
-                )}
-                {!activityLoading && activityFeed.map((item, i) => (
+                ) : (
+                  activityFeed.map((item, i) => (
                   <motion.div
                     key={i}
                     whileHover={{ x: 4 }}
@@ -578,20 +603,28 @@ const Dashboard = () => {
               </h2>
 
               <div className="space-y-3">
-                {leaderboard.map((u, i) => (
-                  <motion.div
-                    whileHover={{ scale: 1.02, x: 4 }}
-                    key={u.id}
-                    className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 p-4 relative overflow-hidden group"
-                  >
-                    <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl bg-gradient-to-b ${['from-yellow-400 to-amber-500','from-slate-400 to-slate-500','from-orange-600 to-amber-700','from-indigo-400 to-purple-400','from-cyan-400 to-indigo-400'][i]}`} />
-                    <div className="pl-3">
-                      <p className="font-medium text-white">#{i + 1} {u.name}</p>
-                      <span className="text-xs text-slate-400">Top Learner</span>
-                    </div>
-                    <div className="font-bold text-indigo-400">{u.points || 0} XP</div>
-                  </motion.div>
-                ))}
+                {leaderboardLoading ? (
+                  <>
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} className="h-16 w-full rounded-2xl bg-white/10" />
+                    ))}
+                  </>
+                ) : (
+                  leaderboard.map((u, i) => (
+                    <motion.div
+                      whileHover={{ scale: 1.02, x: 4 }}
+                      key={u.id}
+                      className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 p-4 relative overflow-hidden group"
+                    >
+                      <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl bg-gradient-to-b ${['from-yellow-400 to-amber-500','from-slate-400 to-slate-500','from-orange-600 to-amber-700','from-indigo-400 to-purple-400','from-cyan-400 to-indigo-400'][i]}`} />
+                      <div className="pl-3">
+                        <p className="font-medium text-white">#{i + 1} {u.name}</p>
+                        <span className="text-xs text-slate-400">Top Learner</span>
+                      </div>
+                      <div className="font-bold text-indigo-400">{u.points || 0} XP</div>
+                    </motion.div>
+                  ))
+                )}
               </div>
             </section>
           </div>
