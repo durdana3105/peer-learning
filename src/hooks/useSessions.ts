@@ -225,14 +225,23 @@ export function useSessions(user: any) {
       });
     }
 
-    await (supabase as any)
-      .from("messages")
-      .insert({
-        session_id: selectedSession.id,
-        user_id: user?.id,
-        username: user?.user_metadata?.full_name || "Anonymous",
-        message: msgText,
-      });
+    const { error: insertError } = await (supabase as any)
+    .from("messages")
+    .insert({
+      session_id: selectedSession.id,
+      user_id: user?.id,
+      username: user?.user_metadata?.full_name || "Anonymous",
+      message: msgText,
+    });
+  
+  if (insertError) {
+    console.error("sendMessage insert error:", insertError.message);
+    toast({
+      title: "Message failed",
+      description: "Your message could not be saved. Please try again.",
+      variant: "destructive",
+    });
+  }
   }, [selectedSession, user]);
 
   const sendTypingEvent = useCallback(() => {

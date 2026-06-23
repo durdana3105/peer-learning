@@ -4,6 +4,15 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
+const TESTIMONIALS = [
+  { text: "PeerLearn helped me crack my first internship interview.", name: "Aisha", role: "AIML Student", rating: 5 },
+  { text: "I started mentoring juniors and improved my communication skills.", name: "Rahul", role: "Senior Mentor", rating: 5 },
+  { text: "Found amazing teammates for hackathons and projects.", name: "John", role: "Web Developer", rating: 4 },
+  { text: "Built a polished project portfolio with mentor guidance.", name: "Maya", role: "Frontend Developer", rating: 5 },
+  { text: "Mentors gave real-world advice that helped my internship prep.", name: "Priya", role: "ML Intern", rating: 5 },
+  { text: "Great community for interview practice and study groups.", name: "Gautam", role: "DSA Enthusiast", rating: 4 },
+];
+
 export function Testimonials() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const testimonialAutoScrollRef = useRef<number | null>(null);
@@ -100,64 +109,7 @@ export function Testimonials() {
         className="no-scrollbar flex gap-8 overflow-x-auto py-2 md:py-0"
         style={{ scrollBehavior: "smooth" }}
       >
-        {[
-          {
-            text: "PeerLearn helped me crack my first internship interview.",
-            name: "Aisha",
-            role: "AIML Student",
-            rating: 5,
-          },
-          {
-            text: "I started mentoring juniors and improved my communication skills.",
-            name: "Rahul",
-            role: "Senior Mentor",
-            rating: 5,
-          },
-          {
-            text: "Found amazing teammates for hackathons and projects.",
-            name: "John",
-            role: "Web Developer",
-            rating: 4,
-          },
-          {
-            text: "Built a polished project portfolio with mentor guidance.",
-            name: "Maya",
-            role: "Frontend Developer",
-            rating: 5,
-          },
-          {
-            text: "Mentors gave real-world advice that helped my internship prep.",
-            name: "Priya",
-            role: "ML Intern",
-            rating: 5,
-          },
-          {
-            text: "Great community for interview practice and study groups.",
-            name: "Gautam",
-            role: "DSA Enthusiast",
-            rating: 4,
-          },
-
-          // duplicate for infinite loop
-          {
-            text: "PeerLearn helped me crack my first internship interview.",
-            name: "Aisha",
-            role: "AIML Student",
-            rating: 5,
-          },
-          {
-            text: "I started mentoring juniors and improved my communication skills.",
-            name: "Rahul",
-            role: "Senior Mentor",
-            rating: 5,
-          },
-          {
-            text: "Found amazing teammates for hackathons and projects.",
-            name: "John",
-            role: "Web Developer",
-            rating: 4,
-          },
-        ].map((t, i) => (
+        {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
           <motion.div
             key={`${t.name}-${i}`}
             whileHover={{ y: -10 }}
@@ -182,7 +134,7 @@ export function Testimonials() {
 
                 <p className="flex items-start gap-3 text-lg leading-9 text-slate-100/95">
                   <span className="text-3xl leading-none text-cyan-400/90">
-                    “
+                    "
                   </span>
 
                   <span>{t.text}</span>
