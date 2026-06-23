@@ -3,13 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAwardXP } from "@/hooks/useAwardXP";
 import { useToast } from "@/hooks/use-toast";
 import { API_BASE_URL } from "@/config/api";
-// UI tab labels don't match the DB's session status values, so each tab
-// must be translated to the status (or statuses) it represents before filtering.
-const TAB_TO_STATUS: Record<string, string[]> = {
-    Upcoming: ["scheduled"],
-    Joined: ["live"],
-    Completed: ["ended"],
-  };  
 
 export function useSessions(user: any) {
   const { mutate: awardXP } = useAwardXP();
@@ -72,11 +65,6 @@ export function useSessions(user: any) {
     filtered = filtered.filter((s) =>
       allowedStatuses.includes(s.status?.toLowerCase())
     );
-    const allowedStatuses = TAB_TO_STATUS[selectedTab] || [];
-        filtered = filtered.filter((s) =>
-          allowedStatuses.includes(s.status?.toLowerCase())
-        );
-  
 
     if (search) {
       filtered = filtered.filter(
