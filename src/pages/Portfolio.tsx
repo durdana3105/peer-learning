@@ -304,6 +304,7 @@ const Portfolio = () => {
       });
     }, 10_000);
 
+    try {
       const { error } = await (supabase as any)
         .from("portfolio_profiles")
         .upsert(payload, { onConflict: "profile_id" });
