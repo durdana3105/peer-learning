@@ -75,7 +75,7 @@ export function useChatbot() {
     setInput("");
     setLoading(true);
 
-    await supabase.from("chat_messages").insert([userMsg as any]);
+    await (supabase as any).from("chat_messages").insert([userMsg as any]);
 
     try {
       const formattedMessages = updatedMessages.map((msg) => ({
@@ -125,12 +125,12 @@ export function useChatbot() {
         });
       }
 
-      await supabase.from("chat_messages").insert([botMsg as any]);
+      await (supabase as any).from("chat_messages").insert([botMsg as any]);
     } catch (err) {
       console.error("Chatbot error:", err);
       const errorMsg: Message = { role: "assistant", text: "Something went wrong. Please try again.", user_id: userId };
       setMessages((prev) => [...prev, errorMsg]);
-      await supabase.from("chat_messages").insert([errorMsg as any]);
+      await (supabase as any).from("chat_messages").insert([errorMsg as any]);
     }
 
     setLoading(false);
