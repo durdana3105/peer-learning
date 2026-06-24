@@ -44,7 +44,7 @@ export function useChatbot() {
       const { data } = await supabase
         .from("chat_messages")
         .select("*")
-        .eq("user_id", session.user.id)
+        .eq("user_id" as any, session.user.id)
         .order("created_at", { ascending: true });
 
       if (data) setMessages(data as unknown as Message[]);
