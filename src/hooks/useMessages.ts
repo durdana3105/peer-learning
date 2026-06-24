@@ -68,20 +68,6 @@ const normalizeProfile = (row: ProfileRow | UserRow): ProfileSummary => ({
   last_seen: "last_seen" in row ? row.last_seen : null,
 });
 
-const mergeProfiles = (profiles: ProfileSummary[], users: UserRow[]) => {
-  const map = new Map<string, ProfileSummary>();
-
-  for (const user of users) {
-    map.set(user.id, normalizeProfile(user));
-  }
-
-  for (const profile of profiles) {
-    map.set(profile.id, profile);
-  }
-
-  return Array.from(map.values());
-};
-
 const isThreadMessage = (message: MessageRow, currentUserId: string, otherUserId: string) => {
   return (
     (message.sender_id === currentUserId && message.receiver_id === otherUserId) ||
@@ -181,39 +167,18 @@ export function useMessages(
       setError(null);
 
       try {
-        const [{ data: profileData, error: profileError }, { data: userData, error: userError }] =
-          await Promise.all([
-            supabase
-              .from("profiles")
-              .select("*")
-              .neq("id", currentUserId)
-              .order("name", { ascending: true })
-              .limit(100),
-            supabase
-              .from("profiles")
-              .select("*")
-              .neq("id", currentUserId)
-              .order("name", { ascending: true })
-              .limit(100),
-          ]);
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .neq("id", currentUserId)
+          .order("name", { ascending: true })
+          .limit(100);
 
-        const mergedUsers = mergeProfiles(
-          (profileData ?? []).map((row) => row as ProfileSummary),
-          (userData ?? []) as UserRow[]
-        );
+        const profiles = (profileData ?? []) as ProfileSummary[];
+        setProfiles(profiles);
 
-        if (mergedUsers.length > 0) {
-          setProfiles(mergedUsers);
-        } else {
-          setProfiles([]);
-        }
-
-        if (profileError && !userData?.length) {
+        if (profileError) {
           throw new Error(profileError.message);
-        }
-
-        if (userError && !profileData?.length) {
-          throw new Error(userError.message);
         }
       } catch (err: any) {
         logError(err, { context: "useMessages.getUsers" });
