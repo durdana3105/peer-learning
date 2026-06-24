@@ -2,12 +2,14 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Lock, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation("common");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +28,7 @@ const ForgotPassword = () => {
         setSubmitted(true);
       }
     } catch (error) {
-      setMessage("Something went wrong. Please try again.");
+      setMessage(t("forgotPassword.error"));
     } finally {
       setLoading(false);
     }
@@ -261,11 +263,10 @@ const ForgotPassword = () => {
                 <Lock size={30} />
               </div>
 
-              <h1 className="title">Forgot Password?</h1>
+              <h1 className="title">{t("forgotPassword.title")}</h1>
 
               <p className="subtitle">
-                No worries. Enter your email address and we'll send you a secure
-                password reset link.
+                {t("forgotPassword.subtitle")}
               </p>
 
               <form className="form" onSubmit={handleSubmit}>
@@ -275,7 +276,7 @@ const ForgotPassword = () => {
                   <input
                     type="email"
                     className="input"
-                    placeholder="Enter your email address"
+                    placeholder={t("forgotPassword.emailPlaceholder")}
                     value={email}
                     required
                     onChange={(e) => setEmail(e.target.value)}
@@ -283,7 +284,7 @@ const ForgotPassword = () => {
                 </div>
 
                 <button type="submit" className="button" disabled={loading}>
-                  {loading ? "Sending..." : "Send Reset Link"}
+                  {loading ? t("forgotPassword.sending") : t("forgotPassword.sendLink")}
                 </button>
               </form>
 
@@ -291,29 +292,28 @@ const ForgotPassword = () => {
 
               <Link to="/login" className="back-link">
                 <ArrowLeft size={16} />
-                Back to Login
+                {t("forgotPassword.backToLogin")}
               </Link>
             </>
           ) : (
             <div className="success-container">
               <div className="success-icon">✅</div>
 
-              <h2 className="success-title">Check Your Email</h2>
+              <h2 className="success-title">{t("forgotPassword.successTitle")}</h2>
 
               <p className="success-text">
-                We've sent a password reset link to:
+                {t("forgotPassword.successSubtitle1")}
               </p>
 
               <div className="email-highlight">{email}</div>
 
               <p className="success-text" style={{ marginTop: "15px" }}>
-                Please check your inbox (and spam folder) and follow the
-                instructions to reset your password.
+                {t("forgotPassword.successSubtitle2")}
               </p>
 
               <Link to="/login" className="back-link">
                 <ArrowLeft size={16} />
-                Return to Login
+                {t("forgotPassword.returnToLogin")}
               </Link>
             </div>
           )}

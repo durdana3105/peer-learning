@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { User, FileText, Code, Save, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useTranslation } from "react-i18next";
 
 interface ProfileState {
   name: string;
@@ -18,6 +19,7 @@ const EditProfile = () => {
   const [profile, setProfile] = useState<ProfileState | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const { t } = useTranslation("common");
 
   useEffect(() => {
     const getProfile = async () => {
@@ -55,11 +57,11 @@ const EditProfile = () => {
     if (!profile) return;
 
     if (profile.name?.length > 50) {
-      toast.error("Name must be less than 50 characters.");
+      toast.error(t("editProfile.errorNameLength"));
       return;
     }
     if (profile.bio?.length > 300) {
-      toast.error("Bio must be less than 300 characters.");
+      toast.error(t("editProfile.errorBioLength"));
       return;
     }
 
@@ -81,11 +83,11 @@ const EditProfile = () => {
         .eq("id", userId as string);
 
       if (error) throw error;
-      toast.success("Profile updated successfully!");
+      toast.success(t("editProfile.successMsg"));
       navigate("/profile");
     } catch (err: unknown) {
       console.error("Failed to update profile:", err);
-      toast.error("Error updating profile. Please try again.");
+      toast.error(t("editProfile.errorUpdate"));
     } finally {
       setIsSaving(false);
     }
@@ -125,12 +127,12 @@ const EditProfile = () => {
               className="mb-6 flex items-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Profile
+              {t("editProfile.back")}
             </button>
 
-            <h1 className="text-3xl font-bold text-white">Edit Profile</h1>
+            <h1 className="text-3xl font-bold text-white">{t("editProfile.title")}</h1>
             <p className="mt-1 text-sm text-slate-400">
-              Update your public profile information.
+              {t("editProfile.subtitle")}
             </p>
           </div>
 
@@ -141,10 +143,10 @@ const EditProfile = () => {
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm font-medium text-slate-300">
                 <User className="h-4 w-4 text-cyan-400" />
-                Full Name
+                {t("editProfile.fullName")}
               </label>
               <Input
-                placeholder="Your name"
+                placeholder={t("editProfile.namePlaceholder")}
                 value={profile.name}
                 onChange={(e) =>
                   setProfile({ ...profile, name: e.target.value })
@@ -153,7 +155,7 @@ const EditProfile = () => {
                 className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
               />
               <p className={`text-xs text-right ${nameCharsLeft <= 10 ? "text-amber-400" : "text-slate-500"}`}>
-                {nameCharsLeft} characters left
+                {t("editProfile.charsLeft", { count: nameCharsLeft })}
               </p>
             </div>
 
@@ -161,10 +163,10 @@ const EditProfile = () => {
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm font-medium text-slate-300">
                 <FileText className="h-4 w-4 text-cyan-400" />
-                Bio
+                {t("editProfile.bio")}
               </label>
               <textarea
-                placeholder="Tell others a little about yourself..."
+                placeholder={t("editProfile.bioPlaceholder")}
                 value={profile.bio}
                 onChange={(e) =>
                   setProfile({ ...profile, bio: e.target.value })
@@ -174,7 +176,7 @@ const EditProfile = () => {
                 className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
               />
               <p className={`text-xs text-right ${bioCharsLeft <= 30 ? "text-amber-400" : "text-slate-500"}`}>
-                {bioCharsLeft} characters left
+                {t("editProfile.charsLeft", { count: bioCharsLeft })}
               </p>
             </div>
 
@@ -182,17 +184,17 @@ const EditProfile = () => {
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm font-medium text-slate-300">
                 <Code className="h-4 w-4 text-cyan-400" />
-                Skills
+                {t("editProfile.skills")}
               </label>
               <Input
-                placeholder="e.g. React, Python, Machine Learning"
+                placeholder={t("editProfile.skillsPlaceholder")}
                 value={profile.skills}
                 onChange={(e) =>
                   setProfile({ ...profile, skills: e.target.value })
                 }
                 className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
               />
-              <p className="text-xs text-slate-500">Separate skills with commas.</p>
+              <p className="text-xs text-slate-500">{t("editProfile.skillsHelper")}</p>
             </div>
           </div>
 
@@ -210,12 +212,12 @@ const EditProfile = () => {
               {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving…
+                  {t("editProfile.saving")}
                 </>
               ) : (
                 <>
                   <Save className="mr-2 h-4 w-4" />
-                  Save Changes
+                  {t("editProfile.saveChanges")}
                 </>
               )}
             </Button>

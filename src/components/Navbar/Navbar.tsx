@@ -4,6 +4,7 @@ import { BookOpen, Menu, X } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useNavbarProfile } from "@/hooks/useNavbarProfile";
 import { ThemeToggle } from "./ThemeToggle";
+import { LanguageToggle } from "./LanguageToggle";
 import { DesktopNav } from "./DesktopNav";
 import { MobileNav } from "./MobileNav";
 import { UserMenu } from "./UserMenu";
@@ -58,6 +59,7 @@ export default function Navbar() {
 
         {/* RIGHT SECTION */}
         <div className="hidden items-center gap-4 md:flex">
+          <LanguageToggle />
           <ThemeToggle setTheme={setTheme} />
           <UserMenu
             user={user}

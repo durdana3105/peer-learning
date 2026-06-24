@@ -1,0 +1,68 @@
+{
+  "forgotPassword": {
+    "title": "Forgot Password?",
+    "subtitle": "No worries. Enter your email address and we'll send you a secure password reset link.",
+    "emailPlaceholder": "Enter your email address",
+    "sending": "Sending...",
+    "sendLink": "Send Reset Link",
+    "error": "Something went wrong. Please try again.",
+    "backToLogin": "Back to Login",
+    "successTitle": "Check Your Email",
+    "successSubtitle1": "We've sent a password reset link to:",
+    "successSubtitle2": "Please check your inbox (and spam folder) and follow the instructions to reset your password.",
+    "returnToLogin": "Return to Login"
+  },
+  "editProfile": {
+    "title": "Edit Profile",
+    "subtitle": "Update your public profile information.",
+    "back": "Back to Profile",
+    "fullName": "Full Name",
+    "namePlaceholder": "Your name",
+    "charsLeft": "{{count}} characters left",
+    "bio": "Bio",
+    "bioPlaceholder": "Tell others a little about yourself...",
+    "skills": "Skills",
+    "skillsPlaceholder": "e.g. React, Python, Machine Learning",
+    "skillsHelper": "Separate skills with commas.",
+    "saving": "Saving…",
+    "saveChanges": "Save Changes",
+    "successMsg": "Profile updated successfully!",
+    "errorNameLength": "Name must be less than 50 characters.",
+    "errorBioLength": "Bio must be less than 300 characters.",
+    "errorUpdate": "Error updating profile. Please try again."
+  },
+  "createSession": {
+    "title": "Schedule a Session",
+    "subtitle": "Pick a date & time at least 1 hour from now. Peers will see it in the calendar."
+  },
+  "chatbot": {
+    "title": "AI Assistant",
+    "typing": "AI is typing..."
+  },
+  "mentorForm": {
+    "basicInfoTitle": "Basic Information",
+    "fullNamePlaceholder": "Full Name",
+    "collegePlaceholder": "College Name",
+    "bioPlaceholder": "Short Bio",
+    "skillsTitle": "Skills & Expertise",
+    "addSkillPlaceholder": "Add custom skill...",
+    "addBtn": "Add",
+    "experienceTitle": "Experience",
+    "githubPlaceholder": "GitHub Profile",
+    "linkedinPlaceholder": "LinkedIn Profile",
+    "mentorshipTitle": "Mentorship Type",
+    "successTitle": "Application Submitted 🎉",
+    "successText": "Your mentor profile is now under review. Once approved, you can start conducting mentorship sessions on PeerLearn.",
+    "backBtn": "Back",
+    "continueBtn": "Continue",
+    "submitBtn": "Submit Application",
+    "submitting": "Submitting...",
+    "errorBasicInfo": "Please fill all basic information fields",
+    "errorSkills": "Please select at least one skill",
+    "errorExperience": "Please fill GitHub and LinkedIn profiles",
+    "errorMentorship": "Please select at least one mentorship type",
+    "errorLogin": "You must be logged in to submit an application.",
+    "errorGeneric": "Something went wrong!",
+    "errorTimeout": "Submission timed out. Please check your network and try again."
+  }
+}

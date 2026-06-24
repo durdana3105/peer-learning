@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { useCreateSession } from "@/hooks/useCreateSession";
 import { SessionForm } from "./SessionForm";
+import { useTranslation } from "react-i18next";
 
 interface CreateSessionDialogProps {
   onSessionCreated: () => void;
@@ -20,6 +21,7 @@ export function CreateSessionDialog({
   children,
 }: CreateSessionDialogProps) {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation("common");
 
   const {
     form,
@@ -40,11 +42,10 @@ export function CreateSessionDialog({
       <DialogContent className="sm:max-w-[480px] bg-[#0f172a] text-white border-white/10 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
-            Schedule a Session
+            {t("createSession.title")}
           </DialogTitle>
           <DialogDescription className="text-gray-400">
-            Pick a date &amp; time at least 1 hour from now. Peers will see it
-            in the calendar.
+            {t("createSession.subtitle")}
           </DialogDescription>
         </DialogHeader>
 
