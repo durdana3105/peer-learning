@@ -202,3 +202,50 @@ export const matchSchemas = {
     }),
   },
 };
+
+export const reviewSchemas = {
+  submitReview: {
+    body: z.object({
+      sessionId: z.string().trim().uuid("Invalid session ID format"),
+      rating: z.number().int().min(1, "Rating must be at least 1").max(5, "Rating cannot exceed 5"),
+      tags: z
+        .array(
+          z.preprocess(
+            (val) => {
+              if (typeof val !== "string") return val;
+              return val
+                .trim()
+                .replace(/<[^>]*>/g, "") // Strip HTML tags
+                .replace(/[^a-zA-Z0-9\s-\/]/g, "") // Keep alphanumeric, spaces, hyphens, slashes
+                .trim();
+            },
+            z.string()
+              .min(1, "Tag cannot be empty")
+              .max(50, "Tag must be at most 50 characters")
+          )
+        )
+        .default([])
+        .transform((tags) => {
+          const canonicalTags = [
+            "Clear Explanations",
+            "Knowledgeable",
+            "Patient",
+            "Friendly",
+            "Responsive",
+            "Average Experience",
+            "Unresponsive",
+            "Poor Communication",
+            "Technical Issues",
+            "Misleading Skills",
+          ];
+          return tags.map((tag) => {
+            const found = canonicalTags.find(
+              (ct) => ct.toLowerCase() === tag.toLowerCase()
+            );
+            return found || tag;
+          });
+        }),
+      comment: z.string().trim().max(300, "Comment must be at most 300 characters").optional().nullable(),
+    }),
+  },
+};

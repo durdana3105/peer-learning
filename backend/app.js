@@ -13,6 +13,7 @@ import uploadRoutes from "./routers/uploadRoutes.js";
 import cronRoutes from "./routers/cronRoutes.js";
 import notificationRoutes from "./routers/notificationRoutes.js";
 import userRoutes from "./routes/users.js";
+import reviewRoutes from "./routers/reviewRoutes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 
 const app = express();
@@ -102,6 +103,7 @@ app.use("/api/cron", cronRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

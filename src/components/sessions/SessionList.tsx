@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar, Users, Clock, Sparkles } from "lucide-react";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { generateICS } from "@/utils/calendar";
+import { FeedbackModal } from "./FeedbackModal";
 
 type SessionListProps = {
   filteredSessions: any[];
@@ -16,6 +18,9 @@ export function SessionList({
   setSelectedSession,
   handleJoinSession,
 }: SessionListProps) {
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [feedbackSessionId, setFeedbackSessionId] = useState("");
+  const [feedbackSessionTitle, setFeedbackSessionTitle] = useState("");
   return (
     <div className="grid gap-5">
       {filteredSessions.length > 0 ? (
@@ -87,19 +92,33 @@ export function SessionList({
 
             {/* BUTTONS */}
             <div className="flex gap-3">
-              <button
-                onClick={(e) => handleJoinSession(e, s.id)}
-                disabled={s.seat_limit && s.participants >= s.seat_limit}
-                className={`flex-1 text-black py-3 rounded-2xl font-bold transition ${
-                  s.seat_limit && s.participants >= s.seat_limit
-                    ? "bg-gray-500 cursor-not-allowed opacity-50"
-                    : "bg-gradient-to-r from-cyan-400 to-purple-500 hover:opacity-90"
-                }`}
-              >
-                {s.seat_limit && s.participants >= s.seat_limit
-                  ? "Session Full"
-                  : "Join Session"}
-              </button>
+              {s.status === "ended" || s.status === "completed" ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFeedbackSessionId(s.id);
+                    setFeedbackSessionTitle(s.title || "Untitled Session");
+                    setIsFeedbackOpen(true);
+                  }}
+                  className="flex-1 bg-gradient-to-r from-cyan-400 to-purple-500 hover:opacity-90 text-black py-3 rounded-2xl font-bold transition"
+                >
+                  Rate Peer
+                </button>
+              ) : (
+                <button
+                  onClick={(e) => handleJoinSession(e, s.id)}
+                  disabled={s.seat_limit && s.participants >= s.seat_limit}
+                  className={`flex-1 text-black py-3 rounded-2xl font-bold transition ${
+                    s.seat_limit && s.participants >= s.seat_limit
+                      ? "bg-gray-500 cursor-not-allowed opacity-50"
+                      : "bg-gradient-to-r from-cyan-400 to-purple-500 hover:opacity-90"
+                  }`}
+                >
+                  {s.seat_limit && s.participants >= s.seat_limit
+                    ? "Session Full"
+                    : "Join Session"}
+                </button>
+              )}
 
               <button
                 onClick={(e) => {
@@ -128,6 +147,12 @@ export function SessionList({
           <p className="text-gray-400">Try another tab or search.</p>
         </div>
       )}
+      <FeedbackModal
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+        sessionId={feedbackSessionId}
+        sessionTitle={feedbackSessionTitle}
+      />
     </div>
   );
 }

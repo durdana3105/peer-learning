@@ -12,6 +12,12 @@ export interface User {
   points: number;
   badges: string[];
   matchScore?: number;
+  trustScore?: number;
+  totalReviews?: number;
+  averageRating?: number;
+  positiveTagsCount?: number;
+  negativeTagsCount?: number;
+  mentorBadge?: string | null;
 }
 
 export interface Session {
@@ -36,3 +42,26 @@ export interface Message {
   timestamp: string;
   unread: number;
 }
+
+export interface SessionReview {
+  id: string;
+  sessionId: string;
+  reviewerId: string;
+  revieweeId: string;
+  rating: number;
+  tags: string[];
+  comment?: string | null;
+  createdAt: string;
+  reviewerName?: string;
+  reviewerAvatar?: string;
+}
+
+export interface TrustMetrics {
+  trustScore: number;
+  averageRating: number;
+  totalReviews: number;
+  positiveTagsCount: number;
+  negativeTagsCount: number;
+  mentorBadge: string | null;
+}
+

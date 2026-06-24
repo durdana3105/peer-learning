@@ -4,7 +4,9 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { fileTypeFromFile } from "file-type";
+import { getUserReviews, getUserTrustMetrics } from "../controllers/reviewController.js";
 import { requireAuth } from "../middlewares/requireAuth.js";
+import { rateLimiter } from "../middlewares/rateLimiter.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -93,5 +95,11 @@ router.post("/upload-photo", requireAuth, uploadProfilePhoto, async (req, res) =
     fileUrl: `/uploads/profiles/${req.file.filename}`
   });
 });
+
+// Fetch reviews for a specific user
+router.get("/:id/reviews", requireAuth, rateLimiter, getUserReviews);
+
+// Fetch trust metrics for a specific user
+router.get("/:id/trust-score", requireAuth, rateLimiter, getUserTrustMetrics);
 
 export default router;

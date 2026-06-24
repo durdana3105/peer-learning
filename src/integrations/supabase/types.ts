@@ -186,6 +186,61 @@ export type Database = {
           }
         ]
       }
+      session_reviews: {
+        Row: {
+          id: string
+          session_id: string
+          reviewer_id: string
+          reviewee_id: string
+          rating: number
+          tags: string[]
+          comment: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          session_id: string
+          reviewer_id: string
+          reviewee_id: string
+          rating: number
+          tags?: string[]
+          comment?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          session_id?: string
+          reviewer_id?: string
+          reviewee_id?: string
+          rating?: number
+          tags?: string[]
+          comment?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_reviews_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_reviews_reviewee_id_fkey"
+            columns: ["reviewee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
 
       chat_messages: {
         Row: {
@@ -303,6 +358,12 @@ export type Database = {
           availability: string | null
           preferred_language: string | null
           timezone: string | null
+          trust_score: number
+          total_reviews: number
+          average_rating: number
+          positive_tags_count: number
+          negative_tags_count: number
+          mentor_badge: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -331,6 +392,12 @@ export type Database = {
           availability?: string | null
           preferred_language?: string | null
           timezone?: string | null
+          trust_score?: number
+          total_reviews?: number
+          average_rating?: number
+          positive_tags_count?: number
+          negative_tags_count?: number
+          mentor_badge?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -359,6 +426,12 @@ export type Database = {
           availability?: string | null
           preferred_language?: string | null
           timezone?: string | null
+          trust_score?: number
+          total_reviews?: number
+          average_rating?: number
+          positive_tags_count?: number
+          negative_tags_count?: number
+          mentor_badge?: string | null
         }
         Relationships: []
       }

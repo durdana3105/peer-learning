@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
-import { resolve } from "path";
+import { readFileSync, existsSync } from "fs";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 
 /**
  * Documentation completeness smoke-tests.
@@ -11,9 +12,6 @@ import { resolve } from "path";
  * changes. Add a new assertion here whenever a new route is added to
  * cronRoutes.js or notificationRoutes.js.
  */
-
-import { fileURLToPath } from "url";
-import { dirname } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

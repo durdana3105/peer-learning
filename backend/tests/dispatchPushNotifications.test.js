@@ -37,6 +37,9 @@ const makeSupabaseMock = () => {
         _filters[`${col}__in`] = vals;
         return chain;
       },
+      or(expr) {
+        return chain;
+      },
       order() {
         return chain;
       },
@@ -125,7 +128,10 @@ const buildApp = async () => {
   const app = express();
   app.use(express.json());
   app.post("/dispatch", dispatchPushNotifications);
-  app.use((err, _req, res, _next) => res.status(500).json({ error: err.message }));
+  app.use((err, _req, res, _next) => {
+    console.error("TEST ERROR:", err);
+    return res.status(500).json({ error: err.message });
+  });
   return app;
 };
 
@@ -209,6 +215,9 @@ describe("dispatchPushNotifications — race condition", () => {
   // First call: subscription fetch fails → should 500
   const res1 = await request(app).post("/dispatch");
   expect(res1.status).toBe(500);
+
+  // Simulate stale claim timeout or rollback by clearing claimedIds in mock DB
+  claimedIds.clear();
 
   // Rows should still be pending (push_sent_at not set)
   const stillPending = dbRows.filter((r) => r.push_sent_at == null);

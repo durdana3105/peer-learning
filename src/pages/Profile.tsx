@@ -4,8 +4,9 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 
-import { Camera, Save, Sparkles, User, Flame, Zap, Trophy, Lock } from "lucide-react";
+import { Camera, Save, Sparkles, User, Flame, Zap, Trophy, Lock, Loader2 } from "lucide-react";
 import StreakStats from "@/components/StreakStats";
+import { safeFetchJson } from "@/lib/http";
 import { AvatarUpload } from "@/components/AvatarUpload";
 
 import {
@@ -39,37 +40,90 @@ const Profile = () => {
     level: 1,
     badge: "",
     achievements: [],
+    trustScore: 0,
+    totalReviews: 0,
+    averageRating: 0,
+    mentorBadge: null,
   });
+
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
 
   // FETCH PROFILE
   useEffect(() => {
-    const fetchProfile = async () => {
-      const { data } = await supabase.auth.getSession();
-
-      const user = data?.session?.user;
-
-      if (!user) return;
-
-      const { data: rawProfileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      const profileData = rawProfileData as any;
-
-      if (profileData) {
-        setProfile({
-          name: profileData.name || "",
-          bio: profileData.bio || "",
-          skills: profileData.skills?.join(", ") || "",
-          avatar_url: profileData.avatar_url || avatars[0],
-          streak: profileData.streak || 0,
-          xp: profileData.points || 0,
-          level: calculateLevel(profileData.points || 0),
-          badge: getBadgeByXP(profileData.points || 0),
-          achievements: getAchievements(profileData.points || 0),
+    const fetchReviews = async (uid: string, token: string) => {
+      setLoadingReviews(true);
+      try {
+        const data = await safeFetchJson<any[]>(`/api/users/${uid}/reviews`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
+        if (data) {
+          setReviews(data);
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch reviews:", err);
+        if (err.status === 401 || err.status === 403) {
+          toast.error("Your session has expired. Please log in again to view reviews.");
+        } else {
+          toast.error("Failed to load reviews.");
+        }
+      } finally {
+        setLoadingReviews(false);
+      }
+    };
+
+    const fetchProfile = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          toast.error("Failed to retrieve session: " + error.message);
+          return;
+        }
+
+        const session = data?.session;
+        const user = session?.user;
+
+        if (!user || !session) {
+          toast.error("You must be logged in to view your profile.");
+          return;
+        }
+
+        const { data: rawProfileData, error: profileErr } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (profileErr) {
+          toast.error("Failed to load profile data: " + profileErr.message);
+          return;
+        }
+
+        const profileData = rawProfileData as any;
+
+        if (profileData) {
+          setProfile({
+            name: profileData.name || "",
+            bio: profileData.bio || "",
+            skills: profileData.skills?.join(", ") || "",
+            avatar_url: profileData.avatar_url || avatars[0],
+            streak: profileData.streak || 0,
+            xp: profileData.points || 0,
+            level: calculateLevel(profileData.points || 0),
+            badge: getBadgeByXP(profileData.points || 0),
+            achievements: getAchievements(profileData.points || 0),
+            trustScore: profileData.trust_score || 0,
+            totalReviews: profileData.total_reviews || 0,
+            averageRating: profileData.average_rating || 0,
+            mentorBadge: profileData.mentor_badge || null,
+          });
+          fetchReviews(user.id, session.access_token);
+        }
+      } catch (err: any) {
+        console.error("Authentication or load error:", err);
+        toast.error("An error occurred loading profile: " + err.message);
       }
     };
 
@@ -307,6 +361,100 @@ if (profile.bio.length > MAX_BIO_CHARS) {
                 <p className="text-2xl font-bold text-cyan-300">Level {profile.level}</p>
               </div>
             </motion.div>
+          </div>
+
+          {/* TRUST METRICS STATS */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+            <motion.div
+              whileHover={{ scale: 1.03 }}
+              className="rounded-2xl border border-cyan-400/10 bg-cyan-500/5 p-5 text-center shadow-[0_0_15px_rgba(34,211,238,0.05)]"
+            >
+              <p className="text-sm text-gray-400 mb-1">⭐ Trust Score</p>
+              <p className="text-3xl font-extrabold text-cyan-300">{profile.trustScore ? profile.trustScore.toFixed(1) : "0.0"}</p>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.03 }}
+              className="rounded-2xl border border-cyan-400/10 bg-cyan-500/5 p-5 text-center shadow-[0_0_15px_rgba(234,179,8,0.05)]"
+            >
+              <p className="text-sm text-gray-400 mb-1">⭐ Avg Rating</p>
+              <p className="text-3xl font-extrabold text-yellow-400">{profile.averageRating ? profile.averageRating.toFixed(1) : "0.0"}</p>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.03 }}
+              className="rounded-2xl border border-cyan-400/10 bg-cyan-500/5 p-5 text-center shadow-[0_0_15px_rgba(147,51,234,0.05)]"
+            >
+              <p className="text-sm text-gray-400 mb-1">📈 Total Reviews</p>
+              <p className="text-3xl font-extrabold text-purple-400">{profile.totalReviews || 0}</p>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.03 }}
+              className="rounded-2xl border border-cyan-400/10 bg-cyan-500/5 p-5 text-center flex flex-col justify-center items-center"
+            >
+              <p className="text-sm text-gray-400 mb-1">🏅 Mentor Badge</p>
+              {profile.mentorBadge ? (
+                <span className="inline-flex items-center rounded-full bg-cyan-500/10 px-3 py-1 text-sm font-semibold text-cyan-300 border border-cyan-500/20">
+                  {profile.mentorBadge}
+                </span>
+              ) : (
+                <span className="text-sm text-gray-500 italic">None</span>
+              )}
+            </motion.div>
+          </div>
+
+          {/* RECENT REVIEWS */}
+          <div className="mt-12">
+            <div className="flex items-center gap-3 mb-6">
+              <Sparkles className="text-cyan-400" size={28} />
+              <h2 className="text-3xl font-bold">Recent Peer Reviews</h2>
+            </div>
+
+            {loadingReviews ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="animate-spin text-cyan-400" size={32} />
+              </div>
+            ) : reviews.length === 0 ? (
+              <div className="rounded-2xl border border-white/5 bg-white/5 p-8 text-center text-gray-400 italic">
+                No reviews submitted yet.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((review) => (
+                  <div key={review.id} className="rounded-2xl border border-white/10 bg-white/5 p-5 flex flex-col md:flex-row md:items-start gap-4 transition-all hover:bg-white/10">
+                    <img
+                      src={review.reviewerAvatar}
+                      alt={review.reviewerName}
+                      className="w-12 h-12 rounded-full border border-white/20 object-cover mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-bold text-slate-200">{review.reviewerName}</h4>
+                          <p className="text-xs text-slate-500">{new Date(review.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <div className="flex items-center gap-1 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full text-sm font-semibold">
+                          ★ {review.rating.toFixed(1)}
+                        </div>
+                      </div>
+                      {review.tags && review.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {review.tags.map((tag: string, i: number) => (
+                            <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-400/10 border border-cyan-400/20 text-cyan-300">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {review.comment && (
+                        <p className="mt-3 text-slate-300 text-sm italic">"{review.comment}"</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* TROPHY ROOM */}
