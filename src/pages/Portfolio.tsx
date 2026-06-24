@@ -107,6 +107,8 @@ const Portfolio = () => {
     return `${window.location.origin}/portfolio/${form.slug}`;
   }, [form.slug]);
 
+  // Fetch the user's profile and portfolio data on component mount.
+  // Includes a safety timeout and parallel data fetching to optimize performance.
   useEffect(() => {
     let isMounted = true;
     let timeout: NodeJS.Timeout;
@@ -236,6 +238,8 @@ const Portfolio = () => {
     }));
   };
 
+  // Saves the portfolio to the database via an upsert operation.
+  // Validates the uniqueness of the slug and uses a local timeout to prevent the UI from hanging on slow networks.
   const savePortfolio = async () => {
     if (!user) return;
 

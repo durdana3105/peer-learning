@@ -89,6 +89,13 @@ const isThreadMessage = (message: MessageRow, currentUserId: string, otherUserId
   );
 };
 
+/**
+ * Custom hook to manage real-time direct messages, online presence, and conversation threads.
+ * Connects to Supabase for initial data fetch and sets up PostgreSQL real-time listeners.
+ * 
+ * @param {string | null} [currentUserId] - The UUID of the currently authenticated user.
+ * @returns {UseMessagesResult} An object containing all conversation state and methods to interact with messages.
+ */
 export function useMessages(
   currentUserId?: string | null
 ): UseMessagesResult {
@@ -106,6 +113,8 @@ export function useMessages(
     return new Map(profiles.map((profile) => [profile.id, profile]));
   }, [profiles]);
 
+  // Memoized derivation of conversation summaries from the raw message list.
+  // Group messages by user and calculate unread counts and latest activity time.
   const conversationSummaries = useMemo<ConversationSummary[]>(() => {
     if (!currentUserId) return [];
 
@@ -231,6 +240,8 @@ export function useMessages(
     getUsers();
   }, [currentUserId]);
 
+  // Set up real-time listener for profile updates.
+  // This ensures the UI reflects name/avatar changes immediately across all clients.
   useEffect(() => {
     if (!currentUserId) return;
 
@@ -309,6 +320,8 @@ export function useMessages(
     loadMessages();
   }, [currentUserId]);
 
+  // Manage online presence using Supabase Presence.
+  // This tracks which users are currently viewing the app and listens for incoming real-time messages.
   useEffect(() => {
     if (!currentUserId) return;
 
