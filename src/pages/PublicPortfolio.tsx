@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { supabase } from "@/integrations/supabase/client";
+import { portfolioService } from "@/services/portfolioService";
 
 type Achievement = {
   title: string;
@@ -89,21 +89,7 @@ const PublicPortfolio = () => {
     setLoading(true);
 
     try {
-const { data: portfolioData, error: portfolioError } = await (supabase as any)
-  .from("portfolio_profiles")
-  .select(`
-    profile_id,
-    headline,
-    github_url,
-    linkedin_url,
-    skills,
-    achievements,
-    projects,
-    learning_progress
-  `)
-  .eq("slug", slug)
-  .eq("is_published", true)
-  .maybeSingle();
+      const { portfolioData, profileData, error: portfolioError } = await portfolioService.getPublicPortfolioBySlug(slug);
 
       if (portfolioError) {
         throw portfolioError;
@@ -115,35 +101,15 @@ const { data: portfolioData, error: portfolioError } = await (supabase as any)
         return;
       }
 
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select(`
-          name,
-          bio,
-          avatar_url,
-          badges,
-          points,
-          sessions_completed
-        `)
-        .eq("id", (portfolioData as any).profile_id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error("Profile query failed:", profileError);
-      }
-
-      const pd = portfolioData as any;
-      const progress = pd.learning_progress as Partial<LearningProgress> | null;
+      const progress = portfolioData.learning_progress as Partial<LearningProgress> | null;
 
       setPortfolio({
-        headline: pd.headline || "",
-        github_url: sanitizeUrl(pd.github_url),
-        linkedin_url: sanitizeUrl(pd.linkedin_url),
-        skills: pd.skills || [],
-        achievements: normalizeArray<Achievement>(
-          pd.achievements
-        ),
-        projects: normalizeArray<Project>(pd.projects).map((p: Project) => ({ ...p, url: sanitizeUrl(p.url) })),
+        headline: portfolioData.headline || "",
+        github_url: sanitizeUrl(portfolioData.github_url),
+        linkedin_url: sanitizeUrl(portfolioData.linkedin_url),
+        skills: portfolioData.skills || [],
+        achievements: normalizeArray<Achievement>(portfolioData.achievements),
+        projects: normalizeArray<Project>(portfolioData.projects).map(p => ({ ...p, url: sanitizeUrl(p.url) })),
         learning_progress: {
           focus:
             typeof progress?.focus === "string"
@@ -346,5 +312,3 @@ const { data: portfolioData, error: portfolioError } = await (supabase as any)
 };
 
 export default PublicPortfolio;
-
-// Fix for #1159: Refined typings

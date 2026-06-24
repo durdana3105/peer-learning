@@ -186,7 +186,56 @@ export type Database = {
           }
         ]
       }
-
+      portfolio_profiles: {
+        Row: {
+          profile_id: string
+          slug: string
+          headline: string | null
+          github_url: string | null
+          linkedin_url: string | null
+          skills: string[] | null
+          achievements: Json | null
+          projects: Json | null
+          learning_progress: Json | null
+          is_published: boolean
+          updated_at: string
+        }
+        Insert: {
+          profile_id: string
+          slug: string
+          headline?: string | null
+          github_url?: string | null
+          linkedin_url?: string | null
+          skills?: string[] | null
+          achievements?: Json | null
+          projects?: Json | null
+          learning_progress?: Json | null
+          is_published?: boolean
+          updated_at?: string
+        }
+        Update: {
+          profile_id?: string
+          slug?: string
+          headline?: string | null
+          github_url?: string | null
+          linkedin_url?: string | null
+          skills?: string[] | null
+          achievements?: Json | null
+          projects?: Json | null
+          learning_progress?: Json | null
+          is_published?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_profiles_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       chat_messages: {
         Row: {
           created_at: string

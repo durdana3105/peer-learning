@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { portfolioService } from "@/services/portfolioService";
 
 type Achievement = {
   title: string;
@@ -132,19 +132,7 @@ const Portfolio = () => {
       }, 10_000);
 
       try {
-          // Run both queries in parallel instead of sequentially
-        const [profileResult, portfolioResult] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("name, skills")
-            .eq("id", user.id)
-            .maybeSingle(),
-          (supabase as any)
-            .from("portfolio_profiles")
-            .select("*")
-            .eq("profile_id", user.id)
-            .maybeSingle(),
-        ]);
+        const { profileResult, portfolioResult } = await portfolioService.getPortfolioAndProfile(user.id);
 
         clearTimeout(timeout);
         if (!isMounted) return;
@@ -172,22 +160,21 @@ const Portfolio = () => {
         }
 
         if (portfolio) {
-          const p = portfolio as any;
-          const progress = p.learning_progress as Partial<LearningProgress> | null;
+          const progress = portfolio.learning_progress as Partial<LearningProgress> | null;
           setForm({
-            slug: p.slug,
-            headline: p.headline || "",
-            github_url: p.github_url || "",
-            linkedin_url: p.linkedin_url || "",
-            skills: normalizeList(p.skills).join(", "),
-            achievements: normalizeAchievements(p.achievements),
-            projects: normalizeProjects(p.projects),
+            slug: portfolio.slug,
+            headline: portfolio.headline || "",
+            github_url: portfolio.github_url || "",
+            linkedin_url: portfolio.linkedin_url || "",
+            skills: normalizeList(portfolio.skills).join(", "),
+            achievements: normalizeAchievements(portfolio.achievements),
+            projects: normalizeProjects(portfolio.projects),
             learning_progress: {
               focus: typeof progress?.focus === "string" ? progress.focus : "",
               completed: Number(progress?.completed || 0),
               goal: Number(progress?.goal || 100),
             },
-            is_published: p.is_published,
+            is_published: portfolio.is_published,
           });
         } else {
           setForm((current) => ({
@@ -251,11 +238,7 @@ const Portfolio = () => {
 
     setSaving(true);
 
-    const { data: existingSlugUser, error: slugCheckError } = await (supabase as any)
-      .from("portfolio_profiles")
-      .select("profile_id")
-      .eq("slug", slug)
-      .maybeSingle();
+    const { data: existingSlugUser, error: slugCheckError } = await portfolioService.getPortfolioSlugOwner(slug);
 
     if (slugCheckError) {
       setSaving(false);
@@ -267,7 +250,7 @@ const Portfolio = () => {
       return;
     }
 
-    if (existingSlugUser && (existingSlugUser as any).profile_id !== user.id) {
+    if (existingSlugUser && existingSlugUser.profile_id !== user.id) {
       setSaving(false);
       toast({
         title: "URL already taken",
@@ -304,9 +287,8 @@ const Portfolio = () => {
       });
     }, 10_000);
 
-      const { error } = await (supabase as any)
-        .from("portfolio_profiles")
-        .upsert(payload, { onConflict: "profile_id" });
+    try {
+      const { error } = await portfolioService.upsertPortfolio(payload);
 
       if (isTimeout) {
         console.warn("Portfolio save completed, but it already timed out locally.");
@@ -662,5 +644,3 @@ const Portfolio = () => {
 };
 
 export default Portfolio;
-
-// Fix for #1164: Added skeleton loading state

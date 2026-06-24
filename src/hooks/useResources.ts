@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { resourceService } from "@/services/resourceService";
 import { isAbortError, normalizeError, safeSupabaseCall } from "@/lib/http";
 import { logError } from "@/utils/logger";
 import type { Resource } from "@/types/resource";
@@ -54,11 +55,9 @@ export const useResources = (filters?: ResourceFilters) => {
           return;
         }
         
-        const { data: savedData, error: savedError } = await safeSupabaseCall(
-          () => (supabase as any).from("saved_resources").select("resource_id").eq("user_id", user.id).abortSignal(controller.signal)
+        const savedData = await safeSupabaseCall(
+          () => resourceService.getSavedResourceIds(user.id, controller.signal)
         );
-        
-        if (savedError) throw savedError;
         
         savedResourceIds =
           (savedData as SavedResource[] | null)?.map(
@@ -72,29 +71,8 @@ export const useResources = (filters?: ResourceFilters) => {
         }
       }
 
-      let query = supabase
-        .from("resources")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (filters?.search) {
-        query = query.ilike("title", `%${filters.search}%`);
-      }
-
-      if (filters?.tags && filters.tags.length > 0) {
-        query = query.overlaps("tags", filters.tags);
-      }
-
-      if (filters?.fileType) {
-        query = query.eq("file_type", filters.fileType);
-      }
-      
-      if (savedResourceIds && savedResourceIds.length > 0) {
-        query = query.in("id", savedResourceIds);
-      }
-
       const data = await safeSupabaseCall(
-        () => (query as any).abortSignal(controller.signal),
+        () => resourceService.getResources(filters, savedResourceIds, controller.signal),
         { fallbackMessage: "Unable to load resources." },
       );
 
@@ -102,7 +80,7 @@ export const useResources = (filters?: ResourceFilters) => {
         return;
       }
 
-      setResources((data || []) as Resource[]);
+      setResources((data || []) as unknown as Resource[]);
     } catch (caughtError) {
       if (!isMountedRef.current || requestId !== requestIdRef.current || controller.signal.aborted || isAbortError(caughtError)) {
         return;
