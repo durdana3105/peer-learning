@@ -589,3 +589,5 @@ export default Leaderboard;
 
 
 // Fix for #1165: Memoized expensive calculations
+
+// fix/skip-to-main-content
