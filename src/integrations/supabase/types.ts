@@ -189,45 +189,116 @@ export type Database = {
 
       chat_messages: {
         Row: {
+          id: string
+          user_id: string | null
+          role: string
+          text: string
           created_at: string
-          id: number
         }
         Insert: {
+          id?: string
+          user_id?: string | null
+          role: string
+          text: string
           created_at?: string
-          id?: number
         }
         Update: {
+          id?: string
+          user_id?: string | null
+          role?: string
+          text?: string
           created_at?: string
-          id?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       messages: {
         Row: {
-          content: string | null
-          created_at: string | null
           id: string
+          sender_id: string
           receiver_id: string | null
-          sender_id: string | null
+          conversation_id: string | null
+          content: string | null
           text: string | null
+          message: string | null
+          session_id: string | null
+          user_id: string | null
+          username: string | null
+          read_at: string | null
+          created_at: string
         }
         Insert: {
-          content?: string | null
-          created_at?: string | null
           id?: string
+          sender_id: string
           receiver_id?: string | null
-          sender_id?: string | null
+          conversation_id?: string | null
+          content?: string | null
           text?: string | null
+          message?: string | null
+          session_id?: string | null
+          user_id?: string | null
+          username?: string | null
+          read_at?: string | null
+          created_at?: string
         }
         Update: {
-          content?: string | null
-          created_at?: string | null
           id?: string
+          sender_id?: string
           receiver_id?: string | null
-          sender_id?: string | null
+          conversation_id?: string | null
+          content?: string | null
           text?: string | null
+          message?: string | null
+          session_id?: string | null
+          user_id?: string | null
+          username?: string | null
+          read_at?: string | null
+          created_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "messages_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       leaderboard: {
         Row: {
@@ -367,33 +438,44 @@ export type Database = {
           id: string
           title: string
           description: string | null
-          url: string
+          file_url: string
           tags: string[] | null
           file_type: string
-          user_id: string
+          file_size: number | null
+          uploaded_by: string | null
           created_at: string
         }
         Insert: {
           id?: string
           title: string
           description?: string | null
-          url: string
+          file_url: string
           tags?: string[] | null
           file_type: string
-          user_id: string
+          file_size?: number | null
+          uploaded_by?: string | null
           created_at?: string
         }
         Update: {
           id?: string
           title?: string
           description?: string | null
-          url?: string
+          file_url?: string
           tags?: string[] | null
           file_type?: string
-          user_id?: string
+          file_size?: number | null
+          uploaded_by?: string | null
           created_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "resources_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       resource_votes: {
         Row: {
@@ -440,6 +522,62 @@ export type Database = {
         }
         Relationships: []
       }
+      portfolio_profiles: {
+        Row: {
+          id: string
+          profile_id: string
+          slug: string
+          headline: string
+          github_url: string
+          linkedin_url: string
+          skills: string[]
+          achievements: Json
+          projects: Json
+          learning_progress: Json
+          is_published: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          slug: string
+          headline?: string
+          github_url?: string
+          linkedin_url?: string
+          skills?: string[]
+          achievements?: Json
+          projects?: Json
+          learning_progress?: Json
+          is_published?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          slug?: string
+          headline?: string
+          github_url?: string
+          linkedin_url?: string
+          skills?: string[]
+          achievements?: Json
+          projects?: Json
+          learning_progress?: Json
+          is_published?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_profiles_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       study_rooms: {
         Row: {
           id: string
@@ -447,6 +585,10 @@ export type Database = {
           created_by: string | null
           created_at: string
           is_private: boolean
+          timer_state: string | null
+          timer_end_time: string | null
+          timer_work_duration: number | null
+          timer_break_duration: number | null
         }
         Insert: {
           id?: string
@@ -454,6 +596,10 @@ export type Database = {
           created_by?: string | null
           created_at?: string
           is_private?: boolean
+          timer_state?: string | null
+          timer_end_time?: string | null
+          timer_work_duration?: number | null
+          timer_break_duration?: number | null
         }
         Update: {
           id?: string
@@ -461,6 +607,10 @@ export type Database = {
           created_by?: string | null
           created_at?: string
           is_private?: boolean
+          timer_state?: string | null
+          timer_end_time?: string | null
+          timer_work_duration?: number | null
+          timer_break_duration?: number | null
         }
         Relationships: [
           {

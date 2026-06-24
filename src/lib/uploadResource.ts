@@ -107,11 +107,12 @@ export const uploadResource = async (
   }
 
   try {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("resources")
       .insert({
         title,
         description,
+  
         file_url: filePath,
         file_type: fileType,
         file_size: file.size,

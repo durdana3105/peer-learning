@@ -21,7 +21,7 @@ export const deleteResource = async (
     // Fetch the resource and verify ownership in a single query.
     // The .eq("uploaded_by", user.id) ensures we only find rows the caller owns,
     // preventing deletion of another user's resource.
-    const { data: resource, error: fetchError } = await (supabase as any)
+    const { data: resource, error: fetchError } = await supabase
       .from("resources")
       .select("id, file_url")
       .eq("id", resourceId)
@@ -36,16 +36,16 @@ export const deleteResource = async (
     // to prevent mismatched storage/DB deletions.
     const { error: storageError } = await supabase.storage
       .from("resources")
-      .remove([(resource as any).file_url]);
+      .remove([resource.file_url]);
 
     if (storageError) {
       return { success: false, error: storageError.message };
     }
 
-    const { error: deleteError } = await (supabase as any)
+    const { error: deleteError } = await supabase
       .from("resources")
       .delete()
-      .eq("id", (resource as any).id);
+      .eq("id", resource.id);
 
     if (deleteError) {
       return { success: false, error: deleteError.message };
@@ -57,5 +57,3 @@ export const deleteResource = async (
     return { success: false, error: err.message || "An unexpected error occurred while deleting the resource." };
   }
 };
-
-// Fix for #1160: Added error toasts

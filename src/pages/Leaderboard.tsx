@@ -160,7 +160,7 @@ const Leaderboard = () => {
 
     // Fetch total learner count efficiently (head-only count)
     const { count } = await supabase
-      .from("leaderboard" as any)
+      .from("leaderboard")
       .select("*", { count: "exact", head: true });
 
     setTotalLearners(count || 0);
@@ -169,18 +169,18 @@ const Leaderboard = () => {
     if (user) {
       // Get the current user's entry
       const { data: myData } = await supabase
-        .from("leaderboard" as any)
+        .from("leaderboard")
         .select("*")
         .eq("user_id", user.id)
         .single();
 
       if (myData) {
         const enrichedEntry = {
-          ...(myData as Record<string, any>),
+          ...myData,
           badges:
-            (myData as any).badges && (myData as any).badges.length > 0
-              ? (myData as any).badges
-              : [getBadgeByXP((myData as any).xp)],
+            myData.badges && myData.badges.length > 0
+              ? myData.badges
+              : [getBadgeByXP(myData.xp)],
         } as LeaderboardEntry;
 
         setMyEntry(enrichedEntry);
@@ -587,5 +587,3 @@ const Leaderboard = () => {
 
 export default Leaderboard;
 
-
-// Fix for #1165: Memoized expensive calculations
