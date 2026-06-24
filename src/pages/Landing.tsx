@@ -1,5 +1,5 @@
 import { motion, useScroll } from "framer-motion";
-import { ChevronDown, Sparkles } from "lucide-react";
+import { ChevronDown, Sparkles, Linkedin, Github, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -187,11 +187,11 @@ export default function Landing() {
       ))}
 
       <Hero streak={streak} />
-      
+
       <Features />
-      
+
       <Communities />
-      
+
       <Testimonials />
 
       {/* CTA */}
@@ -230,7 +230,10 @@ export default function Landing() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="container relative mx-auto max-w-6xl px-6 py-24">
+      <section
+        id="faq"
+        className="container relative mx-auto max-w-6xl px-6 py-24"
+      >
         <div className="pointer-events-none absolute inset-x-6 top-12 -z-10 h-40 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="pointer-events-none absolute right-10 top-28 -z-10 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl" />
         <div className="pointer-events-none absolute left-16 bottom-24 -z-10 h-36 w-36 rounded-full bg-indigo-500/10 blur-3xl" />
@@ -287,7 +290,10 @@ export default function Landing() {
                     {item.q}
                   </span>
                   <motion.span
-                    animate={{ rotate: open === i ? 180 : 0, scale: open === i ? 1.08 : 1 }}
+                    animate={{
+                      rotate: open === i ? 180 : 0,
+                      scale: open === i ? 1.08 : 1,
+                    }}
                     transition={{ type: "spring", stiffness: 260, damping: 20 }}
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-300 ${
                       open === i
@@ -376,6 +382,39 @@ export default function Landing() {
             >
               Cookie Settings
             </button>
+          </div>
+
+          <div className="flex items-center gap-6">
+            <a
+              href="https://github.com/durdana3105"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="GitHub"
+              title="GitHub"
+              className="text-slate-400 transition-all duration-300 hover:scale-110 hover:text-cyan-400"
+            >
+              <Github className="h-5 w-5" />
+            </a>
+
+            <a
+              href="https://www.linkedin.com/in/durdana-sultana-499464294"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="LinkedIn"
+              title="LinkedIn"
+              className="text-slate-400 transition-all duration-300 hover:scale-110 hover:text-cyan-400"
+            >
+              <Linkedin className="h-5 w-5" />
+            </a>
+
+            <a
+              href="mailto:durdanasultana06@gmail.com"
+              aria-label="Email"
+              title="Email"
+              className="text-slate-400 transition-all duration-300 hover:scale-110 hover:text-cyan-400"
+            >
+              <Mail className="h-5 w-5" />
+            </a>
           </div>
 
           <div className="text-slate-500">© 2026 PeerLearn</div>
