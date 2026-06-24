@@ -90,39 +90,10 @@ export function Testimonials() {
       skills: ["LeetCode", "Competitive Programming"],
       outcome: "First Open Source Contribution",
     },
-
-    // Duplicates for seamless infinite loop
-    {
-      text: "PeerLearn helped me crack my first internship interview.",
-      name: "Aisha Khan",
-      role: "AIML Student",
-      rating: 5,
-      avatar: "https://i.pravatar.cc/150?img=32",
-      verified: true,
-      skills: ["Machine Learning", "Python", "DSA"],
-      outcome: "Secured Internship at Google",
-    },
-    {
-      text: "I started mentoring juniors and improved my communication skills.",
-      name: "Rahul Sharma",
-      role: "Senior Mentor",
-      rating: 5,
-      avatar: "https://i.pravatar.cc/150?img=64",
-      verified: true,
-      skills: ["Mentoring", "System Design", "Leadership"],
-      outcome: "Became a Top-Rated Mentor",
-    },
-    {
-      text: "Found amazing teammates for hackathons and projects.",
-      name: "John Patel",
-      role: "Web Developer",
-      rating: 4,
-      avatar: "https://i.pravatar.cc/150?img=45",
-      verified: true,
-      skills: ["React", "Next.js", "Tailwind"],
-      outcome: "Won 2 Hackathons",
-    },
   ];
+
+  // Duplicate the source list so the carousel can loop seamlessly. The scroll loop relies on this being an exact doubling (it wraps at scrollWidth / 2).
+  const carouselItems = [...testimonials, ...testimonials];
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -179,7 +150,7 @@ export function Testimonials() {
         className="no-scrollbar flex gap-8 overflow-x-auto py-2 md:py-0"
         style={{ scrollBehavior: "smooth" }}
       >
-        {testimonials.map((t, i) => (
+        {carouselItems.map((t, i) => (
           <motion.div
             key={`${t.name}-${i}`}
             whileHover={{ y: -10 }}

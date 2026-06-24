@@ -22,8 +22,7 @@ export function useNavbarProfile() {
         .single();
 
       if (profile) {
-        // @ts-expect-error TODO: refine typing
-        setProfileName(profile.name);
+        setProfileName(profile.name as string);
       }
 
       setIsAdmin(false);
