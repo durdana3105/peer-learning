@@ -41,13 +41,13 @@ export function useChatbot() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("chat_messages")
         .select("*")
         .eq("user_id", session.user.id)
         .order("created_at", { ascending: true });
 
-      if (data) setMessages(data as Message[]);
+      if (data) setMessages(data as any as Message[]);
     };
     loadChats();
   }, []);
@@ -60,7 +60,7 @@ export function useChatbot() {
     if (!session?.user) return;
 
     const userId = session.user.id;
-    const userMsg = { role: "user", text: input, user_id: userId };
+    const userMsg: Message = { role: "user", text: input, user_id: userId };
 
     const updatedMessages = [...messages, userMsg];
 
@@ -68,7 +68,7 @@ export function useChatbot() {
     setInput("");
     setLoading(true);
 
-    await supabase.from("chat_messages").insert([userMsg]);
+    await (supabase as any).from("chat_messages").insert([userMsg as any]);
 
     try {
       const formattedMessages = updatedMessages.map((msg) => ({
@@ -94,7 +94,7 @@ export function useChatbot() {
 
       const data = await res.json();
       const botReply = data?.answer || "No response 😅";
-      const botMsg = { role: "assistant", text: botReply, user_id: userId };
+      const botMsg: Message = { role: "assistant", text: botReply, user_id: userId };
 
       // Smoother typing effect (chunked rendering)
       let currentText = "";
@@ -118,12 +118,12 @@ export function useChatbot() {
         });
       }
 
-      await supabase.from("chat_messages").insert([botMsg]);
+      await (supabase as any).from("chat_messages").insert([botMsg as any]);
     } catch (err) {
       console.error("Chatbot error:", err);
-      const errorMsg = { role: "assistant", text: "Something went wrong. Please try again.", user_id: userId };
+      const errorMsg: Message = { role: "assistant", text: "Something went wrong. Please try again.", user_id: userId };
       setMessages((prev) => [...prev, errorMsg]);
-      await supabase.from("chat_messages").insert([errorMsg]);
+      await (supabase as any).from("chat_messages").insert([errorMsg as any]);
     }
 
     setLoading(false);

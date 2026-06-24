@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import { Link } from "react-router-dom";
 import { BookOpen, Menu, X } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -8,21 +8,19 @@ import { DesktopNav } from "./DesktopNav";
 import { MobileNav } from "./MobileNav";
 import { UserMenu } from "./UserMenu";
 
-export default function Navbar() {
+const Navbar = memo(function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, profileName, isAdmin, handleLogout } = useNavbarProfile();
   const { setTheme } = useTheme();
 
-  const handleMobileMenuToggle = () => {
-    setMobileOpen((prev) => !prev);
-  };
+  const toggleMobileMenu = useCallback(() => setMobileOpen((prev) => !prev), []);
 
   const handleMobileMenuKeyDown = (
     event: React.KeyboardEvent<HTMLButtonElement>
   ) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      handleMobileMenuToggle();
+      toggleMobileMenu();
     }
 
     if (event.key === "Escape" && mobileOpen) {
@@ -68,7 +66,7 @@ export default function Navbar() {
 
         {/* MOBILE BUTTON */}
         <button
-          onClick={handleMobileMenuToggle}
+          onClick={toggleMobileMenu}
           onKeyDown={handleMobileMenuKeyDown}
           className="rounded-lg border border-white/10 bg-white/5 p-3 text-white md:hidden active:scale-95"
           aria-label={
@@ -96,4 +94,6 @@ export default function Navbar() {
       )}
     </nav>
   );
-}
+});
+
+export default Navbar;

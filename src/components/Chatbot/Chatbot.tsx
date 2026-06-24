@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useChatbot } from "@/hooks/useChatbot";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
@@ -8,11 +8,13 @@ export default function Chatbot() {
   const { messages, input, setInput, loading, chatEndRef, sendMessage } =
     useChatbot();
 
+  const toggleChat = useCallback(() => setIsOpen((prev) => !prev), []);
+
   return (
     <>
       {/* 💬 Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleChat}
         aria-label="Open AI Assistant"
         title="Open AI Assistant"
         className="fixed bottom-5 left-5 z-[10000] bg-black text-white p-4 rounded-full shadow-xl hover:scale-110 transition"
@@ -35,7 +37,7 @@ export default function Chatbot() {
             </span>
 
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={toggleChat}
               aria-label="Close AI Assistant"
               title="Close AI Assistant"
             >
