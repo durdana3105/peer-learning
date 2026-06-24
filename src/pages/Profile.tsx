@@ -396,3 +396,5 @@ const Profile = () => {
 };
 
 export default Profile;
+
+// feat/sync-theme-supabase
