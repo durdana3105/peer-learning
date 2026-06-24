@@ -37,6 +37,17 @@ const AIPage = () => {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setMessages((prev: any) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "Please log in to use the AI assistant. 🔐",
+          },
+        ]);
+        setLoading(false);
+        return;
+      }
       
       const formattedMessages = [...messages, userMessage].map((msg: any) => ({
         role: msg.role,

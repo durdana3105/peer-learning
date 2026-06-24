@@ -85,9 +85,10 @@ const apiLimiter = rateLimit({
 // Stricter rate limiter for AI to prevent OPENROUTER_API_KEY exhaustion
 const aiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // limit each IP to 20 AI requests per windowMs
+  max: 10, // limit each IP to 10 AI requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
+  message: { error: "Too many AI requests from this IP, please try again after 15 minutes" }
 });
 
 app.use("/api", apiLimiter);

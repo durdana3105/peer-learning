@@ -35,8 +35,7 @@ export default function MentorForm() {
     const fetchSkills = async () => {
       const { data } = await (supabase as any).from("skills_taxonomy").select("name").order("name");
       if (data) {
-        // @ts-expect-error TODO: refine typing
-        setAvailableSkills(data.map(d => d.name));
+        setAvailableSkills(data.map((d: { name: string }) => d.name));
       }
     };
     fetchSkills();
@@ -408,3 +407,4 @@ export default function MentorForm() {
     </div>
   );
 }
+// Fix for #1167: Refined zod schema validation

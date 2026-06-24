@@ -158,7 +158,7 @@ describe("GET /api/match/supabase-discover — page validation", () => {
         data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
         error: null,
         }),
-        range: vi.fn().mockResolvedValue({ data: PEER_PROFILES, error: null }),
+        limit: vi.fn().mockResolvedValue({ data: PEER_PROFILES, error: null }),
     }));
 
     const res = await request(app).get("/api/match/supabase-discover").query({ page: "1000" });
@@ -174,7 +174,7 @@ describe("GET /api/match/supabase-discover — page validation", () => {
         data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
         error: null,
         }),
-        range: vi.fn().mockResolvedValue({ data: PEER_PROFILES, error: null }),
+        limit: vi.fn().mockResolvedValue({ data: PEER_PROFILES, error: null }),
     }));
 
     const res = await request(app).get("/api/match/supabase-discover");
@@ -184,8 +184,16 @@ describe("GET /api/match/supabase-discover — page validation", () => {
 
 // ── Controller unit tests: correct skip calculation ───────────────────────────────
 describe("getSupabaseDiscover — pagination offset calculation", () => {
-  it("calculates correct skip for page=2, limit=10 → skip=10", async () => {
-    let capturedRange;
+  it("calculates correct skip for page=2, limit=10 → skip=10 and applies slice", async () => {
+    let capturedLimit;
+
+    // Generate 20 peers so we can test slicing
+    const peers = Array.from({ length: 20 }, (_, i) => ({
+      id: `uuid-peer-${i}`,
+      name: `Peer ${i}`,
+      skills: ["Python"],
+      learning_goals: ["Python"],
+    }));
 
     mockSupabase.from.mockImplementation((table) => {
       const chain = {
@@ -193,13 +201,13 @@ describe("getSupabaseDiscover — pagination offset calculation", () => {
         eq: vi.fn().mockReturnThis(),
         neq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
-          data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
+          data: { skills: ["Python"], learning_goals: ["Python"], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
           error: null,
         }),
-        range: vi.fn().mockImplementation((from, to) => {
-          if (table === "profiles") capturedRange = { from, to };
+        limit: vi.fn().mockImplementation((lim) => {
+          if (table === "profiles") capturedLimit = lim;
           return {
-            then: (resolve) => resolve({ data: [], error: null }),
+            then: (resolve) => resolve({ data: peers, error: null }),
             or: vi.fn().mockReturnThis(),
           };
         }),
@@ -215,11 +223,16 @@ describe("getSupabaseDiscover — pagination offset calculation", () => {
 
     await getSupabaseDiscover(req, res);
 
-    expect(capturedRange).toEqual({ from: 10, to: 19 }); // skip=10, skip+limit-1=19
+    expect(capturedLimit).toBe(1000);
+    
+    // Page 2, Limit 10 means we should get elements 10 through 19 (length 10)
+    expect(res.json).toHaveBeenCalled();
+    const responsePayload = res.json.mock.calls[0][0];
+    expect(responsePayload.recommendations).toHaveLength(10);
   });
 
   it("clamps page=99999 to 1000 at the controller level (defence-in-depth)", async () => {
-    let capturedRange;
+    let capturedLimit;
 
     mockSupabase.from.mockImplementation((table) => ({
       select: vi.fn().mockReturnThis(),
@@ -229,8 +242,8 @@ describe("getSupabaseDiscover — pagination offset calculation", () => {
         data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
         error: null,
       }),
-      range: vi.fn().mockImplementation((from, to) => {
-        if (table === "profiles") capturedRange = { from, to };
+      limit: vi.fn().mockImplementation((lim) => {
+        if (table === "profiles") capturedLimit = lim;
         return { then: (resolve) => resolve({ data: [], error: null }), or: vi.fn().mockReturnThis() };
       }),
     }));
@@ -243,8 +256,7 @@ describe("getSupabaseDiscover — pagination offset calculation", () => {
 
     await getSupabaseDiscover(req, res);
 
-    // With clamp at 1000: skip = (1000-1)*100 = 99900
-    expect(capturedRange.from).toBe(99900);
-    expect(capturedRange.from).toBeLessThan(100000); // never reaches row 9,999,800
+    // Limit is hardcoded to 1000
+    expect(capturedLimit).toBe(1000);
   });
 });

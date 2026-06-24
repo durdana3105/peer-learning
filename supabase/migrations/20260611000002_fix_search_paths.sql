@@ -1,0 +1,1 @@
+CREATE OR REPLACE FUNCTION get_badge(xp INT) RETURNS text LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$ BEGIN RETURN 'beginner'; END; $$;

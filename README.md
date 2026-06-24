@@ -434,13 +434,13 @@ A: Clone the repo, install dependencies, copy `.env.example` to `.env`, fill in 
 ```bash
 git clone https://github.com/durdana3105/peer-learning.git
 cd peer-learning
-bun install
+npm install
 cp .env.example .env
 # Update .env with your Supabase values
-bun run dev
+npm run dev
 ```
 
-If you do not use Bun, `npm install` and `npm run dev` are valid alternatives.
+> **Note:** This project standardizes on **npm**. The committed lockfile is `package-lock.json`, and CI/deployment run `npm ci`. Please do not commit lockfiles from other package managers (e.g. `bun.lock`, `bun.lockb`, `yarn.lock`, `pnpm-lock.yaml`).
 
 ### Q: What environment variables are required?
 A: Your frontend needs `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (or supported aliases such as `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
@@ -453,7 +453,7 @@ A: Create a Supabase project and copy the project URL and anon key into `.env`. 
 ### Q: How can I deploy this project?
 A: This repository is configured for Vercel deployment. Deploy the frontend and backend to Vercel, then add the same Supabase environment variables to your Vercel project settings.
 
-For local deployment, ensure your `.env` variables are correct and run `bun run dev` for development or `bun run build` then `bun run preview` for production preview.
+For local deployment, ensure your `.env` variables are correct and run `npm run dev` for development or `npm run build` then `npm run preview` for production preview.
 
 ### Q: Why does authentication fail even though I set up Supabase?
 A: Common causes:
@@ -466,8 +466,8 @@ Verify the keys and URLs carefully in both Supabase and the app.
 ### Q: What should I do if the app still fails to start?
 A: Check these steps:
 - Confirm `.env.example` was copied to `.env` and values were filled.
-- Run `bun install` again after deleting `node_modules` if dependencies appear broken.
-- Make sure Node/Bun versions are compatible with the repo.
+- Run `npm install` again after deleting `node_modules` if dependencies appear broken.
+- Make sure your Node.js version is compatible with the repo (CI uses Node 20.x).
 - Look for console errors from the frontend or backend and verify the Supabase credentials.
 
 ---

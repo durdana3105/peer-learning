@@ -211,13 +211,21 @@ const RecommendationPanel = ({ profile, sessions }: RecommendationPanelProps) =>
           {Array.from({ length: 4 }).map((_, index) => (
             <Card key={index} className="border-white/10 bg-white/5">
               <CardContent className="space-y-4 p-5">
-                <Skeleton className="h-6 w-36" />
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                </div>
+
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-5/6" />
+
                 <div className="flex gap-2">
-                  <Skeleton className="h-8 w-24 rounded-full" />
-                  <Skeleton className="h-8 w-28 rounded-full" />
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                  <Skeleton className="h-6 w-14 rounded-full" />
                 </div>
+
+                <Skeleton className="h-10 w-full rounded-xl" />
               </CardContent>
             </Card>
           ))}
