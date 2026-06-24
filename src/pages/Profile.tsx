@@ -410,3 +410,5 @@ if (profile.bio.length > MAX_BIO_CHARS) {
 };
 
 export default Profile;
+
+// feat/sync-theme-supabase
