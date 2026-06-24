@@ -10,6 +10,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import { API_BASE_URL } from "@/config/api";
 const AnalyticsCharts = lazy(() => import("@/components/AnalyticsCharts"));
+import ProfileCompletionBar from "@/components/ProfileCompletionBar";
 
 interface Profile {
   id: string;
@@ -447,7 +448,19 @@ const Dashboard = () => {
           <AnalyticsCharts profile={profile} />
         </Suspense>
 
-        <RecommendationPanel profile={profile} sessions={upcomingSessions} />
+        {profile && (
+          <ProfileCompletionBar
+            profile={{
+              avatar_url: profile.avatar_url,
+              display_name: profile.name,
+              bio: profile.bio,
+              skills: profile.skills,
+              learning_preferences: profile.learning_style ? [profile.learning_style] : [],
+              github_url: null,
+            }}
+            className="mb-6"
+          />
+        )}
 
 
         {/* MAIN */}
@@ -603,5 +616,6 @@ const Dashboard = () => {
 
 export default Dashboard;
 
-/ /   i s s u e   1 1 0 1  
+/ /   i s s u e   1 1 0 1 
+ 
  
