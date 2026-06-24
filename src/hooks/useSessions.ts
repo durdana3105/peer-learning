@@ -248,15 +248,21 @@ export function useSessions(user: any) {
       });
     }
 
-    await (supabase as any)
-      .from("messages")
-      .insert({
-        session_id: selectedSession.id,
-        user_id: user?.id,
-        username: user?.user_metadata?.full_name || "Anonymous",
-        message: msgText,
-      });
-  }, [selectedSession, user]);
+    try {
+      const { error } = await (supabase as any)
+        .from("messages")
+        .insert({
+          session_id: selectedSession.id,
+          user_id: user?.id,
+          username: user?.user_metadata?.full_name || "Anonymous",
+          message: msgText,
+        });
+
+      if (error) throw error;
+    } catch (err: any) {
+      toast({ title: "Failed to send message", description: err.message || "An unexpected error occurred.", variant: "destructive" });
+    }
+  }, [selectedSession, user, toast]);
 
   const sendTypingEvent = useCallback(() => {
     if (channelRef.current) {
