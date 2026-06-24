@@ -1,6 +1,7 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { API_BASE_URL } from "@/config/api";
+
 interface Partner {
   _id: string;
   name: string;
@@ -10,7 +11,7 @@ interface Partner {
 }
 
 const SuggestedPartners = () => {
-  const { data: partners = [], isLoading: loading } = useQuery<Partner[]>({
+  const { data: partners = [], isLoading: loading, isError } = useQuery<Partner[]>({
     queryKey: ["suggested-partners"],
     queryFn: async () => {
       const response = await fetch(
@@ -19,7 +20,7 @@ const SuggestedPartners = () => {
           credentials: "include",
         }
       );
-      
+
       if (!response.ok) throw new Error("Failed to fetch");
       const data = await response.json();
       return data.success ? data.recommendations : [];
@@ -28,9 +29,25 @@ const SuggestedPartners = () => {
 
   if (loading) {
     return (
-    <div className="text-center text-gray-400">
-    Loading study partners...
-    </div>
+      <div className="text-center text-gray-400">
+        Loading study partners...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="text-center text-red-400 mt-8">
+        Failed to load suggested partners. Please try again later.
+      </div>
+    );
+  }
+
+  if (partners.length === 0) {
+    return (
+      <div className="text-center text-gray-400 mt-8">
+        No suggested partners found. Check back later!
+      </div>
     );
   }
 
@@ -39,7 +56,6 @@ const SuggestedPartners = () => {
       <h2 className="text-2xl font-bold mb-6">
         Suggested Study Partners
       </h2>
-
       <div className="grid gap-4 md:grid-cols-2">
         {partners.map((partner) => (
           <div
@@ -50,17 +66,14 @@ const SuggestedPartners = () => {
               <h3 className="text-xl font-semibold text-white">
                 {partner.name}
               </h3>
-
               <span className="bg-purple-600 text-white text-sm px-3 py-1 rounded-full">
                 {partner.compatibilityScore}% Match
               </span>
             </div>
-
             <div className="mb-3">
               <h4 className="font-medium text-white mb-1">
                 Skills
               </h4>
-
               <div className="flex flex-wrap gap-2">
                 {partner.skills?.map((skill, index) => (
                   <span
@@ -72,12 +85,10 @@ const SuggestedPartners = () => {
                 ))}
               </div>
             </div>
-
             <div className="mb-4">
               <h4 className="font-medium text-white mb-1">
                 Interests
               </h4>
-
               <div className="flex flex-wrap gap-2">
                 {partner.interests?.map((interest, index) => (
                   <span
@@ -89,7 +100,6 @@ const SuggestedPartners = () => {
                 ))}
               </div>
             </div>
-
             <button className="w-full bg-purple-600 hover:bg-purple-700 transition-colors text-white py-2 rounded-lg">
               Connect
             </button>

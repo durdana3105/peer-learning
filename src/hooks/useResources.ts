@@ -63,10 +63,8 @@ export const useResources = (filters?: ResourceFilters) => {
           return;
         }
         
-        // @ts-expect-error TODO: refine typing
         const { data: savedData, error: savedError } = await safeSupabaseCall(
-          // @ts-expect-error TODO: refine typing
-          () => supabase.from("saved_resources").select("resource_id").eq("user_id", user.id).abortSignal(controller.signal)
+          () => (supabase as any).from("saved_resources").select("resource_id").eq("user_id", user.id).abortSignal(controller.signal)
         );
         
         if (savedError) throw savedError;
@@ -105,8 +103,7 @@ export const useResources = (filters?: ResourceFilters) => {
       }
 
       const data = await safeSupabaseCall(
-        // @ts-expect-error TODO: refine typing
-        () => query.abortSignal(controller.signal),
+        () => (query as any).abortSignal(controller.signal),
         { fallbackMessage: "Unable to load resources." },
       );
 

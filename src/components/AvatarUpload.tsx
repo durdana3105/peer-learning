@@ -115,8 +115,10 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
     <div className="relative inline-block">
       <img
         src={currentAvatarUrl}
-        alt="avatar"
-        className="w-36 h-36 rounded-full border-4 border-cyan-400 object-cover shadow-2xl shadow-cyan-500/20"
+        alt="User profile avatar"
+        className={`w-36 h-36 rounded-full border-4 border-cyan-400 object-cover shadow-2xl shadow-cyan-500/20 ${
+          isUploading ? "opacity-70" : ""
+        }`}
       />
 
       <input
@@ -128,8 +130,15 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
       />
 
       <button
-        onClick={() => fileInputRef.current?.click()}
+        type="button"
+        onClick={() => {
+          if (!isUploading) {
+            fileInputRef.current?.click();
+          }
+        }}
         disabled={isUploading}
+        aria-label={isUploading ? "Uploading avatar" : "Upload avatar"}
+        aria-busy={isUploading}
         className="absolute bottom-2 right-2 bg-cyan-400 p-3 rounded-full hover:bg-cyan-300 transition-colors disabled:opacity-50"
       >
         {isUploading ? (
@@ -138,6 +147,15 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
           <Camera size={20} className="text-black" />
         )}
       </button>
+      {isUploading && (
+        <p
+          role="status"
+          aria-live="polite"
+          className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs text-cyan-400"
+        >
+          Uploading avatar...
+        </p>
+      )}
     </div>
   );
 };
