@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { SkillBadge } from "@/components/SkillBadge";
+import { useSkillEndorsements } from "@/hooks/useSkillEndorsements";
 import { Link, useParams } from "react-router-dom";
 import { GitHubCalendar } from "react-github-calendar";
 import {
@@ -35,6 +37,7 @@ type LearningProgress = {
 };
 
 type PortfolioRow = {
+  profile_id: string;
   headline: string;
   github_url: string;
   linkedin_url: string;
@@ -136,6 +139,7 @@ const { data: portfolioData, error: portfolioError } = await (supabase as any)
       const progress = pd.learning_progress as Partial<LearningProgress> | null;
 
       setPortfolio({
+        profile_id: pd.profile_id || "",
         headline: pd.headline || "",
         github_url: sanitizeUrl(pd.github_url),
         linkedin_url: sanitizeUrl(pd.linkedin_url),
@@ -165,7 +169,16 @@ const { data: portfolioData, error: portfolioError } = await (supabase as any)
   void loadPortfolio();
 }, [slug]);
 
+  const { endorsements, loading: endorsementsLoading, toggleEndorsement, currentUserId } =
+    useSkillEndorsements({
+      profileUserId: portfolio?.profile_id ?? "",
+      skills: portfolio?.skills ?? [],
+    });
+
+  const isOwnProfile = currentUserId === portfolio?.profile_id;
+
   const githubUsername = useMemo(
+    
     () => parseGithubUsername(portfolio?.github_url || ""),
     [portfolio?.github_url],
   );
