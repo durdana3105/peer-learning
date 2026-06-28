@@ -213,8 +213,7 @@ graph TD
     AIAssistant -->|Verify Token| Auth
     AIAssistant <-->|Generate Text| OpenRouter
 ```
-
-### Architecture Overview
+##Architecture Overview
 
 The Peer Learning Platform follows a modern full-stack architecture designed to provide scalability, maintainability, and real-time collaboration.
 
@@ -242,7 +241,7 @@ The Peer Learning Platform follows a modern full-stack architecture designed to 
 
 ### AI Integration
 
-The backend securely communicates with external AI providers using the OpenAI/OpenRouter SDK, ensuring API keys remain protected while providing intelligent learning assistance.
+The backend securely communicates with the OpenRouter API using direct HTTP requests, keeping API keys server-side while providing intelligent learning assistance.
 
 ### Request Flow
 
@@ -305,7 +304,7 @@ peer-learning-platform/
 ├── backend/                 # Backend server
 │   ├── controllers/         # Request handling logic
 │   ├── middlewares/         # Authentication & request middleware
-│   ├── routes/              # API route definitions
+│   ├── routers/             # API route definitions
 │   ├── tests/               # Backend tests
 │   ├── utils/               # Backend utility functions
 │   ├── validation/          # Request validation schemas
@@ -334,12 +333,12 @@ The table below helps contributors quickly locate the correct directory based on
 | Improve dashboard features | `src/components/dashboard/` |
 | Work on mentor-related features | `src/components/mentor/` |
 | Add recommendation features | `src/components/recommendations/` |
-| Update the collaborative whiteboard | `src/components/Whiteboard/` *(or `whiteboard/`, depending on the actual folder name)* |
+| Update the collaborative whiteboard | `src/components/whiteboard/` |
 | Add custom React Hooks | `src/hooks/` |
 | Manage global state or contexts | `src/contexts/` |
 | Configure Supabase integration | `src/integrations/` |
 | Add helper or utility functions | `src/utils/` |
-| Add backend API endpoints | `backend/routes/` |
+| Add backend API endpoints | `backend/routers/` |
 | Implement backend business logic | `backend/controllers/` |
 | Create middleware | `backend/middlewares/` |
 | Add request validation | `backend/validation/` |
