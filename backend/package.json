@@ -7,6 +7,7 @@
     "start": "tsx server.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.102.1",
     "axios": "^1.16.1",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
@@ -18,7 +19,7 @@
     "multer": "^2.1.1",
     "nodemailer": "^8.0.5",
     "openai": "^6.34.0",
-    "@supabase/supabase-js": "^2.102.1",
+    "web-push": "^3.6.7",
     "zod": "^3.25.76"
   },
   "devDependencies": {

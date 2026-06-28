@@ -66,13 +66,13 @@ export function useSessions(user: any) {
   const filteredSessions = useMemo(() => {
     let filtered = sessions;
 
-    const allowedStatuses =
+    let allowedStatuses =
       TAB_STATUS_MAP[selectedTab.toLowerCase()] || [selectedTab.toLowerCase()];
 
     filtered = filtered.filter((s) =>
       allowedStatuses.includes(s.status?.toLowerCase())
     );
-    const allowedStatuses = TAB_TO_STATUS[selectedTab] || [];
+    allowedStatuses = TAB_TO_STATUS[selectedTab] || [];
         filtered = filtered.filter((s) =>
           allowedStatuses.includes(s.status?.toLowerCase())
         );

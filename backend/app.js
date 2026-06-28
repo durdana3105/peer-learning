@@ -50,7 +50,10 @@ const allowedOrigins = new Set(buildAllowedOrigins());
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Strictly require origin to match the whitelist to prevent no-origin bypasses
+    // 1. Allow requests with no origin (like mobile apps, curl, or same-origin)
+    if (!origin) return callback(null, true);
+
+    // 2. Strictly check against your whitelist
     if (allowedOrigins.has(origin)) {
       callback(null, true);
     } else {
