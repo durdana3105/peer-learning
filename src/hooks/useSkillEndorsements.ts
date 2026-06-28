@@ -32,10 +32,13 @@ export function useSkillEndorsements({
   );
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [pendingSkills, setPendingSkills] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setCurrentUserId(data.user?.id ?? null);
+      setAuthReady(true);
     });
   }, []);
 
@@ -75,8 +78,8 @@ export function useSkillEndorsements({
   }, [profileUserId, skills, currentUserId]);
 
   useEffect(() => {
-    fetchEndorsements();
-  }, [fetchEndorsements]);
+    if (authReady) fetchEndorsements();
+  }, [fetchEndorsements, authReady]);
 
   const toggleEndorsement = useCallback(
     async (skill: string) => {
@@ -98,10 +101,12 @@ export function useSkillEndorsements({
         return;
       }
 
+      if (pendingSkills.has(skill)) return;
+      setPendingSkills((prev) => new Set(prev).add(skill));
+
       const current = endorsements[skill];
       const isRemoving = current?.hasEndorsed ?? false;
 
-      // Optimistic update
       setEndorsements((prev) => ({
         ...prev,
         [skill]: {
@@ -132,7 +137,6 @@ export function useSkillEndorsements({
           if (error) throw error;
         }
       } catch (err) {
-        // Rollback on failure
         console.error("[useSkillEndorsements] toggle error:", err);
         setEndorsements((prev) => ({
           ...prev,
@@ -146,9 +150,15 @@ export function useSkillEndorsements({
           description: "Could not update endorsement. Please try again.",
           variant: "destructive",
         });
+      } finally {
+        setPendingSkills((prev) => {
+          const next = new Set(prev);
+          next.delete(skill);
+          return next;
+        });
       }
     },
-    [currentUserId, profileUserId, endorsements, toast]
+    [currentUserId, profileUserId, endorsements, toast, pendingSkills]
   );
 
   return { endorsements, loading, toggleEndorsement, currentUserId };
