@@ -348,3 +348,5 @@ const { data: portfolioData, error: portfolioError } = await (supabase as any)
 export default PublicPortfolio;
 
 // Fix for #1159: Refined typings
+
+// fix/handle-invalid-routes
