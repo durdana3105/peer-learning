@@ -55,6 +55,12 @@ const makeSupabaseMock = () => {
           return resolve({ data: batch.map(r => ({ ...r })), error: null });
         }
 
+        if (table === "notifications" && _operation === "update" && _filters["id__in"]) {
+          const ids = _filters["id__in"];
+          ids.forEach(id => claimedIds.delete(id));
+          return resolve({ data: null, error: null });
+        }
+
         if (table === "notifications" && _operation === "update" && _filters["id"]) {
           // push_sent_at stamp
           const row = dbRows.find((r) => r.id === _filters["id"]);
@@ -83,8 +89,22 @@ const makeSupabaseMock = () => {
 };
 
 // ─── Module mocks ────────────────────────────────────────────────────────────
+let forceSubscriptionError = false;
 vi.mock("@supabase/supabase-js", () => ({
-  createClient: () => makeSupabaseMock(),
+  createClient: () => {
+    const mock = makeSupabaseMock();
+    const originalFrom = mock.from.bind(mock);
+    mock.from = (table) => {
+      if (table === "push_subscriptions" && forceSubscriptionError) {
+        forceSubscriptionError = false; // only fail once
+        const fakeChain = new Promise((resolve) => resolve({ data: null, error: { message: "DB error" } }));
+        Object.assign(fakeChain, { select: () => fakeChain, in: () => fakeChain });
+        return fakeChain;
+      }
+      return originalFrom(table);
+    };
+    return mock;
+  },
 }));
 
 // Slow sendNotification (~150 ms) to widen the race window
@@ -120,6 +140,7 @@ describe("dispatchPushNotifications — race condition", () => {
     vi.stubEnv("VAPID_PRIVATE_KEY", "vapid-private");
 
     // Reset shared DB state
+    forceSubscriptionError = false;
     claimedIds = new Set();
     dbRows = Array.from({ length: 5 }, (_, i) => ({
       id: `notif-${i}`,
@@ -183,20 +204,7 @@ describe("dispatchPushNotifications — race condition", () => {
   });
 
   it("claimed notifications remain retryable after subscription fetch error", async () => {
-  // Inject a subscription-fetch failure on the first call
-  const supabaseMock = makeSupabaseMock();
-  const originalFrom = supabaseMock.from.bind(supabaseMock);
-
-  vi.spyOn(supabaseMock, "from").mockImplementationOnce((table) => {
-    if (table === "push_subscriptions") {
-      return {
-        select: () => ({
-          in: () => Promise.resolve({ data: null, error: { message: "DB error" } }),
-        }),
-      };
-    }
-    return originalFrom(table);
-  });
+  forceSubscriptionError = true;
 
   // First call: subscription fetch fails → should 500
   const res1 = await request(app).post("/dispatch");
@@ -206,7 +214,7 @@ describe("dispatchPushNotifications — race condition", () => {
   const stillPending = dbRows.filter((r) => r.push_sent_at == null);
   expect(stillPending.length).toBeGreaterThan(0);
 
-  // Second call: mock restored, stale claim timeout allows re-claim → should succeed
+  // Second call: mock restored, rollback allows re-claim → should succeed
   const res2 = await request(app).post("/dispatch");
   expect(res2.status).toBe(200);
   expect(res2.body.processed).toBeGreaterThan(0);

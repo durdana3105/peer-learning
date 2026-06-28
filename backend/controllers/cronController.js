@@ -59,7 +59,7 @@ export const dispatchPushNotifications = async (req, res, next) => {
     // Atomically claim a batch of pending notifications so concurrent invocations
     // cannot double-deliver the same notification (race-condition prevention).
     const claimedAt = new Date().toISOString();
-    const { data: notifications, error } = await supabase
+    const { data: notifications, error: claimError } = await supabase
       .from("notifications")
       .update({ push_claimed_at: claimedAt })
       .is("push_claimed_at", null)
@@ -81,6 +81,18 @@ export const dispatchPushNotifications = async (req, res, next) => {
       .in("user_id", userIds);
 
     if (subError) {
+      const notificationIds = notifications.map((n) => n.id);
+      if (notificationIds.length > 0) {
+        const { error: rollbackError } = await supabase
+          .from("notifications")
+          .update({ push_claimed_at: null })
+          .in("id", notificationIds);
+        if (rollbackError) {
+          return res.status(500).json({
+            error: `Subscription fetch failed, and rollback failed: ${rollbackError.message}`,
+          });
+        }
+      }
       return res.status(500).json({ error: subError.message });
     }
 
@@ -289,6 +301,25 @@ export const sendMentorshipCheckinReminders = async (req, res, next) => {
     }
 
     res.json({ inserted: notifications.length });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetWeeklyFocusTime = async (req, res, next) => {
+  try {
+    const supabase = getSupabaseClient();
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ focus_time_this_week: 0 })
+      .neq("focus_time_this_week", 0);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ reset: true });
   } catch (error) {
     next(error);
   }

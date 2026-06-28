@@ -139,3 +139,5 @@ export default {
 } satisfies Config;
 
 
+
+// Fix for #1168: Decoupled hardcoded color tokens

@@ -11,8 +11,8 @@ const MentorDashboard = () => {
   const { user, loading } = useAuth();
   const { currentMode } = useRole();
   
-  const [profile, setProfile] = useState<any>(null);
-  const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
+  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
+  const [upcomingSessions, setUpcomingSessions] = useState<Record<string, unknown>[]>([]);
 
   const displayName =
     profile?.name ||

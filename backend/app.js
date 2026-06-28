@@ -9,6 +9,7 @@ import chatRoutes from "./routers/chatRoutes.js";
 import aiRoutes from "./routers/aiRoutes.js";
 import matchRoutes from "./routers/matchRoutes.js";
 import authRoutes from "./routers/authRoutes.js";
+import uploadRoutes from "./routers/uploadRoutes.js";
 import cronRoutes from "./routers/cronRoutes.js";
 import notificationRoutes from "./routers/notificationRoutes.js";
 import userRoutes from "./routes/users.js";
@@ -21,8 +22,8 @@ if (process.env.TRUSTED_PROXIES) {
   app.set("trust proxy", process.env.TRUSTED_PROXIES.split(",").map(s => s.trim()));
   console.log(`[security] trust proxy enabled for subnets: ${process.env.TRUSTED_PROXIES}`);
 } else if (process.env.TRUST_PROXY === "true") {
-  app.set("trust proxy", 1);
-  console.warn("[security] trust proxy enabled with hop-count 1. Consider setting TRUSTED_PROXIES for explicit subnet whitelisting.");
+  console.error("[security] FATAL: TRUST_PROXY=true is insecure without TRUSTED_PROXIES. Provide comma-separated subnet ranges via TRUSTED_PROXIES.");
+  process.exit(1);
 }
 
 // SECURITY: Build a strict CORS origin whitelist.
@@ -84,9 +85,10 @@ const apiLimiter = rateLimit({
 // Stricter rate limiter for AI to prevent OPENROUTER_API_KEY exhaustion
 const aiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // limit each IP to 20 AI requests per windowMs
+  max: 10, // limit each IP to 10 AI requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
+  message: { error: "Too many AI requests from this IP, please try again after 15 minutes" }
 });
 
 app.use("/api", apiLimiter);
@@ -98,6 +100,7 @@ app.use("/api", chatRoutes);
 app.use("/api/match", matchRoutes);
 app.use("/api/cron", cronRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/upload", uploadRoutes);
 app.use("/api/users", userRoutes);
 
 const __filename = fileURLToPath(import.meta.url);

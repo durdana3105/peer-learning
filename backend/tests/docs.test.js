@@ -12,7 +12,13 @@ import { resolve } from "path";
  * cronRoutes.js or notificationRoutes.js.
  */
 
-const repoRoot = resolve(process.cwd(), "..");
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const repoRoot = resolve(__dirname, "../../");
 const apiDoc = readFileSync(resolve(repoRoot, "docs/api.md"), "utf-8");
 const notifDoc = readFileSync(resolve(repoRoot, "docs/smart-notifications.md"), "utf-8");
 

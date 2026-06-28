@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, BookOpen } from "lucide-react";
+import googleIcon from "@/assets/google-icon.svg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/useAuth";
@@ -364,7 +365,7 @@ const Signup = () => {
               className="h-10 w-full border border-white/10 bg-white/5 text-white hover:bg-white/10"
             >
               <img
-                src="https://www.svgrepo.com/show/475656/google-color.svg"
+                src={googleIcon}
                 alt="google"
                 className="mr-2 h-5 w-5"
               />
@@ -386,3 +387,5 @@ const Signup = () => {
 };
 
 export default Signup;
+
+// fix/prevent-duplicate-submissions

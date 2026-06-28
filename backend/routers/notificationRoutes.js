@@ -5,11 +5,19 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { HttpError } from "../utils/httpError.js";
 import {
   auditLog,
-  isBackgroundRateLimited,
-  isOnCooldown,
+  createBackgroundRateLimiter,
+  createCooldownTracker,
 } from "../middlewares/requireCronSecret.js";
 
 const router = express.Router();
+
+// ── Notification-route private limiter instances ───────────────────────────────────
+// These are completely independent of the cron-route instances created inside
+// requireCronSecret.js — each call to the factory allocates a new Map, so
+// traffic on /api/notifications/* cannot exhaust the budget for /api/cron/*
+// and vice versa.
+const notificationRateLimiter = createBackgroundRateLimiter();
+const notificationCooldown = createCooldownTracker();
 
 /*
  * verifyNotificationAuth
@@ -19,21 +27,12 @@ const router = express.Router();
  * This is a SEPARATE secret from CRON_SECRET (used on /api/cron/*).
  * The distinction is intentional:
  *
- *   CRON_SECRET  — held by the scheduler (Vercel Cron / pg_cron). Authorises
- *                  bulk operations that touch up to 100 rows per call.
- *
+ *   CRON_SECRET    — held by the scheduler (Vercel Cron / pg_cron).
  *   WEBHOOK_SECRET — held by trusted internal services or admin tooling.
- *                    Authorises single-user targeted push delivery.
  *
  * Keeping them separate means a compromised scheduler secret does not grant
- * arbitrary single-user push access, and vice versa. Both can be rotated
- * independently — see docs/smart-notifications.md → "Secrets Reference".
- *
- * Applies the same rate-limit and cooldown helpers as requireCronSecret to
- * prevent abuse via this endpoint too.
+ * arbitrary single-user push access, and vice versa.
  */
-
-// Custom middleware to strictly verify WEBHOOK secret
 const verifyNotificationAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
   const webhookSecret = process.env.WEBHOOK_SECRET;
@@ -45,21 +44,19 @@ const verifyNotificationAuth = (req, res, next) => {
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const providedSecret = authHeader.slice(7);
 
-    // Both buffers must be the same length for timingSafeEqual.
     const expectedHash = crypto.createHash("sha256").update(webhookSecret).digest();
     const providedHash = crypto.createHash("sha256").update(providedSecret).digest();
 
     if (crypto.timingSafeEqual(expectedHash, providedHash)) {
-      // Valid webhook secret
       auditLog(req, res, "WEBHOOK");
 
       const clientIp = req.socket?.remoteAddress || req.ip || "unknown";
-      if (isBackgroundRateLimited(clientIp)) {
+      if (notificationRateLimiter(clientIp)) {
         return next(new HttpError(429, "Too many requests to webhook endpoint. Please wait."));
       }
 
       const routeKey = `${req.method}:${req.originalUrl}`;
-      if (isOnCooldown(routeKey)) {
+      if (notificationCooldown(routeKey)) {
         return next(new HttpError(429, "This job was executed recently. Please wait before re-triggering."));
       }
 

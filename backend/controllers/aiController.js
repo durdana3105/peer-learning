@@ -18,6 +18,15 @@ const MAX_SUMMARY_MESSAGES = 50;
 const MAX_ASK_MESSAGES = 10;
 const MAX_TOTAL_CONTENT_LENGTH = 20000;
 
+const escapeForPrompt = (str) =>
+  str
+    .replace(/\\/g, "\\\\")
+    .replace(/`/g, "")
+    .replace(/\$/g, "\\$")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, " ")
+    .replace(/\r/g, "");
+
 const summaryResponseSchema = z.object({
   summary: z.string().trim().min(1),
   key_takeaways: z.array(z.string().trim().min(1)).max(12),
@@ -303,7 +312,7 @@ export const conductMockInterview = async (req, res, next) => {
     const openRouterMessages = [
       {
         role: "system",
-        content: `You are acting as a strict but fair ${role} conducting a mock interview for a candidate. 
+        content: `You are acting as a strict but fair ${escapeForPrompt(role)} conducting a mock interview for a candidate. 
         Follow these rules:
         1. Ask ONLY ONE question at a time.
         2. Wait for the candidate's response before proceeding.

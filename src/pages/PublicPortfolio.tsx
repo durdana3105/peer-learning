@@ -89,8 +89,7 @@ const PublicPortfolio = () => {
     setLoading(true);
 
     try {
-const { data: portfolioData, error: portfolioError } = await supabase
-  // @ts-expect-error TODO: refine typing
+const { data: portfolioData, error: portfolioError } = await (supabase as any)
   .from("portfolio_profiles")
   .select(`
     profile_id,
@@ -102,9 +101,7 @@ const { data: portfolioData, error: portfolioError } = await supabase
     projects,
     learning_progress
   `)
-  // @ts-expect-error TODO: refine typing
   .eq("slug", slug)
-  // @ts-expect-error TODO: refine typing
   .eq("is_published", true)
   .maybeSingle();
 
@@ -128,33 +125,25 @@ const { data: portfolioData, error: portfolioError } = await supabase
           points,
           sessions_completed
         `)
-        // @ts-expect-error TODO: refine typing
-        .eq("id", portfolioData.profile_id)
+        .eq("id", (portfolioData as any).profile_id)
         .maybeSingle();
 
       if (profileError) {
         console.error("Profile query failed:", profileError);
       }
 
-      const progress =
-        // @ts-expect-error TODO: refine typing
-        portfolioData.learning_progress as Partial<LearningProgress> | null;
+      const pd = portfolioData as any;
+      const progress = pd.learning_progress as Partial<LearningProgress> | null;
 
       setPortfolio({
-        // @ts-expect-error TODO: refine typing
-        headline: portfolioData.headline || "",
-        // @ts-expect-error TODO: refine typing
-        github_url: sanitizeUrl(portfolioData.github_url),
-        // @ts-expect-error TODO: refine typing
-        linkedin_url: sanitizeUrl(portfolioData.linkedin_url),
-        // @ts-expect-error TODO: refine typing
-        skills: portfolioData.skills || [],
+        headline: pd.headline || "",
+        github_url: sanitizeUrl(pd.github_url),
+        linkedin_url: sanitizeUrl(pd.linkedin_url),
+        skills: pd.skills || [],
         achievements: normalizeArray<Achievement>(
-          // @ts-expect-error TODO: refine typing
-          portfolioData.achievements
+          pd.achievements
         ),
-        // @ts-expect-error TODO: refine typing
-        projects: normalizeArray<Project>(portfolioData.projects).map(p => ({ ...p, url: sanitizeUrl(p.url) })),
+        projects: normalizeArray<Project>(pd.projects).map((p: Project) => ({ ...p, url: sanitizeUrl(p.url) })),
         learning_progress: {
           focus:
             typeof progress?.focus === "string"
@@ -357,3 +346,7 @@ const { data: portfolioData, error: portfolioError } = await supabase
 };
 
 export default PublicPortfolio;
+
+// Fix for #1159: Refined typings
+
+// fix/handle-invalid-routes

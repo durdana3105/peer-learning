@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 import { toast } from "sonner";
@@ -21,6 +21,8 @@ export default function AnonymousDoubts() {
   const [subject, setSubject] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [search, setSearch] = useState("");
+  const [sortOrder, setSortOrder] = useState<"newest" | "top">("newest");
 
   useEffect(() => {
     fetchDoubts();
@@ -73,6 +75,21 @@ export default function AnonymousDoubts() {
     );
   };
 
+  const visibleDoubts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const filtered = query
+      ? doubts.filter(
+          (d) =>
+            d.content.toLowerCase().includes(query) ||
+            d.subject.toLowerCase().includes(query)
+        )
+      : doubts;
+
+    return sortOrder === "top"
+      ? [...filtered].sort((a, b) => b.upvotes - a.upvotes)
+      : filtered;
+  }, [doubts, search, sortOrder]);
+
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Anonymous Doubt Posting</h1>
@@ -109,16 +126,34 @@ export default function AnonymousDoubts() {
         </button>
       </div>
 
+      {/* Search + Sort */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <input
+          className="border p-2 rounded w-full"
+          placeholder="Search by keyword or subject..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <button
+          onClick={() => setSortOrder(sortOrder === "newest" ? "top" : "newest")}
+          className="border px-4 py-2 rounded whitespace-nowrap bg-slate-100 hover:bg-slate-200"
+        >
+          Sort: {sortOrder === "newest" ? "Newest" : "Top"}
+        </button>
+      </div>
+
       {/* Doubts List */}
       {loading ? (
         <div className="flex justify-center py-10">
           <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
         </div>
-      ) : doubts.length === 0 ? (
-        <p className="text-center text-slate-400">No doubts yet. Be the first to ask!</p>
+      ) : visibleDoubts.length === 0 ? (
+        <p className="text-center text-slate-400">
+          {search ? "No doubts match your search." : "No doubts yet. Be the first to ask!"}
+        </p>
       ) : (
         <div className="space-y-4">
-          {doubts.map((d) => (
+          {visibleDoubts.map((d) => (
             <div key={d.id} className="border p-4 rounded-xl">
               <div className="flex justify-between items-start">
                 <div>
