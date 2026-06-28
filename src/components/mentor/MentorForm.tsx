@@ -78,9 +78,9 @@ export default function MentorForm() {
       formData.full_name.trim() !== "" &&
       formData.college.trim() !== "" &&
       formData.bio.trim() !== "" &&
-      formData.full_name.length > 2 &&
-      formData.college.length > 2 &&
-      formData.bio.length > 50
+      formData.full_name.trim().length > 2 &&
+      formData.college.trim().length > 2 &&
+      formData.bio.trim().length > 20
     );
   };
   const validateSkills = () => {
