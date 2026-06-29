@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from "@/integrations/supabase/client";
 import { env } from "@/env";
+import { sanitizeNotificationActionUrl } from "./actionUrl";
 
 const VAPID_PUBLIC_KEY = env.VITE_VAPID_PUBLIC_KEY;
 
@@ -16,7 +17,7 @@ export function isBrowserNotificationSupported() {
   return "Notification" in window && "serviceWorker" in navigator;
 }
 
-export async function showBrowserNotification(title: string, body: string, actionUrl = "/") {
+export async function showBrowserNotification(title: string, body: string, actionUrl = "/notifications") {
   if (!isBrowserNotificationSupported() || Notification.permission !== "granted") {
     return;
   }
@@ -28,7 +29,7 @@ export async function showBrowserNotification(title: string, body: string, actio
       body,
       icon: "/favicon.ico",
       badge: "/favicon.ico",
-      data: { url: actionUrl },
+      data: { url: sanitizeNotificationActionUrl(actionUrl) },
     });
     return;
   }
