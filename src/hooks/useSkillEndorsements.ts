@@ -25,9 +25,7 @@ export function useSkillEndorsements({
 }: UseSkillEndorsementsOptions): UseSkillEndorsementsReturn {
   const { toast } = useToast();
 
-  const [endorsements, setEndorsements] = useState
-    Record<string, SkillEndorsementData>
-  >(() =>
+  const [endorsements, setEndorsements] = useState<Record<string, SkillEndorsementData>>(() => 
     Object.fromEntries(skills.map((s) => [s, { count: 0, hasEndorsed: false }]))
   );
   const [loading, setLoading] = useState(true);
@@ -36,10 +34,21 @@ export function useSkillEndorsements({
   const [pendingSkills, setPendingSkills] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    // Initial load
     supabase.auth.getUser().then(({ data }) => {
       setCurrentUserId(data.user?.id ?? null);
       setAuthReady(true);
     });
+
+    // Subscribe to changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUserId(session?.user?.id ?? null);
+    });
+
+    // Cleanup subscription
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchEndorsements = useCallback(async () => {

@@ -66,18 +66,15 @@ export function useSessions(user: any) {
   const filteredSessions = useMemo(() => {
     let filtered = sessions;
 
-    const allowedStatuses =
-      TAB_STATUS_MAP[selectedTab.toLowerCase()] || [selectedTab.toLowerCase()];
+    // Use only ONE source of truth: TAB_STATUS_MAP
+    const allowedStatuses = TAB_STATUS_MAP[selectedTab.toLowerCase()] || [selectedTab.toLowerCase()];
 
+    // Single filter pass
     filtered = filtered.filter((s) =>
       allowedStatuses.includes(s.status?.toLowerCase())
     );
-    const allowedStatuses = TAB_TO_STATUS[selectedTab] || [];
-        filtered = filtered.filter((s) =>
-          allowedStatuses.includes(s.status?.toLowerCase())
-        );
-  
 
+    // Apply search if present
     if (search) {
       filtered = filtered.filter(
         (s) =>
