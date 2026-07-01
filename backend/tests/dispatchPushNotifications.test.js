@@ -203,6 +203,28 @@ describe("dispatchPushNotifications — race condition", () => {
     expect(res.body).toEqual({ sent: 0, processed: 0 });
   });
 
+  it("sanitizes queued action_url values before sending push payloads", async () => {
+    dbRows = [
+      {
+        id: "unsafe-notif",
+        user_id: "user-unsafe",
+        title: "Unsafe",
+        body: "Body",
+        action_url: "https://example.com",
+        push_sent_at: null,
+        push_claimed_at: null,
+      },
+    ];
+
+    const res = await request(app).post("/dispatch");
+    expect(res.status).toBe(200);
+
+    const webpush = (await import("web-push")).default;
+    const payload = JSON.parse(webpush.sendNotification.mock.calls[0][1]);
+
+    expect(payload.action_url).toBe("/notifications");
+  });
+
   it("claimed notifications remain retryable after subscription fetch error", async () => {
   forceSubscriptionError = true;
 

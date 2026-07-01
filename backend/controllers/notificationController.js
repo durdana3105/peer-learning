@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
+import { sanitizeNotificationActionUrl } from "../utils/notificationActionUrl.js";
 
 const getSupabaseClient = () => {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -58,6 +59,7 @@ export const sendPushNotification = async (req, res, next) => {
 
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
     const supabase = getSupabaseClient();
+    const safeActionUrl = sanitizeNotificationActionUrl(action_url);
 
     const { data: subscriptions, error } = await supabase
       .from("push_subscriptions")
@@ -86,7 +88,7 @@ export const sendPushNotification = async (req, res, next) => {
           JSON.stringify({
             title,
             body,
-            action_url: action_url || "/notifications",
+            action_url: safeActionUrl,
           })
         )
       )

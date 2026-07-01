@@ -6,6 +6,7 @@ import {
   isBrowserNotificationSupported,
   registerBrowserPush,
 } from "./pushNotifications";
+import { sanitizeNotificationActionUrl } from "./actionUrl";
 
 interface NotificationBellProps {
   userId?: string;
@@ -147,6 +148,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
             )}
 
             {notifications.map((notification) => {
+              const safeActionUrl = sanitizeNotificationActionUrl(notification.action_url);
               const content = (
                 <div
                   className={`border-b border-white/10 px-4 py-3 transition hover:bg-white/10 ${
@@ -176,26 +178,14 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                 </div>
               );
 
-              if (notification.action_url) {
-                return (
-                  <Link
-                    key={notification.id}
-                    to={notification.action_url}
-                    onClick={() => setOpen(false)}
-                  >
-                    {content}
-                  </Link>
-                );
-              }
-
               return (
-                <button
+                <Link
                   key={notification.id}
-                  type="button"
-                  className="block w-full text-left"
+                  to={safeActionUrl}
+                  onClick={() => setOpen(false)}
                 >
                   {content}
-                </button>
+                </Link>
               );
             })}
           </div>
