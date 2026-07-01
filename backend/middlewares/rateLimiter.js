@@ -20,7 +20,7 @@ const CLEANUP_INTERVAL_MS = 60 * 1000;
  * Derives a rate-limit key for the current request.
  *
  * Priority:
- *   1. Authenticated user ID (most reliable — cannot be spoofed).
+ *   1. Authenticated user ID (most reliable - cannot be spoofed).
  *   2. Composite fingerprint combining req.ip, the raw socket remote address,
  *      and the User-Agent header. This ensures that even if an attacker spoofs
  *      X-Forwarded-For (when trust proxy is misconfigured), the raw socket IP

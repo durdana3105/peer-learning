@@ -20,16 +20,16 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
-              body: `👋 Thanks for opening this issue!
+              body: `Thanks for opening this issue!
 
 We appreciate your contribution to this project.
 
 Our maintainers will review the issue soon. Please ensure you have provided:
 
-✅ Clear description
-✅ Steps to reproduce (if applicable)
-✅ Expected behavior
-✅ Screenshots/logs (if applicable)
+- Clear description
+- Steps to reproduce (if applicable)
+- Expected behavior
+- Screenshots/logs (if applicable)
 
-Thank you for contributing! 🚀`
+Thank you for contributing!`
             })
