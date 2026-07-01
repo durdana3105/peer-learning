@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 const allowedChatModels = ["openai/gpt-3.5-turbo", "openai/gpt-4o-mini"];
+const MAX_ASK_MESSAGES = 10;
+const MAX_SUMMARY_MESSAGES = 50;
 
 const chatMessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]),
@@ -89,7 +91,7 @@ export const aiSchemas = {
           role: z.string().optional(),
           content: z.string().trim().min(1).max(4000),
         })
-      ).min(1).max(50),
+      ).min(1).max(MAX_ASK_MESSAGES),
       systemPrompt: z.string().optional(),
       model: z.string().optional()
     }),
@@ -137,7 +139,7 @@ export const aiSchemas = {
   generateSessionSummary: {
     body: z
       .object({
-        messages: z.array(summarizeMessageSchema).min(1).max(100),
+        messages: z.array(summarizeMessageSchema).min(1).max(MAX_SUMMARY_MESSAGES),
       })
       .superRefine((data, ctx) => {
         const totalLength = data.messages.reduce(
