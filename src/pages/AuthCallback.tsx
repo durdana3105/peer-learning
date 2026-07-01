@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { runSupabaseAuthRequest } from "@/lib/supabaseAuthErrors";
 
 /**
  * OAuth callback page.
@@ -33,7 +34,15 @@ const AuthCallback = () => {
     });
 
     // Fallback: if a session already exists (e.g. fast redirect), go straight to dashboard
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    runSupabaseAuthRequest(() => supabase.auth.getSession()).then(({ data, error }) => {
+      if (error) {
+        setError(error.message);
+        listener.subscription.unsubscribe();
+        return;
+      }
+
+      const session = data?.session;
+
       if (session) {
         listener.subscription.unsubscribe();
         navigate("/dashboard", { replace: true });

@@ -1,0 +1,35 @@
+name: Auto Reply to Issues
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  reply:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Comment on new issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: `👋 Thanks for opening this issue!
+
+We appreciate your contribution to this project.
+
+Our maintainers will review the issue soon. Please ensure you have provided:
+
+✅ Clear description
+✅ Steps to reproduce (if applicable)
+✅ Expected behavior
+✅ Screenshots/logs (if applicable)
+
+Thank you for contributing! 🚀`
+            })

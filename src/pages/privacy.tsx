@@ -55,7 +55,15 @@ export default function PrivacyPolicy() {
         <Section title="6. Cookies & Tracking Technologies">
           We use cookies and similar technologies to remember user preferences,
           analyze traffic, and improve user experience. You may disable cookies
-          in your browser settings.
+          in your browser settings or manage your choices through our cookie
+          banner. For detailed information, see our{" "}
+          <Link
+            to="/cookies-policy"
+            className="font-medium text-cyan-400 underline-offset-4 hover:text-cyan-300 hover:underline"
+          >
+            Cookies Policy
+          </Link>
+          .
         </Section>
 
         <Section title="7. Data Retention">
@@ -111,7 +119,7 @@ export default function PrivacyPolicy() {
   );
 }
 
-function Section({ title, children }) {
+function Section({ title, children }: { title: string, children: React.ReactNode }) {
   return (
     <div className="mt-8">
       <h2 className="text-xl font-bold text-cyan-300">{title}</h2>

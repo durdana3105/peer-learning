@@ -37,15 +37,32 @@ const AIPage = () => {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setMessages((prev: any) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "Please log in to use the AI assistant. 🔐",
+          },
+        ]);
+        setLoading(false);
+        return;
+      }
       
+      const formattedMessages = [...messages, userMessage].map((msg: any) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
       const res = await fetch(`${API_BASE_URL}/api/ai/ask`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session?.access_token}`,
         },
+        credentials:"include",
         body: JSON.stringify({
-          question: prompt,
+          messages: formattedMessages,
         }),
       });
 
@@ -64,7 +81,7 @@ const AIPage = () => {
         },
       ]);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setMessages((prev: any) => [
         ...prev,
         {
@@ -187,6 +204,7 @@ const AIPage = () => {
 
           <button
             onClick={sendMessage}
+            aria-label="Send message"
             className="bg-cyan-400 hover:bg-cyan-300 transition text-black p-4 rounded-2xl"
           >
             <Send size={20} />

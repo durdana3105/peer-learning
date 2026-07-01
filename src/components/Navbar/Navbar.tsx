@@ -1,0 +1,99 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { BookOpen, Menu, X } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useNavbarProfile } from "@/hooks/useNavbarProfile";
+import { ThemeToggle } from "./ThemeToggle";
+import { DesktopNav } from "./DesktopNav";
+import { MobileNav } from "./MobileNav";
+import { UserMenu } from "./UserMenu";
+
+export default function Navbar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, profileName, isAdmin, handleLogout } = useNavbarProfile();
+  const { setTheme } = useTheme();
+
+  const handleMobileMenuToggle = () => {
+    setMobileOpen((prev) => !prev);
+  };
+
+  const handleMobileMenuKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>
+  ) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleMobileMenuToggle();
+    }
+
+    if (event.key === "Escape" && mobileOpen) {
+      setMobileOpen(false);
+    }
+  };
+
+  return (
+    <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#050816]/80 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+        {/* LOGO */}
+        <Link
+          to={user ? "/dashboard" : "/"}
+          className="flex items-center gap-2"
+          aria-label="PeerLearn home page"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/30">
+            <BookOpen
+              className="h-5 w-5 text-white"
+              aria-hidden="true"
+            />
+          </div>
+          <h1 className="text-xl font-bold text-white">
+            Peer
+            <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+              Learn
+            </span>
+          </h1>
+        </Link>
+
+        {/* DESKTOP NAV */}
+        <DesktopNav user={user} isAdmin={isAdmin} />
+
+        {/* RIGHT SECTION */}
+        <div className="hidden items-center gap-4 md:flex">
+          <ThemeToggle setTheme={setTheme} />
+          <UserMenu
+            user={user}
+            profileName={profileName}
+            handleLogout={handleLogout}
+          />
+        </div>
+
+        {/* MOBILE BUTTON */}
+        <button
+          onClick={handleMobileMenuToggle}
+          onKeyDown={handleMobileMenuKeyDown}
+          className="rounded-lg border border-white/10 bg-white/5 p-3 text-white md:hidden active:scale-95"
+          aria-label={
+            mobileOpen
+              ? "Close navigation menu"
+              : "Open navigation menu"
+          }
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-navigation-menu"
+        >
+          {mobileOpen ? <X /> : <Menu />}
+        </button>
+      </div>
+
+      {/* MOBILE MENU */}
+      {mobileOpen && (
+        <div id="mobile-navigation-menu">
+          <MobileNav
+            user={user}
+            isAdmin={isAdmin}
+            setMobileOpen={setMobileOpen}
+            handleLogout={handleLogout}
+          />
+        </div>
+      )}
+    </nav>
+  );
+}

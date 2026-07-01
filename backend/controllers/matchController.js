@@ -69,13 +69,14 @@ export const getRecommendedPartners = async (req, res) => {
       return res.status(500).json({ success: false, message: "Supabase client not configured" });
     }
 
+    const currentUserId = req.user.id;
     const currentUserEmail = req.user.email;
     
     // Fetch current user from Supabase profiles
     const { data: currentUser, error: currentUserError } = await supabaseAdmin
       .from('profiles')
       .select('skills, interests, teach_subjects, learn_subjects')
-      .eq('email', currentUserEmail)
+      .eq('id', currentUserId)
       .single();
 
     if (currentUserError || !currentUser) {
@@ -104,7 +105,7 @@ export const getRecommendedPartners = async (req, res) => {
       target_interests: currentUser.interests || [],
       target_teach: currentUser.teach_subjects || [],
       target_learn: currentUser.learn_subjects || [],
-      page_limit: limit,
+      page_limit: limit + 1,
       page_offset: skip
     });
 
@@ -130,15 +131,16 @@ export const getRecommendedPartners = async (req, res) => {
       };
     });
 
-    // In a real paginated RPC, getting exact total Count requires a separate count query. 
-    // We'll estimate or just provide length for now since counting 1M rows can also be slow.
+    // Fetch limit+1 rows so we can set hasNextPage without a separate COUNT query.
+    // The extra row is trimmed before returning; it only signals whether more results exist.
+   const hasNextPage = recommendations.length > limit;
+
     res.status(200).json({
       success: true,
-      count: recommendations.length,
-      total: recommendations.length > 0 ? skip + limit + 1 : skip, // Rough pagination cursor hack
+      count: Math.min(recommendations.length, limit),
       page,
-      totalPages: recommendations.length === limit ? page + 1 : page,
-      recommendations,
+      hasNextPage,
+      recommendations: recommendations.slice(0, limit),
     });
   } catch (error) {
     console.error("Recommendation Error:", error);
@@ -151,13 +153,17 @@ export const getSupabaseDiscover = async (req, res) => {
     const userId = req.user.id;
     const search = req.query.search || "";
     const filter = req.query.filter || "All";
-    const limit = Math.min(parseInt(req.query.limit, 10) || 100, 100);
-
+    const page = Math.min(Math.max(1, parseInt(req.query.page, 10) || 1), 1000);
+    const limit = Math.min(Math.max(1, parseInt(req.query.limit, 10) || 100), 100);
+    const skip = (page - 1) * limit;
     const supabaseAdmin = getSupabaseAdmin();
 
+    // Fetch only the columns used for compatibility scoring so we avoid
+    // pulling large, unused fields (e.g. bio, avatar_url) across the wire
+    // for every discover request.
     const { data: currentUser, error: meError } = await supabaseAdmin
       .from("profiles")
-      .select("*")
+      .select("skills, learning_goals, interests, learn_subjects, teach_subjects, learning_style, preferred_language, timezone")
       .eq("id", userId)
       .single();
 
@@ -169,17 +175,28 @@ export const getSupabaseDiscover = async (req, res) => {
       .from("profiles")
       .select("id, name, skills, interests, learning_goals, teach_subjects, learn_subjects, learning_style, preferred_language, timezone")
       .neq("id", userId)
-      .limit(100);
+      .limit(1000);
 
     if (search.trim()) {
-      const safeSearch = search.trim().replace(/[",()]/g, '');
+      // Keep only alphanumeric chars, spaces, and hyphens.
+      // Crucially, the underscore (_) must be removed even though it is a JS
+      // \w character, because in SQL LIKE/ILIKE patterns _ is a single-char
+      // wildcard. Leaving it in would let clients pass a string of underscores
+      // to match any row, turning every search into a near-full-table scan.
+      const safeSearch = search.trim().replace(/[^a-zA-Z0-9\s-]/g, "");
       if (safeSearch) {
-        query = query.or(`name.ilike."%${safeSearch}%",skills.ilike."%${safeSearch}%"`);
+        const pattern = `%${safeSearch}%`;
+        query = query.or(`name.ilike."${pattern}",skills.ilike."${pattern}"`);
       }
     }
 
     if (filter !== "All") {
-      query = query.ilike("skills", `%${filter}%`);
+      // Sanitize the filter value the same way as search to prevent LIKE
+      // wildcard injection via the filter query parameter.
+      const safeFilter = filter.replace(/[^a-zA-Z0-9\s-]/g, "");
+      if (safeFilter) {
+        query = query.ilike("skills", `%${safeFilter}%`);
+      }
     }
 
     const { data: peers, error: peersError } = await query;
@@ -226,18 +243,15 @@ export const getSupabaseDiscover = async (req, res) => {
         score += (studyBuddyMatches / myGoals.length) * ALIGNMENT_WEIGHT;
       }
 
-      let percentage = Math.min(Math.round((score / maxPossibleScore) * 100), 100);
+      const percentage = Math.min(Math.round((score / maxPossibleScore) * 100), 100);
 
-      if (percentage < 15 && (userSkills.length > 0 || userGoals.length > 0)) {
-        percentage = Math.floor(Math.random() * 10) + 15;
-      }
-
-      const teachOverlap = myGoals.filter((s) => (p.teach_subjects || []).includes(s)).length;
-      const learnOverlap = mySkills.filter((s) => (p.learn_subjects || []).includes(s)).length;
+      const teachOverlap   = myGoals.filter((s) => (p.teach_subjects || []).includes(s)).length;
+      const learnOverlap   = mySkills.filter((s) => (p.learn_subjects || []).includes(s)).length;
       const interestOverlap = (currentUser.interests || []).filter((s) => (p.interests || []).includes(s)).length;
-      const learningStyleMatch = currentUser.learning_style && p.learning_style && currentUser.learning_style === p.learning_style ? 15 : 0;
-      const languageMatch = currentUser.preferred_language && p.preferred_language && currentUser.preferred_language === p.preferred_language ? 10 : 0;
-      const timezoneMatch = currentUser.timezone && p.timezone && currentUser.timezone === p.timezone ? 10 : 0;
+      const hasBaseOverlap = teachOverlap + learnOverlap + interestOverlap > 0;
+      const learningStyleMatch = hasBaseOverlap && currentUser.learning_style && p.learning_style && currentUser.learning_style === p.learning_style ? 15 : 0;
+      const languageMatch      = hasBaseOverlap && currentUser.preferred_language && p.preferred_language && currentUser.preferred_language === p.preferred_language ? 10 : 0;
+      const timezoneMatch      = hasBaseOverlap && currentUser.timezone && p.timezone && currentUser.timezone === p.timezone ? 10 : 0;
 
       const maxExtra = Math.max((currentUser.learn_subjects || []).length + (currentUser.teach_subjects || []).length + (currentUser.interests || []).length, 1);
       const baseScore = ((teachOverlap + learnOverlap + interestOverlap) / maxExtra) * 65;
@@ -259,7 +273,13 @@ export const getSupabaseDiscover = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      recommendations: matched.slice(0, limit),
+      recommendations: matched.slice(skip, skip + limit),
+      pagination: {
+        page,
+        limit,
+        total: matched.length,
+        totalPages: Math.ceil(matched.length / limit)
+      }
     });
   } catch (error) {
     console.error("Supabase Discover Error:", error);

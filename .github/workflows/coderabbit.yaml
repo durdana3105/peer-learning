@@ -1,0 +1,7 @@
+reviews:
+  auto_review:
+    enabled: true
+
+  profile: "chill"
+
+  request_changes_workflow: true

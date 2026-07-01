@@ -1,25 +1,47 @@
 import express from "express";
+import { requireCronSecret } from "../middlewares/requireCronSecret.js";
 import {
   dispatchPushNotifications,
   sendSessionReminders,
   sendMentorshipCheckinReminders,
+  resetWeeklyFocusTime,
 } from "../controllers/cronController.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = express.Router();
 
-const verifyCronSecret = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  const cronSecret = process.env.CRON_SECRET;
+/**
+ * POST /api/cron/dispatch-notifications
+ *
+ * Secured with:
+ *   - Constant-time secret verification (anti-timing attack)
+ *   - Dedicated rate limiter (5 req/min per IP)
+ *   - 60-second cooldown deduplication
+ *
+ * Dispatches pending push notifications to subscribed users.
+ */
+router.post(
+  "/dispatch-notifications",
+  requireCronSecret,
+  asyncHandler(dispatchPushNotifications)
+);
 
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return res.status(401).json({ error: "Unauthorized cron request" });
-  }
-  next();
-};
+router.post(
+  "/reminders",
+  requireCronSecret,
+  asyncHandler(sendSessionReminders)
+);
 
-router.post("/dispatch-notifications", verifyCronSecret, asyncHandler(dispatchPushNotifications));
-router.post("/reminders", verifyCronSecret, asyncHandler(sendSessionReminders));
-router.post("/mentorship-reminders", verifyCronSecret, asyncHandler(sendMentorshipCheckinReminders));
+router.post(
+  "/mentorship-reminders",
+  requireCronSecret,
+  asyncHandler(sendMentorshipCheckinReminders)
+);
+
+router.post(
+  "/reset-weekly-focus",
+  requireCronSecret,
+  asyncHandler(resetWeeklyFocusTime)
+);
 
 export default router;

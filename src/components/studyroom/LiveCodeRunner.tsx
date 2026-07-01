@@ -2,6 +2,12 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Play, Code, Share, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { env } from "@/env";
+
+const PISTON_API_URL = env.VITE_PISTON_API_URL ?? "https://emkc.org/api/v2/piston/execute";
+
+const MAX_OUTPUT_CHARS = 4096;
+const MAX_SHARE_CHARS = 1024;
 
 interface LiveCodeRunnerProps {
   onShare: (code: string, language: string, output: string) => void;
@@ -31,7 +37,7 @@ export function LiveCodeRunner({ onShare }: LiveCodeRunnerProps) {
     setOutput("");
 
     try {
-      const response = await fetch("https://emkc.org/api/v2/piston/execute", {
+      const response = await fetch(PISTON_API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -49,13 +55,20 @@ export function LiveCodeRunner({ onShare }: LiveCodeRunnerProps) {
 
       const data = await response.json();
 
+      const truncate = (raw: string) =>
+        raw.length > MAX_OUTPUT_CHARS
+          ? raw.slice(0, MAX_OUTPUT_CHARS) + `\n\n[Output truncated — ${raw.length.toLocaleString()} characters total]`
+          : raw;
+
       if (data.compile && data.compile.code !== 0) {
-        setOutput(`Compilation Error:\n${data.compile.output}`);
+        setOutput(truncate(`Compilation Error:\n${data.compile.output}`));
       } else if (data.run) {
-        if (data.run.code !== 0) {
-          setOutput(`Runtime Error (Exit Code: ${data.run.code}):\n${data.run.output}`);
+        if (data.run.signal === "SIGKILL") {
+          setOutput("Execution timed out or memory limit exceeded.");
+        } else if (data.run.code !== 0) {
+          setOutput(truncate(`Runtime Error (Exit Code: ${data.run.code}):\n${data.run.output}`));
         } else {
-          setOutput(data.run.output || "Program finished with no output.");
+          setOutput(truncate(data.run.output || "Program finished with no output."));
         }
       } else {
         setOutput(data.message || "An unknown error occurred.");
@@ -74,7 +87,11 @@ export function LiveCodeRunner({ onShare }: LiveCodeRunnerProps) {
       toast.error("Nothing to share");
       return;
     }
-    onShare(code, language.id, output);
+    const shareOutput =
+      output.length > MAX_SHARE_CHARS
+        ? output.slice(0, MAX_SHARE_CHARS) + "... [truncated]"
+        : output;
+    onShare(code, language.id, shareOutput);
     setIsOpen(false);
   };
 

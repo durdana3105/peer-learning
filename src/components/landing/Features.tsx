@@ -52,7 +52,7 @@ export function Features() {
   return (
     <>
       {/* Stats */}
-      <section className="container mx-auto mt-20 grid grid-cols-2 gap-6 px-6 py-10 text-center md:grid-cols-4">
+      <section id="stats" className="container mx-auto mt-20 grid grid-cols-2 gap-6 px-6 py-10 text-center md:grid-cols-4">
         {stats.map((s, i) => (
           <motion.div
             key={i}

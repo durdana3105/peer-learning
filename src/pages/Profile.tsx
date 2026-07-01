@@ -1,10 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 
 import { Camera, Save, Sparkles, User, Flame, Zap, Trophy, Lock } from "lucide-react";
 import StreakStats from "@/components/StreakStats";
+import { AvatarUpload } from "@/components/AvatarUpload";
 
 import {
   calculateLevel,
@@ -22,8 +24,8 @@ const avatars = [
   "https://api.dicebear.com/7.x/adventurer/svg?seed=David",
   "https://api.dicebear.com/7.x/adventurer/svg?seed=Sophia",
 ];
-
-const EditProfile = () => {
+const MAX_BIO_CHARS = 300;
+const Profile = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
@@ -77,27 +79,36 @@ const EditProfile = () => {
   // SAVE PROFILE
   const handleSave = async () => {
     setLoading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const user = data?.session?.user;
+      if (!user) {
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
+if (profile.bio.length > MAX_BIO_CHARS) {
+        toast.error(`Bio must be ${MAX_BIO_CHARS} characters or fewer.`);
+        return;
+      }
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          name: profile.name,
+          bio: profile.bio,
+          skills: Array.isArray(profile.skills) ? profile.skills : profile.skills.split(",").map((s: string) => s.trim()).filter(Boolean),
+          avatar_url: profile.avatar_url,
+        })
+        .eq("id", user.id);
 
-    const { data } = await supabase.auth.getSession();
-
-    const user = data?.session?.user;
-
-    if (!user) return;
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        name: profile.name,
-        bio: profile.bio,
-        skills: Array.isArray(profile.skills) ? profile.skills : profile.skills.split(",").map((s: string) => s.trim()),
-        avatar_url: profile.avatar_url,
-      })
-      .eq("id", user.id);
-
-    setLoading(false);
-
-    if (!error) {
-      alert("Profile Updated Successfully 🚀");
+      if (error) {
+        toast.error("Failed to update profile: " + error.message);
+      } else {
+        toast.success("Profile updated successfully!");
+      }
+    } catch (err: any) {
+      toast.error("An unexpected error occurred: " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -128,7 +139,7 @@ const EditProfile = () => {
             </div>
 
             <h1 className="text-5xl font-bold mb-3">Edit Profile</h1>
-<button
+            <button
               onClick={() => navigate('/profile')}
               className="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-gray-300 px-4 py-2 rounded-full hover:border-cyan-400/50 hover:text-cyan-300 transition mt-2"
             >
@@ -145,17 +156,11 @@ const EditProfile = () => {
 
             {/* CURRENT AVATAR */}
             <div className="flex justify-center mb-8">
-              <div className="relative">
-                <img
-                  src={profile.avatar_url}
-                  alt="avatar"
-                  className="w-36 h-36 rounded-full border-4 border-cyan-400 object-cover shadow-2xl shadow-cyan-500/20"
-                />
-
-                <div className="absolute bottom-2 right-2 bg-cyan-400 p-3 rounded-full">
-                  <Camera size={20} className="text-black" />
-                </div>
-              </div>
+              <AvatarUpload
+                currentAvatarUrl={profile.avatar_url}
+                onUploadSuccess={(url) => setProfile({ ...profile, avatar_url: url })}
+                onUploadError={(error) => alert(error)}
+              />
             </div>
 
             {/* AVATAR OPTIONS */}
@@ -175,11 +180,10 @@ const EditProfile = () => {
                       avatar_url: avatar,
                     })
                   }
-                  className={`relative rounded-full p-1 transition-all ${
-                    profile.avatar_url === avatar
-                      ? "bg-gradient-to-r from-cyan-400 to-purple-500"
-                      : "bg-white/10"
-                  }`}
+                  className={`relative rounded-full p-1 transition-all ${profile.avatar_url === avatar
+                    ? "bg-gradient-to-r from-cyan-400 to-purple-500"
+                    : "bg-white/10"
+                    }`}
                 >
                   <img
                     src={avatar}
@@ -247,22 +251,33 @@ const EditProfile = () => {
             </div>
           </div>
 
-          {/* BIO */}
+{/* BIO */}
           <div className="mt-6">
             <label className="block text-sm text-gray-400 mb-2">Bio</label>
-
-            <textarea
-              rows={5}
-              value={profile.bio}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  bio: e.target.value,
-                })
-              }
-              placeholder="Tell others about yourself..."
-              className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-cyan-400 transition resize-none"
-            />
+            <div className="relative">
+              <textarea
+                rows={5}
+                value={profile.bio}
+                onChange={(e) => {
+                  if (e.target.value.length <= MAX_BIO_CHARS) {
+                    setProfile({ ...profile, bio: e.target.value });
+                  }
+                }}
+                placeholder="Tell others about yourself..."
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-cyan-400 transition resize-none"
+              />
+              <span
+                className={`absolute bottom-3 right-4 text-xs ${
+                  profile.bio.length >= MAX_BIO_CHARS
+                    ? "text-red-400"
+                    : profile.bio.length >= MAX_BIO_CHARS * 0.9
+                    ? "text-amber-400"
+                    : "text-gray-500"
+                }`}
+              >
+                {profile.bio.length}/{MAX_BIO_CHARS}
+              </span>
+            </div>
           </div>
 
           {/* DYNAMIC STATS */}
@@ -300,7 +315,7 @@ const EditProfile = () => {
               <Trophy className="text-yellow-400" size={28} />
               <h2 className="text-3xl font-bold">Trophy Room</h2>
             </div>
-            
+
             <div className="space-y-10">
               {/* BADGES */}
               <div>
@@ -312,11 +327,10 @@ const EditProfile = () => {
                       <motion.div
                         key={badge.id}
                         whileHover={isUnlocked ? { scale: 1.05 } : {}}
-                        className={`relative overflow-hidden rounded-2xl p-5 border transition-all ${
-                          isUnlocked 
-                            ? "bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.15)]" 
-                            : "bg-white/5 border-white/5 opacity-60 grayscale"
-                        }`}
+                        className={`relative overflow-hidden rounded-2xl p-5 border transition-all ${isUnlocked
+                          ? "bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.15)]"
+                          : "bg-white/5 border-white/5 opacity-60 grayscale"
+                          }`}
                       >
                         {!isUnlocked && (
                           <div className="absolute top-3 right-3 text-gray-500">
@@ -328,13 +342,13 @@ const EditProfile = () => {
                           {badge.name.substring(badge.name.indexOf(' ') + 1)}
                         </h4>
                         <p className="text-xs text-gray-400 mt-1">{badge.description}</p>
-                        
+
                         {/* Progress Bar for Locked */}
                         {!isUnlocked && (
                           <div className="mt-3">
                             <div className="w-full bg-black/50 rounded-full h-1.5 mb-1 overflow-hidden">
-                              <div 
-                                className="bg-gray-500 h-1.5 rounded-full" 
+                              <div
+                                className="bg-gray-500 h-1.5 rounded-full"
                                 style={{ width: `${Math.min(100, (profile.xp / badge.xpRequired) * 100)}%` }}
                               />
                             </div>
@@ -357,11 +371,10 @@ const EditProfile = () => {
                       <motion.div
                         key={achievement.id}
                         whileHover={isUnlocked ? { y: -5 } : {}}
-                        className={`rounded-2xl p-4 border flex flex-col items-center text-center transition-all ${
-                          isUnlocked 
-                            ? "bg-cyan-500/10 border-cyan-400/30 shadow-[0_0_15px_rgba(34,211,238,0.1)]" 
-                            : "bg-white/5 border-white/5 opacity-50 grayscale"
-                        }`}
+                        className={`rounded-2xl p-4 border flex flex-col items-center text-center transition-all ${isUnlocked
+                          ? "bg-cyan-500/10 border-cyan-400/30 shadow-[0_0_15px_rgba(34,211,238,0.1)]"
+                          : "bg-white/5 border-white/5 opacity-50 grayscale"
+                          }`}
                       >
                         <div className="text-3xl mb-2">{achievement.icon}</div>
                         <h4 className={`font-bold text-sm ${isUnlocked ? "text-cyan-300" : "text-gray-500"}`}>
@@ -396,4 +409,6 @@ const EditProfile = () => {
   );
 };
 
-export default EditProfile;
+export default Profile;
+
+// feat/sync-theme-supabase

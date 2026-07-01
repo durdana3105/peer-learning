@@ -63,6 +63,24 @@ export const chatSchemas = {
   },
 };
 
+export const ALLOWED_INTERVIEW_ROLES = [
+    "Software Engineer",
+    "Frontend Engineer",
+    "Backend Engineer",
+    "Full Stack Engineer",
+    "Data Scientist",
+    "Data Engineer",
+    "Machine Learning Engineer",
+    "DevOps Engineer",
+    "Site Reliability Engineer",
+    "Product Manager",
+    "Engineering Manager",
+    "QA Engineer",
+    "Security Engineer",
+    "Mobile Engineer",
+    "Cloud Architect",
+  ];
+
 export const aiSchemas = {
   askAI: {
     body: z.object({
@@ -75,6 +93,46 @@ export const aiSchemas = {
       systemPrompt: z.string().optional(),
       model: z.string().optional()
     }),
+  },
+  mockInterviewChat: {
+    body: z.object({
+      messages: z.array(
+        z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string().trim().min(1).max(2000),
+        })
+      ).min(1).max(50),
+      role: z.string().trim().min(1).max(100)
+        .regex(/^[a-zA-Z0-9 ,\-_]+$/, "Role contains invalid characters")
+        .refine((val) => ALLOWED_INTERVIEW_ROLES.includes(val), {
+            message: `Role must be one of: ${ALLOWED_INTERVIEW_ROLES.join(", ")}`,
+          }
+        ),
+    }),
+  },
+  mockInterviewReport: {
+    body: z
+      .object({
+        messages: z.array(
+          z.object({
+            role: z.enum(["user", "assistant"]),
+            content: z.string().trim().min(1).max(4000),
+          })
+        ).min(1).max(100),
+      })
+      .superRefine((data, ctx) => {
+        const totalLength = data.messages.reduce(
+          (sum, m) => sum + m.content.length,
+          0
+        );
+        if (totalLength > 20000) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["messages"],
+            message: "Total content exceeds maximum allowed length",
+          });
+        }
+      }),
   },
   generateSessionSummary: {
     body: z
@@ -95,5 +153,52 @@ export const aiSchemas = {
           });
         }
       }),
+  },
+};
+
+export const matchSchemas = {
+  getRecommendedPartners: {
+    query: z.object({
+      page: z
+        .string()
+        .optional()
+        .refine(
+          (val) =>
+            val === undefined ||
+            (/^\d+$/.test(val) && parseInt(val, 10) >= 1 && parseInt(val, 10) <= 1000),
+          {
+            message: "page must be an integer between 1 and 1000",
+          }
+        ),
+      limit: z
+        .string()
+        .optional()
+        .refine((val) => val === undefined || (/^\d+$/.test(val) && parseInt(val) >= 1 && parseInt(val) <= 20), {
+          message: "limit must be an integer between 1 and 20",
+        }),
+    }),
+  },
+  getSupabaseDiscover: {
+    query: z.object({
+      search: z.string().optional(),
+      filter: z.string().optional(),
+      limit: z
+        .string()
+        .optional()
+        .refine((val) => val === undefined || (/^\d+$/.test(val) && parseInt(val) >= 1 && parseInt(val) <= 100), {
+          message: "limit must be an integer between 1 and 100",
+        }),
+      page: z
+        .string()
+        .optional()
+        .refine(
+          (val) =>
+            val === undefined ||
+            (/^\d+$/.test(val) && parseInt(val, 10) >= 1 && parseInt(val, 10) <= 1000),
+          {
+            message: "page must be an integer between 1 and 1000",
+          }
+        ),
+    }),
   },
 };

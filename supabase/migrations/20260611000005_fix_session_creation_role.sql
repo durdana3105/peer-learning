@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Mentors can create sessions" ON sessions; CREATE POLICY "Mentors can create sessions" ON sessions FOR INSERT WITH CHECK (mentor_id = auth.uid() AND (SELECT is_mentor FROM profiles WHERE id = auth.uid() AND is_mentor = true LIMIT 1) IS NOT NULL);

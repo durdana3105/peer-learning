@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
+import { sanitizeNotificationActionUrl } from "../utils/notificationActionUrl.js";
 
 const getSupabaseClient = () => {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -28,18 +29,37 @@ export const sendPushNotification = async (req, res, next) => {
     const { user_id, title, body, action_url } = req.body;
 
     if (!user_id || !title || !body) {
-      return res.status(400).json({ error: "user_id, title, and body are required" });
+      return res.status(400).json({
+        error: "user_id, title, and body are required",
+      });
+      
+    }
+    if (
+      typeof user_id !== "string" ||
+      typeof title !== "string" ||
+      typeof body !== "string"
+    ) {
+      return res.status(400).json({
+        error: "Invalid request payload",
+      });
+    }
+    if (title.length > 100 || body.length > 500) {
+      return res.status(400).json({
+        error: "Notification content too long",
+      });
     }
 
     // Security Fix: Prevent IDOR. Enforce that standard users can only send push notifications to themselves.
     // If a webhook secret is used, req.user will be undefined (which bypasses this check if we allow webhooks to send to anyone).
     // If user auth is used, req.user is set.
-    if (req.user && req.user.id !== user_id && !(req.roles && req.roles.includes("admin"))) {
+    const isAdmin = req.user?.role === "admin" || req.user?.app_metadata?.role === "admin" || req.roles?.includes("admin");
+    if (req.user?.id && req.user.id !== user_id && !isAdmin) {
       return res.status(403).json({ error: "Not authorized to send push notifications to this user" });
     }
 
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
     const supabase = getSupabaseClient();
+    const safeActionUrl = sanitizeNotificationActionUrl(action_url);
 
     const { data: subscriptions, error } = await supabase
       .from("push_subscriptions")
@@ -48,6 +68,11 @@ export const sendPushNotification = async (req, res, next) => {
 
     if (error) {
       return res.status(500).json({ error: error.message });
+    }
+    if (!subscriptions?.length) {
+      return res.status(404).json({
+        error: "No push subscriptions found for this user",
+      });
     }
 
     const results = await Promise.allSettled(
@@ -63,11 +88,25 @@ export const sendPushNotification = async (req, res, next) => {
           JSON.stringify({
             title,
             body,
-            action_url: action_url || "/notifications",
+            action_url: safeActionUrl,
           })
         )
       )
     );
+    await Promise.all(
+      results.map(async (result, index) => {
+        if (
+          result.status === "rejected" &&
+          (result.reason?.statusCode === 404 ||
+            result.reason?.statusCode === 410)
+          ) {
+            await supabase
+            .from("push_subscriptions")
+            .delete()
+            .eq("id", subscriptions[index].id);
+          }
+        })
+      );
 
     res.json({
       sent: results.filter((result) => result.status === "fulfilled").length,

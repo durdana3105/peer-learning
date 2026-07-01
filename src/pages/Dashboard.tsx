@@ -63,8 +63,11 @@ const Dashboard = () => {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [recommendedPeers, setRecommendedPeers] = useState<any[]>([]);
+  const [connectedPeerIds, setConnectedPeerIds] = useState<Set<string>>(new Set());
   const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [activityFeed, setActivityFeed] = useState<{ label: string; timestamp: string }[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   const displayName =
     profile?.name?.trim() ||
@@ -98,6 +101,64 @@ const Dashboard = () => {
     fetchProfile();
   }, [user]);
 
+  // Activity Feed — derive from sessions joined, resources uploaded, and study rooms joined
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchActivity = async () => {
+      setActivityLoading(true);
+      try {
+        const [sessionsRes, resourcesRes, roomsRes] = await Promise.all([
+          supabase
+            .from("sessions")
+            .select("title, created_at")
+            .or(`student_id.eq.${user.id},mentor_id.eq.${user.id}`)
+            .order("created_at", { ascending: false })
+            .limit(3),
+          supabase
+            .from("resources")
+            .select("title, created_at")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(3),
+          supabase
+            .from("study_room_participants")
+            .select("joined_at, study_rooms(topic)")
+            .eq("profile_id", user.id)
+            .order("joined_at", { ascending: false })
+            .limit(3),
+        ]);
+
+        if (sessionsRes.error) throw sessionsRes.error;
+        if (resourcesRes.error) throw resourcesRes.error;
+        if (roomsRes.error) throw roomsRes.error;
+
+        const entries: { label: string; timestamp: string }[] = [];
+
+        (sessionsRes.data ?? []).forEach((s: any) => {
+          entries.push({ label: `Joined session: ${s.title ?? "Untitled"}`, timestamp: s.created_at });
+        });
+        (resourcesRes.data ?? []).forEach((r: any) => {
+          entries.push({ label: `Uploaded resource: ${r.title}`, timestamp: r.created_at });
+        });
+        (roomsRes.data ?? []).forEach((p: any) => {
+          const topic = p.study_rooms?.topic ?? "Study Room";
+          entries.push({ label: `Joined study room: ${topic}`, timestamp: p.joined_at });
+        });
+
+        entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setActivityFeed(entries.slice(0, 5));
+      } catch (err) {
+        console.error("Failed to fetch activity feed:", err);
+        setActivityFeed([]);
+      } finally {
+        setActivityLoading(false);
+      }
+    };
+
+    fetchActivity();
+  }, [user]);
+
   // Recommended Peers
   const fetchRecommendedPeers = async (myProfile: Profile) => {
     if (!user?.id) return;
@@ -109,7 +170,8 @@ const Dashboard = () => {
       const res = await fetch(`${API_BASE_URL}/api/match/supabase-discover?limit=3`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`
-        }
+        },
+        credentials:"include"
       });
       
       const data = await res.json();
@@ -138,15 +200,48 @@ const Dashboard = () => {
     }
   };
 
+  const handleConnect = async (peerId: string) => {
+    if (!user || connectedPeerIds.has(peerId)) return;
+    // Optimistic update prevents duplicate inserts from double-clicks
+    setConnectedPeerIds((prev) => new Set([...prev, peerId]));
+    const { error } = await (supabase as any).from("peer_connections").insert({
+      sender_id: user.id,
+      receiver_id: peerId,
+      status: "pending",
+    });
+    if (error) {
+      // Roll back optimistic update on failure
+      setConnectedPeerIds((prev) => {
+        const next = new Set(prev);
+        next.delete(peerId);
+        return next;
+      });
+      return;
+    }
+    const { error: notifError } = await (supabase as any).from("notifications").insert({
+      user_id: peerId,
+      type: "connection_request",
+      body: `${profile?.name || "Someone"} wants to connect with you!`,
+    });
+    if (notifError) {
+      console.error("Failed to send connection notification:", notifError);
+    }
+  };
+
   // Sessions
   useEffect(() => {
     const fetchSessions = async () => {
       // SECURITY/PERF: Limit fetch to top 4 to prevent downloading 10,000 global sessions
       // which would cause massive browser OOM crashes and render thrashing.
+      if (!user?.id) {
+        setUpcomingSessions([]);
+        return;
+      }
       const { data, error } = await supabase
         .from("sessions")
         .select("*")
         .eq("status", "upcoming")
+        .or(`mentor_id.eq.${user.id},student_id.eq.${user.id}`)
         .limit(4);
 
       if (error || !data) {
@@ -158,7 +253,7 @@ const Dashboard = () => {
     };
 
     fetchSessions();
-  }, []);
+  }, [user?.id]);
 
   const [globalRank, setGlobalRank] = useState<number>(0);
 
@@ -200,23 +295,23 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#020617] via-[#020B1F] to-[#050014] text-white">
+    <div className="relative min-h-screen overflow-hidden text-white" style={{ background: 'linear-gradient(135deg, #020617 0%, #0d0d2b 40%, #020617 100%)' }}>
       {currentMode === 'mentor' && (
-        <div className="mb-4 rounded-lg bg-emerald-500/10 border border-emerald-400/20 px-4 py-2 text-sm text-emerald-300">
+        <div className="mx-4 mt-4 rounded-xl border border-emerald-400/20 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 px-4 py-2 text-sm text-emerald-300 backdrop-blur-xl">
           You are viewing in <span className="font-semibold">Mentor Mode</span>
         </div>
       )}
       {currentMode === 'learner' && (
-        <div className="mb-4 rounded-lg bg-blue-500/10 border border-blue-400/20 px-4 py-2 text-sm text-blue-300">
+        <div className="mx-4 mt-4 rounded-xl border border-indigo-400/20 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 px-4 py-2 text-sm text-indigo-300 backdrop-blur-xl">
           You are viewing in <span className="font-semibold">Learner Mode</span>
         </div>
       )}
-      <div className="mb-6 flex gap-3">
+      <div className="mb-6 flex gap-3 px-4 pt-4">
         {currentMode === 'mentor' && (
           <button
             type="button"
             onClick={() => navigate('/mentor-dashboard')}
-            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-emerald-400"
+            className="rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 px-4 py-2 text-sm font-medium text-slate-950 hover:opacity-90 transition-all"
           >
             Go to Mentor Dashboard
           </button>
@@ -225,19 +320,18 @@ const Dashboard = () => {
           <button
             type="button"
             onClick={() => navigate('/learner-dashboard')}
-            className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-400"
+            className="rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-all"
           >
             Go to Learner Dashboard
           </button>
         )}
       </div>
 
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.12),transparent)]" />
-
-      <div className="absolute top-0 right-0 h-[500px] w-[500px] rounded-full bg-purple-500/10 blur-3xl" />
-
-      <div className="absolute bottom-0 left-0 h-[400px] w-[400px] rounded-full bg-cyan-500/10 blur-3xl" />
+      {/* Background Orbs */}
+      <div className="absolute top-0 right-0 h-[500px] w-[500px] orb orb-indigo opacity-40 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 h-[400px] w-[400px] orb orb-cyan opacity-30 pointer-events-none" />
+      <div className="absolute top-1/2 left-1/4 h-[300px] w-[300px] orb orb-purple opacity-20 pointer-events-none" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
 
       <div className="container relative z-10 mx-auto px-4 py-8">
 
@@ -245,16 +339,22 @@ const Dashboard = () => {
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 p-8 backdrop-blur-2xl"
+          className="relative overflow-hidden rounded-3xl p-8"
+          style={{
+            background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(168,85,247,0.1) 50%, rgba(34,211,238,0.08) 100%)',
+            backdropFilter: 'blur(24px)',
+            border: '1px solid rgba(99,102,241,0.2)',
+            boxShadow: '0 0 60px rgba(99,102,241,0.15), inset 0 1px 0 rgba(255,255,255,0.06)',
+          }}
         >
-          <div className="absolute top-0 right-0 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
+          <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, #22d3ee, #6366f1, #a855f7)' }} />
+          <div className="absolute top-0 right-0 h-64 w-64 orb orb-purple opacity-30" />
 
           <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-
             <div>
-              <h1 className="text-4xl font-black leading-tight md:text-5xl">
+              <h1 className="text-4xl font-black leading-tight md:text-5xl" style={{ fontFamily: 'Outfit, sans-serif' }}>
                 Welcome back,
-                <span className="ml-3 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                <span className="ml-3 bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
                   {displayName.split(" ")[0]}
                 </span>
                 👋
@@ -262,21 +362,16 @@ const Dashboard = () => {
 
               <Clock />
 
-              <p className="mt-4 text-lg text-slate-300/80">
-                Continue your learning journey today.
-              </p>
+              <p className="mt-4 text-lg text-slate-300/80">Continue your learning journey today.</p>
 
               <div className="mt-6 flex flex-wrap gap-4">
-
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
+                <div className="rounded-2xl border border-orange-400/20 bg-orange-400/8 px-5 py-3 backdrop-blur-xl text-orange-300 text-sm font-medium">
                   🔥 {profile?.sessions_completed || 0} Day Streak
                 </div>
-
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
+                <div className="rounded-2xl border border-indigo-400/20 bg-indigo-400/8 px-5 py-3 backdrop-blur-xl text-indigo-300 text-sm font-medium">
                   ⚡ {profile?.points || 0} XP
                 </div>
-
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 backdrop-blur-xl">
+                <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/8 px-5 py-3 backdrop-blur-xl text-cyan-300 text-sm font-medium">
                   🎯 {upcomingSessions.length || 0} Sessions
                 </div>
                 
@@ -289,6 +384,7 @@ const Dashboard = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/sessions")}
               className="rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-7 py-4 font-semibold text-black shadow-[0_0_35px_rgba(34,211,238,0.35)]"
             >
               + Start Learning
@@ -308,47 +404,37 @@ const Dashboard = () => {
                 label: "Sessions Joined",
                 value: upcomingSessions.length || 0,
                 icon: "📚",
+                gradient: "from-cyan-400 to-indigo-500",
+                glow: "rgba(34,211,238,0.2)",
               },
               {
                 label: "Study Hours",
                 value: `${(profile?.sessions_completed || 0) * 2}h`,
                 icon: "⏰",
+                gradient: "from-indigo-400 to-purple-500",
+                glow: "rgba(99,102,241,0.2)",
               },
               {
                 label: "Global Rank",
-                value:
-                  "#" +
-                  (
-                    globalRank || 0
-                  ),
+                value: "#" + (globalRank || 0),
                 icon: "🏆",
+                gradient: "from-purple-400 to-pink-500",
+                glow: "rgba(168,85,247,0.2)",
               },
             ].map((stat, i) => (
               <motion.div
                 key={i}
-                whileHover={{
-                  y: -5,
-                  scale: 1.02,
-                }}
-                className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl"
+                whileHover={{ y: -6, scale: 1.02 }}
+                className="group relative overflow-hidden glass-card p-6"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 to-purple-500/10 opacity-0 transition group-hover:opacity-100" />
-
+                <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${stat.gradient}`} />
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: `radial-gradient(circle at 50% 0%, ${stat.glow}, transparent 70%)` }} />
                 <div className="relative z-10 flex items-center justify-between">
-
                   <div>
-                    <p className="text-sm text-slate-400">
-                      {stat.label}
-                    </p>
-
-                    <h3 className="mt-2 text-3xl font-black text-white">
-                      {stat.value}
-                    </h3>
+                    <p className="text-sm text-slate-400">{stat.label}</p>
+                    <h3 className="mt-2 text-3xl font-black text-white">{stat.value}</h3>
                   </div>
-
-                  <div className="text-4xl">
-                    {stat.icon}
-                  </div>
+                  <div className="text-4xl">{stat.icon}</div>
                 </div>
               </motion.div>
             ))}
@@ -358,7 +444,7 @@ const Dashboard = () => {
         <Suspense
           fallback={<div className="mt-10 h-72 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl animate-pulse" />}
         >
-          <AnalyticsCharts profile={profile} sessions={upcomingSessions} />
+          <AnalyticsCharts profile={profile} />
         </Suspense>
 
         <RecommendationPanel profile={profile} sessions={upcomingSessions} />
@@ -371,8 +457,9 @@ const Dashboard = () => {
           <div className="space-y-6 xl:col-span-8">
 
             {/* Sessions */}
-            <section className="rounded-3xl border border-white/10 bg-slate-900/40 p-6 backdrop-blur-2xl">
-              <h2 className="mb-5 text-xl font-semibold">
+            <section className="glass-card p-6">
+              <h2 className="mb-5 text-xl font-semibold flex items-center gap-2">
+                <span className="h-5 w-1 rounded-full bg-gradient-to-b from-cyan-400 to-indigo-500" />
                 📅 Upcoming Sessions
               </h2>
 
@@ -388,8 +475,9 @@ const Dashboard = () => {
             </section>
 
             {/* Peers */}
-            <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
-              <h2 className="mb-5 text-xl font-semibold">
+            <section className="glass-card p-6">
+              <h2 className="mb-5 text-xl font-semibold flex items-center gap-2">
+                <span className="h-5 w-1 rounded-full bg-gradient-to-b from-indigo-400 to-purple-500" />
                 👥 Recommended Peers
               </h2>
 
@@ -432,8 +520,12 @@ const Dashboard = () => {
                         ))}
                       </div>
 
-                      <button className="mt-5 w-full rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-3 font-semibold text-slate-900 transition hover:scale-[1.02]">
-                        Connect with Peer
+                      <button
+                        onClick={() => handleConnect(p.id)}
+                        disabled={connectedPeerIds.has(p.id)}
+                        className="mt-5 w-full rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-3 font-semibold text-slate-900 transition hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {connectedPeerIds.has(p.id) ? "Pending" : "Connect with Peer"}
                       </button>
                     </div>
                 ))}
@@ -445,19 +537,20 @@ const Dashboard = () => {
           <div className="space-y-6 xl:col-span-4">
 
             {/* Activity Feed */}
-            <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
-              <h2 className="mb-5 text-xl font-semibold">
+            <section className="glass-card p-6">
+              <h2 className="mb-5 text-xl font-semibold flex items-center gap-2">
+                <span className="h-5 w-1 rounded-full bg-gradient-to-b from-yellow-400 to-orange-400" />
                 ⚡ Activity Feed
               </h2>
 
               <div className="space-y-4">
-
-                {[
-                  "Joined AI Session",
-                  "Completed React Quiz",
-                  "New Peer Request",
-                  "Earned 50 XP",
-                ].map((activity, i) => (
+                {activityLoading && (
+                  <p className="text-sm text-slate-400">Loading activity…</p>
+                )}
+                {!activityLoading && activityFeed.length === 0 && (
+                  <p className="text-sm text-slate-400">No recent activity yet.</p>
+                )}
+                {!activityLoading && activityFeed.map((item, i) => (
                   <motion.div
                     key={i}
                     whileHover={{ x: 4 }}
@@ -465,49 +558,38 @@ const Dashboard = () => {
                   >
                     <div>
                       <p className="text-sm text-white">
-                        {activity}
+                        {item.label}
                       </p>
-
                       <span className="text-xs text-slate-400">
-                        2 mins ago
+                        {new Date(item.timestamp).toLocaleString()}
                       </span>
                     </div>
-
-                    <div className="text-cyan-400">
-                      ✔
-                    </div>
+                    <div className="text-cyan-400">✔</div>
                   </motion.div>
                 ))}
               </div>
             </section>
 
             {/* Leaderboard */}
-            <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
-              <h2 className="mb-5 text-xl font-semibold">
+            <section className="glass-card p-6">
+              <h2 className="mb-5 text-xl font-semibold flex items-center gap-2">
+                <span className="h-5 w-1 rounded-full bg-gradient-to-b from-yellow-400 to-amber-500" />
                 🏆 Leaderboard
               </h2>
 
               <div className="space-y-3">
-
                 {leaderboard.map((u, i) => (
                   <motion.div
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ scale: 1.02, x: 4 }}
                     key={u.id}
-                    className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 p-4"
+                    className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 p-4 relative overflow-hidden group"
                   >
-                    <div>
-                      <p className="font-medium text-white">
-                        #{i + 1} {u.name}
-                      </p>
-
-                      <span className="text-xs text-slate-400">
-                        Top Learner
-                      </span>
+                    <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl bg-gradient-to-b ${['from-yellow-400 to-amber-500','from-slate-400 to-slate-500','from-orange-600 to-amber-700','from-indigo-400 to-purple-400','from-cyan-400 to-indigo-400'][i]}`} />
+                    <div className="pl-3">
+                      <p className="font-medium text-white">#{i + 1} {u.name}</p>
+                      <span className="text-xs text-slate-400">Top Learner</span>
                     </div>
-
-                    <div className="font-bold text-cyan-400">
-                      {u.points || 0}
-                    </div>
+                    <div className="font-bold text-indigo-400">{u.points || 0} XP</div>
                   </motion.div>
                 ))}
               </div>
@@ -521,3 +603,6 @@ const Dashboard = () => {
 
 export default Dashboard;
 
+/ /   i s s u e   1 1 0 1  
+ 
+// feat/skeleton-loaders

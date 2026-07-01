@@ -3,6 +3,7 @@ import React, { memo, Suspense, useCallback, useContext, useEffect, useMemo, use
 import { ArrowLeft, MessageCircle, Search, Send } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
+import { toast } from "sonner";
 import { AuthContext } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAwardXP } from "@/hooks/useAwardXP";
@@ -140,6 +141,7 @@ const Chat = () => {
   const stopTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const conversationsParentRef = useRef<HTMLDivElement | null>(null);
   const messagesParentRef = useRef<HTMLDivElement | null>(null);
+  const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const filteredUsers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -185,7 +187,7 @@ const Chat = () => {
           .order("name", { ascending: true })
           .limit(100),
         supabase
-          .from("users")
+          .from("profiles")
           .select("*")
           .neq("id", currentUser.id)
           .order("name", { ascending: true })
@@ -287,7 +289,7 @@ const Chat = () => {
 
       const { data, error } = await supabase
         .from("messages")
-        .select("id,sender_id,receiver_id,content,text,created_at,read_at")
+        .select("id,sender_id,receiver_id,content,text,created_at")
         .or(
           `and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedUser.id}),and(sender_id.eq.${selectedUser.id},receiver_id.eq.${currentUser.id})`
         )
@@ -371,10 +373,12 @@ const Chat = () => {
         }
       })
       .subscribe();
+    typingChannelRef.current = typingChannel;
 
     return () => {
       supabase.removeChannel(messageChannel);
       supabase.removeChannel(typingChannel);
+      typingChannelRef.current = null;
 
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
@@ -383,22 +387,18 @@ const Chat = () => {
   }, [currentUser?.id, selectedUser?.id]);
 
   const sendTypingStatus = useCallback(async (isTyping: boolean) => {
-    if (!currentUser?.id || !selectedUser?.id) return;
+    if (!typingChannelRef.current) return;
 
-    await supabase
-      .channel(`chat-typing-${[currentUser.id, selectedUser.id].sort().join("-")}`, {
-        config: { private: true },
-      })
-      .send({
-        type: "broadcast",
-        event: "typing",
-        payload: {
-          senderId: currentUser.id,
-          receiverId: selectedUser.id,
-          isTyping,
-        },
-      });
-  }, [currentUser?.id, selectedUser?.id]);
+    await typingChannelRef.current.send({
+      type: "broadcast",
+      event: "typing",
+      payload: {
+        senderId: currentUser?.id,
+        receiverId: selectedUser?.id,
+        isTyping,
+      },
+    });
+  }, []);
 
   const handleMessageChange = useCallback((value: string) => {
     setMessageText(value);
@@ -419,7 +419,7 @@ const Chat = () => {
     if (!content || !currentUser?.id || !selectedUser?.id) return;
 
     if (content.length > 2000) {
-      alert("Message exceeds maximum length of 2000 characters.");
+      toast.error("Message exceeds maximum length of 2000 characters.");
       return;
     }
 
@@ -656,3 +656,5 @@ const Chat = () => {
 
 export default Chat;
 
+
+// feat/typing-indicators
