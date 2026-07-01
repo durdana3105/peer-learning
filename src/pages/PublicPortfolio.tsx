@@ -11,10 +11,11 @@ import {
   UserRound,
 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
+import { SkillBadge } from "@/components/SkillBadge";
+import { useSkillEndorsements } from "@/hooks/useSkillEndorsements";
 
 type Achievement = {
   title: string;
@@ -35,6 +36,7 @@ type LearningProgress = {
 };
 
 type PortfolioRow = {
+  profile_id: string;
   headline: string;
   github_url: string;
   linkedin_url: string;
@@ -80,90 +82,115 @@ const PublicPortfolio = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  const loadPortfolio = async () => {
-    if (!slug) {
-      setLoading(false);
-      return;
-    }
+    let isCancelled = false;
 
-    setLoading(true);
-
-    try {
-const { data: portfolioData, error: portfolioError } = await (supabase as any)
-  .from("portfolio_profiles")
-  .select(`
-    profile_id,
-    headline,
-    github_url,
-    linkedin_url,
-    skills,
-    achievements,
-    projects,
-    learning_progress
-  `)
-  .eq("slug", slug)
-  .eq("is_published", true)
-  .maybeSingle();
-
-      if (portfolioError) {
-        throw portfolioError;
-      }
-
-      if (!portfolioData) {
-        console.warn("No public portfolio found for slug:", slug);
-        setPortfolio(null);
+    const loadPortfolio = async () => {
+      if (!slug) {
+        setLoading(false);
         return;
       }
 
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select(`
-          name,
-          bio,
-          avatar_url,
-          badges,
-          points,
-          sessions_completed
-        `)
-        .eq("id", (portfolioData as any).profile_id)
-        .maybeSingle();
+      setLoading(true);
 
-      if (profileError) {
-        console.error("Profile query failed:", profileError);
+      try {
+        const { data: portfolioData, error: portfolioError } = await (supabase as any)
+          .from("portfolio_profiles")
+          .select(`
+            profile_id,
+            headline,
+            github_url,
+            linkedin_url,
+            skills,
+            achievements,
+            projects,
+            learning_progress
+          `)
+          .eq("slug", slug)
+          .eq("is_published", true)
+          .maybeSingle();
+
+        if (isCancelled) return;
+
+        if (portfolioError) {
+          throw portfolioError;
+        }
+
+        if (!portfolioData) {
+          console.warn("No public portfolio found for slug:", slug);
+          setPortfolio(null);
+          return;
+        }
+
+        const pd = portfolioData as any;
+
+        if (!pd.profile_id) {
+          console.warn("Portfolio row is missing profile_id");
+          setPortfolio(null);
+          return;
+        }
+
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select(`
+            name,
+            bio,
+            avatar_url,
+            badges,
+            points,
+            sessions_completed
+          `)
+          .eq("id", pd.profile_id)
+          .maybeSingle();
+
+        if (isCancelled) return;
+
+        if (profileError) {
+          console.error("Profile query failed:", profileError);
+        }
+
+        const progress = pd.learning_progress as Partial<LearningProgress> | null;
+
+        setPortfolio({
+          profile_id: pd.profile_id,
+          headline: pd.headline || "",
+          github_url: sanitizeUrl(pd.github_url),
+          linkedin_url: sanitizeUrl(pd.linkedin_url),
+          skills: pd.skills || [],
+          achievements: normalizeArray<Achievement>(pd.achievements),
+          projects: normalizeArray<Project>(pd.projects).map((p: Project) => ({ ...p, url: sanitizeUrl(p.url) })),
+          learning_progress: {
+            focus:
+              typeof progress?.focus === "string"
+                ? progress.focus
+                : "Learning Journey",
+            completed: Number(progress?.completed || 0),
+            goal: Number(progress?.goal || 100),
+          },
+          profiles: profileData,
+        });
+      } catch (err) {
+        if (isCancelled) return;
+        console.error("Failed to load public portfolio:", err);
+        setPortfolio(null);
+      } finally {
+        if (!isCancelled) setLoading(false);
       }
+    };
 
-      const pd = portfolioData as any;
-      const progress = pd.learning_progress as Partial<LearningProgress> | null;
+    void loadPortfolio();
 
-      setPortfolio({
-        headline: pd.headline || "",
-        github_url: sanitizeUrl(pd.github_url),
-        linkedin_url: sanitizeUrl(pd.linkedin_url),
-        skills: pd.skills || [],
-        achievements: normalizeArray<Achievement>(
-          pd.achievements
-        ),
-        projects: normalizeArray<Project>(pd.projects).map((p: Project) => ({ ...p, url: sanitizeUrl(p.url) })),
-        learning_progress: {
-          focus:
-            typeof progress?.focus === "string"
-              ? progress.focus
-              : "Learning Journey",
-          completed: Number(progress?.completed || 0),
-          goal: Number(progress?.goal || 100),
-        },
-        profiles: profileData,
-      });
-    } catch (err) {
-      console.error("Failed to load public portfolio:", err);
-      setPortfolio(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      isCancelled = true;
+    };
+  }, [slug]);
 
-  void loadPortfolio();
-}, [slug]);
+  const { endorsements, loading: endorsementsLoading, toggleEndorsement, currentUserId } =
+    useSkillEndorsements({
+      profileUserId: portfolio?.profile_id ?? "",
+      skills: portfolio?.skills ?? [],
+    });
+
+  const isOwnProfile = currentUserId === portfolio?.profile_id;
 
   const githubUsername = useMemo(
     () => parseGithubUsername(portfolio?.github_url || ""),
@@ -273,9 +300,15 @@ const { data: portfolioData, error: portfolioError } = await (supabase as any)
           <div className="flex flex-wrap gap-2">
             {portfolio.skills.length > 0 ? (
               portfolio.skills.map((skill) => (
-                <Badge key={skill} className="bg-cyan-400/15 px-3 py-1 text-cyan-100 hover:bg-cyan-400/20">
-                  {skill}
-                </Badge>
+                <SkillBadge
+                  key={skill}
+                  skill={skill}
+                  endorsementCount={endorsements[skill]?.count ?? 0}
+                  hasEndorsed={endorsements[skill]?.hasEndorsed ?? false}
+                  onEndorse={(value) => void toggleEndorsement(value)}
+                  canEndorse={Boolean(currentUserId) && !isOwnProfile}
+                  loading={endorsementsLoading}
+                />
               ))
             ) : (
               <p className="text-slate-400">No skills added yet.</p>
