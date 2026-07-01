@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch server.ts",
-    "start": "tsx server.ts"
+    "dev": "node --watch server.js",
+    "start": "node server.js"
   },
   "dependencies": {
     "axios": "^1.16.1",
