@@ -1,7 +1,7 @@
 import React from "react";
 import { Clock } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
-import { FormValues } from "@/hooks/useCreateSession";
+import { FormValues, MIN_CUSTOM_DURATION, MAX_CUSTOM_DURATION } from "@/hooks/useCreateSession";
 import {
   FormControl,
   FormField,
@@ -79,9 +79,9 @@ export const DurationSelector = React.memo(function DurationSelector({
               <FormControl>
                 <Input
                   type="number"
-                  min={15}
-                  max={480}
-                  placeholder="Minutes (e.g. 45)"
+                  min={MIN_CUSTOM_DURATION}
+                  max={MAX_CUSTOM_DURATION}
+                  placeholder={`Minutes (${MIN_CUSTOM_DURATION}–${MAX_CUSTOM_DURATION})`}
                   className={inputCls}
                   {...field}
                 />

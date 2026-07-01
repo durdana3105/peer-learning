@@ -603,6 +603,6 @@ const Dashboard = () => {
 
 export default Dashboard;
 
-/ /   i s s u e   1 1 0 1  
- 
+// issue 1101
+
 // feat/skeleton-loaders

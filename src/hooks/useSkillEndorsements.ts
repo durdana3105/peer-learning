@@ -25,7 +25,7 @@ export function useSkillEndorsements({
 }: UseSkillEndorsementsOptions): UseSkillEndorsementsReturn {
   const { toast } = useToast();
 
-  const [endorsements, setEndorsements] = useState
+  const [endorsements, setEndorsements] = useState<
     Record<string, SkillEndorsementData>
   >(() =>
     Object.fromEntries(skills.map((s) => [s, { count: 0, hasEndorsed: false }]))
