@@ -2,6 +2,7 @@ import { createContext, useEffect, useState, ReactNode, useCallback, useRef, use
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { API_BASE_URL } from "@/config/api";
+import { runSupabaseAuthRequest } from "@/lib/supabaseAuthErrors";
 
 const syncSessionCookie = async (session: Session | null, setSynced?: (v: boolean) => void) => {
   const MAX_RETRIES = 3;
@@ -164,9 +165,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const initializeSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data, error } = await runSupabaseAuthRequest(() =>
+          supabase.auth.getSession()
+        );
 
         if (error) throw error;
+        const session = data?.session ?? null;
         if (!mounted) return;
 
         setSession(session);
@@ -226,14 +230,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = useCallback(async (email: string, password: string, name: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { name },
-          emailRedirectTo: `${window.location.origin}/`
-        },
-      });
+      const { error } = await runSupabaseAuthRequest(() =>
+        supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { name },
+            emailRedirectTo: `${window.location.origin}/`
+          },
+        })
+      );
 
       if (error) throw error;
       return { error: null };
@@ -246,10 +252,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { error } = await runSupabaseAuthRequest(() =>
+        supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+      );
 
       if (error) throw error;
       return { error: null };
@@ -266,7 +274,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = useCallback(async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await runSupabaseAuthRequest(() =>
+        supabase.auth.signOut()
+      );
       if (error) throw error;
       return { error: null };
     } catch (err) {

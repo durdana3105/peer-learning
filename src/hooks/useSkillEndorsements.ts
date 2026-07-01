@@ -34,10 +34,21 @@ export function useSkillEndorsements({
   const [pendingSkills, setPendingSkills] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    // Initial load
     supabase.auth.getUser().then(({ data }) => {
       setCurrentUserId(data.user?.id ?? null);
       setAuthReady(true);
     });
+
+    // Subscribe to changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUserId(session?.user?.id ?? null);
+    });
+
+    // Cleanup subscription
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchEndorsements = useCallback(async () => {

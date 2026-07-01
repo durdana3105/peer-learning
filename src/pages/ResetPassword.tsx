@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { runSupabaseAuthRequest } from "@/lib/supabaseAuthErrors";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -72,20 +73,19 @@ const ResetPassword = () => {
       return;
     }
 
-    try {
-      const { error } = await supabase.auth.updateUser({ password });
+    const { error } = await runSupabaseAuthRequest(() =>
+      supabase.auth.updateUser({ password })
+    );
 
-      if (error) {
-        setMessage(error.message);
-      } else {
-        setMessage("Password updated successfully! Redirecting to login...");
-        setTimeout(() => {
-          navigate("/login");
-        }, 2000);
-      }
-    } catch (error) {
-      setMessage("Something went wrong. Please request a new reset link.");
+    if (error) {
+      setMessage(error.message);
+      return;
     }
+
+    setMessage("Password updated successfully! Redirecting to login...");
+    setTimeout(() => {
+      navigate("/login");
+    }, 2000);
   };
 
   return (

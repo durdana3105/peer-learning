@@ -19,6 +19,13 @@ type UploadResourceResult =
   | { success: true; data: Resource }
   | { success: false; error: string };
 
+type UploadApiResponse = {
+  success: boolean;
+  data?: {
+    path?: string;
+  };
+};
+
 const getFileExtension = (filename: string) => {
   const parts = filename.split(".");
   return parts.length > 1 ? parts.pop()!.toLowerCase() : "";
@@ -72,7 +79,7 @@ export const uploadResource = async (
   const session = await supabase.auth.getSession();
   const token = session.data.session?.access_token;
 
-  let uploadResponse;
+  let uploadResponse: UploadApiResponse;
   try {
     const res = await fetch(`${API_BASE_URL}/api/upload`, {
       method: "POST",
@@ -106,13 +113,21 @@ export const uploadResource = async (
     };
   }
 
+  const uploadedPath = uploadResponse.data?.path;
+  if (!uploadedPath) {
+    return {
+      success: false,
+      error: "Upload failed: missing uploaded file path.",
+    };
+  }
+
   try {
     const { data, error } = await (supabase as any)
       .from("resources")
       .insert({
         title,
         description,
-        file_url: filePath,
+        file_url: uploadedPath,
         file_type: fileType,
         file_size: file.size,
         tags,
@@ -134,7 +149,25 @@ export const uploadResource = async (
       data: data as Resource,
     };
   } catch (err: any) {
-    logError(err, { context: "uploadResource.insert", filePath });
+    try {
+      const { error: cleanupError } = await supabase.storage
+        .from("resources")
+        .remove([uploadedPath]);
+
+      if (cleanupError) {
+        logError(cleanupError, {
+          context: "uploadResource.cleanup",
+          filePath: uploadedPath,
+        });
+      }
+    } catch (cleanupErr) {
+      logError(cleanupErr, {
+        context: "uploadResource.cleanup",
+        filePath: uploadedPath,
+      });
+    }
+
+    logError(err, { context: "uploadResource.insert", filePath: uploadedPath });
     return {
       success: false,
       error: err.message || "Failed to save resource metadata",

@@ -49,7 +49,11 @@ const getSubmissionRecord = (): SubmissionRecord => {
 };
 
 const saveSubmissionRecord = (record: SubmissionRecord) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
+  } catch (error) {
+    console.warn("Unable to save contact submission locally.", error);
+  }
 };
 
 const checkRateLimit = (
