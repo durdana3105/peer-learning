@@ -5,6 +5,7 @@ import { API_BASE_URL } from "@/config/api";
 import { toast } from "sonner";
 import { Loader2, Send, Bot, User, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { useNavigate } from "react-router-dom";
 
 type Message = {
   role: "system" | "user" | "assistant";
@@ -43,6 +44,7 @@ const MockInterview = () => {
   const [generatingReport, setGeneratingReport] = useState(false);
   const [report, setReport] = useState<Report | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -105,6 +107,10 @@ const MockInterview = () => {
     setInputValue("");
     await sendMessage(updatedMessages);
   };
+  /**
+   * Ends the current interview session, generates an AI evaluation report,
+   * and persists the session data to the database.
+   */
 
   const endInterview = async () => {
     if (messages.length < 3) {
@@ -134,6 +140,21 @@ const MockInterview = () => {
 
       if (!response.ok) throw new Error("Failed to generate report");
       const data = await response.json();
+      const { error: insertError } = await (supabase as any).from("interview_sessions").insert({
+        user_id: user!.id,
+        role,
+        messages,
+        strengths: data.strengths,
+        improvements: data.areas_for_improvement,
+        overall_score: data.overall_score,
+        summary: data.summary,
+      });
+
+      if (insertError) {
+        console.error("Failed to save interview session:", insertError);
+        toast.error("Interview completed but failed to save to history.");
+      }
+
       setReport(data);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to generate evaluation report.";
@@ -239,12 +260,18 @@ const MockInterview = () => {
                 </ul>
               </div>
 
-              <div className="md:col-span-2 flex justify-center mt-8">
+              <div className="md:col-span-2 flex justify-center mt-8 gap-4">
                 <button
                   onClick={() => window.location.reload()}
                   className="bg-slate-800 hover:bg-slate-700 px-6 py-3 rounded-xl font-medium transition-colors"
                 >
                   Start Another Interview
+                </button>
+                <button
+                    onClick={() => navigate("/interview-history")}
+                    className="bg-cyan-600 hover:bg-cyan-500 px-6 py-3 rounded-xl font-medium text-white transition-colors"
+                  >
+                    View History
                 </button>
               </div>
             </div>
