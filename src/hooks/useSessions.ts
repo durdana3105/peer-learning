@@ -72,12 +72,6 @@ export function useSessions(user: any) {
     filtered = filtered.filter((s) =>
       allowedStatuses.includes(s.status?.toLowerCase())
     );
-    const allowedStatuses = TAB_TO_STATUS[selectedTab] || [];
-        filtered = filtered.filter((s) =>
-          allowedStatuses.includes(s.status?.toLowerCase())
-        );
-  
-
     if (search) {
       filtered = filtered.filter(
         (s) =>
