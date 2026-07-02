@@ -457,6 +457,7 @@ const Dashboard = () => {
               skills: profile.skills,
               learning_preferences: profile.learning_style ? [profile.learning_style] : [],
               github_url: null,
+              social_url: null,
             }}
             className="mb-6"
           />
