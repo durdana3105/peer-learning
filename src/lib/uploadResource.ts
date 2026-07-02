@@ -34,6 +34,16 @@ const getFileExtension = (filename: string) => {
 const sanitizeFilename = (filename: string) =>
   filename.replace(/[^a-zA-Z0-9._-]/g, "_");
 
+/**
+ * Uploads a file to the custom Express API and then creates a corresponding metadata record in the Supabase 'resources' table.
+ * This dual-upload strategy ensures files are stored securely while maintaining queryable metadata.
+ *
+ * @param {File} file - The file object to upload.
+ * @param {string} title - The title of the resource.
+ * @param {string} description - A brief description of the resource.
+ * @param {string[]} tags - An array of string tags associated with the resource.
+ * @returns {Promise<UploadResourceResult>} A promise that resolves to an object indicating success or failure, along with the resource data or error message.
+ */
 export const uploadResource = async (
   file: File,
   title: string,

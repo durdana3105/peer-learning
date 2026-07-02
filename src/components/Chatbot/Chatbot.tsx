@@ -1,18 +1,26 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useChatbot } from "@/hooks/useChatbot";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 
+/**
+ * Chatbot component that provides a floating AI assistant interface.
+ * The complex conversational logic and state management are abstracted into the `useChatbot` hook
+ * to keep this component focused purely on presentation and user interactions.
+ */
 export default function Chatbot() {
+  // Manages the visibility of the chatbot window
   const [isOpen, setIsOpen] = useState(false);
   const { messages, input, setInput, loading, chatEndRef, sendMessage } =
     useChatbot();
+
+  const toggleChat = useCallback(() => setIsOpen((prev) => !prev), []);
 
   return (
     <>
       {/* 💬 Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleChat}
         aria-label="Open AI Assistant"
         title="Open AI Assistant"
         className="fixed bottom-5 left-5 z-[10000] bg-black text-white p-4 rounded-full shadow-xl hover:scale-110 transition"
@@ -35,7 +43,7 @@ export default function Chatbot() {
             </span>
 
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={toggleChat}
               aria-label="Close AI Assistant"
               title="Close AI Assistant"
             >
@@ -55,6 +63,7 @@ export default function Chatbot() {
               </div>
             )}
 
+            {/* Empty div used as an anchor for auto-scrolling to the bottom when new messages arrive */}
             <div ref={chatEndRef}></div>
           </div>
 
