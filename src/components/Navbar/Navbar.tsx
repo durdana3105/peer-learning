@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import { Link } from "react-router-dom";
 import { BookOpen, Menu, X } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -8,10 +8,25 @@ import { DesktopNav } from "./DesktopNav";
 import { MobileNav } from "./MobileNav";
 import { UserMenu } from "./UserMenu";
 
-export default function Navbar() {
+const Navbar = memo(function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, profileName, isAdmin, handleLogout } = useNavbarProfile();
   const { setTheme } = useTheme();
+
+  const toggleMobileMenu = useCallback(() => setMobileOpen((prev) => !prev), []);
+
+  const handleMobileMenuKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>
+  ) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggleMobileMenu();
+    }
+
+    if (event.key === "Escape" && mobileOpen) {
+      setMobileOpen(false);
+    }
+  };
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#050816]/80 backdrop-blur-xl">
@@ -20,9 +35,13 @@ export default function Navbar() {
         <Link
           to={user ? "/dashboard" : "/"}
           className="flex items-center gap-2"
+          aria-label="PeerLearn home page"
         >
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/30">
-            <BookOpen className="h-5 w-5 text-white" />
+            <BookOpen
+              className="h-5 w-5 text-white"
+              aria-hidden="true"
+            />
           </div>
           <h1 className="text-xl font-bold text-white">
             Peer
@@ -47,10 +66,16 @@ export default function Navbar() {
 
         {/* MOBILE BUTTON */}
         <button
-          onClick={() => setMobileOpen(!mobileOpen)}
+          onClick={toggleMobileMenu}
+          onKeyDown={handleMobileMenuKeyDown}
           className="rounded-lg border border-white/10 bg-white/5 p-3 text-white md:hidden active:scale-95"
-          aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          aria-label={
+            mobileOpen
+              ? "Close navigation menu"
+              : "Open navigation menu"
+          }
           aria-expanded={mobileOpen}
+          aria-controls="mobile-navigation-menu"
         >
           {mobileOpen ? <X /> : <Menu />}
         </button>
@@ -58,13 +83,17 @@ export default function Navbar() {
 
       {/* MOBILE MENU */}
       {mobileOpen && (
-        <MobileNav
-          user={user}
-          isAdmin={isAdmin}
-          setMobileOpen={setMobileOpen}
-          handleLogout={handleLogout}
-        />
+        <div id="mobile-navigation-menu">
+          <MobileNav
+            user={user}
+            isAdmin={isAdmin}
+            setMobileOpen={setMobileOpen}
+            handleLogout={handleLogout}
+          />
+        </div>
       )}
     </nav>
   );
-}
+});
+
+export default Navbar;

@@ -175,7 +175,7 @@ export const getSupabaseDiscover = async (req, res) => {
       .from("profiles")
       .select("id, name, skills, interests, learning_goals, teach_subjects, learn_subjects, learning_style, preferred_language, timezone")
       .neq("id", userId)
-      .range(skip, skip + limit - 1);
+      .limit(1000);
 
     if (search.trim()) {
       // Keep only alphanumeric chars, spaces, and hyphens.
@@ -273,7 +273,13 @@ export const getSupabaseDiscover = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      recommendations: matched.slice(0, limit),
+      recommendations: matched.slice(skip, skip + limit),
+      pagination: {
+        page,
+        limit,
+        total: matched.length,
+        totalPages: Math.ceil(matched.length / limit)
+      }
     });
   } catch (error) {
     console.error("Supabase Discover Error:", error);

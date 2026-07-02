@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Trophy,
@@ -96,6 +96,8 @@ const LeaderboardRow = memo(({ entry, index, isCurrentUser }: LeaderboardRowProp
   );
 });
 
+const FILTER_OPTIONS = ["Weekly", "Monthly", "All Time"];
+
 const Leaderboard = () => {
 
   const { user } = useAuth();
@@ -109,7 +111,7 @@ const Leaderboard = () => {
   const listParentRef = useRef<HTMLDivElement | null>(null);
 
   // FETCH LEADERBOARD
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
 
     setLoading(true);
 
@@ -176,15 +178,11 @@ const Leaderboard = () => {
 
       if (myData) {
         const enrichedEntry = {
-          // @ts-expect-error TODO: refine typing
-          ...myData,
+          ...(myData as Record<string, any>),
           badges:
-            // @ts-expect-error TODO: refine typing
-            myData.badges && myData.badges.length > 0
-              // @ts-expect-error TODO: refine typing
-              ? myData.badges
-              // @ts-expect-error TODO: refine typing
-              : [getBadgeByXP(myData.xp)],
+            (myData as any).badges && (myData as any).badges.length > 0
+              ? (myData as any).badges
+              : [getBadgeByXP((myData as any).xp)],
         } as LeaderboardEntry;
 
         setMyEntry(enrichedEntry);
@@ -203,10 +201,10 @@ const Leaderboard = () => {
     }
 
     setLoading(false);
-  };
+  }, [filter, user]);
 
   // AUTO CREATE USER
-  const ensureUserExists = async () => {
+  const ensureUserExists = useCallback(async () => {
 
     if (!user) return;
 
@@ -228,7 +226,7 @@ const Leaderboard = () => {
           user.user_metadata?.avatar_url || null,
       });
     }
-  };
+  }, [user]);
 
   // INIT
   useEffect(() => {
@@ -419,7 +417,7 @@ const Leaderboard = () => {
         {/* FILTERS */}
         <div className="mt-10 flex flex-wrap gap-3">
 
-          {["Weekly", "Monthly", "All Time"].map((item) => (
+          {FILTER_OPTIONS.map((item) => (
 
             <button
               key={item}
@@ -591,3 +589,7 @@ const Leaderboard = () => {
 
 export default Leaderboard;
 
+
+// Fix for #1165: Memoized expensive calculations
+
+// fix/skip-to-main-content

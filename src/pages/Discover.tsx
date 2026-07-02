@@ -25,6 +25,8 @@ const filters = [
   "Python",
 ];
 
+const PAGE_SIZE = 12;
+
 const containerVariants = {
   hidden: {},
   show: {
@@ -61,7 +63,7 @@ const DiscoverPeerCard = memo(({ user, isOnline, onConnect, isConnected }: any) 
         <div className="relative">
           <img
             src={user.avatar_url || "https://i.pravatar.cc/150"}
-            alt={user.name}
+            alt={`${user.name || "User"} profile picture`}
             loading="lazy"
             decoding="async"
             className="w-16 h-16 rounded-full object-cover border-2 border-cyan-400"
@@ -110,6 +112,7 @@ const Discover = () => {
     useState<any[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -118,6 +121,8 @@ const Discover = () => {
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [connections, setConnections] = useState<string[]>([]);
 
+  const [page, setPage] = useState(1);
+
   // DEBOUNCE SEARCH
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -125,6 +130,12 @@ const Discover = () => {
     }, 400);
     return () => clearTimeout(timer);
   }, [search]);
+
+  // RESET PAGINATION whenever the active search/filter changes so users
+  // always land on page 1 of the new result set
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, selectedFilter]);
 
   // 1. FETCH INITIAL DATA (User Profile & Connections) - Runs ONCE on mount
   useEffect(() => {
@@ -159,6 +170,11 @@ const Discover = () => {
         }
       } catch (err) {
         console.error("Error fetching initial data:", err);
+
+        setError(
+          "Unable to load your profile information. Please refresh the page and try again."
+        );
+        setLoading(false);
       }
     };
 
@@ -172,6 +188,7 @@ const Discover = () => {
       if (!currentUser) return;
       
       setLoading(true);
+      setError("");
       try {
         const searchParams = new URLSearchParams();
         if (debouncedSearch.trim()) searchParams.append("search", debouncedSearch.trim());
@@ -194,6 +211,10 @@ const Discover = () => {
         }
       } catch (err) {
         console.error("Error fetching peers:", err);
+
+        setError(
+          "Unable to load peer recommendations right now. Please check your connection and try again."
+        );
       } finally {
         setLoading(false);
       }
@@ -232,6 +253,18 @@ const Discover = () => {
   }, [currentUser?.id]);
 
   // Match scoring has been moved to the Node.js backend to prevent O(N) payload bloat and severe UI jank
+
+  // Client-side pagination: slice the already-fetched filteredUsers array
+  // into pages of PAGE_SIZE instead of rendering all 100 cards at once.
+  const pagedUsers = useMemo(() => {
+    return filteredUsers.slice(0, page * PAGE_SIZE);
+  }, [filteredUsers, page]);
+
+  const remainingCount = filteredUsers.length - pagedUsers.length;
+
+  const handleLoadMore = useCallback(() => {
+    setPage((prev) => prev + 1);
+  }, []);
 
   const handleConnect = useCallback(async (peerId: string) => {
     if (!currentUser || connections.includes(peerId)) return;
@@ -283,7 +316,7 @@ const Discover = () => {
                 currentUser?.avatar_url ||
                 "https://i.pravatar.cc/150"
               }
-              alt="avatar"
+              alt={`${currentUser?.name || "Current user"} profile picture`}
               loading="lazy"
               decoding="async"
               className="w-12 h-12 rounded-full border-2 border-cyan-400 object-cover"
@@ -370,7 +403,7 @@ const Discover = () => {
           </h2>
         </div>
 
-        {/* LOADING */}
+        {/* LOADING / ERROR */}
         {loading ? (
           <div className="grid md:grid-cols-3 gap-6">
             {[1, 2, 3].map((item) => (
@@ -397,6 +430,25 @@ const Discover = () => {
               </div>
             ))}
           </div>
+        ) : error ? (
+          <div className="text-center py-24">
+            <Users
+              size={70}
+              className="mx-auto text-red-400 mb-6"
+            />
+
+            <h2 className="text-3xl font-bold mb-3">
+              Something went wrong
+            </h2>
+
+            <p className="text-gray-400 max-w-lg mx-auto">
+              {error}
+            </p>
+
+            <p className="text-gray-500 text-sm mt-3">
+              Refresh the page to retry loading recommendations.
+            </p>
+          </div>
         ) : filteredUsers.length === 0 ? (
           <div className="text-center py-24">
             <Users
@@ -413,22 +465,35 @@ const Discover = () => {
             </p>
           </div>
         ) : (
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            className="grid md:grid-cols-3 gap-6"
-          >
-            {filteredUsers.map((u) => (
-              <DiscoverPeerCard
-                key={u.id}
-                user={u}
-                isOnline={onlineUsers.includes(u.id)}
-                onConnect={handleConnect}
-                isConnected={connections.includes(u.id)}
-              />
-            ))}
-          </motion.div>
+          <>
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="grid md:grid-cols-3 gap-6"
+            >
+              {pagedUsers.map((u) => (
+                <DiscoverPeerCard
+                  key={u.id}
+                  user={u}
+                  isOnline={onlineUsers.includes(u.id)}
+                  onConnect={handleConnect}
+                  isConnected={connections.includes(u.id)}
+                />
+              ))}
+            </motion.div>
+
+            {remainingCount > 0 && (
+              <div className="flex justify-center mt-10">
+                <button
+                  onClick={handleLoadMore}
+                  className="px-8 py-3 rounded-2xl font-bold bg-white/5 border border-white/10 hover:border-cyan-400/40 hover:bg-white/10 transition"
+                >
+                  Load More ({remainingCount} remaining)
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -436,4 +501,4 @@ const Discover = () => {
 };
 
 export default Discover;
-
+// fix/debounce-search

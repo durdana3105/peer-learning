@@ -47,7 +47,6 @@ export function Hero({ streak }: HeroProps) {
           <Link to="/signup">
             <Button className="rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-7 text-base font-bold text-black shadow-[0_0_40px_rgba(34,211,238,0.4)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_60px_rgba(34,211,238,0.6)]">
               Join as Learner
-              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
           <Link to="/become-mentor">
@@ -55,7 +54,7 @@ export function Hero({ streak }: HeroProps) {
               variant="outline"
               className="rounded-2xl border border-cyan-400/40 bg-white/5 px-8 py-7 text-base font-semibold text-cyan-300 backdrop-blur-xl transition-all duration-300 hover:bg-cyan-400/10 hover:scale-105"
             >
-              Become a Mentor.
+              Become a Mentor
             </Button>
           </Link>
         </div>

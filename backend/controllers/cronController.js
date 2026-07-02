@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
+import { sanitizeNotificationActionUrl } from "../utils/notificationActionUrl.js";
 
 const getSupabaseClient = () => {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -83,10 +84,15 @@ export const dispatchPushNotifications = async (req, res, next) => {
     if (subError) {
       const notificationIds = notifications.map((n) => n.id);
       if (notificationIds.length > 0) {
-        await supabase
+        const { error: rollbackError } = await supabase
           .from("notifications")
           .update({ push_claimed_at: null })
           .in("id", notificationIds);
+        if (rollbackError) {
+          return res.status(500).json({
+            error: `Subscription fetch failed, and rollback failed: ${rollbackError.message}`,
+          });
+        }
       }
       return res.status(500).json({ error: subError.message });
     }
@@ -116,7 +122,7 @@ export const dispatchPushNotifications = async (req, res, next) => {
             JSON.stringify({
               title: notification.title,
               body: notification.body,
-              action_url: notification.action_url || "/notifications",
+              action_url: sanitizeNotificationActionUrl(notification.action_url),
             })
           )
         )
@@ -191,14 +197,18 @@ export const sendSessionReminders = async (req, res, next) => {
           action_url: "/sessions",
         }));
       }) ?? [];
+    const safeNotifications = notifications.map((notification) => ({
+      ...notification,
+      action_url: sanitizeNotificationActionUrl(notification.action_url),
+    }));
 
-    if (notifications.length === 0) {
+    if (safeNotifications.length === 0) {
       return res.json({ inserted: 0 });
     }
 
     const { error: insertError } = await supabase
       .from("notifications")
-      .upsert(notifications, {
+      .upsert(safeNotifications, {
         onConflict: "user_id,entity_id,type",
         ignoreDuplicates: true,
       });
@@ -207,7 +217,7 @@ export const sendSessionReminders = async (req, res, next) => {
       return res.status(500).json({ error: insertError.message });
     }
 
-    res.json({ inserted: notifications.length });
+    res.json({ inserted: safeNotifications.length });
   } catch (error) {
     next(error);
   }
@@ -280,13 +290,18 @@ export const sendMentorshipCheckinReminders = async (req, res, next) => {
       });
     }
 
-    if (notifications.length === 0) {
+    const safeNotifications = notifications.map((notification) => ({
+      ...notification,
+      action_url: sanitizeNotificationActionUrl(notification.action_url),
+    }));
+
+    if (safeNotifications.length === 0) {
       return res.json({ inserted: 0 });
     }
 
     const { error: insertError } = await supabase
       .from("notifications")
-      .upsert(notifications, {
+      .upsert(safeNotifications, {
         onConflict: "user_id,entity_id,type",
         ignoreDuplicates: true,
       });
@@ -295,7 +310,7 @@ export const sendMentorshipCheckinReminders = async (req, res, next) => {
       return res.status(500).json({ error: insertError.message });
     }
 
-    res.json({ inserted: notifications.length });
+    res.json({ inserted: safeNotifications.length });
   } catch (error) {
     next(error);
   }

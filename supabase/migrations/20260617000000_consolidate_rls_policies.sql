@@ -452,9 +452,9 @@ CREATE POLICY "Users can modify whiteboard states"
 --------------------------------------------------------------------------------
 -- portfolio_profiles
 CREATE POLICY "Anyone can view portfolio_profiles" 
-  ON public.portfolio_profiles FOR SELECT USING (true);
+  ON public.portfolio_profiles FOR SELECT USING (is_published = true);
 CREATE POLICY "Users can manage own portfolio_profiles" 
-  ON public.portfolio_profiles FOR ALL USING (id = auth.uid());
+  ON public.portfolio_profiles FOR ALL USING (profile_id = auth.uid());
 
 -- skills_taxonomy
 CREATE POLICY "Anyone can read skills taxonomy" 

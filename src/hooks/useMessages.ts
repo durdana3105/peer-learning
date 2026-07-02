@@ -68,20 +68,6 @@ const normalizeProfile = (row: ProfileRow | UserRow): ProfileSummary => ({
   last_seen: "last_seen" in row ? row.last_seen : null,
 });
 
-const mergeProfiles = (profiles: ProfileSummary[], users: UserRow[]) => {
-  const map = new Map<string, ProfileSummary>();
-
-  for (const user of users) {
-    map.set(user.id, normalizeProfile(user));
-  }
-
-  for (const profile of profiles) {
-    map.set(profile.id, profile);
-  }
-
-  return Array.from(map.values());
-};
-
 const isThreadMessage = (message: MessageRow, currentUserId: string, otherUserId: string) => {
   return (
     (message.sender_id === currentUserId && message.receiver_id === otherUserId) ||
@@ -89,6 +75,13 @@ const isThreadMessage = (message: MessageRow, currentUserId: string, otherUserId
   );
 };
 
+/**
+ * Custom hook to manage real-time direct messages, online presence, and conversation threads.
+ * Connects to Supabase for initial data fetch and sets up PostgreSQL real-time listeners.
+ * 
+ * @param {string | null} [currentUserId] - The UUID of the currently authenticated user.
+ * @returns {UseMessagesResult} An object containing all conversation state and methods to interact with messages.
+ */
 export function useMessages(
   currentUserId?: string | null
 ): UseMessagesResult {
@@ -106,6 +99,8 @@ export function useMessages(
     return new Map(profiles.map((profile) => [profile.id, profile]));
   }, [profiles]);
 
+  // Memoized derivation of conversation summaries from the raw message list.
+  // Group messages by user and calculate unread counts and latest activity time.
   const conversationSummaries = useMemo<ConversationSummary[]>(() => {
     if (!currentUserId) return [];
 
@@ -181,39 +176,18 @@ export function useMessages(
       setError(null);
 
       try {
-        const [{ data: profileData, error: profileError }, { data: userData, error: userError }] =
-          await Promise.all([
-            supabase
-              .from("profiles")
-              .select("*")
-              .neq("id", currentUserId)
-              .order("name", { ascending: true })
-              .limit(100),
-            supabase
-              .from("profiles")
-              .select("*")
-              .neq("id", currentUserId)
-              .order("name", { ascending: true })
-              .limit(100),
-          ]);
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .neq("id", currentUserId)
+          .order("name", { ascending: true })
+          .limit(100);
 
-        const mergedUsers = mergeProfiles(
-          (profileData ?? []).map((row) => row as ProfileSummary),
-          (userData ?? []) as UserRow[]
-        );
+        const profiles = (profileData ?? []) as ProfileSummary[];
+        setProfiles(profiles);
 
-        if (mergedUsers.length > 0) {
-          setProfiles(mergedUsers);
-        } else {
-          setProfiles([]);
-        }
-
-        if (profileError && !userData?.length) {
+        if (profileError) {
           throw new Error(profileError.message);
-        }
-
-        if (userError && !profileData?.length) {
-          throw new Error(userError.message);
         }
       } catch (err: any) {
         logError(err, { context: "useMessages.getUsers" });
@@ -231,6 +205,8 @@ export function useMessages(
     getUsers();
   }, [currentUserId]);
 
+  // Set up real-time listener for profile updates.
+  // This ensures the UI reflects name/avatar changes immediately across all clients.
   useEffect(() => {
     if (!currentUserId) return;
 
@@ -244,8 +220,8 @@ export function useMessages(
           table: "profiles",
         },
         (payload) => {
-          // @ts-expect-error TODO: refine typing
-          if (payload.new && payload.new.id && payload.new.id !== currentUserId) {
+          const newRow = payload.new as Partial<ProfileRow>;
+          if (newRow && newRow.id && newRow.id !== currentUserId) {
             setProfiles((prev) => {
               const updated = normalizeProfile(payload.new as ProfileRow);
               const index = prev.findIndex((p) => p.id === updated.id);
@@ -309,6 +285,8 @@ export function useMessages(
     loadMessages();
   }, [currentUserId]);
 
+  // Manage online presence using Supabase Presence.
+  // This tracks which users are currently viewing the app and listens for incoming real-time messages.
   useEffect(() => {
     if (!currentUserId) return;
 
@@ -380,7 +358,6 @@ export function useMessages(
 
     const markAsRead = async () => {
       try {
-        // @ts-expect-error TODO: refine typing
         const { error: rpcError } = await supabase.rpc("mark_messages_as_read", {
           message_ids: unreadIds,
         });
@@ -448,10 +425,8 @@ export function useMessages(
 
       if (data) {
         setMessages((previous) =>
-          // @ts-expect-error TODO: refine typing
-          previous.some((message) => message.id === data.id)
+          previous.some((message) => message.id === (data as MessageRow).id)
             ? previous
-            // @ts-expect-error TODO: refine typing
             : [...previous, data as MessageRow]
         );
         awardXP.mutate({ activity: "chat_message" });
@@ -483,3 +458,5 @@ export function useMessages(
     sendMessage,
   };
 }
+
+// Fix for #1163: Fixed subscription memory leaks

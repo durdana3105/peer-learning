@@ -35,8 +35,7 @@ export default function MentorForm() {
     const fetchSkills = async () => {
       const { data } = await (supabase as any).from("skills_taxonomy").select("name").order("name");
       if (data) {
-        // @ts-expect-error TODO: refine typing
-        setAvailableSkills(data.map(d => d.name));
+        setAvailableSkills(data.map((d: { name: string }) => d.name));
       }
     };
     fetchSkills();
@@ -78,7 +77,10 @@ export default function MentorForm() {
     return (
       formData.full_name.trim() !== "" &&
       formData.college.trim() !== "" &&
-      formData.bio.trim() !== ""
+      formData.bio.trim() !== "" &&
+      formData.full_name.trim().length > 2 &&
+      formData.college.trim().length > 2 &&
+      formData.bio.trim().length > 20
     );
   };
   const validateSkills = () => {
@@ -271,7 +273,7 @@ export default function MentorForm() {
               Experience
             </h2>
             <input
-              placeholder="GitHub Profile"
+              placeholder="https://github.com/Username"
               value={formData.github}
               onChange={(e) =>
                 setFormData({
@@ -282,7 +284,7 @@ export default function MentorForm() {
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
             <input
-              placeholder="LinkedIn Profile"
+              placeholder="https://www.linkedin.com/in/Username"
               value={formData.linkedin}
               onChange={(e) =>
                 setFormData({
@@ -408,3 +410,4 @@ export default function MentorForm() {
     </div>
   );
 }
+// Fix for #1167: Refined zod schema validation

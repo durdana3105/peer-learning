@@ -175,6 +175,7 @@ describe("POST /mock-interview/chat — all allowed roles are accepted", () => {
 describe("conductMockInterview — role escaping in system prompt", () => {
   beforeEach(() => {
     vi.stubEnv("OPENROUTER_API_KEY", "test-key-949");
+    vi.clearAllMocks();
   });
 
   it("interpolates the sanitised role into the system message sent to OpenRouter", async () => {

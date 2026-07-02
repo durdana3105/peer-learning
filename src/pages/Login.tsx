@@ -7,11 +7,10 @@ import googleIcon from "@/assets/google-icon.svg";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 
 import { useAuth } from "@/contexts/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { AUTH_SERVICE_UNAVAILABLE_MESSAGE, runSupabaseAuthRequest } from "@/lib/supabaseAuthErrors";
 
 
 type Errors = {
@@ -23,8 +22,8 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Errors>({});
 
   const { user, loading, signIn } = useAuth();
@@ -50,12 +49,14 @@ const Login = () => {
     if (!validate()) return;
 
     setIsLoading(true);
+    setAuthError(null);
 
     const { error } = await signIn(email, password);
 
     setIsLoading(false);
 
     if (error) {
+      setAuthError(error.message);
       toast({
         title: "Login failed",
         description: error.message,
@@ -71,35 +72,41 @@ const Login = () => {
   };
 
   const handleGoogleLogin = async () => {
+    setAuthError(null);
+
     if (supabaseMisconfigured) {
+      setAuthError(AUTH_SERVICE_UNAVAILABLE_MESSAGE);
       toast({
         title: "Not configured",
-        description:
-          "Supabase environment variables are not set. Configure VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY or NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.",
+        description: AUTH_SERVICE_UNAVAILABLE_MESSAGE,
         variant: "destructive",
       });
       return;
     }
 
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+    setIsLoading(true);
+
+    const { error } = await runSupabaseAuthRequest(() =>
+      supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
-      });
+      })
+    );
 
-      if (error) {
-        console.error("signInWithOAuth error:", error);
-        toast({
-          title: "Google login failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    } catch (err) {
-      console.error("Uncaught exception in signInWithOAuth:", err);
+    if (error) {
+      setIsLoading(false);
+      setAuthError(error.message);
+      toast({
+        title: "Google login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
     }
+
+    setIsLoading(false);
   };
 
   if (loading) {
@@ -154,12 +161,16 @@ const Login = () => {
           </p>
 
           <div className="mt-8 flex gap-4">
-            <Button className="rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-6 text-black font-semibold hover:scale-105 transition-all">
+            <Button 
+              onClick={() => navigate("/signup")}
+              className="rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-6 text-black font-semibold hover:scale-105 transition-all"
+            >
               Join as Learner
             </Button>
 
             <Button
               variant="outline"
+              onClick={() => navigate("/become-mentor")}
               className="rounded-xl border-cyan-400/20 bg-white/5 px-8 py-6 text-cyan-300 hover:bg-cyan-500/10"
             >
               Become a Mentor
@@ -227,6 +238,14 @@ const Login = () => {
 
           {/* FORM */}
           <form onSubmit={handleSubmit} className="space-y-5">
+            {authError && (
+              <div
+                role="alert"
+                className="rounded-md border border-red-400/40 bg-red-500/10 px-4 py-3 text-left text-sm font-medium text-red-100"
+              >
+                {authError}
+              </div>
+            )}
 
             <div>
               <Input
@@ -267,18 +286,7 @@ const Login = () => {
               </p>
             )}
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={rememberMe}
-                  onCheckedChange={(c) => setRememberMe(!!c)}
-                />
-
-                <Label className="text-slate-300">
-                  Remember me
-                </Label>
-              </div>
-
+            <div className="flex justify-end">
               <Link
                 to="/forgot-password"
                 className="text-sm text-cyan-400 hover:text-cyan-300"
