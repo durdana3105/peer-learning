@@ -59,7 +59,7 @@ A modern peer-to-peer learning platform where students can connect, collaborate,
 - [🚀 Deployment](#%F0%9F%9A%80-deployment-1)
     + [Build Command](#build-command)
 - [🛠️ Troubleshooting](#%F0%9F%9B%A0%EF%B8%8F-troubleshooting)
-- [🌟 Future Enhancements](#%F0%9F%8C%9F-future-enhancements)
+- [🗺️ Feature Roadmap](#%F0%9F%97%BA%EF%B8%8F-feature-roadmap)
 - [🤝 Contributing](#%F0%9F%A4%9D-contributing)
   * [Steps to Contribute](#steps-to-contribute)
 - [💖 Contributors](#%F0%9F%92%96-contributors)
@@ -165,22 +165,22 @@ The **Peer Learning Platform** solves this challenge by enabling students to con
 
 # 🛠️ Tech Stack
 
-# 🎨 Frontend
-- React.js
-- TypeScript
-- JavaScript
-- Tailwind CSS
-
-# ⚙️ Backend
-- Supabase
-- PostgreSQL
-
-# 🔐 Authentication
-- Supabase Authentication
-
-# 🚀 Deployment
-- Vercel
-
+| Category | Technologies |
+|----------|--------------|
+| **Frontend** | React 18, TypeScript, Vite |
+| **UI & Styling** | Tailwind CSS, Radix UI, Shadcn UI, Framer Motion |
+| **Backend** | Node.js, Express.js |
+| **Database** | Supabase, PostgreSQL |
+| **Authentication** | Supabase Authentication |
+| **State Management & Data Fetching** | TanStack React Query |
+| **Forms & Validation** | React Hook Form, Zod |
+| **Charts & Data Visualization** | Chart.js, React Chart.js 2, Recharts |
+| **API Communication** | Axios |
+| **AI Integration** | OpenRouter API |
+| **Video Conferencing** | Jitsi React SDK |
+| **Testing** | Vitest, Playwright, Supertest, Testing Library |
+| **Code Quality** | ESLint |
+| **Deployment** | Vercel |
 ---
 
 # 🏗️ System Architecture
@@ -213,48 +213,137 @@ graph TD
     AIAssistant -->|Verify Token| Auth
     AIAssistant <-->|Generate Text| OpenRouter
 ```
+##Architecture Overview
 
-- **React Frontend**: The client-side application built with React, TypeScript, and Tailwind CSS. Provides the UI for users to interact with the platform.
-- **Supabase Backend**: Handles core backend services.
-  - **Authentication Flow**: Manages user signup, login, and secure sessions via Supabase Auth.
-  - **PostgreSQL Database**: Stores user profiles, learning sessions, and messages securely.
-  - **Real-Time Chat System**: Uses Supabase Realtime for instant messaging and live typing indicators.
-- **AI Assistant Integration**: A custom Node.js/Express server connects to external AI APIs (OpenRouter) to provide smart recommendations and learning support securely.
+The Peer Learning Platform follows a modern full-stack architecture designed to provide scalability, maintainability, and real-time collaboration.
+
+### Frontend Layer
+
+- Built using **React 18**, **TypeScript**, and **Vite**.
+- Uses reusable UI components powered by **Shadcn UI** and **Radix UI**.
+- Handles routing, state management, authentication, and user interactions.
+- Uses **TanStack React Query** for efficient server-state management.
+
+### Backend Layer
+
+- Built with **Node.js** and **Express.js**.
+- Processes API requests.
+- Handles AI assistant communication.
+- Performs request validation and middleware processing.
+
+### Database Layer
+
+- **Supabase** provides:
+  - PostgreSQL database
+  - Authentication
+  - Real-time subscriptions
+  - Row Level Security (RLS)
+
+### AI Integration
+
+The backend securely communicates with the OpenRouter API using direct HTTP requests, keeping API keys server-side while providing intelligent learning assistance.
+
+### Request Flow
+
+```text
+User
+   │
+   ▼
+React Frontend
+   │
+   ▼
+Express Backend
+   │
+   ├──────────────► AI APIs
+   │
+   ▼
+Supabase
+   │
+   ▼
+PostgreSQL Database
+```
+
+This layered architecture keeps the frontend, backend, and database responsibilities well separated, making the project easier to maintain and extend.
 
 ---
-
 # 📂 Project Structure
 
 ```bash
 peer-learning-platform/
 │
-├── public/               # Static assets (images, icons, etc.)
+├── .github/                  # GitHub workflows, issue & PR templates
+├── .gssoc/                   # GSSoC related resources and documentation
+├── assets/                   # Static assets used across the project
+├── docs/                     # Technical documentation (API, Database, etc.)
+├── public/                   # Public static files served directly
 │
-├── src/                  # Main application source code
-│   ├── components/       # Reusable UI components (buttons, cards, forms)
-│   ├── pages/            # Application routes and views (Home, Profile, Chat)
-│   ├── hooks/            # Custom React hooks for state and side effects
-│   ├── integrations/     # Third-party integrations (Supabase, external APIs)
-│   ├── services/         # API calls and business logic
-│   ├── utils/            # Helper functions and utilities
-│   └── App.tsx           # Main application entry point and routing
+├── src/                      # Frontend source code
+│   ├── assets/               # Images, icons and static resources
+│   ├── components/           # Reusable React components
+│   │   ├── chat/             # Chat related UI components
+│   │   ├── dashboard/        # Dashboard components
+│   │   ├── mentor/           # Mentor related components
+│   │   ├── recommendations/  # Recommendation system UI
+│   │   ├── resources/        # Learning resources components
+│   │   ├── ui/               # Shared UI components (Shadcn/Radix)
+│   │   └── whiteboard/       # Collaborative whiteboard components
+│   │
+│   ├── config/              # Application configuration
+│   ├── contexts/            # React Context providers
+│   ├── hooks/               # Custom React hooks
+│   ├── integrations/        # Supabase and third-party integrations
+│   ├── lib/                 # Shared libraries and helper logic
+│   ├── pages/               # Application pages and routes
+│   ├── screenshots/         # README screenshots and application previews
+│   ├── test/                # Frontend tests
+│   ├── types/               # TypeScript type definitions
+│   ├── utils/               # Utility/helper functions
+│   ├── App.tsx              # Root React component
+│   └── main.tsx             # Application entry point
 │
-├── backend/              # Custom Node.js Express server
-│   ├── controllers/      # Request handlers (e.g., aiController)
-│   ├── routers/          # API route definitions
-│   └── server.js         # Backend entry point
+├── backend/                 # Backend server
+│   ├── controllers/         # Request handling logic
+│   ├── middlewares/         # Authentication & request middleware
+│   ├── routers/             # API route definitions
+│   ├── tests/               # Backend tests
+│   ├── utils/               # Backend utility functions
+│   ├── validation/          # Request validation schemas
+│   ├── app.js               # Express application
+│   └── server.js            # Server entry point
 │
-├── package.json          # Project dependencies and npm scripts
-├── tailwind.config.js    # Tailwind CSS configuration
-├── tsconfig.json         # TypeScript compiler configuration
-└── README.md             # Project documentation
+├── supabase/                # Database configuration and migrations
+├── package.json             # Project dependencies and scripts
+├── vite.config.ts           # Vite configuration
+├── tailwind.config.ts       # Tailwind CSS configuration
+├── tsconfig.json            # TypeScript configuration
+├── CONTRIBUTING.md          # Contribution guidelines
+├── TROUBLESHOOTING.md       # Common issues and fixes
+└── README.md                # Project documentation
 ```
 
-### 📝 Where to add new features?
-- **New UI Element**: Add a reusable component in `src/components/`.
-- **New Page/Route**: Create a new view in `src/pages/` and add it to the router in `App.tsx`.
-- **New Database Query**: Add the Supabase logic inside `src/integrations/supabase/` or `src/services/`.
-- **New Backend API**: Define the route in `backend/routers/` and handle logic in `backend/controllers/`.
+## 📝 Where should you make changes?
+
+The table below helps contributors quickly locate the correct directory based on the feature they want to work on.
+
+| If you want to... | Modify this location |
+|-------------------|----------------------|
+| Create a new page | `src/pages/` |
+| Build reusable UI components | `src/components/ui/` |
+| Modify chat functionality | `src/components/chat/` |
+| Improve dashboard features | `src/components/dashboard/` |
+| Work on mentor-related features | `src/components/mentor/` |
+| Add recommendation features | `src/components/recommendations/` |
+| Update the collaborative whiteboard | `src/components/whiteboard/` |
+| Add custom React Hooks | `src/hooks/` |
+| Manage global state or contexts | `src/contexts/` |
+| Configure Supabase integration | `src/integrations/` |
+| Add helper or utility functions | `src/utils/` |
+| Add backend API endpoints | `backend/routers/` |
+| Implement backend business logic | `backend/controllers/` |
+| Create middleware | `backend/middlewares/` |
+| Add request validation | `backend/validation/` |
+| Write backend tests | `backend/tests/` |
+| Update technical documentation | `docs/` |
 
 ---
 
@@ -314,6 +403,61 @@ npm run dev
 For deeper technical insights, please refer to our dedicated documentation:
 - [🗄️ Database Architecture & Schema](./docs/database.md)
 - [🔌 API Documentation](./docs/api.md)
+
+---
+# 🔄 Development Workflow
+
+Follow the workflow below when contributing to the project:
+
+```text
+Issue Assignment
+        │
+        ▼
+Fork the Repository
+        │
+        ▼
+Clone Repository
+        │
+        ▼
+Create a Feature Branch
+        │
+        ▼
+Install Dependencies
+        │
+        ▼
+Implement Changes
+        │
+        ▼
+Run Tests & Lint
+        │
+        ▼
+Commit Changes
+        │
+        ▼
+Push Branch
+        │
+        ▼
+Open Pull Request
+        │
+        ▼
+Code Review
+        │
+        ▼
+Merge into Main Branch
+```
+
+## Development Process
+
+1. Fork the repository.
+2. Clone it to your local machine.
+3. Create a new feature or bug-fix branch.
+4. Install all required dependencies.
+5. Implement your changes following the project structure.
+6. Run linting and tests before committing.
+7. Commit your changes with a meaningful commit message.
+8. Push the branch to GitHub.
+9. Open a Pull Request for review.
+10. Address review comments (if any) and wait for approval.
 
 ---
 

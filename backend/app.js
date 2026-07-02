@@ -50,12 +50,16 @@ const allowedOrigins = new Set(buildAllowedOrigins());
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Strictly require origin to match the whitelist to prevent no-origin bypasses
-    if (allowedOrigins.has(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS: origin '${origin}' is not allowed`));
+    // Non-browser requests such as curl or health checks may omit Origin.
+    if (!origin) {
+      return callback(null, true);
     }
+
+    if (allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS: origin '${origin}' is not allowed`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
