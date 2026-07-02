@@ -67,5 +67,36 @@ Welcome to the troubleshooting guide for Peer Learning! If you encounter problem
 - Verify that your Supabase instance has the correct authentication providers enabled.
 - If testing locally, ensure the Site URL in Supabase Auth settings is set to `http://localhost:5173` (or whatever port you are using).
 - For OAuth, verify that the Client ID and Secret match the ones configured in your OAuth provider's developer console, and that the callback URL matches your Supabase project's redirect URL.
-- After updating environment variables, restart the development server before testing authentication again.
-- If you encounter a "Failed to fetch" error during signup, verify that your `.env` file contains valid Supabase credentials and that the application has been restarted after any configuration changes.
+
+## 6. Push Notification Issues
+
+**Symptom**: Browser push notifications are not being received, or the notification bell shows no alerts despite new activity.
+
+**Solution**:
+
+### Browser Permission
+- Ensure the user has granted the browser notification permission. Open browser settings and verify that the site is allowed to show notifications.
+- If permission was denied, the user must manually re-enable it in the browser settings — the app cannot re-prompt automatically after a denial.
+
+### VAPID Configuration
+- Push notifications require valid VAPID (Voluntary Application Server Identification) keys. If you see `Missing VAPID push server env` errors in the backend logs, the following environment variables are not set:
+  ```env
+  VAPID_PUBLIC_KEY=
+  VAPID_PRIVATE_KEY=
+  VAPID_SUBJECT=mailto:your@email.com
+  ```
+- Generate a VAPID key pair using the `web-push` CLI:
+  ```bash
+  npx web-push generate-vapid-keys
+  ```
+- Set the same `VAPID_PUBLIC_KEY` in both the backend `.env` and the frontend (`VITE_VAPID_PUBLIC_KEY`). The keys **must** match — using different keys for frontend and backend will cause push subscriptions to be invalid.
+
+### Subscription Expiry
+- Expired push subscriptions return `410 Gone` or `404 Not Found` from the push service. These subscriptions should be removed from the `push_subscriptions` table. If you observe a flood of 410/404 errors, run:
+  ```sql
+  DELETE FROM push_subscriptions WHERE updated_at < now() - interval '30 days';
+  ```
+
+### Cron Job Not Running
+- If push notifications were working and suddenly stopped, check that the `dispatch-push-notifications` Supabase Edge Function cron is still active. Navigate to **Supabase → Functions → dispatch-push-notifications → Logs** to verify it is firing every minute.
+

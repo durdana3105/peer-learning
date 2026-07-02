@@ -53,6 +53,15 @@ export const errorHandler = (err, req, res, next) => {
     return res.status(400).json(payload);
   }
 
+  // Gracefully handle Multer errors
+  if (err.name === "MulterError") {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({ error: "Payload Too Large: File size limit exceeded" });
+    }
+    return res.status(400).json({ error: err.message });
+  }
+
+  console.error("Unhandled error:", err);
   // --- Known HttpError (intentionally thrown by our code) ---
   if (err instanceof HttpError) {
     const status = err.statusCode || 500;

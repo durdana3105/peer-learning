@@ -24,6 +24,8 @@ const mockPeer: User = {
   teachSubjects: ["React", "TypeScript", "Node.js"],
   learnSubjects: ["Rust", "Go"],
   badges: ["Top Mentor", "Streak Master"],
+  skills: [],
+  interests: []
 };
 
 describe("PeerCard", () => {

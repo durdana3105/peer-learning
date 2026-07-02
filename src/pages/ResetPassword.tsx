@@ -1,36 +1,91 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { runSupabaseAuthRequest } from "@/lib/supabaseAuthErrors";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
 
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [isCheckingRecovery, setIsCheckingRecovery] = useState(true);
+  const [isRecoverySession, setIsRecoverySession] = useState(false);
 
-  const handleReset = async (e) => {
+  useEffect(() => {
+    let cancelled = false;
+
+    const hash = window.location.hash.startsWith("#")
+      ? window.location.hash.slice(1)
+      : window.location.hash;
+    const hashParams = new URLSearchParams(hash);
+    const isRecoveryLink = hashParams.get("type") === "recovery";
+
+    if (!isRecoveryLink) {
+      setIsRecoverySession(false);
+      setIsCheckingRecovery(false);
+      setMessage("Invalid or expired reset link. Request a new password reset email.");
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (cancelled) return;
+      setIsRecoverySession(false);
+      setIsCheckingRecovery(false);
+      setMessage("Invalid or expired reset link. Request a new password reset email.");
+    }, 10000);
+
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+
+      if (event === "PASSWORD_RECOVERY" && session) {
+        window.clearTimeout(timeoutId);
+        setIsRecoverySession(true);
+        setIsCheckingRecovery(false);
+        setMessage("");
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleReset = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    try {
-      // Supabase embeds the recovery token in the URL hash when the user
-      // clicks the reset link (e.g. /reset-password#access_token=...&type=recovery).
-      // The Supabase JS client detects the hash on page load and creates a
-      // short-lived recovery session automatically. Calling updateUser here
-      // uses that session to set the new password without needing to extract
-      // or forward any token manually.
-      const { error } = await supabase.auth.updateUser({ password });
-
-      if (error) {
-        setMessage(error.message);
-      } else {
-        setMessage("Password updated successfully! Redirecting to login...");
-        setTimeout(() => {
-          navigate("/login");
-        }, 2000);
-      }
-    } catch (error) {
-      setMessage("Something went wrong. Please request a new reset link.");
+    if (isCheckingRecovery) {
+      setMessage("Checking reset link. Please wait a moment.");
+      return;
     }
+
+    if (!isRecoverySession) {
+      setMessage("Invalid or expired reset link. Request a new password reset email.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setMessage("Passwords do not match.");
+      return;
+    }
+
+    const { error } = await runSupabaseAuthRequest(() =>
+      supabase.auth.updateUser({ password })
+    );
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setMessage("Password updated successfully! Redirecting to login...");
+    setTimeout(() => {
+      navigate("/login");
+    }, 2000);
   };
 
   return (
@@ -46,7 +101,15 @@ const ResetPassword = () => {
           style={styles.input}
         />
 
-        <button type="submit" style={styles.button}>
+        <input
+          type="password"
+          placeholder="Confirm new password"
+          required
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          style={styles.input}
+        />
+
+        <button type="submit" style={styles.button} disabled={isCheckingRecovery || !isRecoverySession}>
           Reset Password
         </button>
       </form>
@@ -56,7 +119,7 @@ const ResetPassword = () => {
   );
 };
 
-const styles = {
+const styles: Record<string, React.CSSProperties> = {
   container: {
     height: "100vh",
     display: "flex",

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Notification } from "./types";
 import { showBrowserNotification } from "./pushNotifications";
+import { sanitizeNotificationActionUrl } from "./actionUrl";
 
 const PAGE_SIZE = 20;
 
@@ -136,7 +137,7 @@ export function useNotifications(userId?: string) {
               showBrowserNotification(
                 incoming.title,
                 incoming.body,
-                incoming.action_url || "/notifications"
+                sanitizeNotificationActionUrl(incoming.action_url)
               );
             }
           });

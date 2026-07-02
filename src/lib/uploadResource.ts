@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { API_BASE_URL } from "@/config/api";
+import { logError } from "@/utils/logger";
 import type { Resource } from "@/types/resource";
 
 const MAX_FILE_SIZE = 52428800;
@@ -17,6 +19,13 @@ type UploadResourceResult =
   | { success: true; data: Resource }
   | { success: false; error: string };
 
+type UploadApiResponse = {
+  success: boolean;
+  data?: {
+    path?: string;
+  };
+};
+
 const getFileExtension = (filename: string) => {
   const parts = filename.split(".");
   return parts.length > 1 ? parts.pop()!.toLowerCase() : "";
@@ -25,6 +34,16 @@ const getFileExtension = (filename: string) => {
 const sanitizeFilename = (filename: string) =>
   filename.replace(/[^a-zA-Z0-9._-]/g, "_");
 
+/**
+ * Uploads a file to the custom Express API and then creates a corresponding metadata record in the Supabase 'resources' table.
+ * This dual-upload strategy ensures files are stored securely while maintaining queryable metadata.
+ *
+ * @param {File} file - The file object to upload.
+ * @param {string} title - The title of the resource.
+ * @param {string} description - A brief description of the resource.
+ * @param {string[]} tags - An array of string tags associated with the resource.
+ * @returns {Promise<UploadResourceResult>} A promise that resolves to an object indicating success or failure, along with the resource data or error message.
+ */
 export const uploadResource = async (
   file: File,
   title: string,
@@ -62,42 +81,106 @@ export const uploadResource = async (
   const timestamp = Date.now();
   const filePath = `${userId}/${timestamp}_${sanitizeFilename(file.name)}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from("resources")
-    .upload(filePath, file);
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("folder", "resources");
+  formData.append("filePath", filePath);
 
-  if (uploadError) {
+  const session = await supabase.auth.getSession();
+  const token = session.data.session?.access_token;
+
+  let uploadResponse: UploadApiResponse;
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/upload`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      return {
+        success: false,
+        error: `Server error: ${res.status} - ${errText}`,
+      };
+    }
+
+    uploadResponse = await res.json();
+  } catch (err: any) {
+    logError(err, { context: "uploadResource.fetch" });
     return {
       success: false,
-      error: uploadError.message,
+      error: err.message || "Failed to upload file to backend.",
     };
   }
 
-  const { data, error } = await supabase
-    .from("resources")
-    .insert({
-      title,
-      description,
-      file_url: filePath,
-      file_type: fileType,
-      file_size: file.size,
-      tags,
-      uploaded_by: userId,
-    })
-    .select()
-    .single();
-
-  if (error || !data) {
-    await supabase.storage.from("resources").remove([filePath]);
-
+  if (!uploadResponse.success) {
     return {
       success: false,
-      error: error?.message || "Failed to save resource metadata",
+      error: "Upload failed: " + JSON.stringify(uploadResponse),
     };
   }
 
-  return {
-    success: true,
-    data: data as Resource,
-  };
+  const uploadedPath = uploadResponse.data?.path;
+  if (!uploadedPath) {
+    return {
+      success: false,
+      error: "Upload failed: missing uploaded file path.",
+    };
+  }
+
+  try {
+    const { data, error } = await (supabase as any)
+      .from("resources")
+      .insert({
+        title,
+        description,
+        file_url: uploadedPath,
+        file_type: fileType,
+        file_size: file.size,
+        tags,
+        uploaded_by: userId,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data) {
+      throw new Error("No data returned from insert");
+    }
+
+    return {
+      success: true,
+      data: data as Resource,
+    };
+  } catch (err: any) {
+    try {
+      const { error: cleanupError } = await supabase.storage
+        .from("resources")
+        .remove([uploadedPath]);
+
+      if (cleanupError) {
+        logError(cleanupError, {
+          context: "uploadResource.cleanup",
+          filePath: uploadedPath,
+        });
+      }
+    } catch (cleanupErr) {
+      logError(cleanupErr, {
+        context: "uploadResource.cleanup",
+        filePath: uploadedPath,
+      });
+    }
+
+    logError(err, { context: "uploadResource.insert", filePath: uploadedPath });
+    return {
+      success: false,
+      error: err.message || "Failed to save resource metadata",
+    };
+  }
 };

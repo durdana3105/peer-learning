@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { isAbortError, normalizeError, safeSupabaseCall } from "@/lib/http";
+import { logError } from "@/utils/logger";
 import type { Resource } from "@/types/resource";
 
 type ResourceFilters = {
@@ -13,6 +14,17 @@ type ResourceFilters = {
   savedOnly?: boolean;
 };
 
+type SavedResource = {
+  resource_id: string;
+};
+
+/**
+ * Custom hook to fetch and manage resources from Supabase.
+ * Supports filtering by search terms, tags, file types, and saved status.
+ *
+ * @param {ResourceFilters} [filters] - Optional filters to apply to the resource query.
+ * @returns {Object} An object containing the resource list, loading state, error state, and a refetch function.
+ */
 export const useResources = (filters?: ResourceFilters) => {
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +41,8 @@ export const useResources = (filters?: ResourceFilters) => {
   }, []);
 
   const fetchResources = useCallback(async () => {
+    // Keep track of request IDs and use an AbortController to cancel previous inflight requests
+    // when filters change rapidly, preventing race conditions in state updates.
     const requestId = ++requestIdRef.current;
 
     abortRef.current?.abort();
@@ -50,12 +64,15 @@ export const useResources = (filters?: ResourceFilters) => {
         }
         
         const { data: savedData, error: savedError } = await safeSupabaseCall(
-          () => supabase.from("saved_resources").select("resource_id").eq("user_id", user.id).abortSignal(controller.signal)
+          () => (supabase as any).from("saved_resources").select("resource_id").eq("user_id", user.id).abortSignal(controller.signal)
         );
         
         if (savedError) throw savedError;
         
-        savedResourceIds = savedData?.map((item: any) => item.resource_id) || [];
+        savedResourceIds =
+          (savedData as SavedResource[] | null)?.map(
+            (item) => item.resource_id
+          ) || [];
         
         if (savedResourceIds.length === 0) {
           setResources([]);
@@ -86,7 +103,7 @@ export const useResources = (filters?: ResourceFilters) => {
       }
 
       const data = await safeSupabaseCall(
-        () => query.abortSignal(controller.signal),
+        () => (query as any).abortSignal(controller.signal),
         { fallbackMessage: "Unable to load resources." },
       );
 
@@ -101,6 +118,7 @@ export const useResources = (filters?: ResourceFilters) => {
       }
 
       const normalized = normalizeError(caughtError, "Unable to load resources.");
+      logError(caughtError, { context: "useResources.fetchResources", normalizedMessage: normalized.message });
 
       setError(normalized.message);
       setResources([]);
@@ -131,7 +149,3 @@ export const useResources = (filters?: ResourceFilters) => {
     refetch: fetchResources,
   };
 };
-
-
-
-

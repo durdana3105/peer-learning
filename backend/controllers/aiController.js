@@ -4,6 +4,7 @@ import { HttpError } from "../utils/httpError.js";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "openai/gpt-4o-mini";
+const ALLOWED_MODELS = ["openai/gpt-4o-mini", "openai/gpt-4o", "openai/gpt-4"];
 
 const ASK_AI_MAX_TOKENS = 512;
 const SUMMARY_MAX_TOKENS = 400;
@@ -17,6 +18,15 @@ const MAX_SUMMARY_MESSAGE_LENGTH = 1000;
 const MAX_SUMMARY_MESSAGES = 50;
 const MAX_ASK_MESSAGES = 10;
 const MAX_TOTAL_CONTENT_LENGTH = 20000;
+
+const escapeForPrompt = (str) =>
+  str
+    .replace(/\\/g, "\\\\")
+    .replace(/`/g, "")
+    .replace(/\$/g, "\\$")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, " ")
+    .replace(/\r/g, "");
 
 const summaryResponseSchema = z.object({
   summary: z.string().trim().min(1),
@@ -93,13 +103,13 @@ const parseStrictMockInterviewReport = (content) => {
   throw new Error("Model did not return a valid mock interview report JSON payload.");
 };
 
-const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, responseFormat }) => {
+const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, responseFormat, model }) => {
   if (!process.env.OPENROUTER_API_KEY) {
     throw new HttpError(503, "AI service is not configured.");
   }
 
   const body = {
-    model: OPENROUTER_MODEL,
+    model: model || OPENROUTER_MODEL,
     messages,
     max_tokens: maxTokens,
     temperature,
@@ -142,7 +152,7 @@ const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, response
 
 export const askAI = async (req, res, next) => {
   try {
-    const { messages } = req.body;
+    const { messages, model: requestedModel, systemPrompt } = req.body;
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: "Invalid messages provided" });
@@ -173,18 +183,21 @@ export const askAI = async (req, res, next) => {
 
     const latestMessage = messages[messages.length - 1].content;
     const maxTokens = budgetResponseTokens(latestMessage, ASK_AI_MAX_TOKENS);
+
+    const model = ALLOWED_MODELS.includes(requestedModel) ? requestedModel : OPENROUTER_MODEL;
     
     const openRouterMessages = [
       {
         role: "system",
         content:
-          "You are an AI peer mentor for students. Answer questions about coding, AI, DSA, and roadmaps in a supportive, clear, and approachable way.",
+          systemPrompt || "You are an AI peer mentor for students. Answer questions about coding, AI, DSA, and roadmaps in a supportive, clear, and approachable way.",
       },
       ...messages.map(m => ({ role: m.role, content: m.content }))
     ];
 
     const data = await callOpenRouter({
       maxTokens,
+      model,
       temperature: 0.7,
       messages: openRouterMessages,
     });
@@ -303,7 +316,7 @@ export const conductMockInterview = async (req, res, next) => {
     const openRouterMessages = [
       {
         role: "system",
-        content: `You are acting as a strict but fair ${role} conducting a mock interview for a candidate. 
+        content: `You are acting as a strict but fair ${escapeForPrompt(role)} conducting a mock interview for a candidate. 
         Follow these rules:
         1. Ask ONLY ONE question at a time.
         2. Wait for the candidate's response before proceeding.

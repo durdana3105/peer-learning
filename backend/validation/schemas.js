@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 const allowedChatModels = ["openai/gpt-3.5-turbo", "openai/gpt-4o-mini"];
+const MAX_ASK_MESSAGES = 10;
+const MAX_SUMMARY_MESSAGES = 50;
 
 const chatMessageSchema = z.object({
   role: z.enum(["user", "assistant", "system"]),
@@ -63,6 +65,24 @@ export const chatSchemas = {
   },
 };
 
+export const ALLOWED_INTERVIEW_ROLES = [
+    "Software Engineer",
+    "Frontend Engineer",
+    "Backend Engineer",
+    "Full Stack Engineer",
+    "Data Scientist",
+    "Data Engineer",
+    "Machine Learning Engineer",
+    "DevOps Engineer",
+    "Site Reliability Engineer",
+    "Product Manager",
+    "Engineering Manager",
+    "QA Engineer",
+    "Security Engineer",
+    "Mobile Engineer",
+    "Cloud Architect",
+  ];
+
 export const aiSchemas = {
   askAI: {
     body: z.object({
@@ -71,7 +91,7 @@ export const aiSchemas = {
           role: z.string().optional(),
           content: z.string().trim().min(1).max(4000),
         })
-      ).min(1).max(50),
+      ).min(1).max(MAX_ASK_MESSAGES),
       systemPrompt: z.string().optional(),
       model: z.string().optional()
     }),
@@ -84,7 +104,12 @@ export const aiSchemas = {
           content: z.string().trim().min(1).max(2000),
         })
       ).min(1).max(50),
-      role: z.string().trim().min(1).max(200),
+      role: z.string().trim().min(1).max(100)
+        .regex(/^[a-zA-Z0-9 ,\-_]+$/, "Role contains invalid characters")
+        .refine((val) => ALLOWED_INTERVIEW_ROLES.includes(val), {
+            message: `Role must be one of: ${ALLOWED_INTERVIEW_ROLES.join(", ")}`,
+          }
+        ),
     }),
   },
   mockInterviewReport: {
@@ -114,7 +139,7 @@ export const aiSchemas = {
   generateSessionSummary: {
     body: z
       .object({
-        messages: z.array(summarizeMessageSchema).min(1).max(100),
+        messages: z.array(summarizeMessageSchema).min(1).max(MAX_SUMMARY_MESSAGES),
       })
       .superRefine((data, ctx) => {
         const totalLength = data.messages.reduce(
@@ -165,6 +190,17 @@ export const matchSchemas = {
         .refine((val) => val === undefined || (/^\d+$/.test(val) && parseInt(val) >= 1 && parseInt(val) <= 100), {
           message: "limit must be an integer between 1 and 100",
         }),
+      page: z
+        .string()
+        .optional()
+        .refine(
+          (val) =>
+            val === undefined ||
+            (/^\d+$/.test(val) && parseInt(val, 10) >= 1 && parseInt(val, 10) <= 1000),
+          {
+            message: "page must be an integer between 1 and 1000",
+          }
+        ),
     }),
   },
 };

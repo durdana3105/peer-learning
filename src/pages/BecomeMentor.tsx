@@ -37,14 +37,15 @@ export default function BecomeMentor() {
   return (
     <div className="min-h-screen overflow-hidden bg-gradient-to-br from-[#020617] via-[#071127] to-[#020B1F] px-6 py-20 text-white">
       {/* Back Button */}
-      <div className="mb-2">
-        <Link
-          to="/"
-          className="absolute top-6 left-6 rounded-md bg-cyan-400 px-3 py-1 text-md font-medium text-white hover:bg-cyan-500"
-        >
-          ← Back 
-        </Link>
-      </div>
+      
+<div className="mb-2">
+  <Link
+    to="/"
+    className="absolute top-6 left-6 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-3 py-1 pr-4 pb-1-5 text-md font-medium text-black transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/20"
+  >
+    ← Back
+  </Link>
+</div>
       {/* Glow */}
       <div className="absolute left-10 top-20 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl" />
       <div className="absolute right-10 top-40 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl" />

@@ -119,7 +119,7 @@ export default function PrivacyPolicy() {
   );
 }
 
-function Section({ title, children }) {
+function Section({ title, children }: { title: string, children: React.ReactNode }) {
   return (
     <div className="mt-8">
       <h2 className="text-xl font-bold text-cyan-300">{title}</h2>

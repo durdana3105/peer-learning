@@ -93,6 +93,20 @@ export function useSessions(user: any) {
     return filtered;
   }, [sessions, selectedTab, search, joinedSessionIds]);
 
+  // Keep the selected session in sync with the active tab/filter.
+  // If the currently selected session isn't in the filtered list anymore
+  // (e.g. the user switched tabs), fall back to the first filtered session,
+  // or clear the selection if the filtered list is empty.
+  useEffect(() => {
+    const stillVisible =
+      selectedSession &&
+      filteredSessions.some((s) => s.id === selectedSession.id);
+
+    if (!stillVisible) {
+      setSelectedSession(filteredSessions.length > 0 ? filteredSessions[0] : null);
+    }
+  }, [filteredSessions, selectedTab, selectedSession]);
+
   useEffect(() => {
     if (!selectedSession) return;
 

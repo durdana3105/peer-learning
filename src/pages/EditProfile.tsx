@@ -78,7 +78,7 @@ const EditProfile = () => {
                   .filter(Boolean)
               : profile.skills,
         })
-        .eq("id", userId);
+        .eq("id", userId as string);
 
       if (error) throw error;
       toast.success("Profile updated successfully!");
