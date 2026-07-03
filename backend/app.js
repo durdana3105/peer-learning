@@ -50,12 +50,16 @@ const allowedOrigins = new Set(buildAllowedOrigins());
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Strictly require origin to match the whitelist to prevent no-origin bypasses
-    if (allowedOrigins.has(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS: origin '${origin}' is not allowed`));
+    // Non-browser requests such as curl or health checks may omit Origin.
+    if (!origin) {
+      return callback(null, true);
     }
+
+    if (allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS: origin '${origin}' is not allowed`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -85,9 +89,10 @@ const apiLimiter = rateLimit({
 // Stricter rate limiter for AI to prevent OPENROUTER_API_KEY exhaustion
 const aiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // limit each IP to 20 AI requests per windowMs
+  max: 10, // limit each IP to 10 AI requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
+  message: { error: "Too many AI requests from this IP, please try again after 15 minutes" }
 });
 
 app.use("/api", apiLimiter);

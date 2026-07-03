@@ -4,6 +4,7 @@ import { HttpError } from "../utils/httpError.js";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL = "openai/gpt-4o-mini";
+const ALLOWED_MODELS = ["openai/gpt-4o-mini", "openai/gpt-4o", "openai/gpt-4"];
 
 const ASK_AI_MAX_TOKENS = 512;
 const SUMMARY_MAX_TOKENS = 400;
@@ -102,13 +103,13 @@ const parseStrictMockInterviewReport = (content) => {
   throw new Error("Model did not return a valid mock interview report JSON payload.");
 };
 
-const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, responseFormat }) => {
+const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, responseFormat, model }) => {
   if (!process.env.OPENROUTER_API_KEY) {
     throw new HttpError(503, "AI service is not configured.");
   }
 
   const body = {
-    model: OPENROUTER_MODEL,
+    model: model || OPENROUTER_MODEL,
     messages,
     max_tokens: maxTokens,
     temperature,
@@ -151,7 +152,7 @@ const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, response
 
 export const askAI = async (req, res, next) => {
   try {
-    const { messages } = req.body;
+    const { messages, model: requestedModel, systemPrompt } = req.body;
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: "Invalid messages provided" });
@@ -182,18 +183,21 @@ export const askAI = async (req, res, next) => {
 
     const latestMessage = messages[messages.length - 1].content;
     const maxTokens = budgetResponseTokens(latestMessage, ASK_AI_MAX_TOKENS);
+
+    const model = ALLOWED_MODELS.includes(requestedModel) ? requestedModel : OPENROUTER_MODEL;
     
     const openRouterMessages = [
       {
         role: "system",
         content:
-          "You are an AI peer mentor for students. Answer questions about coding, AI, DSA, and roadmaps in a supportive, clear, and approachable way.",
+          systemPrompt || "You are an AI peer mentor for students. Answer questions about coding, AI, DSA, and roadmaps in a supportive, clear, and approachable way.",
       },
       ...messages.map(m => ({ role: m.role, content: m.content }))
     ];
 
     const data = await callOpenRouter({
       maxTokens,
+      model,
       temperature: 0.7,
       messages: openRouterMessages,
     });

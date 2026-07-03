@@ -15,17 +15,20 @@ export function useNavbarProfile() {
         return;
       }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("name")
-        .eq("id", user.id)
-        .single();
+      const [{ data: profile }, { data: roleData }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("name")
+          .eq("id", user.id)
+          .single(),
+        supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }),
+      ]);
 
       if (profile) {
         setProfileName(profile.name as string);
       }
 
-      setIsAdmin(false);
+      setIsAdmin(roleData === true);
     };
 
     fetchProfile();

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Lock, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { runSupabaseAuthRequest } from "@/lib/supabaseAuthErrors";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -16,9 +17,11 @@ const ForgotPassword = () => {
     setMessage("");
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      const { error } = await runSupabaseAuthRequest(() =>
+        supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        })
+      );
 
       if (error) {
         setMessage(error.message);
@@ -274,7 +277,7 @@ const ForgotPassword = () => {
 
                   <input
                     type="email"
-                    className="input"
+                    className="w-full rounded-sm border border-white/20 bg-white py-3.5 pl-11 pr-4 text-left text-sm text-slate-900 caret-slate-900 outline-none transition placeholder:text-gray-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/40"
                     placeholder="Enter your email address"
                     value={email}
                     required

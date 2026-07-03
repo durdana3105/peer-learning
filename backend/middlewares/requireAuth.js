@@ -61,7 +61,7 @@ const verifyLocalJwt = (token, secret) => {
 
 /**
  * Startup check: warn loudly if SUPABASE_JWT_SECRET is missing.
- * In production, this is a fatal misconfiguration — the server refuses to start.
+ * In production, this is a fatal misconfiguration - the server refuses to start.
  */
 const jwtSecret = process.env.SUPABASE_JWT_SECRET;
 const isProduction = process.env.NODE_ENV === "production";
@@ -120,7 +120,7 @@ export const requireAuth = async (req, res, next) => {
   }
 
   if (jwtSecret) {
-    // LOCAL HMAC verification — no network call
+    // LOCAL HMAC verification - no network call
     const payload = verifyLocalJwt(token, jwtSecret);
     if (!payload) {
       next(new HttpError(401, "Invalid or expired session"));

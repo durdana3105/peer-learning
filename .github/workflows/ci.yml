@@ -35,3 +35,10 @@ jobs:
           NODE_ENV: test
           SUPABASE_JWT_SECRET: dummy-secret-for-ci
           FRONTEND_URL: http://localhost:5173
+
+      - name: Run Backend Tests
+        run: cd backend && npm test
+        env:
+          NODE_ENV: test
+          SUPABASE_JWT_SECRET: dummy-secret-for-ci
+          FRONTEND_URL: http://localhost:5173

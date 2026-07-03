@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/useAuth';
 import { Play, Square, Coffee, Clock } from 'lucide-react';
@@ -24,7 +24,13 @@ interface StudyRoomTimerState {
   timer_break_duration: number | null;
 }
 
-export default function GroupPomodoro({ roomId, creatorId }: GroupPomodoroProps) {
+const formatTime = (seconds: number) => {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+};
+
+export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroProps) {
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -182,11 +188,7 @@ export default function GroupPomodoro({ roomId, creatorId }: GroupPomodoroProps)
     };
   }, [timerState, endTime, workDuration, breakDuration, handleTimerComplete]);
 
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
+
 
   return (
     <div className="rounded-xl border border-white/10 bg-[#0a0f25] p-5 backdrop-blur-md">
@@ -271,4 +273,4 @@ export default function GroupPomodoro({ roomId, creatorId }: GroupPomodoroProps)
       </div>
     </div>
   );
-}
+});

@@ -30,10 +30,10 @@ export default function Room() {
   }, []);
 
   // Let's create a combined message handler that updates activities
-  const onSendMessage = async (newMessage: string) => {
+  const onSendMessage = React.useCallback(async (newMessage: string) => {
     await handleSendMessage(newMessage);
     setActivities((prev) => [`You sent a message`, ...prev]);
-  };
+  }, [handleSendMessage]);
 
   if (!room)
     return (
