@@ -68,7 +68,7 @@ describe("uploadResource", () => {
     } as unknown as Response);
   });
 
-  it("removes the uploaded storage object when metadata insert fails", async () => {
+  it("calls the backend cleanup endpoint when metadata insert fails", async () => {
     mocks.single.mockResolvedValue({
       data: null,
       error: { message: "metadata insert failed" },
@@ -87,17 +87,36 @@ describe("uploadResource", () => {
         file_url: "user-123/backend-path.pdf",
       })
     );
-    expect(mocks.storageFrom).toHaveBeenCalledWith("resources");
-    expect(mocks.remove).toHaveBeenCalledWith(["user-123/backend-path.pdf"]);
+    expect(global.fetch).toHaveBeenCalledWith(
+      "http://localhost:3000/api/upload",
+      expect.objectContaining({
+        method: "DELETE",
+        body: JSON.stringify({
+          folder: "resources",
+          filePath: "user-123/backend-path.pdf",
+        }),
+      })
+    );
   });
 
   it("logs cleanup failure without replacing the metadata insert error", async () => {
-    const cleanupError = new Error("cleanup failed");
     mocks.single.mockResolvedValue({
       data: null,
       error: { message: "metadata insert failed" },
     });
-    mocks.remove.mockResolvedValue({ error: cleanupError });
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          success: true,
+          data: { path: "user-123/backend-path.pdf" },
+        }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+      } as unknown as Response);
 
     const result = await uploadResource(file, "Notes", "Helpful notes", []);
 
@@ -106,7 +125,9 @@ describe("uploadResource", () => {
       error: "metadata insert failed",
     });
     expect(logError).toHaveBeenCalledWith(
-      cleanupError,
+      expect.objectContaining({
+        message: "Cleanup failed with status 500",
+      }),
       expect.objectContaining({
         context: "uploadResource.cleanup",
         filePath: "user-123/backend-path.pdf",

@@ -34,6 +34,21 @@ const getFileExtension = (filename: string) => {
 const sanitizeFilename = (filename: string) =>
   filename.replace(/[^a-zA-Z0-9._-]/g, "_");
 
+const cleanupUploadedResource = async (filePath: string, token?: string) => {
+  const res = await fetch(`${API_BASE_URL}/api/upload`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ folder: "resources", filePath }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Cleanup failed with status ${res.status}`);
+  }
+};
+
 /**
  * Uploads a file to the custom Express API and then creates a corresponding metadata record in the Supabase 'resources' table.
  * This dual-upload strategy ensures files are stored securely while maintaining queryable metadata.
@@ -160,16 +175,7 @@ export const uploadResource = async (
     };
   } catch (err: any) {
     try {
-      const { error: cleanupError } = await supabase.storage
-        .from("resources")
-        .remove([uploadedPath]);
-
-      if (cleanupError) {
-        logError(cleanupError, {
-          context: "uploadResource.cleanup",
-          filePath: uploadedPath,
-        });
-      }
+      await cleanupUploadedResource(uploadedPath, token);
     } catch (cleanupErr) {
       logError(cleanupErr, {
         context: "uploadResource.cleanup",
