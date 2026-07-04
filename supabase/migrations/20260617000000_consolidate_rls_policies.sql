@@ -420,15 +420,15 @@ CREATE POLICY "Users can delete own push subscriptions"
 --------------------------------------------------------------------------------
 -- 10. RESOURCES & WHITEBOARD
 --------------------------------------------------------------------------------
--- resources (Assuming existence)
+-- resources
 CREATE POLICY "Anyone can view resources" 
   ON public.resources FOR SELECT USING (true);
 CREATE POLICY "Users can insert resources" 
-  ON public.resources FOR INSERT WITH CHECK (true);
+  ON public.resources FOR INSERT WITH CHECK (uploaded_by = auth.uid());
 CREATE POLICY "Users can update resources" 
-  ON public.resources FOR UPDATE USING (true);
+  ON public.resources FOR UPDATE USING (uploaded_by = auth.uid()) WITH CHECK (uploaded_by = auth.uid());
 CREATE POLICY "Users can delete resources" 
-  ON public.resources FOR DELETE USING (true);
+  ON public.resources FOR DELETE USING (uploaded_by = auth.uid());
 
 -- saved_resources
 CREATE POLICY "Users can view own saved resources" 
