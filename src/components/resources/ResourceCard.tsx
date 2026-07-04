@@ -1,4 +1,4 @@
-import { memo, useContext, useMemo, useState } from "react";
+import { memo, useContext, useEffect, useMemo, useState } from "react";
 import { Archive, Bookmark, Code, Download, FileText, Loader2, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -33,6 +33,10 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [voteCounts, setVoteCounts] = useState({
+    upvotes: resource.upvotes_count || 0,
+    downvotes: resource.downvotes_count || 0,
+  });
 
   const isOwner = currentUser?.id === resource.uploaded_by;
 
@@ -40,6 +44,13 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
     resource.id,
     currentUser?.id
   );
+
+  useEffect(() => {
+    setVoteCounts({
+      upvotes: resource.upvotes_count || 0,
+      downvotes: resource.downvotes_count || 0,
+    });
+  }, [resource.upvotes_count, resource.downvotes_count]);
 
   const resourceIcon = useMemo(() => {
     if (["py", "js", "ts"].includes(resource.file_type)) {
@@ -91,7 +102,12 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
       return;
     }
     try {
-      await toggleVote(vote === type ? null : type);
+      const nextVote = vote === type ? null : type;
+      await toggleVote(nextVote);
+      setVoteCounts((current) => ({
+        upvotes: current.upvotes - (vote === 1 ? 1 : 0) + (nextVote === 1 ? 1 : 0),
+        downvotes: current.downvotes - (vote === -1 ? 1 : 0) + (nextVote === -1 ? 1 : 0),
+      }));
     } catch (e) {
       toast.error("Failed to register vote");
     }
@@ -169,7 +185,7 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
             onClick={() => handleVote(1)}
           >
             <ThumbsUp className="h-4 w-4" fill={vote === 1 ? "currentColor" : "none"} />
-            <span className="text-xs font-medium">{resource.upvotes_count || 0}</span>
+            <span className="text-xs font-medium">{voteCounts.upvotes}</span>
           </Button>
           <Button 
             variant="ghost" 
@@ -178,7 +194,7 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
             onClick={() => handleVote(-1)}
           >
             <ThumbsDown className="h-4 w-4" fill={vote === -1 ? "currentColor" : "none"} />
-            <span className="text-xs font-medium">{resource.downvotes_count || 0}</span>
+            <span className="text-xs font-medium">{voteCounts.downvotes}</span>
           </Button>
         </div>
 
