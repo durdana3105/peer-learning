@@ -6,6 +6,16 @@ import { HttpError } from "../utils/httpError.js";
 
 // Ensure files do not exceed 50MB
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const SAFE_PATH_SEGMENT = /^[a-zA-Z0-9._-]+$/;
+
+const isUserScopedPath = (filePath, userId) => {
+  if (!userId || typeof filePath !== "string") return false;
+
+  const segments = filePath.split("/");
+  if (segments.length < 2 || segments[0] !== userId) return false;
+
+  return segments.every((segment) => segment && segment !== "." && segment !== ".." && SAFE_PATH_SEGMENT.test(segment));
+};
 
 // Use os.tmpdir() to avoid buffering the whole file in memory.
 // It uses the disk to stream the file, keeping memory usage low.
@@ -51,11 +61,17 @@ export const handleUpload = async (req, res, next) => {
 
     const file = req.file;
     const { folder = "resources", filePath } = req.body;
+    const userId = req.user?.id;
 
     if (!filePath) {
       // Clean up the temp file
       fs.unlinkSync(file.path);
       throw new HttpError(400, "filePath is required in the form data.");
+    }
+
+    if (!isUserScopedPath(filePath, userId)) {
+      fs.unlinkSync(file.path);
+      throw new HttpError(400, "filePath must stay within the authenticated user's folder.");
     }
 
     // Verify folder is allowed
