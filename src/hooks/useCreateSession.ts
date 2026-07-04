@@ -18,7 +18,16 @@ export const formSchema = z
     time: z.string().min(1, "Time is required."),
     durationPreset: z.number().optional(),
     durationCustom: z.string().optional(),
-    seatLimit: z.string().optional(),
+    seatLimit: z
+      .string()
+      .optional()
+      .refine(
+        (value) => {
+          const trimmed = value?.trim();
+          return !trimmed || /^[1-9]\d*$/.test(trimmed);
+        },
+        { message: "Seat limit must be a positive whole number." }
+      ),
   })
   .refine(
     (v) => {
@@ -85,7 +94,8 @@ export function useCreateSession({ onSuccess, setOpen }: UseCreateSessionProps) 
       scheduledAt.setHours(hours, minutes, 0, 0);
 
       const durationMinutes = resolveDurationMinutes(values);
-      const seatLimit = values.seatLimit && values.seatLimit.trim() !== "" ? parseInt(values.seatLimit, 10) : null;
+      const trimmedSeatLimit = values.seatLimit?.trim();
+      const seatLimit = trimmedSeatLimit ? parseInt(trimmedSeatLimit, 10) : null;
 
       const { error } = await supabase.from("sessions").insert({
         title: values.title,
