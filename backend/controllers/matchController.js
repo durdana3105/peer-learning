@@ -186,7 +186,7 @@ export const getSupabaseDiscover = async (req, res) => {
       const safeSearch = search.trim().replace(/[^a-zA-Z0-9\s-]/g, "");
       if (safeSearch) {
         const pattern = `%${safeSearch}%`;
-        query = query.or(`name.ilike."${pattern}",skills.ilike."${pattern}"`);
+        query = query.or(`name.ilike."${pattern}",skills.ov.{${safeSearch}}`);
       }
     }
 
@@ -195,7 +195,7 @@ export const getSupabaseDiscover = async (req, res) => {
       // wildcard injection via the filter query parameter.
       const safeFilter = filter.replace(/[^a-zA-Z0-9\s-]/g, "");
       if (safeFilter) {
-        query = query.ilike("skills", `%${safeFilter}%`);
+        query = query.contains("skills", [safeFilter]);
       }
     }
 

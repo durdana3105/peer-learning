@@ -4,7 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
-  base: "/", // 👈 ADD THIS
+  base: "/", // keep Vite assets rooted at the site base
   envPrefix: ["VITE_", "NEXT_PUBLIC_"],
 
   server: {

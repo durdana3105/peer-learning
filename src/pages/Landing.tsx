@@ -192,11 +192,11 @@ export default function Landing() {
       ))}
 
       <Hero streak={streak} />
-      
+
       <Features />
-      
+
       <Communities />
-      
+
       <Testimonials />
 
       {/* CTA */}
@@ -218,8 +218,8 @@ export default function Landing() {
           </p>
 
           <div className="relative z-10 mt-10 flex flex-wrap justify-center gap-5">
-            <Button className="rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-7 text-black transition-all duration-300 hover:scale-105">
-              Get Started
+            <Button asChild className="rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-7 text-black transition-all duration-300 hover:scale-105">
+              <Link to="/signup">Get Started</Link>
             </Button>
 
             <Link to="/become-mentor">
@@ -235,7 +235,10 @@ export default function Landing() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="container relative mx-auto max-w-6xl px-6 py-24">
+      <section
+        id="faq"
+        className="container relative mx-auto max-w-6xl px-6 py-24"
+      >
         <div className="pointer-events-none absolute inset-x-6 top-12 -z-10 h-40 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="pointer-events-none absolute right-10 top-28 -z-10 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl" />
         <div className="pointer-events-none absolute left-16 bottom-24 -z-10 h-36 w-36 rounded-full bg-indigo-500/10 blur-3xl" />
@@ -292,7 +295,10 @@ export default function Landing() {
                     {item.q}
                   </span>
                   <motion.span
-                    animate={{ rotate: open === i ? 180 : 0, scale: open === i ? 1.08 : 1 }}
+                    animate={{
+                      rotate: open === i ? 180 : 0,
+                      scale: open === i ? 1.08 : 1,
+                    }}
                     transition={{ type: "spring", stiffness: 260, damping: 20 }}
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-300 ${
                       open === i
@@ -408,6 +414,10 @@ export default function Landing() {
             <a href="#faq" className="transition hover:text-cyan-400 hover:translate-x-1">
               › FAQ
             </a>
+
+            <Link to="/docs" className="transition hover:text-cyan-400">
+              Docs
+            </Link>
             <Link to="/contact" className="transition hover:text-cyan-400 hover:translate-x-1">
               › Contact Us
             </Link>

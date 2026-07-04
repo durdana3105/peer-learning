@@ -267,12 +267,13 @@ export const sendMentorshipCheckinReminders = async (req, res, next) => {
       
       const isOverdue = new Date(m.due_date) < now;
       const title = isOverdue ? "Milestone Overdue" : "Milestone Due Soon";
+      const type = isOverdue ? "mentorship_reminder_overdue" : "mentorship_reminder";
       const body = `The milestone "${m.title}" for goal "${path.goal}" is ${isOverdue ? 'overdue' : 'due soon'}. Check in with your mentor/mentee!`;
 
       // Notify mentor
       notifications.push({
         user_id: path.mentor_id,
-        type: "mentorship_reminder",
+        type,
         title,
         body,
         entity_id: m.id,
@@ -282,7 +283,7 @@ export const sendMentorshipCheckinReminders = async (req, res, next) => {
       // Notify mentee
       notifications.push({
         user_id: path.mentee_id,
-        type: "mentorship_reminder",
+        type,
         title,
         body,
         entity_id: m.id,

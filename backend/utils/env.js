@@ -14,7 +14,7 @@ export const validateEnv = () => {
   try {
     return envSchema.parse(process.env);
   } catch (error) {
-    console.error("❌ Server Crash: Invalid or missing environment variables:");
+    console.error("Server Crash: Invalid or missing environment variables:");
     error.errors.forEach((err) => {
       console.error(`  - ${err.path.join(".")}: ${err.message}`);
     });

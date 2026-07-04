@@ -602,6 +602,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
-
-// feat/skeleton-loaders

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { getSafePeerReviewSubmissionUrl } from "@/utils/peerReviewUrl";
 import { ArrowLeft, Send } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -28,8 +29,18 @@ export default function SubmitForReview() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
-    if (!formData.title || (!formData.content_url && !formData.content)) {
+    const safeContentUrl = getSafePeerReviewSubmissionUrl(formData.content_url);
+
+    if (safeContentUrl === null) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid http:// or https:// link.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.title || (!safeContentUrl && !formData.content)) {
       toast({
         title: "Validation Error",
         description: "Please provide a title and either a link or text content.",
@@ -46,7 +57,7 @@ export default function SubmitForReview() {
         user_id: user.id,
         title: formData.title,
         description: formData.description,
-        content_url: formData.content_url,
+        content_url: safeContentUrl,
         content: formData.content,
         is_anonymous: formData.is_anonymous,
         status: 'pending'

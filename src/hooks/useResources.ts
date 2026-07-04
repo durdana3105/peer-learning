@@ -18,6 +18,13 @@ type SavedResource = {
   resource_id: string;
 };
 
+/**
+ * Custom hook to fetch and manage resources from Supabase.
+ * Supports filtering by search terms, tags, file types, and saved status.
+ *
+ * @param {ResourceFilters} [filters] - Optional filters to apply to the resource query.
+ * @returns {Object} An object containing the resource list, loading state, error state, and a refetch function.
+ */
 export const useResources = (filters?: ResourceFilters) => {
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +41,8 @@ export const useResources = (filters?: ResourceFilters) => {
   }, []);
 
   const fetchResources = useCallback(async () => {
+    // Keep track of request IDs and use an AbortController to cancel previous inflight requests
+    // when filters change rapidly, preventing race conditions in state updates.
     const requestId = ++requestIdRef.current;
 
     abortRef.current?.abort();

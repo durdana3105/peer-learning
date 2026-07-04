@@ -14,14 +14,14 @@ import AdminRoute from "@/components/AdminRoute";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ProtectedMentorRoute from "@/components/ProtectedMentorRoute";
 
-// Global layout components – rendered on every page, keep static
+// Global layout components - rendered on every page, keep static
 import Navbar from "./components/Navbar/Navbar";
 import Chatbot from "./components/Chatbot/Chatbot";
 import StreakBadge from "./components/StreakBadge";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import FloatingAI from "./components/FloatingAI";
 import MouseSparkles from "./components/MouseSparkles";
-import BackToTop from "./components/BackToTop";  // ← ADDED THIS LINE
+import BackToTop from "./components/BackToTop";  // ? ADDED THIS LINE
 import { useAuth } from "@/contexts/useAuth";
 
 // Lazy-loaded page & route-specific components (code-split per route)
@@ -364,7 +364,7 @@ function AppContent() {
         </>
       )}
 
-      <BackToTop />  {/* ← ADDED THIS LINE */}
+      <BackToTop />  {/* ? ADDED THIS LINE */}
     </>
   );
 }
