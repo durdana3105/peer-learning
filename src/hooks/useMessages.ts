@@ -316,7 +316,7 @@ export function useMessages(
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "messages",
         },
@@ -331,6 +331,12 @@ export function useMessages(
           }
 
           setMessages((previous) => {
+            if (payload.eventType === "UPDATE") {
+              return previous.map((message) =>
+                message.id === nextMessage.id ? { ...message, ...nextMessage } : message
+              );
+            }
+
             if (previous.some((message) => message.id === nextMessage.id)) {
               return previous;
             }
