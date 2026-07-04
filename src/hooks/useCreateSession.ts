@@ -18,7 +18,10 @@ export const formSchema = z
     time: z.string().min(1, "Time is required."),
     durationPreset: z.number().optional(),
     durationCustom: z.string().optional(),
-    seatLimit: z.string().optional(),
+    seatLimit: z.string().optional().refine(
+      (val) => val === undefined || val === "" || (/^\d+$/.test(val) && parseInt(val, 10) >= 1 && parseInt(val, 10) <= 1000),
+      { message: "Seat limit must be a number between 1 and 1000" }
+    ),
   })
   .refine(
     (v) => {

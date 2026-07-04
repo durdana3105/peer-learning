@@ -1,6 +1,7 @@
 import multer from "multer";
 import os from "os";
 import fs from "fs";
+import path from "path";
 import { getSupabaseAdmin } from "../utils/supabase.js";
 import { HttpError } from "../utils/httpError.js";
 
@@ -33,7 +34,7 @@ const upload = multer({
       "application/typescript"
     ];
 
-    if (file.mimetype.startsWith("image/") || allowedResourceTypes.includes(file.mimetype)) {
+    if ((file.mimetype.startsWith("image/") && file.mimetype !== "image/svg+xml") || allowedResourceTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(new HttpError(415, "Unsupported Media Type"));
@@ -63,6 +64,13 @@ export const handleUpload = async (req, res, next) => {
     if (!allowedBuckets.includes(folder)) {
       fs.unlinkSync(file.path);
       throw new HttpError(400, "Invalid destination folder.");
+    }
+
+    // Sanitize filePath: prevent path traversal
+    const sanitizedPath = path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, "");
+    if (sanitizedPath !== filePath) {
+      fs.unlinkSync(file.path);
+      throw new HttpError(400, "Invalid file path.");
     }
 
     const supabaseAdmin = getSupabaseAdmin();

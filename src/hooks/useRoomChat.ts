@@ -30,11 +30,6 @@ export function useRoomChat(id: string | undefined, user: User | null, setActivi
   const handleSendMessage = useCallback(async (newMessage: string) => {
     if (!newMessage.trim() || !user || !id) return;
 
-    setActivities((prev) => [
-      `You sent a message`,
-      ...prev,
-    ]);
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from('study_room_messages' as any).insert([
       { room_id: id, profile_id: user.id, content: newMessage }
@@ -43,7 +38,13 @@ export function useRoomChat(id: string | undefined, user: User | null, setActivi
     if (error) {
       console.error("Database insert error:", error);
       toast.error("Failed to send message. Please try again.");
+      return;
     }
+
+    setActivities((prev) => [
+      `You sent a message`,
+      ...prev,
+    ]);
   }, [id, user, setActivities]);
 
   return { messages, handleSendMessage, fetchMessages };

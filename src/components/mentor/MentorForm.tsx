@@ -199,34 +199,37 @@ export default function MentorForm() {
             <input
               placeholder="Full Name"
               value={formData.full_name}
-              onChange={(e) =>
+              onChange={(e) => {
                 setFormData({
                   ...formData,
                   full_name: e.target.value,
-                })
-              }
+                });
+                setError("");
+              }}
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
             <input
               placeholder="College Name"
               value={formData.college}
-              onChange={(e) =>
+              onChange={(e) => {
                 setFormData({
                   ...formData,
                   college: e.target.value,
-                })
-              }
+                });
+                setError("");
+              }}
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
             <textarea
               placeholder="Short Bio"
               value={formData.bio}
-              onChange={(e) =>
+              onChange={(e) => {
                 setFormData({
                   ...formData,
                   bio: e.target.value,
-                })
-              }
+                });
+                setError("");
+              }}
               className="h-32 w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
           </div>
@@ -305,23 +308,25 @@ export default function MentorForm() {
             <input
               placeholder="https://github.com/Username"
               value={formData.github}
-              onChange={(e) =>
+              onChange={(e) => {
                 setFormData({
                   ...formData,
                   github: e.target.value,
-                })
-              }
+                });
+                setError("");
+              }}
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
             <input
               placeholder="https://www.linkedin.com/in/Username"
               value={formData.linkedin}
-              onChange={(e) =>
+              onChange={(e) => {
                 setFormData({
                   ...formData,
                   linkedin: e.target.value,
-                })
-              }
+                });
+                setError("");
+              }}
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
             <input

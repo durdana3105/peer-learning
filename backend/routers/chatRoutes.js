@@ -46,9 +46,13 @@ router.post(
       MAX_TOKENS_CAP
     );
 
+    // Filter out any system messages from the client to prevent prompt injection
+    const clientMessages = req.body.messages.filter(
+      (m: { role: string }) => m.role !== "system"
+    );
     const chatMessages = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...req.body.messages,
+      ...clientMessages,
     ];
 
     const response = await openrouter.chat.completions.create({
