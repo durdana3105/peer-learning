@@ -21,10 +21,7 @@ jobs:
           cache-dependency-path: package-lock.json  
 
       - name: Install Dependencies
-        run: npm ci --legacy-peer-deps
-
-      - name: Install Backend Dependencies
-        run: cd backend && npm ci
+        run: npm ci --legacy-peer-deps --include=dev
 
       - name: Run Linter
         run: npm run lint

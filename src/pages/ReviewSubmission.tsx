@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { getSafePeerReviewSubmissionUrl } from "@/utils/peerReviewUrl";
 import { ArrowLeft, Send, Star, ExternalLink, Code } from "lucide-react";
 
 export default function ReviewSubmission() {
@@ -117,6 +118,8 @@ export default function ReviewSubmission() {
   const isAnon = submission.is_anonymous;
   const authorName = isAnon ? "Anonymous Learner" : (submission.profiles?.name || "Unknown");
   const avatar = isAnon ? `https://api.dicebear.com/9.x/bottts/svg?seed=${submission.id}` : (submission.profiles?.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${authorName}`);
+  const contentUrlText = typeof submission.content_url === "string" ? submission.content_url.trim() : "";
+  const safeContentUrl = getSafePeerReviewSubmissionUrl(submission.content_url);
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
@@ -143,13 +146,17 @@ export default function ReviewSubmission() {
               </div>
             )}
 
-            {submission.content_url && (
+            {contentUrlText && (
               <div className="mb-6">
                 <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider mb-2">Link</h3>
-                <a href={submission.content_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-cyan-400 hover:text-cyan-300">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  {submission.content_url}
-                </a>
+                {safeContentUrl ? (
+                  <a href={safeContentUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-cyan-400 hover:text-cyan-300">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    {contentUrlText}
+                  </a>
+                ) : (
+                  <p className="text-slate-200 break-all">{contentUrlText}</p>
+                )}
               </div>
             )}
 

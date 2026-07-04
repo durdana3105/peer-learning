@@ -42,14 +42,18 @@ export const toAuthError = (error: unknown) => {
   return new Error(String(error || "Authentication request failed."));
 };
 
-type SupabaseAuthResponse<T> = {
-  data?: T;
+type SupabaseAuthResponse<TData = unknown> = {
+  data?: TData;
   error: AuthError | Error | null;
 };
 
-export const runSupabaseAuthRequest = async <T>(
-  request: () => Promise<SupabaseAuthResponse<T>>,
-): Promise<SupabaseAuthResponse<T | null>> => {
+type SupabaseAuthRequest = () => Promise<SupabaseAuthResponse>;
+type SupabaseAuthData<TRequest extends SupabaseAuthRequest> =
+  Awaited<ReturnType<TRequest>> extends { data: infer TData } ? TData : null;
+
+export const runSupabaseAuthRequest = async <TRequest extends SupabaseAuthRequest>(
+  request: TRequest,
+): Promise<SupabaseAuthResponse<SupabaseAuthData<TRequest> | null>> => {
   try {
     const { data, error } = await request();
 
@@ -60,7 +64,10 @@ export const runSupabaseAuthRequest = async <T>(
       };
     }
 
-    return { data: data ?? null, error: null };
+    return {
+      data: (data ?? null) as SupabaseAuthData<TRequest> | null,
+      error: null,
+    };
   } catch (error) {
     console.error("Supabase authentication request failed:", error);
 
