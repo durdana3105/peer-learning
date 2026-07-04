@@ -1,6 +1,7 @@
 import multer from "multer";
 import os from "os";
 import fs from "fs";
+import path from "path";
 import { getSupabaseAdmin } from "../utils/supabase.js";
 import { HttpError } from "../utils/httpError.js";
 
@@ -21,19 +22,40 @@ const upload = multer({
     // The issue says: "Unrestricted image upload... check file.mimetype.startsWith('image/')"
     // But since uploadResource also uploads pdf, docx, etc., we should support both or define it dynamically.
     // Let's accept images and common document types since this endpoint is used for both.
-    const allowedResourceTypes = [
+    const allowedResourceTypes = new Set([
+      "application/javascript",
+      "application/octet-stream",
       "application/pdf",
+      "application/typescript",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/zip",
-      "text/plain",
-      "text/markdown",
-      "text/javascript",
-      "text/x-python",
+      "application/x-javascript",
       "application/x-python-code",
-      "application/typescript"
-    ];
+      "application/x-zip-compressed",
+      "application/zip",
+      "text/javascript",
+      "text/markdown",
+      "text/plain",
+      "text/x-markdown",
+      "text/x-python",
+      "text/x-typescript",
+      "video/mp2t"
+    ]);
+    const allowedResourceExtensions = new Set([
+      ".docx",
+      ".js",
+      ".md",
+      ".pdf",
+      ".py",
+      ".ts",
+      ".txt",
+      ".zip"
+    ]);
+    const extension = path.extname(file.originalname).toLowerCase();
+    const isAllowedResource =
+      allowedResourceExtensions.has(extension) &&
+      allowedResourceTypes.has(file.mimetype);
 
-    if (file.mimetype.startsWith("image/") || allowedResourceTypes.includes(file.mimetype)) {
+    if (file.mimetype.startsWith("image/") || isAllowedResource) {
       cb(null, true);
     } else {
       cb(new HttpError(415, "Unsupported Media Type"));
