@@ -9,6 +9,10 @@ const chatMessageSchema = z.object({
   content: z.string().trim().min(1).max(4000),
 });
 
+const chatCompletionMessageSchema = chatMessageSchema.extend({
+  role: z.enum(["user", "assistant"]),
+});
+
 const summarizeMessageSchema = z.object({
   username: z.string().trim().min(1).max(120).optional(),
   message: z.string().trim().min(1).max(4000),
@@ -46,7 +50,7 @@ export const chatSchemas = {
   chatCompletion: {
     body: z
       .object({
-        messages: z.array(chatMessageSchema).min(1).max(50),
+        messages: z.array(chatCompletionMessageSchema).min(1).max(50),
         model: z.enum(allowedChatModels).default("openai/gpt-3.5-turbo"),
         max_tokens: z.number().int().positive().max(512).optional(),
         temperature: z.number().min(0).max(2).default(0.7),
