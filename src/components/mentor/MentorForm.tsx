@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Loader2, Plus } from "lucide-react";
+import { CheckCircle2, Loader2, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 const steps = [
   "Basic Info",
@@ -43,18 +43,18 @@ export default function MentorForm() {
   const handleAddCustomSkill = async () => {
     const skill = customSkill.trim();
     if (!skill) return;
-    
+
     await (supabase as any).from("skills_taxonomy").insert({ name: skill });
-    
+
     if (!availableSkills.includes(skill)) {
       setAvailableSkills([...availableSkills, skill]);
     }
-    
+
     setFormData((prev) => ({
       ...prev,
       skills: prev.skills.includes(skill) ? prev.skills : [...prev.skills, skill],
     }));
-    
+
     setCustomSkill("");
   };
   const toggleSkill = (skill: string) => {
@@ -64,6 +64,13 @@ export default function MentorForm() {
         ? prev.skills.filter((s) => s !== skill)
         : [...prev.skills, skill],
     }));
+  };
+  const removeSkill = (skill: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      skills: prev.skills.filter((s) => s !== skill),
+    }));
+    setAvailableSkills((prev) => prev.filter((s) => s !== skill));
   };
   const toggleMentorship = (type: string) => {
     setFormData((prev) => ({
@@ -149,7 +156,7 @@ export default function MentorForm() {
   };
   return (
     <div className="mx-auto max-w-4xl rounded-[32px] border border-white/10 bg-white/5 p-10 backdrop-blur-2xl">
-      
+
       {/* Progress */}
       {step !== 4 && (
         <div className="mb-10">
@@ -231,20 +238,43 @@ export default function MentorForm() {
               Skills & Expertise
             </h2>
             <div className="mt-8 flex flex-wrap gap-4 mb-6">
-              {availableSkills.map((skill) => (
-                <button
-                  type="button"
-                  key={skill}
-                  onClick={() => toggleSkill(skill)}
-                  className={`rounded-full px-5 py-3 transition-all duration-300 ${
-                    formData.skills.includes(skill)
-                      ? "bg-gradient-to-r from-cyan-400 to-blue-500 text-black"
-                      : "border border-cyan-400/30 bg-cyan-400/10 text-cyan-300"
-                  }`}
-                >
-                  {skill}
-                </button>
-              ))}
+              {availableSkills.map((skill) => {
+                const isSelected = formData.skills.includes(skill);
+                return (
+                  <div
+                    key={skill}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleSkill(skill)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleSkill(skill);
+                      }
+                    }}
+                    className={`flex cursor-pointer select-none items-center gap-2 rounded-full px-5 py-3 transition-all duration-300 ${
+                      isSelected
+                        ? "bg-gradient-to-r from-cyan-400 to-blue-500 text-black"
+                        : "border border-cyan-400/30 bg-cyan-400/10 text-cyan-300"
+                    }`}
+                  >
+                    <span>{skill}</span>
+                    {isSelected && (
+                      <button
+                        type="button"
+                        aria-label={`Remove ${skill}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeSkill(skill);
+                        }}
+                        className="flex h-5 w-5 items-center justify-center rounded-full bg-black/20 text-black transition hover:bg-black/40"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <div className="flex gap-3">
               <input

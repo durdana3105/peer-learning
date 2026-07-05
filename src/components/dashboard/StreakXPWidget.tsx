@@ -19,10 +19,10 @@ export default function StreakXPWidget() {
         setData({
           streak: 0,
           totalXP: 0,
+          dailyXP: 0,
           lastActive: new Date().toISOString(),
+          canRestore: false,
           restorationUsedToday: false,
-          restorationDate: null,
-          history: []
         });
       });
   }, []);

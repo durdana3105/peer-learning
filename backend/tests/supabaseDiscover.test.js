@@ -224,7 +224,7 @@ describe("getSupabaseDiscover — pagination offset calculation", () => {
     await getSupabaseDiscover(req, res);
 
     expect(capturedLimit).toBe(1000);
-    
+
     // Page 2, Limit 10 means we should get elements 10 through 19 (length 10)
     expect(res.json).toHaveBeenCalled();
     const responsePayload = res.json.mock.calls[0][0];
@@ -258,5 +258,79 @@ describe("getSupabaseDiscover — pagination offset calculation", () => {
 
     // Limit is hardcoded to 1000
     expect(capturedLimit).toBe(1000);
+  });
+});
+
+// ── Regression guard for #1227 ─────────────────────────────────────────────────────
+// skills is a text[] column; ilike is a scalar operator and cannot match inside
+// array elements. These tests assert the array-aware operators are used instead.
+describe("getSupabaseDiscover — skill array search (regression for #1227)", () => {
+  it("search uses array-overlap operator 'ov' on skills, not ilike", async () => {
+    let capturedOrArg;
+    const peers = [
+      { id: "uuid-alice", name: "Alice", skills: ["Python"], interests: [], learning_goals: [], teach_subjects: [], learn_subjects: [] },
+    ];
+
+    mockSupabase.from.mockImplementation(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
+        error: null,
+      }),
+      limit: vi.fn().mockImplementation(() => ({
+        or: vi.fn().mockImplementation((arg) => {
+          capturedOrArg = arg;
+          return { then: (resolve) => resolve({ data: peers, error: null }) };
+        }),
+        then: (resolve) => resolve({ data: peers, error: null }),
+      })),
+    }));
+
+    const req = { user: { id: CURRENT_USER_ID }, query: { search: "Python" } };
+    const res = createRes();
+
+    await getSupabaseDiscover(req, res);
+
+    expect(capturedOrArg).toContain("skills.ov.");
+    expect(capturedOrArg).not.toContain("skills.ilike");
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.recommendations.map((p) => p.id)).toContain("uuid-alice");
+  });
+
+  it("filter chip uses .contains() on skills, not ilike", async () => {
+    let containsArgs;
+    const peers = [
+      { id: "uuid-alice", name: "Alice", skills: ["Python"], interests: [], learning_goals: [], teach_subjects: [], learn_subjects: [] },
+    ];
+
+    mockSupabase.from.mockImplementation(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
+        error: null,
+      }),
+      limit: vi.fn().mockImplementation(() => ({
+        contains: vi.fn().mockImplementation((col, val) => {
+          containsArgs = [col, val];
+          return { then: (resolve) => resolve({ data: peers, error: null }) };
+        }),
+        then: (resolve) => resolve({ data: peers, error: null }),
+      })),
+    }));
+
+    const req = { user: { id: CURRENT_USER_ID }, query: { filter: "Python" } };
+    const res = createRes();
+
+    await getSupabaseDiscover(req, res);
+
+    expect(containsArgs).toEqual(["skills", ["Python"]]);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.recommendations.map((p) => p.id)).toContain("uuid-alice");
   });
 });

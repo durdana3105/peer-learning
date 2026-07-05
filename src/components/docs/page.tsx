@@ -1,5 +1,5 @@
 import React from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import {
   FileText,
   Users,
@@ -55,13 +55,14 @@ export default function DocsPage() {
           <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
             <li>
               Read the{" "}
-              <Link
+              <a
                 href="https://github.com/durdana3105/peer-learning"
                 className="text-blue-600 hover:underline"
                 target="_blank"
+                rel="noopener noreferrer"
               >
                 README
-              </Link>
+              </a>
             </li>
             <li>
               Set up the development environment following the repository
@@ -69,12 +70,12 @@ export default function DocsPage() {
             </li>
             <li>
               Familiarize yourself with our{" "}
-              <Link
+              <a
                 href="#code-of-conduct"
                 className="text-blue-600 hover:underline"
               >
                 Code of Conduct
-              </Link>
+              </a>
             </li>
             <li>Explore open issues and discussions on GitHub</li>
           </ul>
@@ -101,13 +102,14 @@ export default function DocsPage() {
               <li>Push and open a Pull Request</li>
             </ol>
           </div>
-          <Link
+          <a
             href="https://github.com/durdana3105/peer-learning/blob/main/CONTRIBUTING.md"
             className="inline-flex items-center gap-2 text-blue-600 hover:underline font-medium"
             target="_blank"
+            rel="noopener noreferrer"
           >
             Read Full Contributing Guidelines →
-          </Link>
+          </a>
         </section>
 
         {/* 4. Code of Conduct */}
@@ -130,13 +132,14 @@ export default function DocsPage() {
               discrimination, offensive language, personal attacks.
             </p>
           </div>
-          <Link
+          <a
             href="https://github.com/durdana3105/peer-learning/blob/main/CODE_OF_CONDUCT.md"
             className="inline-flex items-center gap-2 text-blue-600 hover:underline font-medium mt-4"
             target="_blank"
+            rel="noopener noreferrer"
           >
             Read Full Code of Conduct →
-          </Link>
+          </a>
         </section>
 
         {/* 5. Security & Responsible Disclosure */}
@@ -170,13 +173,14 @@ export default function DocsPage() {
             Found a bug? Have a feature idea? Please open an issue with a clear
             title, description, and reproduction steps (if applicable).
           </p>
-          <Link
+          <a
             href="https://github.com/durdana3105/peer-learning/issues"
             className="inline-flex items-center gap-2 text-blue-600 hover:underline font-medium mt-4"
             target="_blank"
+            rel="noopener noreferrer"
           >
             Open a New Issue →
-          </Link>
+          </a>
         </section>
 
         {/* 7. Pull Request Expectations */}

@@ -120,23 +120,8 @@ export default function Landing() {
   }, [preferences?.functional]);
 
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center overflow-hidden bg-[#020617]">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1.15, opacity: 1 }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            repeatType: "reverse",
-          }}
-          className="bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-6xl font-black tracking-wider text-transparent"
-        >
-          PeerLearn
-        </motion.div>
-      </div>
-    );
-  }
+  return null;
+}
 
   return (
     <motion.div
@@ -218,8 +203,8 @@ export default function Landing() {
           </p>
 
           <div className="relative z-10 mt-10 flex flex-wrap justify-center gap-5">
-            <Button className="rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-7 text-black transition-all duration-300 hover:scale-105">
-              Get Started
+            <Button asChild className="rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-7 text-black transition-all duration-300 hover:scale-105">
+              <Link to="/signup">Get Started</Link>
             </Button>
 
             <Link to="/become-mentor">
