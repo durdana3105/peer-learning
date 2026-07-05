@@ -57,12 +57,29 @@ export const dispatchPushNotifications = async (req, res, next) => {
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
     const supabase = getSupabaseClient();
 
-    // Atomically claim a batch of pending notifications so concurrent invocations
-    // cannot double-deliver the same notification (race-condition prevention).
+    // Select the oldest pending notifications in a bounded batch (max 100 per run).
+    const { data: pending, error: selectError } = await supabase
+      .from("notifications")
+      .select("id")
+      .is("push_claimed_at", null)
+      .is("push_sent_at", null)
+      .order("created_at", { ascending: true })
+      .limit(100);
+
+    if (selectError) {
+      return res.status(500).json({ error: selectError.message });
+    }
+
+    if (!pending || pending.length === 0) {
+      return res.json({ sent: 0, processed: 0 });
+    }
+
+    // Atomically claim only that batch; the push_claimed_at guard prevents double-delivery.
     const claimedAt = new Date().toISOString();
     const { data: notifications, error: claimError } = await supabase
       .from("notifications")
       .update({ push_claimed_at: claimedAt })
+      .in("id", pending.map((n) => n.id))
       .is("push_claimed_at", null)
       .select("id,user_id,title,body,action_url");
 

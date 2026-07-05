@@ -14,6 +14,7 @@ const makeSupabaseMock = () => {
     let _operation = null;
     let _payload = null;
     let _selectCols = null;
+    let _limit = null;
 
     const chain = {
       update(payload) {
@@ -40,19 +41,29 @@ const makeSupabaseMock = () => {
       order() {
         return chain;
       },
-      limit() {
+      limit(n) {
+        _limit = n;
         return chain;
       },
       // Resolve the chain
       then(resolve) {
-        if (table === "notifications" && _operation === "update" && _isFilters["push_claimed_at"] === null) {
-          // Atomic claim: only return rows not yet claimed
+        if (table === "notifications" && _operation === null && _isFilters["push_claimed_at"] === null) {
+          // Step 1: select the oldest unclaimed ids, bounded by the batch limit
           const unclaimed = dbRows.filter(
             (r) => r.push_sent_at == null && !claimedIds.has(r.id)
           );
-          const batch = unclaimed.slice(0, 100);
+          const batch = unclaimed.slice(0, _limit ?? unclaimed.length);
+          return resolve({ data: batch.map((r) => ({ id: r.id })), error: null });
+        }
+
+        if (table === "notifications" && _operation === "update" && _isFilters["push_claimed_at"] === null) {
+          // Step 2: atomic claim of only the selected ids not yet claimed
+          const ids = _filters["id__in"] || [];
+          const batch = dbRows.filter(
+            (r) => ids.includes(r.id) && r.push_sent_at == null && !claimedIds.has(r.id)
+          );
           batch.forEach((r) => claimedIds.add(r.id));
-          return resolve({ data: batch.map(r => ({ ...r })), error: null });
+          return resolve({ data: batch.map((r) => ({ ...r })), error: null });
         }
 
         if (table === "notifications" && _operation === "update" && _filters["id__in"]) {
@@ -194,6 +205,29 @@ describe("dispatchPushNotifications — race condition", () => {
     expect(res.status).toBe(200);
     expect(res.body.processed).toBe(5);
     expect(res.body.sent).toBe(5);
+  });
+
+  it("processes at most 100 notifications per invocation and drains the rest next run", async () => {
+    const webpush = (await import("web-push")).default;
+    webpush.sendNotification.mockImplementation(() => Promise.resolve({ statusCode: 201 }));
+
+    dbRows = Array.from({ length: 150 }, (_, i) => ({
+      id: `notif-${i}`,
+      user_id: `user-${i}`,
+      title: `Title ${i}`,
+      body: `Body ${i}`,
+      action_url: "/notifications",
+      push_sent_at: null,
+      push_claimed_at: null,
+    }));
+
+    const res1 = await request(app).post("/dispatch");
+    expect(res1.status).toBe(200);
+    expect(res1.body.processed).toBe(100);
+
+    const res2 = await request(app).post("/dispatch");
+    expect(res2.status).toBe(200);
+    expect(res2.body.processed).toBe(50);
   });
 
   it("returns sent=0, processed=0 when no pending notifications exist", async () => {
