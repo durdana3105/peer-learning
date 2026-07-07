@@ -20,7 +20,9 @@ export const deleteResource = async (
 
     // Fetch the resource and verify ownership in a single query.
     // The .eq("uploaded_by", user.id) ensures we only find rows the caller owns,
-    // preventing deletion of another user's resource.
+    // preventing deletion of another user's resource. This check is defense in
+    // depth on top of the RLS policy (fix #1674) which now also enforces
+    // uploaded_by = auth.uid() at the database level for UPDATE/DELETE.
     const { data: resource, error: fetchError } = await (supabase as any)
       .from("resources")
       .select("id, file_url")
@@ -57,5 +59,3 @@ export const deleteResource = async (
     return { success: false, error: err.message || "An unexpected error occurred while deleting the resource." };
   }
 };
-
-// Fix for #1160: Added error toasts

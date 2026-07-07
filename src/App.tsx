@@ -23,6 +23,10 @@ import FloatingAI from "./components/FloatingAI";
 import MouseSparkles from "./components/MouseSparkles";
 import BackToTop from "./components/BackToTop";  // ? ADDED THIS LINE
 import { useAuth } from "@/contexts/useAuth";
+import SplashScreen from "./components/SplashScreen";
+
+
+
 
 // Lazy-loaded page & route-specific components (code-split per route)
 const Landing = React.lazy(() => import("./pages/Landing"));
@@ -81,6 +85,17 @@ const WithNav = ({ children }: { children: React.ReactNode }) => {
 
 function AppContent() {
   const { user } = useAuth();
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return <SplashScreen />;
+  }
 
   return (
     <>

@@ -619,3 +619,4 @@ This project is licensed under the MIT License.
 ## Empowering Students Through Collaborative Learning Made with by the Open Source Community
 
 </div>
+# TODO: [bug]: validation error message doesn't clear after fixing the issue (skills & experience steps) (#1614)

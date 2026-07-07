@@ -1,63 +1,66 @@
-CREATE TABLE IF NOT EXISTS public.peer_submissions (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    description TEXT,
-    content_url TEXT,
-    content TEXT,
-    is_anonymous BOOLEAN DEFAULT false,
-    status TEXT DEFAULT 'pending',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
+-- 20260706000001_peer_review_status_rpc.sql
+-- Fixes #1675: submission status stayed "pending" after feedback was
+-- submitted, because the client tried to update peer_submissions.status
+-- directly and the RLS UPDATE policy on that table only allows the
+-- *owner* to update it -- not the reviewer. That update failed silently
+-- (the error was never checked in the UI), so a submission could have
+-- reviews and still show as pending.
+--
+-- Fix: perform the review insert and the status transition atomically,
+-- as a single SECURITY DEFINER function, with server-side checks that
+-- don't depend on which RLS policy the caller happens to satisfy.
 
--- RLS for peer_submissions
-ALTER TABLE public.peer_submissions ENABLE ROW LEVEL SECURITY;
+create or replace function public.submit_peer_review(
+  p_submission_id uuid,
+  p_feedback text
+)
+returns public.peer_reviews
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_submission record;
+  v_review public.peer_reviews;
+begin
+  if p_feedback is null or btrim(p_feedback) = '' then
+    raise exception 'Feedback cannot be empty';
+  end if;
 
-CREATE POLICY "Enable read access for all authenticated users"
-    ON public.peer_submissions FOR SELECT
-    USING (auth.role() = 'authenticated');
+  if auth.uid() is null then
+    raise exception 'Not authenticated';
+  end if;
 
-CREATE POLICY "Enable insert for authenticated users"
-    ON public.peer_submissions FOR INSERT
-    WITH CHECK (auth.uid() = user_id);
+  -- Lock the submission row so a concurrent call can't race the status flip.
+  select id, user_id, status
+    into v_submission
+    from public.peer_submissions
+    where id = p_submission_id
+    for update;
 
-CREATE POLICY "Enable update for owners"
-    ON public.peer_submissions FOR UPDATE
-    USING (auth.uid() = user_id)
-    WITH CHECK (auth.uid() = user_id);
+  if not found then
+    raise exception 'Submission not found';
+  end if;
 
-CREATE POLICY "Enable delete for owners"
-    ON public.peer_submissions FOR DELETE
-    USING (auth.uid() = user_id);
+  if v_submission.user_id = auth.uid() then
+    raise exception 'You cannot review your own submission';
+  end if;
 
-CREATE TABLE IF NOT EXISTS public.peer_reviews (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    submission_id UUID REFERENCES public.peer_submissions(id) ON DELETE CASCADE,
-    reviewer_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    feedback TEXT NOT NULL,
-    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
+  insert into public.peer_reviews (submission_id, reviewer_id, feedback)
+  values (p_submission_id, auth.uid(), p_feedback)
+  returning * into v_review;
 
--- RLS for peer_reviews
-ALTER TABLE public.peer_reviews ENABLE ROW LEVEL SECURITY;
+  -- Only move pending -> reviewed; never downgrade a later status.
+  update public.peer_submissions
+     set status = 'reviewed'
+   where id = p_submission_id
+     and status = 'pending';
 
-CREATE POLICY "Enable read access for all authenticated users"
-    ON public.peer_reviews FOR SELECT
-    USING (auth.role() = 'authenticated');
+  return v_review;
+end;
+$$;
 
-CREATE POLICY "Enable insert for authenticated users"
-    ON public.peer_reviews FOR INSERT
-    WITH CHECK (auth.uid() = reviewer_id);
-
--- Only allow update if you are the reviewer (e.g. edit feedback) OR you are the submission owner (to set rating)
-CREATE POLICY "Enable update for owners and submission owners"
-    ON public.peer_reviews FOR UPDATE
-    USING (
-        auth.uid() = reviewer_id OR
-        auth.uid() IN (SELECT user_id FROM public.peer_submissions WHERE id = submission_id)
-    );
-
-CREATE POLICY "Enable delete for reviewer"
-    ON public.peer_reviews FOR DELETE
-    USING (auth.uid() = reviewer_id);
+-- Lock the function down: only authenticated users can call it, and only
+-- through the checks above (no direct table UPDATE bypass needed anymore).
+revoke all on function public.submit_peer_review(uuid, text) from public;
+grant execute on function public.submit_peer_review(uuid, text) to authenticated;

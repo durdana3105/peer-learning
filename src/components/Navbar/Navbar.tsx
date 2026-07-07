@@ -1,6 +1,7 @@
 import { useState, useCallback, memo } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import Logo from "@/components/Logo";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useNavbarProfile } from "@/hooks/useNavbarProfile";
 import { ThemeToggle } from "./ThemeToggle";
@@ -33,23 +34,11 @@ const Navbar = memo(function Navbar() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         {/* LOGO */}
         <Link
-          to={user ? "/dashboard" : "/"}
-          className="flex items-center gap-2"
-          aria-label="PeerLearn home page"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/30">
-            <BookOpen
-              className="h-5 w-5 text-white"
-              aria-hidden="true"
-            />
-          </div>
-          <h1 className="text-xl font-bold text-white">
-            Peer
-            <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              Learn
-            </span>
-          </h1>
-        </Link>
+  to={user ? "/dashboard" : "/"}
+  aria-label="PeerLearn home page"
+>
+  <Logo />
+</Link>
 
         {/* DESKTOP NAV */}
         <DesktopNav user={user} isAdmin={isAdmin} />

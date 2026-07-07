@@ -6,13 +6,45 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SessionCard from "@/components/SessionCard";
 import { MentorshipMilestones } from "@/components/mentorship/MentorshipMilestones";
+import type { Session } from "@/types";
+
+type MentorSessionRow = {
+  id: number;
+  title: string | null;
+  scheduled_at: string | null;
+  duration_minutes: number | null;
+  status: string | null;
+};
+
+type MentorProfile = {
+  name: string | null;
+  sessions_completed: number | null;
+  points: number | null;
+  rating: number | null;
+};
+
+const toSessionCardModel = (session: MentorSessionRow): Session => {
+  const scheduledAt = session.scheduled_at ? new Date(session.scheduled_at) : null;
+
+  return {
+    id: String(session.id),
+    peerId: "",
+    peerName: "Learner",
+    peerAvatar: "/placeholder.svg",
+    subject: session.title || "Mentorship session",
+    date: scheduledAt ? scheduledAt.toLocaleDateString() : "Not scheduled",
+    time: scheduledAt ? scheduledAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
+    duration: session.duration_minutes ?? 60,
+    status: session.status === "ended" || session.status === "completed" ? "completed" : "upcoming",
+  };
+};
 
 const MentorDashboard = () => {
   const { user, loading } = useAuth();
   const { currentMode } = useRole();
   
-  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
-  const [upcomingSessions, setUpcomingSessions] = useState<Record<string, unknown>[]>([]);
+  const [profile, setProfile] = useState<MentorProfile | null>(null);
+  const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
 
   const displayName =
     profile?.name ||
@@ -29,7 +61,7 @@ const MentorDashboard = () => {
         // Fetch real Mentor Profile Stats
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("*")
+          .select("name,sessions_completed,points,rating")
           .eq("id", user.id)
           .single();
         
@@ -40,12 +72,12 @@ const MentorDashboard = () => {
         // Fetch Upcoming Mentor Sessions
         const { data: sessionData } = await supabase
           .from("sessions")
-          .select("*")
-          .eq("status", "upcoming")
+          .select("id,title,scheduled_at,duration_minutes,status")
+          .in("status", ["upcoming", "scheduled", "live"])
           .limit(4);
 
         if (sessionData) {
-          setUpcomingSessions(sessionData);
+          setUpcomingSessions(sessionData.map(toSessionCardModel));
         }
       } catch (err) {
         console.error("Failed to fetch mentor dashboard data", err);

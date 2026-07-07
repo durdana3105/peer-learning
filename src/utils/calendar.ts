@@ -6,6 +6,13 @@
  * @param startDate      Session start time (Date object)
  * @param durationMinutes Session duration in minutes (default 60)
  */
+export const escapeICalText = (text: string) =>
+  text
+    .replace(/\\/g, "\\\\")
+    .replace(/\r\n|\n|\r/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
+
 export const generateICS = (
   title: string,
   description: string,
@@ -29,8 +36,8 @@ export const generateICS = (
     `DTSTAMP:${formatDate(new Date())}`,
     `DTSTART:${formatDate(startDate)}`,
     `DTEND:${formatDate(endDate)}`,
-    `SUMMARY:${title}`,
-    `DESCRIPTION:${description.replace(/\n/g, "\\n")}`,
+    `SUMMARY:${escapeICalText(title)}`,
+    `DESCRIPTION:${escapeICalText(description)}`,
     "END:VEVENT",
     "END:VCALENDAR",
   ].join("\r\n");

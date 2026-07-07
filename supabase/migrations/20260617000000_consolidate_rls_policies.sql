@@ -290,14 +290,29 @@ CREATE POLICY "Admins can update all mentor apps"
   ON public.mentors FOR UPDATE USING (public.has_role(auth.uid(), 'admin'));
 
 -- mentorship_paths & mentorship_milestones
-CREATE POLICY "Anyone can view mentorship paths" 
-  ON public.mentorship_paths FOR SELECT USING (true);
+CREATE POLICY "Users and admins can view mentorship paths"
+  ON public.mentorship_paths FOR SELECT USING (
+    auth.uid() = mentor_id
+    OR auth.uid() = mentee_id
+    OR public.has_role(auth.uid(), 'admin')
+  );
 
 CREATE POLICY "Mentors can manage their paths" 
   ON public.mentorship_paths FOR ALL USING (mentor_id = auth.uid());
 
-CREATE POLICY "Anyone can view milestones" 
-  ON public.mentorship_milestones FOR SELECT USING (true);
+CREATE POLICY "Users and admins can view mentorship milestones"
+  ON public.mentorship_milestones FOR SELECT USING (
+    EXISTS (
+      SELECT 1
+      FROM public.mentorship_paths mp
+      WHERE mp.id = mentorship_milestones.path_id
+        AND (
+          auth.uid() = mp.mentor_id
+          OR auth.uid() = mp.mentee_id
+          OR public.has_role(auth.uid(), 'admin')
+        )
+    )
+  );
 
 CREATE POLICY "Mentors can manage milestones" 
   ON public.mentorship_milestones FOR ALL USING (
@@ -327,8 +342,20 @@ CREATE POLICY "Users can view submissions"
 CREATE POLICY "Users can insert submissions" 
   ON public.peer_submissions FOR INSERT WITH CHECK (user_id = auth.uid());
 
+-- Fix #1675: previously "USING (user_id = auth.uid())" with no WITH CHECK
+-- restriction let the owner freely rewrite status, but the actual bug was
+-- reviewers trying (and silently failing) to flip status themselves. Status
+-- transitions now happen exclusively inside the submit_peer_review()
+-- SECURITY DEFINER function (see 20260706000001_peer_review_status_rpc.sql),
+-- which bypasses RLS after its own auth checks. This WITH CHECK blocks any
+-- direct client-side status mutation, by owner or otherwise, so the RPC is
+-- the only path that can ever move status forward.
 CREATE POLICY "Users can update own submissions" 
-  ON public.peer_submissions FOR UPDATE USING (user_id = auth.uid());
+  ON public.peer_submissions FOR UPDATE USING (user_id = auth.uid())
+  WITH CHECK (
+    user_id = auth.uid()
+    AND status IS NOT DISTINCT FROM (SELECT status FROM public.peer_submissions WHERE id = peer_submissions.id)
+  );
 
 CREATE POLICY "Users can delete own submissions" 
   ON public.peer_submissions FOR DELETE USING (user_id = auth.uid());
@@ -405,15 +432,25 @@ CREATE POLICY "Users can delete own push subscriptions"
 --------------------------------------------------------------------------------
 -- 10. RESOURCES & WHITEBOARD
 --------------------------------------------------------------------------------
--- resources (Assuming existence)
+-- resources
+-- Fix #1674: previously INSERT/UPDATE/DELETE all used a blanket `true` check,
+-- so RLS enforced nothing and any authenticated user could modify or delete
+-- another user's uploaded resource directly via the Supabase client, bypassing
+-- the frontend's ownership check entirely. Now ownership is enforced at the
+-- database layer via the `uploaded_by` column, matching what
+-- uploadResource.ts already writes and what deleteResource.ts already assumes.
 CREATE POLICY "Anyone can view resources" 
   ON public.resources FOR SELECT USING (true);
-CREATE POLICY "Users can insert resources" 
-  ON public.resources FOR INSERT WITH CHECK (true);
-CREATE POLICY "Users can update resources" 
-  ON public.resources FOR UPDATE USING (true);
-CREATE POLICY "Users can delete resources" 
-  ON public.resources FOR DELETE USING (true);
+
+CREATE POLICY "Users can insert own resources" 
+  ON public.resources FOR INSERT WITH CHECK (uploaded_by = auth.uid());
+
+CREATE POLICY "Users can update own resources" 
+  ON public.resources FOR UPDATE USING (uploaded_by = auth.uid())
+  WITH CHECK (uploaded_by = auth.uid());
+
+CREATE POLICY "Users can delete own resources" 
+  ON public.resources FOR DELETE USING (uploaded_by = auth.uid());
 
 -- saved_resources
 CREATE POLICY "Users can view own saved resources" 

@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import { sanitizeNotificationActionUrl } from "../utils/notificationActionUrl.js";
+import { collectExpiredSubscriptionIds } from "../utils/pushDeliveryCleanup.js";
 
 const getSupabaseClient = () => {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -32,7 +33,6 @@ export const sendPushNotification = async (req, res, next) => {
       return res.status(400).json({
         error: "user_id, title, and body are required",
       });
-      
     }
     if (
       typeof user_id !== "string" ||
@@ -93,20 +93,16 @@ export const sendPushNotification = async (req, res, next) => {
         )
       )
     );
-    await Promise.all(
-      results.map(async (result, index) => {
-        if (
-          result.status === "rejected" &&
-          (result.reason?.statusCode === 404 ||
-            result.reason?.statusCode === 410)
-          ) {
-            await supabase
-            .from("push_subscriptions")
-            .delete()
-            .eq("id", subscriptions[index].id);
-          }
-        })
-      );
+
+    // Shared with the cron dispatch path (fixes #1676: cleanup used to only
+    // live here, not in dispatchPushNotifications).
+    const expiredIds = collectExpiredSubscriptionIds(subscriptions, results);
+    if (expiredIds.size > 0) {
+      await supabase
+        .from("push_subscriptions")
+        .delete()
+        .in("id", [...expiredIds]);
+    }
 
     res.json({
       sent: results.filter((result) => result.status === "fulfilled").length,

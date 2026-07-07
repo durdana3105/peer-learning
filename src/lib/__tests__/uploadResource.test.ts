@@ -129,4 +129,21 @@ describe("uploadResource", () => {
     });
     expect(mocks.remove).not.toHaveBeenCalled();
   });
+
+  // Regression test for #1674: the resources RLS INSERT policy now requires
+  // WITH CHECK (uploaded_by = auth.uid()), so the client must always send the
+  // authenticated caller's own id and never a caller-supplied user id.
+  it("sets uploaded_by to the authenticated user's id, matching the RLS insert policy", async () => {
+    mocks.single.mockResolvedValue({
+      data: { id: "resource-1", uploaded_by: "user-123" },
+      error: null,
+    });
+
+    const result = await uploadResource(file, "Notes", "Helpful notes", []);
+
+    expect(result.success).toBe(true);
+    expect(mocks.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ uploaded_by: "user-123" })
+    );
+  });
 });

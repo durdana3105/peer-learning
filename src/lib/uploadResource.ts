@@ -132,6 +132,10 @@ export const uploadResource = async (
   }
 
   try {
+    // uploaded_by is set to the authenticated caller's own id here, which is
+    // what the resources RLS INSERT policy now requires
+    // (WITH CHECK (uploaded_by = auth.uid()), fix #1674) -- a client cannot
+    // insert a resource row attributed to another user.
     const { data, error } = await (supabase as any)
       .from("resources")
       .insert({
