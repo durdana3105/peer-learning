@@ -1,6 +1,6 @@
-import React, { useEffect, Suspense, useState, useRef } from "react";
+import React, { useEffect, Suspense, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, Router } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -29,7 +29,6 @@ import SplashScreen from "./components/SplashScreen";
 
 
 // Lazy-loaded page & route-specific components (code-split per route)
-const Landing = React.lazy(() => import("./pages/Landing"));
 const Index = React.lazy(() => import("./pages/Index"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 const Dashboard = React.lazy(() => import("./pages/Dashboard"));
