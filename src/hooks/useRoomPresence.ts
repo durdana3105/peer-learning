@@ -3,17 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 
 export function useRoomPresence(id: string | undefined, user: User | null, fetchMessages: () => void, setActivities: React.Dispatch<React.SetStateAction<string[]>>) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const [participants, setParticipants] = useState<any[]>([]);
 
   useEffect(() => {
     if (!id || !user) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     let roomChannel: any;
 
     const initializeChat = async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const { data } = await supabase.from('profiles' as any).select('name').eq('id', user.id).single() as any;
       const displayName = data?.name || user.email?.split('@')[0] || 'Student';
 
@@ -24,7 +24,7 @@ export function useRoomPresence(id: string | undefined, user: User | null, fetch
       roomChannel
         .on('presence', { event: 'sync' }, () => {
           const newState = roomChannel.presenceState();
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+           
           const onlineUsers = Object.values(newState).map((p: any) => p[0]);
 
           setParticipants(onlineUsers);

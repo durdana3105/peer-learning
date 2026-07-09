@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-empty-object-type, no-unsafe-finally, @typescript-eslint/no-unused-expressions, @typescript-eslint/ban-ts-comment, @typescript-eslint/no-require-imports */
+ 
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { toast } from "@/hooks/use-toast";
@@ -128,7 +128,7 @@ export const useResources = (filters?: ResourceFilters) => {
         description: normalized.message,
         variant: "destructive",
       });
-    } // eslint-disable-next-line no-unsafe-finally
+    }  
     finally {
       if (!isMountedRef.current || requestId !== requestIdRef.current || controller.signal.aborted) {
         return;
