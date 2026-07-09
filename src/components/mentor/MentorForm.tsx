@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Loader2, Plus, X } from "lucide-react";
@@ -41,6 +40,7 @@ export default function MentorForm() {
       (step === 2 && validateExperience()) ||
       (step === 3 && validateMentorship());
     if (isValid) setError("");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData, step]);
 
   useEffect(() => {

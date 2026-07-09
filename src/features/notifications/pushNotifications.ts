@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from "@/integrations/supabase/client";
 import { env } from "@/env";
 import { sanitizeNotificationActionUrl } from "./actionUrl";

@@ -39,7 +39,7 @@ export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesP
 
   useEffect(() => {
     fetchPaths();
-  }, [userId]);
+  }, [userId, fetchPaths]);
 
   const createPath = async () => {
     if (!newGoal || !newMenteeId) {

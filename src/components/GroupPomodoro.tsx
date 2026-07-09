@@ -105,7 +105,7 @@ export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroP
       active = false;
       supabase.removeChannel(channel);
     };
-  }, [roomId]);
+  }, [roomId, toast]);
 
   const clampDurations = useCallback(() => ({
     work: Math.min(WORK_MAX, Math.max(WORK_MIN, Math.floor(workDuration))),

@@ -4,13 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 
 export function useRoomChat(id: string | undefined, user: User | null, setActivities: React.Dispatch<React.SetStateAction<string[]>>) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [messages, setMessages] = useState<any[]>([]);
 
   const fetchMessages = useCallback(async () => {
     if (!id) return;
     const { data, error } = await supabase
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .from('study_room_messages' as any)
       .select('*, profiles(name, avatar_url)')
       .eq('room_id', id)
@@ -35,7 +33,6 @@ export function useRoomChat(id: string | undefined, user: User | null, setActivi
       ...prev,
     ]);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from('study_room_messages' as any).insert([
       { room_id: id, profile_id: user.id, content: newMessage }
     ]);
