@@ -92,7 +92,7 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
     }
     try {
       await toggleVote(vote === type ? null : type);
-    } catch (e) {
+    } catch {
       toast.error("Failed to register vote");
     }
   };
@@ -104,7 +104,7 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
     }
     try {
       await toggleSave(!isSaved);
-    } catch (e) {
+    } catch {
       toast.error("Failed to save resource");
     }
   };

@@ -114,7 +114,7 @@ export default function Landing() {
         localStorage.setItem(KEY_LAST, todayKey);
         setStreak(1);
       }
-    } catch (e) {
+    } catch {
       setStreak(0);
     }
   }, [preferences?.functional]);
