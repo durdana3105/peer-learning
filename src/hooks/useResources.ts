@@ -63,11 +63,10 @@ export const useResources = (filters?: ResourceFilters) => {
           return;
         }
         
-        const { data: savedData, error: savedError } = await safeSupabaseCall(
-          () => (supabase as any).from("saved_resources").select("resource_id").eq("user_id", user.id).abortSignal(controller.signal)
+        const savedData = await safeSupabaseCall(
+          () => (supabase as any).from("saved_resources").select("resource_id").eq("user_id", user.id).abortSignal(controller.signal),
+          { silent: true },
         );
-        
-        if (savedError) throw savedError;
         
         savedResourceIds =
           (savedData as SavedResource[] | null)?.map(
@@ -104,7 +103,7 @@ export const useResources = (filters?: ResourceFilters) => {
 
       const data = await safeSupabaseCall(
         () => (query as any).abortSignal(controller.signal),
-        { fallbackMessage: "Unable to load resources." },
+        { fallbackMessage: "Unable to load resources.", silent: true },
       );
 
       if (!isMountedRef.current || requestId !== requestIdRef.current || controller.signal.aborted) {

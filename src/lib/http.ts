@@ -14,6 +14,7 @@ export type ApiError = {
 type AsyncBoundaryOptions = {
   fallbackMessage?: string;
   onError?: (error: ApiError) => void;
+  silent?: boolean;
 };
 
 function getString(value: unknown): string | undefined {
@@ -82,8 +83,10 @@ export async function withErrorBoundary<T>(
 
     const normalized = normalizeError(error, options.fallbackMessage);
     options.onError?.(normalized);
-    
-    toast.error(normalized.message || "An unexpected error occurred");
+
+    if (!options.silent) {
+      toast.error(normalized.message || "An unexpected error occurred");
+    }
 
     throw normalized;
   }
