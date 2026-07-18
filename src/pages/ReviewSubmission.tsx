@@ -71,13 +71,15 @@ export default function ReviewSubmission() {
     // Now both steps happen atomically inside a single SECURITY DEFINER RPC,
     // and any failure (including a failed status transition) is surfaced
     // here instead of being ignored.
-    const { data: reviewRow, error: rpcError } = await supabase.rpc(
-      "submit_peer_review",
-      {
-        p_submission_id: id,
-        p_feedback: feedback,
-      }
-    );
+ const { data: reviewRow, error: rpcError } = await (supabase as any).rpc(
+  "submit_peer_review",
+  {
+    p_submission_id: id,
+    p_feedback: feedback,
+  }
+);
+
+const review = reviewRow as { id: string };
 
     if (rpcError || !reviewRow) {
       toast({
@@ -96,7 +98,7 @@ export default function ReviewSubmission() {
         supabase
           .from("peer_reviews")
           .select("*, profiles(name, avatar_url)")
-          .eq("id", reviewRow.id)
+          .eq("id", review.id)
           .single(),
         supabase
           .from("peer_submissions")

@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Camera, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { API_BASE_URL } from "@/config/api";
 
 type AvatarUploadProps = {
   currentAvatarUrl: string;
