@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Bot, Send, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";

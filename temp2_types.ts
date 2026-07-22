@@ -473,44 +473,6 @@ export type Database = {
         }
         Relationships: []
       }
-      testimonials: {
-        Row: {
-          id: string
-          user_id: string
-          name: string | null
-          rating: number | null
-          review: string
-          status: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          name?: string | null
-          rating?: number | null
-          review: string
-          status?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          name?: string | null
-          rating?: number | null
-          review?: string
-          status?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "testimonials_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       study_rooms: {
         Row: {
           id: string
@@ -701,20 +663,6 @@ export type Database = {
       }
     }
     Functions: {
-      submit_peer_review: {
-        Args: {
-          p_submission_id: string
-          p_feedback: string
-        }
-        Returns: {
-          id: string
-          submission_id: string
-          reviewer_id: string
-          feedback: string
-          rating: number | null
-          created_at: string
-        }
-      }
       award_activity_xp: {
         Args: { _activity_type: string }
         Returns: undefined

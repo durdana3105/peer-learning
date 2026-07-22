@@ -29,7 +29,7 @@ describe("Contact", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage?.clear();
+    localStorage?.clear?.();
 
     (useToast as any).mockReturnValue({ toast });
     (supabase.from as any).mockReturnValue({ insert });
