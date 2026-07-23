@@ -19,6 +19,7 @@ const MAX_SUMMARY_MESSAGE_LENGTH = 1000;
 const MAX_SUMMARY_MESSAGES = 50;
 const MAX_ASK_MESSAGES = 10;
 const MAX_TOTAL_CONTENT_LENGTH = 20000;
+const AI_UPSTREAM_TIMEOUT_MS = 15_000;
 
 const escapeForPrompt = (str) =>
   str
@@ -120,7 +121,10 @@ const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, response
     body.response_format = responseFormat;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), AI_UPSTREAM_TIMEOUT_MS);
   let response;
+
   try {
     response = await fetch(OPENROUTER_URL, {
       method: "POST",
@@ -129,15 +133,18 @@ const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, response
         Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
       },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
   } catch (error) {
-    if (error.name === "AbortError") {
+    if (error?.name === "AbortError") {
       throw new HttpError(503, "AI request timed out. Please try again.", {
         retryable: true,
         reason: "timeout",
       });
     }
     throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   if (!response.ok) {

@@ -9,6 +9,7 @@ import {
   WhiteboardEvent,
 } from "./types";
 import { nextSegment } from "./strokePath";
+import { normalizePoint, denormalizePoint } from "./coords";
 
 type Props = {
   roomId: string;
@@ -88,6 +89,14 @@ export default function Canvas({ roomId }: Props) {
 
     if (!segment) return;
 
+    // New events store normalized fractions; denormalize to the local canvas size.
+    const from = event.payload.normalized
+      ? denormalizePoint(segment.from, ctx.canvas.width, ctx.canvas.height)
+      : segment.from;
+    const to = event.payload.normalized
+      ? denormalizePoint(segment.to, ctx.canvas.width, ctx.canvas.height)
+      : segment.to;
+
     ctx.strokeStyle =
       event.payload.tool === "eraser"
         ? "#020617"
@@ -96,8 +105,8 @@ export default function Canvas({ roomId }: Props) {
     ctx.lineWidth = event.payload.lineWidth || 3;
 
     ctx.beginPath();
-    ctx.moveTo(segment.from.x, segment.from.y);
-    ctx.lineTo(segment.to.x, segment.to.y);
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
     ctx.stroke();
   };
 
@@ -251,10 +260,12 @@ export default function Canvas({ roomId }: Props) {
 
     const rect = canvas.getBoundingClientRect();
 
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
+    return normalizePoint(
+      e.clientX - rect.left,
+      e.clientY - rect.top,
+      rect.width,
+      rect.height
+    );
   };
 
   const startDrawing = (
@@ -278,6 +289,7 @@ export default function Canvas({ roomId }: Props) {
         lineWidth,
         tool,
         strokeId,
+        normalized: true,
       },
     });
   };
@@ -300,6 +312,7 @@ export default function Canvas({ roomId }: Props) {
         tool,
         strokeId:
           currentStrokeId.current || undefined,
+        normalized: true,
       },
     });
   };

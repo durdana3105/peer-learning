@@ -1,8 +1,16 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Loader2, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
+const DEFAULT_SKILLS = [
+  "JavaScript", "TypeScript", "React", "Node.js", "Python",
+  "Java", "C++", "SQL", "MongoDB", "Express.js",
+  "Next.js", "GraphQL", "Docker", "Git", "REST APIs",
+  "Machine Learning", "Data Structures", "Algorithms",
+  "System Design", "CSS", "HTML", "Vue.js", "Angular",
+];
+
 const steps = [
   "Basic Info",
   "Skills",
@@ -10,12 +18,14 @@ const steps = [
   "Mentorship",
   "Success",
 ];
+
 const mentorshipOptions = [
   "Live Sessions",
   "Mock Interviews",
   "Career Guidance",
   "Project Mentorship",
 ];
+
 export default function MentorForm() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -32,7 +42,7 @@ export default function MentorForm() {
     mentorship_types: [] as string[],
   });
 
-  // Clear validation error reactively when user fixes input (#1614)
+// Clear validation error reactively when user fixes input (#1614)
   useEffect(() => {
     if (!error) return;
     const isValid =
@@ -45,22 +55,15 @@ export default function MentorForm() {
   }, [formData, step]);
 
   useEffect(() => {
-    const fetchSkills = async () => {
-      const { data } = await (supabase as any).from("skills_taxonomy").select("name").order("name");
-      if (data) {
-        setAvailableSkills(data.map((d: { name: string }) => d.name));
-      }
-    };
-    fetchSkills();
+    setAvailableSkills(DEFAULT_SKILLS);
   }, []);
-  const handleAddCustomSkill = async () => {
+
+  const handleAddCustomSkill = () => {
     const skill = customSkill.trim();
     if (!skill) return;
 
-    await (supabase as any).from("skills_taxonomy").insert({ name: skill });
-
     if (!availableSkills.includes(skill)) {
-      setAvailableSkills([...availableSkills, skill]);
+      setAvailableSkills((prev) => [...prev, skill]);
     }
 
     setFormData((prev) => ({
@@ -70,6 +73,7 @@ export default function MentorForm() {
 
     setCustomSkill("");
   };
+
   const toggleSkill = (skill: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -78,6 +82,7 @@ export default function MentorForm() {
         : [...prev.skills, skill],
     }));
   };
+
   const removeSkill = (skill: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -85,6 +90,7 @@ export default function MentorForm() {
     }));
     setAvailableSkills((prev) => prev.filter((s) => s !== skill));
   };
+
   const toggleMentorship = (type: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -93,6 +99,7 @@ export default function MentorForm() {
         : [...prev.mentorship_types, type],
     }));
   };
+
   const validateBasicInfo = () => {
     return (
       formData.full_name.trim() !== "" &&
@@ -103,18 +110,22 @@ export default function MentorForm() {
       formData.bio.trim().length > 20
     );
   };
+
   const validateSkills = () => {
     return formData.skills.length > 0;
   };
+
   const validateExperience = () => {
     return (
       formData.github.trim() !== "" &&
       formData.linkedin.trim() !== ""
     );
   };
+
   const validateMentorship = () => {
     return formData.mentorship_types.length > 0;
   };
+
   const handleSubmit = async () => {
     if (!validateMentorship()) {
       setError("Please select at least one mentorship type");
@@ -137,6 +148,7 @@ export default function MentorForm() {
         setLoading(false);
         return;
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from("mentors")
         .insert([
@@ -171,6 +183,7 @@ export default function MentorForm() {
       }
     }
   };
+
   return (
     <div className="mx-auto max-w-4xl rounded-[32px] border border-white/10 bg-white/5 p-10 backdrop-blur-2xl">
 
@@ -181,11 +194,7 @@ export default function MentorForm() {
             {steps.slice(0, 4).map((s, i) => (
               <div
                 key={i}
-                className={`text-sm ${
-                  i <= step
-                    ? "text-cyan-400"
-                    : "text-slate-500"
-                }`}
+                className={`text-sm ${i <= step ? "text-cyan-400" : "text-slate-500"}`}
               >
                 {s}
               </div>
@@ -193,14 +202,13 @@ export default function MentorForm() {
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-white/10">
             <motion.div
-              animate={{
-                width: `${((step + 1) / 4) * 100}%`,
-              }}
+              animate={{ width: `${((step + 1) / 4) * 100}%` }}
               className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"
             />
           </div>
         </div>
       )}
+
       {/* Content */}
       <motion.div
         key={step}
@@ -210,50 +218,32 @@ export default function MentorForm() {
         {/* STEP 1 */}
         {step === 0 && (
           <div className="space-y-5">
-            <h2 className="text-3xl font-black">
-              Basic Information
-            </h2>
+            <h2 className="text-3xl font-black">Basic Information</h2>
             <input
               placeholder="Full Name"
               value={formData.full_name}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  full_name: e.target.value,
-                })
-              }
+              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
             <input
               placeholder="College Name"
               value={formData.college}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  college: e.target.value,
-                })
-              }
+              onChange={(e) => setFormData({ ...formData, college: e.target.value })}
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
             <textarea
               placeholder="Short Bio"
               value={formData.bio}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  bio: e.target.value,
-                })
-              }
+              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
               className="h-32 w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
           </div>
         )}
+
         {/* STEP 2 */}
         {step === 1 && (
           <div>
-            <h2 className="text-3xl font-black">
-              Skills & Expertise
-            </h2>
+            <h2 className="text-3xl font-black">Skills & Expertise</h2>
             <div className="mt-8 flex flex-wrap gap-4 mb-6">
               {availableSkills.map((skill) => {
                 const isSelected = formData.skills.includes(skill);
@@ -313,46 +303,30 @@ export default function MentorForm() {
             </div>
           </div>
         )}
+
         {/* STEP 3 */}
         {step === 2 && (
           <div className="space-y-5">
-            <h2 className="text-3xl font-black">
-              Experience
-            </h2>
+            <h2 className="text-3xl font-black">Experience</h2>
             <input
               placeholder="https://github.com/Username"
               value={formData.github}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  github: e.target.value,
-                })
-              }
+              onChange={(e) => setFormData({ ...formData, github: e.target.value })}
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
             <input
               placeholder="https://www.linkedin.com/in/Username"
               value={formData.linkedin}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  linkedin: e.target.value,
-                })
-              }
+              onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
-            />
-            <input
-              type="file"
-              className="w-full rounded-2xl border border-white/10 bg-white/5 p-4"
             />
           </div>
         )}
+
         {/* STEP 4 */}
         {step === 3 && (
           <div>
-            <h2 className="text-3xl font-black">
-              Mentorship Type
-            </h2>
+            <h2 className="text-3xl font-black">Mentorship Type</h2>
             <div className="mt-8 grid gap-4 md:grid-cols-2">
               {mentorshipOptions.map((item) => (
                 <button
@@ -371,29 +345,26 @@ export default function MentorForm() {
             </div>
           </div>
         )}
+
         {/* SUCCESS */}
         {step === 4 && (
           <div className="space-y-6 py-10 text-center">
-            <CheckCircle2
-              className="mx-auto text-cyan-400"
-              size={90}
-            />
-            <h2 className="text-5xl font-black">
-              Application Submitted 🎉
-            </h2>
+            <CheckCircle2 className="mx-auto text-cyan-400" size={90} />
+            <h2 className="text-5xl font-black">Application Submitted 🎉</h2>
             <p className="mx-auto max-w-xl text-lg leading-8 text-slate-300/70">
-              Your mentor profile is now under review.
-              Once approved, you can start conducting
-              mentorship sessions on PeerLearn.
+              Your mentor profile is now under review. Once approved, you can
+              start conducting mentorship sessions on PeerLearn.
             </p>
           </div>
         )}
       </motion.div>
+
       {error && (
-          <div className="mt-6 rounded-2xl border border-fuchsia-400/40 bg-gradient-to-r from-fuchsia-500/30 via-pink-500/25 to-purple-500/30 px-5 py-4 text-sm font-semibold text-pink-100 shadow-lg shadow-pink-500/20 backdrop-blur-xl">
-            {error}
-          </div>
+        <div className="mt-6 rounded-2xl border border-fuchsia-400/40 bg-gradient-to-r from-fuchsia-500/30 via-pink-500/25 to-purple-500/30 px-5 py-4 text-sm font-semibold text-pink-100 shadow-lg shadow-pink-500/20 backdrop-blur-xl">
+          {error}
+        </div>
       )}
+
       {/* Buttons */}
       {step !== 4 && (
         <div className="mt-10 flex justify-between">
@@ -437,10 +408,7 @@ export default function MentorForm() {
             >
               {loading ? (
                 <>
-                  <Loader2
-                    className="animate-spin"
-                    size={18}
-                  />
+                  <Loader2 className="animate-spin" size={18} />
                   Submitting...
                 </>
               ) : (

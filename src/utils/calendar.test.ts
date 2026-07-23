@@ -19,8 +19,18 @@ describe("calendar exports", () => {
     vi.restoreAllMocks();
   });
 
-  const generateCalendarText = async (title: string, description: string) => {
-    generateICS(title, description, new Date("2026-07-05T10:00:00Z"), 60);
+  const generateCalendarText = async (
+    title: string,
+    description: string,
+    sessionId: string | number = "session-123"
+  ) => {
+    generateICS(
+      title,
+      description,
+      sessionId,
+      new Date("2026-07-05T10:00:00Z"),
+      60
+    );
 
     expect(createdBlob).toBeDefined();
     return createdBlob!.text();
@@ -47,5 +57,30 @@ describe("calendar exports", () => {
 
     expect(text).toContain("SUMMARY:React Review");
     expect(text).toContain("DESCRIPTION:Discuss hooks");
+  });
+
+  it("generates deterministic UIDs that distinguish sessions", async () => {
+    const firstExport = await generateCalendarText(
+      "React Review",
+      "Discuss hooks",
+      "session-123"
+    );
+    const repeatedExport = await generateCalendarText(
+      "React Review",
+      "Discuss hooks",
+      "session-123"
+    );
+    const differentSession = await generateCalendarText(
+      "React Review",
+      "Discuss hooks",
+      "session-456"
+    );
+
+    const uid = "UID:session-123-1783245600000@peerlearning.com";
+    expect(firstExport).toContain(uid);
+    expect(repeatedExport).toContain(uid);
+    expect(differentSession).toContain(
+      "UID:session-456-1783245600000@peerlearning.com"
+    );
   });
 });

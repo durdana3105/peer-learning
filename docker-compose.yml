@@ -1,0 +1,46 @@
+services:
+    frontend:
+        build: 
+            context: ./
+            dockerfile: Dockerfile
+            args:
+                - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+                - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+        ports:
+            - "8080:8080"
+        networks:
+            - my_net
+        depends_on: 
+            - backend
+    backend:
+        build: ./backend
+        ports:
+            - "5000:5000"
+        networks:
+            - my_net
+        env_file:
+            - backend/.env
+        depends_on:
+            - database
+
+    database:
+        image: postgres:15-alpine
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+            interval: 5s 
+            timeout: 3s
+            retries: 5
+        volumes:
+            - myvol:/var/lib/postgresql/data
+        networks:
+            - my_net
+
+volumes:
+    myvol:
+
+networks:
+    my_net:

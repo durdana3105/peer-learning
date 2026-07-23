@@ -107,6 +107,7 @@ export function SessionList({
                   generateICS(
                     s.title || "Peer Learning Session",
                     s.description || "Join us for a collaborative learning session.",
+                    s.id,
                     s.scheduled_at ? new Date(s.scheduled_at) : new Date(),
                     s.duration_minutes || 60
                   );

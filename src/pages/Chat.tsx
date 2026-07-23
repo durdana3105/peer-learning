@@ -123,14 +123,6 @@ const Chat = () => {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  useChatShortcuts({
-    searchInputRef,
-    items: filteredUsers,
-    selectedItem: selectedUser,
-    onSelect: selectUser,
-    onEscape: () => setShowConversationList(true),
-    getItemId: (user) => user.id,
-  });
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -431,6 +423,15 @@ const Chat = () => {
     setShowConversationList(false);
     setTypingUserId(null);
   }, []);
+
+  useChatShortcuts({
+    searchInputRef,
+    items: filteredUsers,
+    selectedItem: selectedUser,
+    onSelect: selectUser,
+    onEscape: () => setShowConversationList(true),
+    getItemId: (user) => user.id,
+  });
 
   if (!currentUser) {
     return (

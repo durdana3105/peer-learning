@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import {
   Sparkles,
   ArrowRight,
@@ -295,6 +296,18 @@ export function Testimonials() {
         ))}
       </div>
 
+      <div className="mt-10 flex justify-center">
+        <Link to="/reviews">
+          <Button
+            variant="outline"
+            className="group rounded-2xl border-white/15 bg-white/5 px-6 py-6 text-base font-semibold text-slate-100 backdrop-blur-xl transition-all duration-300 hover:border-cyan-400/40 hover:bg-white/10 hover:text-cyan-300"
+          >
+            View All Reviews
+            <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+          </Button>
+        </Link>
+      </div>
+
       {/* Review Form */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
@@ -445,7 +458,7 @@ export function Testimonials() {
                   animate={{ opacity: 1, x: 0 }}
                   className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-300"
                 >
-                  ✅ Thank you! Your feedback has been submitted.
+                   Thank you! Your feedback has been submitted.
                 </motion.div>
               )}
             </div>

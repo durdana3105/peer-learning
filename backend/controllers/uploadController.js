@@ -126,6 +126,11 @@ export const handleUpload = async (req, res, next) => {
 
     // Upload to Supabase Storage using a ReadStream
     const fileStream = fs.createReadStream(file.path);
+    
+    // Prevent unhandled stream errors if the file is deleted or fails to read
+    fileStream.on("error", (err) => {
+      console.error("ReadStream error:", err);
+    });
 
     const { data, error } = await supabaseAdmin.storage
       .from(folder)

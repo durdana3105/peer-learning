@@ -36,10 +36,25 @@ export function useSkillEndorsements({
   const pendingSkillsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    let mounted = true;
+
+    // Initial load
     supabase.auth.getUser().then(({ data }) => {
+      if (!mounted) return;
       setCurrentUserId(data.user?.id ?? null);
       setAuthReady(true);
     }).catch(console.error);
+
+    // Subscribe to changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) setCurrentUserId(session?.user?.id ?? null);
+    });
+
+    // Cleanup subscription
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchEndorsements = useCallback(async () => {

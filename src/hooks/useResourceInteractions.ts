@@ -58,7 +58,10 @@ export const useResourceInteractions = (resourceId: string, userId: string | nul
       } else {
         const { error } = await supabase
           .from("resource_votes")
-          .upsert({ resource_id: resourceId, user_id: userId, vote_type: voteType });
+          .upsert(
+            { resource_id: resourceId, user_id: userId, vote_type: voteType },
+            { onConflict: "resource_id,user_id" }
+          );
         if (error) throw error;
       }
     },
@@ -71,9 +74,14 @@ export const useResourceInteractions = (resourceId: string, userId: string | nul
     mutationFn: async (save: boolean) => {
       if (!userId) throw new Error("Must be logged in to save");
       if (save) {
+        // Use upsert instead of insert so a duplicate/double-click request
+        // is idempotent instead of failing on a unique constraint violation.
         const { error } = await supabase
           .from("saved_resources")
-          .insert({ resource_id: resourceId, user_id: userId });
+          .upsert(
+            { resource_id: resourceId, user_id: userId },
+            { onConflict: "resource_id,user_id", ignoreDuplicates: true }
+          );
         if (error) throw error;
       } else {
         const { error } = await supabase
@@ -95,5 +103,7 @@ export const useResourceInteractions = (resourceId: string, userId: string | nul
     isLoading: isLoadingVotes || isLoadingSaves,
     toggleVote: toggleVoteMutation.mutateAsync,
     toggleSave: toggleSaveMutation.mutateAsync,
+    isVotePending: toggleVoteMutation.isPending,
+    isSavePending: toggleSaveMutation.isPending,
   };
 };

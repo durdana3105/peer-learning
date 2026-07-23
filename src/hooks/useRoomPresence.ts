@@ -11,10 +11,17 @@ export function useRoomPresence(id: string | undefined, user: User | null, fetch
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let roomChannel: any;
+    let cancelled = false;
 
     const initializeChat = async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await supabase.from('profiles' as any).select('name').eq('id', user.id).single() as any;
+
+      // The effect may have been cleaned up (user left/switched rooms) while
+      // this request was in flight. Bail out before creating/subscribing to
+      // a channel that would otherwise leak.
+      if (cancelled) return;
+
       const displayName = data?.name || user.email?.split('@')[0] || 'Student';
 
       roomChannel = supabase.channel(`room_${id}`, {
@@ -43,11 +50,17 @@ export function useRoomPresence(id: string | undefined, user: User | null, fetch
           fetchMessages(); 
         })
         .subscribe(async (status: string) => {
-         if (status === 'SUBSCRIBED') {
+          if (status === 'SUBSCRIBED') {
+            // Guard again: cleanup could have run between subscribe() being
+            // called and this callback firing.
+            if (cancelled) return;
+
             await roomChannel.track({
               user_id: user.id,
               name: displayName
             });
+
+            if (cancelled) return;
 
             setActivities((prev) => [
               `${displayName} joined the room`,
@@ -60,6 +73,8 @@ export function useRoomPresence(id: string | undefined, user: User | null, fetch
     initializeChat();
 
     return () => {
+      cancelled = true;
+
       setActivities((prev) => [
         `${user?.email?.split("@")[0] || "User"} left the room`,
         ...prev,

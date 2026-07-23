@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Notification } from "./types";
 import { showBrowserNotification } from "./pushNotifications";
@@ -12,11 +12,27 @@ export function useNotifications(userId?: string) {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const unreadCount = useMemo(
-    () => notifications.filter((notification) => !notification.read).length,
-    [notifications]
-  );
+  const fetchUnreadCount = useCallback(async () => {
+    if (!userId) {
+      setUnreadCount(0);
+      return;
+    }
+
+    const { count, error } = await (supabase as any)
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("read", false);
+
+    if (error) {
+      console.error("Failed to fetch unread notification count:", error);
+      return;
+    }
+
+    setUnreadCount(count || 0);
+  }, [userId]);
 
   const fetchNotifications = useCallback(
     async (nextPage = 0) => {
@@ -54,36 +70,51 @@ export function useNotifications(userId?: string) {
     [userId]
   );
 
-  const markAsRead = useCallback(async (id: string) => {
-    let previous: Notification[] = [];
+  const markAsRead = useCallback(
+    async (id: string) => {
+      let previous: Notification[] = [];
+      let wasUnread = false;
 
-    setNotifications((current) => {
-      previous = current;
-      return current.map((notification) =>
-        notification.id === id ? { ...notification, read: true } : notification
-      );
-    });
+      setNotifications((current) => {
+        previous = current;
+        const target = current.find((notification) => notification.id === id);
+        wasUnread = !!target && !target.read;
+        return current.map((notification) =>
+          notification.id === id ? { ...notification, read: true } : notification
+        );
+      });
 
-    const { error } = await (supabase as any)
-      .from("notifications")
-      .update({ read: true })
-      .eq("id", id);
+      if (wasUnread) {
+        setUnreadCount((current) => Math.max(0, current - 1));
+      }
 
-    if (error) {
-      console.error("Failed to mark notification as read:", error);
-      setNotifications(previous);
-    }
-  }, []);
+      const { error } = await (supabase as any)
+        .from("notifications")
+        .update({ read: true })
+        .eq("id", id);
+
+      if (error) {
+        console.error("Failed to mark notification as read:", error);
+        setNotifications(previous);
+        if (wasUnread) {
+          setUnreadCount((current) => current + 1);
+        }
+      }
+    },
+    []
+  );
 
   const markAllAsRead = useCallback(async () => {
     if (!userId) return;
 
     let previous: Notification[] = [];
+    const previousUnreadCount = unreadCount;
 
     setNotifications((current) => {
       previous = current;
       return current.map((notification) => ({ ...notification, read: true }));
     });
+    setUnreadCount(0);
 
     const { error } = await (supabase as any)
       .from("notifications")
@@ -94,8 +125,9 @@ export function useNotifications(userId?: string) {
     if (error) {
       console.error("Failed to mark all notifications as read:", error);
       setNotifications(previous);
+      setUnreadCount(previousUnreadCount);
     }
-  }, [userId]);
+  }, [userId, unreadCount]);
 
   const loadMore = useCallback(() => {
     if (!loading && hasMore) {
@@ -105,7 +137,8 @@ export function useNotifications(userId?: string) {
 
   useEffect(() => {
     fetchNotifications(0);
-  }, [fetchNotifications]);
+    fetchUnreadCount();
+  }, [fetchNotifications, fetchUnreadCount]);
 
   useEffect(() => {
     if (!userId) return;
@@ -130,6 +163,10 @@ export function useNotifications(userId?: string) {
 
             return [incoming, ...current];
           });
+
+          // Re-fetch the authoritative unread count rather than incrementing
+          // locally, since the loaded page may not include every notification.
+          fetchUnreadCount();
 
           // Check focus mode before showing popup
           supabase.from('profiles').select('is_in_focus_mode').eq('id', userId).single().then(({ data }) => {
@@ -159,6 +196,10 @@ export function useNotifications(userId?: string) {
               notification.id === updated.id ? updated : notification
             )
           );
+
+          // The read/unread status may have changed on a row outside the
+          // loaded page (or from another client/tab), so re-sync the count.
+          fetchUnreadCount();
         }
       )
       .subscribe((status) => {
@@ -170,7 +211,7 @@ export function useNotifications(userId?: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, fetchUnreadCount]);
 
   return {
     notifications,
@@ -180,7 +221,9 @@ export function useNotifications(userId?: string) {
     markAsRead,
     markAllAsRead,
     loadMore,
-    refresh: () => fetchNotifications(0),
+    refresh: () => {
+      fetchNotifications(0);
+      fetchUnreadCount();
+    },
   };
 }
-

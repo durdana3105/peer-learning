@@ -31,6 +31,8 @@ export type WhiteboardEvent = {
     tool?: ToolType;
 
     strokeId?: string;
+
+    normalized?: boolean;
   };
 
   created_at?: string;
