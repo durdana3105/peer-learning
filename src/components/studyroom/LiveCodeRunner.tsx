@@ -4,6 +4,9 @@ import { Play, Code, Share, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { env } from "@/env";
 
+// PISTON_API_URL delegates code execution to a secure, containerized third-party execution engine (Piston).
+// This mitigates Issue #1846 by completely removing the execution context from our backend server,
+// ensuring no direct child_process.exec vulnerability or sandbox escape is possible locally.
 const PISTON_API_URL = env.VITE_PISTON_API_URL ?? "https://emkc.org/api/v2/piston/execute";
 
 const MAX_OUTPUT_CHARS = 4096;
