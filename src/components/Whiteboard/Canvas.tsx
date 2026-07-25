@@ -39,6 +39,10 @@ export default function Canvas({ roomId }: Props) {
 
   const [color, setColor] = useState("#ffffff");
 
+  const [canUndo, setCanUndo] = useState(false);
+
+  const [canRedo, setCanRedo] = useState(false);
+
   const [lineWidth] = useState(3);
 
   const resizeCanvas = () => {
@@ -156,6 +160,9 @@ export default function Canvas({ roomId }: Props) {
     };
 
     strokesRef.current.push(ownedEvent);
+
+    setCanUndo(true);
+    setCanRedo(false);
 
     const ctx = getContext();
 
@@ -373,6 +380,9 @@ const updated = events.filter(
 
 strokesRef.current = updated;
 
+setCanUndo(updated.length > 0);
+setCanRedo(true);
+
 replayCanvas();
 
     const { error: undoError } = await supabase
@@ -404,6 +414,9 @@ replayCanvas();
   strokesRef.current.push(...stroke);
 
   replayCanvas();
+  
+  setCanRedo(redoStackRef.current.length > 0);
+  setCanUndo(true);
 
   // Save and broadcast again
   for (const event of stroke) {
@@ -429,6 +442,7 @@ replayCanvas();
     lastPointRef.current.clear();
 
     strokesRef.current = [];
+    redoStackRef.current = [];
 
     const { error: clearError } = await supabase
       .from("whiteboard_events" as any)
@@ -483,13 +497,23 @@ replayCanvas();
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={undoLastStroke}
-            className="px-3 py-1 rounded text-sm bg-slate-800 text-slate-300 hover:bg-slate-700"
-          >
+            disabled={!canUndo}
+            className={`px-3 py-1 rounded text-sm ${
+              canUndo
+                ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                : "bg-slate-700 text-slate-500 cursor-not-allowed"
+            }`}
+            >
             Undo
           </button>
           <button
             onClick={redoLastStroke}
-            className="px-3 py-1 rounded text-sm bg-slate-800 text-slate-300 hover:bg-slate-700"
+            disabled={!canRedo}
+            className={`px-3 py-1 rounded text-sm ${
+              canRedo
+                ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                : "bg-slate-700 text-slate-500 cursor-not-allowed"
+            }`}
             >
             Redo
             </button>
