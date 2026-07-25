@@ -104,8 +104,8 @@ function AppContent() {
     <>
       <MouseSparkles />
       <CookieConsentBanner />
-
-      <Routes>
+      <Suspense fallback={<SplashScreen />}></Suspense>
+        <Routes>
           <Route
             path="/"
             element={user ? <Navigate to="/dashboard" replace /> : <WithNav><Index /></WithNav>}
