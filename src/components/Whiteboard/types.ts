@@ -7,7 +7,8 @@ export type WhiteboardEventType =
   | "draw-move"
   | "draw-end"
   | "clear"
-  | "undo";
+  | "undo"
+  | "redo";
 
 export type Point = {
   x: number;

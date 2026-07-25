@@ -46,6 +46,7 @@ const Onboarding = React.lazy(() => import("./pages/Onboarding"));
 const Profile = React.lazy(() => import("./pages/Profile"));
 const EditProfile = React.lazy(() => import("./pages/EditProfile"));
 const Notifications = React.lazy(() => import("./pages/Notifications"));
+const Settings = React.lazy(() => import("./pages/Settings"));
 const Leaderboard = React.lazy(() => import("./pages/Leaderboard"));
 const Admin = React.lazy(() => import("./pages/Admin"));
 const ForgotPassword = React.lazy(() => import("./pages/ForgotPassword"));

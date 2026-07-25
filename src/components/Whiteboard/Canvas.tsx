@@ -25,6 +25,8 @@ export default function Canvas({ roomId }: Props) {
 
   const strokesRef = useRef<WhiteboardEvent[]>([]);
 
+  const redoStackRef = useRef<WhiteboardEvent[][]>([]);
+
   const currentStrokeId = useRef<string | null>(null);
 
   const lastPointRef = useRef<Map<string, Point>>(new Map());
@@ -281,6 +283,9 @@ export default function Canvas({ roomId }: Props) {
 
     currentStrokeId.current = strokeId;
 
+// New drawing clears redo history
+    redoStackRef.current = [];
+
     pushEvent({
       type: "draw-start",
       payload: {
@@ -354,15 +359,21 @@ export default function Canvas({ roomId }: Props) {
 
     if (!lastStrokeId) return;
 
-    const updated = events.filter(
-      (event) =>
-        event.payload?.strokeId !==
-        lastStrokeId
-    );
+    // Save the removed stroke for redo
+const removedStroke = events.filter(
+  (event) => event.payload?.strokeId === lastStrokeId
+);
 
-    strokesRef.current = updated;
+redoStackRef.current.push(removedStroke);
 
-    replayCanvas();
+// Remove it from the canvas
+const updated = events.filter(
+  (event) => event.payload?.strokeId !== lastStrokeId
+);
+
+strokesRef.current = updated;
+
+replayCanvas();
 
     const { error: undoError } = await supabase
       .from("whiteboard_events" as any)
@@ -383,6 +394,23 @@ export default function Canvas({ roomId }: Props) {
       },
     });
   };
+
+  const redoLastStroke = async () => {
+  const stroke = redoStackRef.current.pop();
+
+  if (!stroke) return;
+
+  // Add the stroke back
+  strokesRef.current.push(...stroke);
+
+  replayCanvas();
+
+  // Save and broadcast again
+  for (const event of stroke) {
+    await persistEvent(event);
+    broadcastEvent(event);
+  }
+};
 
   const clearBoard = async () => {
     if (user?.id !== hostId) return;
@@ -459,7 +487,12 @@ export default function Canvas({ roomId }: Props) {
           >
             Undo
           </button>
-
+          <button
+            onClick={redoLastStroke}
+            className="px-3 py-1 rounded text-sm bg-slate-800 text-slate-300 hover:bg-slate-700"
+            >
+            Redo
+            </button>
           {user?.id === hostId && (
             <button
               onClick={clearBoard}
