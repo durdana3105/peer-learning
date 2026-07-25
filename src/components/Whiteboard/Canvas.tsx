@@ -348,79 +348,99 @@ export default function Canvas({ roomId }: Props) {
     currentStrokeId.current = null;
   };
   const undoLastStroke = async () => {
-    const events = [...strokesRef.current];
+  const events = [...strokesRef.current];
 
-    let lastStrokeId: string | undefined;
+  let lastStrokeId: string | undefined;
 
-    for (let i = events.length - 1; i >= 0; i--) {
-      if (events[i].user_id !== user?.id) continue;
+  for (let i = events.length - 1; i >= 0; i--) {
+    if (events[i].user_id !== user?.id) continue;
 
-      const strokeId =
-        events[i].payload?.strokeId;
+    const strokeId = events[i].payload?.strokeId;
 
-      if (strokeId) {
-        lastStrokeId = strokeId;
-        break;
-      }
+    if (strokeId) {
+      lastStrokeId = strokeId;
+      break;
     }
+  }
 
-    if (!lastStrokeId) return;
+  if (!lastStrokeId) return;
 
-    // Save the removed stroke for redo
-const removedStroke = events.filter(
-  (event) => event.payload?.strokeId === lastStrokeId
-);
+  const removedStroke = events.filter(
+    (event) => event.payload?.strokeId === lastStrokeId
+  );
 
-redoStackRef.current.push(removedStroke);
+  // First delete from database
+  const { error: undoError } = await supabase
+    .from("whiteboard_events" as any)
+    .delete()
+    .eq("room_id", roomId)
+    .eq("user_id", user?.id)
+    .eq("payload->>strokeId", lastStrokeId);
 
-// Remove it from the canvas
-const updated = events.filter(
-  (event) => event.payload?.strokeId !== lastStrokeId
-);
+  if (undoError) {
+    console.error("Undo failed to sync:", undoError);
+    toast.error("Undo could not be saved. Please check your connection.");
+    return;
+  }
 
-strokesRef.current = updated;
+  // Update local history only after database success
+  redoStackRef.current.push(removedStroke);
 
-setCanUndo(updated.length > 0);
-setCanRedo(true);
+  const updated = events.filter(
+    (event) => event.payload?.strokeId !== lastStrokeId
+  );
 
-replayCanvas();
+  strokesRef.current = updated;
 
-    const { error: undoError } = await supabase
-      .from("whiteboard_events" as any)
-      .delete()
-      .eq("room_id", roomId)
-      .eq("user_id", user?.id)
-      .eq("payload->>strokeId", lastStrokeId);
+  setCanUndo(updated.length > 0);
+  setCanRedo(true);
 
-    if (undoError) {
-      console.error("Undo failed to sync:", undoError);
-      toast.error("Undo could not be saved. Please check your connection.");
-    }
+  replayCanvas();
 
-    broadcastEvent({
-      type: "undo",
-      payload: {
-        strokeId: lastStrokeId,
-      },
-    });
-  };
+  broadcastEvent({
+    type: "undo",
+    payload: {
+      strokeId: lastStrokeId,
+    },
+  });
+};
 
   const redoLastStroke = async () => {
-  const stroke = redoStackRef.current.pop();
+  const stroke = redoStackRef.current[
+    redoStackRef.current.length - 1
+  ];
 
   if (!stroke) return;
 
-  // Add the stroke back
+  // Persist first
+  for (const event of stroke) {
+    const { error } = await supabase
+      .from("whiteboard_events" as any)
+      .insert({
+        room_id: roomId,
+        user_id: user?.id,
+        type: event.type,
+        payload: event.payload,
+      });
+
+    if (error) {
+      console.error("Redo failed to sync:", error);
+      toast.error("Redo could not be saved. Please check your connection.");
+      return;
+    }
+  }
+
+  // Only remove from redo stack after success
+  redoStackRef.current.pop();
+
   strokesRef.current.push(...stroke);
 
   replayCanvas();
-  
+
   setCanRedo(redoStackRef.current.length > 0);
   setCanUndo(true);
 
-  // Save and broadcast again
   for (const event of stroke) {
-    await persistEvent(event);
     broadcastEvent(event);
   }
 };
