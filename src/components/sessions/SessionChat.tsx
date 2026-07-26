@@ -235,7 +235,7 @@ export function SessionChat({
                   className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[80%] px-4 py-3 rounded-2xl overflow-hidden relative group ${
+                    className={`max-w-[80%] px-4 py-3 rounded-2xl overflow-hidden ${
                       isCurrentUser
                         ? "bg-gradient-to-r from-cyan-400 to-purple-500 text-black"
                         : "bg-white/10"

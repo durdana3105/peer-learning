@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { ArrowLeft, Bell, Mail, Smartphone, Save } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 type NotificationCategory = "messages" | "sessions" | "friends";
 type NotificationChannels = {
@@ -21,17 +22,41 @@ const Settings = () => {
   const navigate = useNavigate();
   const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
   const [isSaving, setIsSaving] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load from localStorage as a fallback / mock
-    const saved = localStorage.getItem("notification_preferences");
-    if (saved) {
+    const loadPreferences = async () => {
       try {
-        setPreferences(JSON.parse(saved));
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserId(user.id);
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("notification_preferences")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (data && data.notification_preferences) {
+            setPreferences(data.notification_preferences as NotificationPreferences);
+            return;
+          }
+        }
       } catch (e) {
-        console.error("Failed to parse preferences", e);
+        console.error("Failed to load preferences from DB", e);
       }
-    }
+      
+      // Fallback to local storage if DB fetch fails or is null
+      const saved = localStorage.getItem("notification_preferences");
+      if (saved) {
+        try {
+          setPreferences(JSON.parse(saved));
+        } catch (e) {
+          console.error("Failed to parse preferences", e);
+        }
+      }
+    };
+    
+    loadPreferences();
   }, []);
 
   const handleToggle = (category: NotificationCategory, channel: keyof NotificationChannels) => {
@@ -47,12 +72,20 @@ const Settings = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      if (userId) {
+        const { error } = await supabase
+          .from("profiles")
+          .update({ notification_preferences: preferences })
+          .eq("id", userId);
+          
+        if (error) throw error;
+      }
+
       localStorage.setItem("notification_preferences", JSON.stringify(preferences));
       toast.success("Notification preferences saved successfully!");
     } catch (error) {
-      toast.error("Failed to save preferences.");
+      console.error(error);
+      toast.error("Failed to save preferences to database.");
     } finally {
       setIsSaving(false);
     }

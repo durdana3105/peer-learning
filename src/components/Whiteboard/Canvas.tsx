@@ -25,6 +25,8 @@ export default function Canvas({ roomId }: Props) {
 
   const strokesRef = useRef<WhiteboardEvent[]>([]);
 
+  const redoStackRef = useRef<WhiteboardEvent[][]>([]);
+
   const currentStrokeId = useRef<string | null>(null);
 
   const lastPointRef = useRef<Map<string, Point>>(new Map());
@@ -36,6 +38,10 @@ export default function Canvas({ roomId }: Props) {
   const [tool, setTool] = useState<ToolType>("pen");
 
   const [color, setColor] = useState("#ffffff");
+
+  const [canUndo, setCanUndo] = useState(false);
+
+  const [canRedo, setCanRedo] = useState(false);
 
   const [lineWidth] = useState(3);
 
@@ -154,6 +160,9 @@ export default function Canvas({ roomId }: Props) {
     };
 
     strokesRef.current.push(ownedEvent);
+
+    setCanUndo(true);
+    setCanRedo(false);
 
     const ctx = getContext();
 
@@ -281,6 +290,9 @@ export default function Canvas({ roomId }: Props) {
 
     currentStrokeId.current = strokeId;
 
+// New drawing clears redo history
+    redoStackRef.current = [];
+
     pushEvent({
       type: "draw-start",
       payload: {
@@ -336,53 +348,102 @@ export default function Canvas({ roomId }: Props) {
     currentStrokeId.current = null;
   };
   const undoLastStroke = async () => {
-    const events = [...strokesRef.current];
+  const events = [...strokesRef.current];
 
-    let lastStrokeId: string | undefined;
+  let lastStrokeId: string | undefined;
 
-    for (let i = events.length - 1; i >= 0; i--) {
-      if (events[i].user_id !== user?.id) continue;
+  for (let i = events.length - 1; i >= 0; i--) {
+    if (events[i].user_id !== user?.id) continue;
 
-      const strokeId =
-        events[i].payload?.strokeId;
+    const strokeId = events[i].payload?.strokeId;
 
-      if (strokeId) {
-        lastStrokeId = strokeId;
-        break;
-      }
+    if (strokeId) {
+      lastStrokeId = strokeId;
+      break;
     }
+  }
 
-    if (!lastStrokeId) return;
+  if (!lastStrokeId) return;
 
-    const updated = events.filter(
-      (event) =>
-        event.payload?.strokeId !==
-        lastStrokeId
-    );
+  const removedStroke = events.filter(
+    (event) => event.payload?.strokeId === lastStrokeId
+  );
 
-    strokesRef.current = updated;
+  // First delete from database
+  const { error: undoError } = await supabase
+    .from("whiteboard_events" as any)
+    .delete()
+    .eq("room_id", roomId)
+    .eq("user_id", user?.id)
+    .eq("payload->>strokeId", lastStrokeId);
 
-    replayCanvas();
+  if (undoError) {
+    console.error("Undo failed to sync:", undoError);
+    toast.error("Undo could not be saved. Please check your connection.");
+    return;
+  }
 
-    const { error: undoError } = await supabase
+  // Update local history only after database success
+  redoStackRef.current.push(removedStroke);
+
+  const updated = events.filter(
+    (event) => event.payload?.strokeId !== lastStrokeId
+  );
+
+  strokesRef.current = updated;
+
+  setCanUndo(updated.length > 0);
+  setCanRedo(true);
+
+  replayCanvas();
+
+  broadcastEvent({
+    type: "undo",
+    payload: {
+      strokeId: lastStrokeId,
+    },
+  });
+};
+
+  const redoLastStroke = async () => {
+  const stroke = redoStackRef.current[
+    redoStackRef.current.length - 1
+  ];
+
+  if (!stroke) return;
+
+  // Persist first
+  for (const event of stroke) {
+    const { error } = await supabase
       .from("whiteboard_events" as any)
-      .delete()
-      .eq("room_id", roomId)
-      .eq("user_id", user?.id)
-      .eq("payload->>strokeId", lastStrokeId);
+      .insert({
+        room_id: roomId,
+        user_id: user?.id,
+        type: event.type,
+        payload: event.payload,
+      });
 
-    if (undoError) {
-      console.error("Undo failed to sync:", undoError);
-      toast.error("Undo could not be saved. Please check your connection.");
+    if (error) {
+      console.error("Redo failed to sync:", error);
+      toast.error("Redo could not be saved. Please check your connection.");
+      return;
     }
+  }
 
-    broadcastEvent({
-      type: "undo",
-      payload: {
-        strokeId: lastStrokeId,
-      },
-    });
-  };
+  // Only remove from redo stack after success
+  redoStackRef.current.pop();
+
+  strokesRef.current.push(...stroke);
+
+  replayCanvas();
+
+  setCanRedo(redoStackRef.current.length > 0);
+  setCanUndo(true);
+
+  for (const event of stroke) {
+    broadcastEvent(event);
+  }
+};
 
   const clearBoard = async () => {
     if (user?.id !== hostId) return;
@@ -401,6 +462,7 @@ export default function Canvas({ roomId }: Props) {
     lastPointRef.current.clear();
 
     strokesRef.current = [];
+    redoStackRef.current = [];
 
     const { error: clearError } = await supabase
       .from("whiteboard_events" as any)
@@ -455,11 +517,26 @@ export default function Canvas({ roomId }: Props) {
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={undoLastStroke}
-            className="px-3 py-1 rounded text-sm bg-slate-800 text-slate-300 hover:bg-slate-700"
-          >
+            disabled={!canUndo}
+            className={`px-3 py-1 rounded text-sm ${
+              canUndo
+                ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                : "bg-slate-700 text-slate-500 cursor-not-allowed"
+            }`}
+            >
             Undo
           </button>
-
+          <button
+            onClick={redoLastStroke}
+            disabled={!canRedo}
+            className={`px-3 py-1 rounded text-sm ${
+              canRedo
+                ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                : "bg-slate-700 text-slate-500 cursor-not-allowed"
+            }`}
+            >
+            Redo
+            </button>
           {user?.id === hostId && (
             <button
               onClick={clearBoard}
