@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -16,6 +16,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
 import { Check } from "lucide-react";
 import { API_BASE_URL } from "@/config/api";
+import { Database } from "@/integrations/supabase/types";
+
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 const filters = [
   "All",
@@ -48,7 +51,7 @@ const cardVariants = {
   },
 };
 
-const DiscoverPeerCard = memo(({ user, isOnline, onConnect, isConnected }: any) => {
+const DiscoverPeerCard = memo(({ user, isOnline, onConnect, isConnected }: { user: Profile; isOnline: boolean; onConnect: (id: string) => void; isConnected: boolean }) => {
   return (
     <motion.div
       variants={cardVariants}
@@ -82,7 +85,7 @@ const DiscoverPeerCard = memo(({ user, isOnline, onConnect, isConnected }: any) 
       </div>
 
       <div className="flex flex-wrap gap-2 mb-5">
-        {(Array.isArray(user.skills) ? user.skills : (user.skills?.split(",") || [])).map((skill: string, index: number) => (
+        {(user.skills || []).slice(0, 3).map((skill: string, index: number) => (
           <span key={index} className="bg-cyan-500/10 border border-cyan-400/10 text-cyan-300 px-3 py-1 rounded-full text-sm">
             {typeof skill === 'string' ? skill.trim() : skill}
           </span>
@@ -106,11 +109,11 @@ const DiscoverPeerCard = memo(({ user, isOnline, onConnect, isConnected }: any) 
 
 const Discover = () => {
   const [currentUser, setCurrentUser] =
-    useState<any>(null);
+    useState<Profile | null>(null);
 
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<Profile[]>([]);
   const [filteredUsers, setFilteredUsers] =
-    useState<any[]>([]);
+    useState<Profile[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

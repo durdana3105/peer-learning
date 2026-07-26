@@ -105,7 +105,8 @@ function AppContent() {
     <>
       <MouseSparkles />
       <CookieConsentBanner />
-      <Suspense fallback={<SplashScreen />}></Suspense>
+
+      <ErrorBoundary>
         <Routes>
           <Route
             path="/"
@@ -382,7 +383,8 @@ function AppContent() {
           />
 
           <Route path="*" element={<NotFound />} />
-      </Routes>
+        </Routes>
+      </ErrorBoundary>
 
       {user && (
         <>

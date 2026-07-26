@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 
 export function useRoomDetails(id: string | undefined, user: User | null) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const [room, setRoom] = useState<any>(null);
   const navigate = useNavigate();
 
@@ -13,7 +13,7 @@ export function useRoomDetails(id: string | undefined, user: User | null) {
     if (!id) return;
 
     const fetchRoomDetails = async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const { data, error } = await supabase.from('study_rooms' as any).select('*').eq('id', id).single();
       if (error) {
         console.error("Error fetching room:", error);

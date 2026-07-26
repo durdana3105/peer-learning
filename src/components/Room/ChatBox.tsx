@@ -9,8 +9,12 @@ const MarkdownRenderer = React.lazy(() =>
 );
 
 interface ChatBoxProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  messages: any[];
+  messages: {
+    id: string;
+    profile_id: string;
+    content: string;
+    profiles?: { name: string | null } | null;
+  }[];
   user: User | null;
   onSendMessage: (msg: string) => Promise<void>;
 }

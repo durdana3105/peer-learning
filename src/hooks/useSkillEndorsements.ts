@@ -38,22 +38,33 @@ export function useSkillEndorsements({
   useEffect(() => {
     let mounted = true;
 
-    // Initial load
-    supabase.auth.getUser().then(({ data }) => {
-      if (!mounted) return;
-      setCurrentUserId(data.user?.id ?? null);
-      setAuthReady(true);
-    }).catch(console.error);
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        if (!mounted) return;
+        setCurrentUserId(data.user?.id ?? null);
+        setAuthReady(true);
+      })
+      .catch((err) => {
+        console.error("[useSkillEndorsements] getUser error:", err);
+        if (mounted) setAuthReady(true);
+      });
 
-    // Subscribe to changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) setCurrentUserId(session?.user?.id ?? null);
+    // Guard for environments/mocks where this API is missing
+    const authApi = supabase.auth as {
+      onAuthStateChange?: (cb: (_event: string, session: any) => void) => {
+        data?: { subscription?: { unsubscribe: () => void } };
+      };
+    };
+
+    const sub = authApi.onAuthStateChange?.((_event, session) => {
+      if (!mounted) return;
+      setCurrentUserId(session?.user?.id ?? null);
     });
 
-    // Cleanup subscription
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      sub?.data?.subscription?.unsubscribe?.();
     };
   }, []);
 

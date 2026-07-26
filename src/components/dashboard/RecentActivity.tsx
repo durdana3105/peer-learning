@@ -49,7 +49,7 @@ export default function RecentActivity() {
           supabase
             .from("resources")
             .select("id, title, created_at")
-            .eq("user_id", user.id)
+            .eq("uploaded_by", user.id)
             .order("created_at", { ascending: false })
             .limit(3),
           supabase

@@ -1,6 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+
+interface NotificationRow {
+  id: string;
+  type: string;
+  content: string;
+  read: boolean;
+  created_at: string;
+}
 
 const Notifications = () => {
   const [alerts, setAlerts] = useState<any[]>([]);
@@ -24,9 +31,9 @@ const Notifications = () => {
       <h1 className="text-xl font-bold mb-4">Notifications</h1>
 
       {alerts.length > 0 ? (
-        alerts.map((a) => (
+        alerts.map((a: NotificationRow) => (
           <div key={a.id} className="border p-3 mb-2 rounded">
-            📢 New Session: <b>{a.title}</b>
+            📢 New Session: <b>{a.content || "Untitled Session"}</b>
           </div>
         ))
       ) : (
