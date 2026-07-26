@@ -271,7 +271,7 @@ export function useSessions(user: any) {
         // since opening the video does not by itself confirm participation.
         if (!existingParticipant) {
           awardedSessionsRef.current.add(sessionId);
-          awardXP({ activity: "session_join" });
+          awardXP({ activity: "session_join", referenceId: sessionId });
         }
       }
     } catch (err: any) {
