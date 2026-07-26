@@ -1,4 +1,4 @@
-import { forwardRef, memo, useState, useEffect, useRef } from "react";
+import { forwardRef, memo, useState, useEffect, useLayoutEffect, useRef } from "react";
 import { ArrowLeft, Send, Phone, Video, Loader2 } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ProfileSummary, ConversationSummary, MessageRow } from "@/hooks/useMessages";
@@ -68,10 +68,12 @@ export function ChatWindow({
   const [newMessage, setNewMessage] = useState("");
   const threadMessagesRef = useRef<HTMLDivElement | null>(null);
   const hasAutoScrolledRef = useRef(false);
+  const prependAnchorRef = useRef<{ scrollHeight: number; firstMessageId: string | null } | null>(null);
 
   const threadVirtualizer = useVirtualizer({
     count: threadMessages.length,
     getScrollElement: () => threadMessagesRef.current,
+    getItemKey: (index) => threadMessages[index].id,
     estimateSize: () => 92,
     overscan: 12,
   });
@@ -94,6 +96,31 @@ export function ChatWindow({
   useEffect(() => {
     hasAutoScrolledRef.current = false;
   }, [selectedUser?.id]);
+
+  // When older messages are prepended, the browser keeps scrollTop fixed while
+  // scrollHeight grows above the fold, which visually yanks the view down to a
+  // different set of messages. Restore the offset the user was actually at,
+  // but only if the first message actually changed - guards against a stale
+  // anchor misfiring on an unrelated append (e.g. a new realtime message).
+  useLayoutEffect(() => {
+    const anchor = prependAnchorRef.current;
+    const container = threadMessagesRef.current;
+    if (!anchor || !container) return;
+
+    const currentFirstMessageId = threadMessages[0]?.id ?? null;
+    if (currentFirstMessageId !== anchor.firstMessageId) {
+      container.scrollTop += container.scrollHeight - anchor.scrollHeight;
+    }
+    prependAnchorRef.current = null;
+  }, [threadMessages]);
+
+  const handleLoadMore = async () => {
+    const container = threadMessagesRef.current;
+    prependAnchorRef.current = container
+      ? { scrollHeight: container.scrollHeight, firstMessageId: threadMessages[0]?.id ?? null }
+      : null;
+    await loadMoreThreadMessages();
+  };
 
   const handleSend = async () => {
     const content = newMessage.trim();
@@ -165,7 +192,7 @@ export function ChatWindow({
                   <div className="mb-4 flex justify-center">
                     <button
                       type="button"
-                      onClick={() => void loadMoreThreadMessages()}
+                      onClick={() => void handleLoadMore()}
                       disabled={loadingMoreThreadMessages}
                       className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/10 disabled:opacity-50"
                     >

@@ -17,6 +17,7 @@ const makeFromChain = () => ({
   eq: mockEq,
   neq: mockNeq,
   single: mockSingle,
+  order: vi.fn().mockReturnThis(),
   range: vi.fn().mockImplementation(() => ({
     or: mockOr,
     ilike: mockIlike,
@@ -158,6 +159,7 @@ describe("GET /api/match/supabase-discover — page validation", () => {
         data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
         error: null,
         }),
+        order: vi.fn().mockReturnThis(),
         limit: vi.fn().mockResolvedValue({ data: PEER_PROFILES, error: null }),
     }));
 
@@ -174,6 +176,7 @@ describe("GET /api/match/supabase-discover — page validation", () => {
         data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
         error: null,
         }),
+        order: vi.fn().mockReturnThis(),
         limit: vi.fn().mockResolvedValue({ data: PEER_PROFILES, error: null }),
     }));
 
@@ -204,6 +207,7 @@ describe("getSupabaseDiscover — pagination offset calculation", () => {
           data: { skills: ["Python"], learning_goals: ["Python"], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
           error: null,
         }),
+        order: vi.fn().mockReturnThis(),
         limit: vi.fn().mockImplementation((lim) => {
           if (table === "profiles") capturedLimit = lim;
           return {
@@ -231,6 +235,37 @@ describe("getSupabaseDiscover — pagination offset calculation", () => {
     expect(responsePayload.recommendations).toHaveLength(10);
   });
 
+  it("orders the profiles query by id before applying the 1000-row limit", async () => {
+    let capturedOrderArgs;
+
+    mockSupabase.from.mockImplementation((table) => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
+        error: null,
+      }),
+      order: vi.fn().mockImplementation((...args) => {
+        if (table === "profiles") capturedOrderArgs = args;
+        return { limit: vi.fn().mockResolvedValue({ data: [], error: null }) };
+      }),
+    }));
+
+    const req = {
+      user: { id: CURRENT_USER_ID },
+      query: {},
+    };
+    const res = createRes();
+
+    await getSupabaseDiscover(req, res);
+
+    // Without ORDER BY, Postgres gives no guarantee on which rows a LIMIT
+    // returns, so pagination and candidate visibility would be unstable
+    // once the table has more rows than the limit.
+    expect(capturedOrderArgs).toEqual(["id", { ascending: true }]);
+  });
+
   it("clamps page=99999 to 1000 at the controller level (defence-in-depth)", async () => {
     let capturedLimit;
 
@@ -242,6 +277,7 @@ describe("getSupabaseDiscover — pagination offset calculation", () => {
         data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
         error: null,
       }),
+      order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockImplementation((lim) => {
         if (table === "profiles") capturedLimit = lim;
         return { then: (resolve) => resolve({ data: [], error: null }), or: vi.fn().mockReturnThis() };
@@ -279,6 +315,7 @@ describe("getSupabaseDiscover — skill array search (regression for #1227)", ()
         data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
         error: null,
       }),
+      order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockImplementation(() => ({
         or: vi.fn().mockImplementation((arg) => {
           capturedOrArg = arg;
@@ -314,6 +351,7 @@ describe("getSupabaseDiscover — skill array search (regression for #1227)", ()
         data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
         error: null,
       }),
+      order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockImplementation(() => ({
         contains: vi.fn().mockImplementation((col, val) => {
           containsArgs = [col, val];

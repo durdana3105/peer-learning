@@ -55,6 +55,11 @@ export const getNavLinks = (user: User | null, isAdmin: boolean) => {
           label: "Peer Review",
           icon: FileCheck,
         },
+        {
+          to: "/contributor-dashboard",
+          label: "Contributor Dashboard",
+          icon: LayoutDashboard,
+        },
         ...(isAdmin
           ? [
               {
@@ -81,11 +86,6 @@ export const getNavLinks = (user: User | null, isAdmin: boolean) => {
           to: "/#community",
           label: "Communities",
           icon: Users,
-        },
-        {
-          to: "/contributor-dashboard",
-          label: "Contributor Dashboard",
-          icon: LayoutDashboard,
         },
         {
           to: "/#faq",

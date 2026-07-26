@@ -28,11 +28,14 @@ export default function Sessions() {
     sessionSummary,
     summaryLoading,
     studyTime,
+    isFocusMode,
+    setIsFocusMode,
     handleJoinSession,
     sendMessage,
     sendTypingEvent,
     handleLeaveVideo,
     handleJoinVideo,
+    togglePinMessage,
   } = useSessions(user);
 
   return (
@@ -94,6 +97,9 @@ export default function Sessions() {
               sessionSummary={sessionSummary}
               summaryLoading={summaryLoading}
               studyTime={studyTime}
+              isFocusMode={isFocusMode}
+              setIsFocusMode={setIsFocusMode}
+              togglePinMessage={togglePinMessage}
               sendMessage={sendMessage}
               sendTypingEvent={sendTypingEvent}
               handleLeaveVideo={handleLeaveVideo}

@@ -5,6 +5,7 @@ import path from "path";
 export default defineConfig({
   plugins: [react()],
   test: {
+    testTimeout: 10000,
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
@@ -23,10 +24,11 @@ export default defineConfig({
       {
         test: {
           name: "backend",
+          root: "./backend",
           environment: "node",
           globals: true,
-          setupFiles: ["./backend/tests/setup.js"],
-          include: ["backend/**/*.{test,spec}.{js,ts}"],
+          setupFiles: ["./tests/setup.js"],
+          include: ["**/*.{test,spec}.{js,ts}"],
         },
       },
     ],

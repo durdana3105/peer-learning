@@ -1,1 +1,0 @@
-CREATE OR REPLACE FUNCTION award_activity_xp(_activity_type TEXT) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$ BEGIN END; $$;

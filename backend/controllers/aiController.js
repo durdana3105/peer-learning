@@ -19,6 +19,7 @@ const MAX_SUMMARY_MESSAGE_LENGTH = 1000;
 const MAX_SUMMARY_MESSAGES = 50;
 const MAX_ASK_MESSAGES = 10;
 const MAX_TOTAL_CONTENT_LENGTH = 20000;
+const AI_UPSTREAM_TIMEOUT_MS = 15_000;
 
 const escapeForPrompt = (str) =>
   str
@@ -120,7 +121,10 @@ const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, response
     body.response_format = responseFormat;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), AI_UPSTREAM_TIMEOUT_MS);
   let response;
+
   try {
     response = await fetch(OPENROUTER_URL, {
       method: "POST",
@@ -129,15 +133,18 @@ const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, response
         Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
       },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
   } catch (error) {
-    if (error.name === "AbortError") {
+    if (error?.name === "AbortError") {
       throw new HttpError(503, "AI request timed out. Please try again.", {
         retryable: true,
         reason: "timeout",
       });
     }
     throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   if (!response.ok) {
@@ -307,6 +314,16 @@ export const conductMockInterview = async (req, res, next) => {
       return res.status(400).json({ error: "Role is required" });
     }
 
+    for (const m of messages) {
+      if (
+        !m ||
+        typeof m !== "object" ||
+        (m.role !== "user" && m.role !== "assistant")
+      ) {
+        return res.status(400).json({ error: "Messages can only contain user or assistant roles." });
+      }
+    }
+
     const latestMessage = messages[messages.length - 1].content;
     if (typeof latestMessage !== "string" || latestMessage.length > 2000) {
       return res.status(400).json({ error: "Message exceeds maximum length" });
@@ -324,7 +341,7 @@ export const conductMockInterview = async (req, res, next) => {
         3. Provide very brief, constructive feedback on their previous answer (if applicable), then ask the next question.
         4. Do not break character. Do not provide a list of questions at once.`,
       },
-      ...messages.slice(-20).map(m => ({ role: m.role || "user", content: m.content || "" }))
+      ...messages.slice(-20).map(m => ({ role: m.role, content: m.content || "" }))
     ];
 
     const data = await callOpenRouter({

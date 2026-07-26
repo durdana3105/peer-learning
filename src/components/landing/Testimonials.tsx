@@ -1,12 +1,15 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import {
   Sparkles,
   ArrowRight,
   CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/useAuth";
 
 interface Testimonial {
   text: string;
@@ -19,17 +22,50 @@ interface Testimonial {
   outcome: string;
 }
 
+// Deterministic placeholder avatar for user-submitted testimonials
+// (we don't collect a role/avatar/skills/outcome on the submission form).
+function avatarForUser(userId: string) {
+  const seed = Math.abs(
+    Array.from(userId).reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
+  ) % 70;
+  return `https://i.pravatar.cc/150?img=${seed}`;
+}
+
+function mapDbRowToTestimonial(row: {
+  id: string;
+  user_id: string;
+  name: string | null;
+  rating: number | null;
+  review: string;
+}): Testimonial {
+  return {
+    text: row.review,
+    name: row.name?.trim() || "PeerLearn Learner",
+    role: "Community Member",
+    rating: row.rating ?? 5,
+    avatar: avatarForUser(row.user_id),
+    verified: true,
+    skills: [],
+    outcome: "Shared their experience",
+  };
+}
+
 export function Testimonials() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const testimonialAutoScrollRef = useRef<number | null>(null);
   const testimonialPausedRef = useRef(false);
+  const { user } = useAuth();
 
   const [name, setName] = useState("");
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [liveTestimonials, setLiveTestimonials] = useState<Testimonial[]>([]);
 
-  const testimonials: Testimonial[] = [
+  // Seeded fallback content — always shown so the carousel never looks empty
+  // while real submissions are still trickling in.
+  const seedTestimonials: Testimonial[] = [
     {
       text: "PeerLearn helped me crack my first internship interview.",
       name: "Aisha Khan",
@@ -92,6 +128,33 @@ export function Testimonials() {
     },
   ];
 
+  const fetchTestimonials = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("testimonials")
+      .select("id, user_id, name, rating, review")
+      .eq("status", "approved")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (error) {
+      // Non-fatal: the carousel still shows the seed testimonials below.
+      console.error("Failed to load testimonials:", error.message);
+      return;
+    }
+
+    setLiveTestimonials((data ?? []).map(mapDbRowToTestimonial));
+  }, []);
+
+  useEffect(() => {
+    fetchTestimonials();
+  }, [fetchTestimonials]);
+
+  // Real submissions first, seeded content fills out the rest.
+  const testimonials = useMemo(
+    () => [...liveTestimonials, ...seedTestimonials],
+    [liveTestimonials]
+  );
+
   // Duplicate the source list so the carousel can loop seamlessly. The scroll loop relies on this being an exact doubling (it wraps at scrollWidth / 2).
   const carouselItems = [...testimonials, ...testimonials];
 
@@ -135,8 +198,6 @@ export function Testimonials() {
           Peer Learning
         </span>
       </h2>
-
-      
 
       {/* Testimonials Carousel */}
       <div
@@ -235,6 +296,18 @@ export function Testimonials() {
         ))}
       </div>
 
+      <div className="mt-10 flex justify-center">
+        <Link to="/reviews">
+          <Button
+            variant="outline"
+            className="group rounded-2xl border-white/15 bg-white/5 px-6 py-6 text-base font-semibold text-slate-100 backdrop-blur-xl transition-all duration-300 hover:border-cyan-400/40 hover:bg-white/10 hover:text-cyan-300"
+          >
+            View All Reviews
+            <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+          </Button>
+        </Link>
+      </div>
+
       {/* Review Form */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
@@ -266,17 +339,44 @@ export function Testimonials() {
           </div>
 
           <form
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
+
               if (!review.trim()) {
                 toast.error("Please enter your feedback.");
                 return;
               }
+
+              if (!user) {
+                toast.error("Please log in to submit a review.");
+                return;
+              }
+
+              setIsSubmitting(true);
+
+              const { error } = await supabase.from("testimonials").insert({
+                user_id: user.id,
+                name: name.trim() || null,
+                rating: rating || null,
+                review: review.trim(),
+              });
+
+              setIsSubmitting(false);
+
+              if (error) {
+                console.error("Failed to submit testimonial:", error.message);
+                toast.error("Something went wrong. Please try again.");
+                return;
+              }
+
               setSubmitted(true);
               setTimeout(() => setSubmitted(false), 3000);
               setName("");
               setRating(0);
               setReview("");
+
+              // Pull the new review straight into the carousel.
+              fetchTestimonials();
             }}
             className="space-y-7"
           >
@@ -339,11 +439,18 @@ export function Testimonials() {
             <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center">
               <Button
                 type="submit"
-                className="rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-7 text-base font-bold text-black shadow-[0_0_35px_rgba(34,211,238,0.35)] transition-all duration-300 hover:scale-105"
+                disabled={isSubmitting}
+                className="rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-7 text-base font-bold text-black shadow-[0_0_35px_rgba(34,211,238,0.35)] transition-all duration-300 hover:scale-105 disabled:opacity-60 disabled:hover:scale-100"
               >
-                Submit Feedback
+                {isSubmitting ? "Submitting..." : "Submit Feedback"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
+
+              {!user && (
+                <p className="text-sm text-slate-400">
+                  Please log in to leave a review.
+                </p>
+              )}
 
               {submitted && (
                 <motion.div
@@ -351,7 +458,7 @@ export function Testimonials() {
                   animate={{ opacity: 1, x: 0 }}
                   className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-300"
                 >
-                  ✅ Thank you! Your feedback has been submitted.
+                   Thank you! Your feedback has been submitted.
                 </motion.div>
               )}
             </div>

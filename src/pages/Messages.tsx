@@ -68,6 +68,7 @@ export default function Messages({ user }: MessagesProps) {
           loadingConversations={loadingConversations}
           onSelectProfile={handleSelectProfile}
           showSidebarOnMobile={showSidebarOnMobile}
+          onEscape={() => setShowSidebarOnMobile(true)}
         />
 
         <ChatWindow

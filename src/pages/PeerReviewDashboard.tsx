@@ -24,7 +24,7 @@ export default function PeerReviewDashboard() {
       const { data: pending } = await supabase
         .from('peer_submissions')
         .select('*, profiles(name, avatar_url)')
-        .neq('user_id', user.id)
+        .or(`user_id.is.null,user_id.neq.${user.id}`)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 

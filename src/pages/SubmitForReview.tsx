@@ -54,7 +54,7 @@ export default function SubmitForReview() {
     const { error } = await supabase
       .from('peer_submissions')
       .insert({
-        user_id: user.id,
+        user_id: formData.is_anonymous ? null : user.id,
         title: formData.title,
         description: formData.description,
         content_url: safeContentUrl,

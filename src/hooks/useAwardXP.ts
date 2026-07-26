@@ -5,13 +5,14 @@ import { getXPForActivity } from "@/lib/gamification";
 
 interface AwardXpArgs {
   activity: string;
+  referenceId?: string;
 }
 
 export const useAwardXP = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ activity }: AwardXpArgs) => {
+    mutationFn: async ({ activity, referenceId }: AwardXpArgs) => {
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user;
 
@@ -20,7 +21,10 @@ export const useAwardXP = () => {
       const xpToAward = getXPForActivity(activity);
 
       // Delegate to the activity-based secure RPC to prevent client-side XP forgery
-      const { error: rpcError } = await (supabase as any).rpc("award_activity_xp", { _activity_type: activity });
+      const { error: rpcError } = await (supabase as any).rpc("award_activity_xp", { 
+        _activity_type: activity,
+        _reference_id: referenceId || null
+      });
 
       if (rpcError) throw rpcError;
 

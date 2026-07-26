@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { Send, Video, Sparkles } from "lucide-react";
+import { Send, Video, Sparkles, BellOff, Bell, Download, Pin, PinOff } from "lucide-react";
 import { LiveCodeRunner } from "@/components/studyroom/LiveCodeRunner";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
@@ -14,7 +14,10 @@ type SessionChatProps = {
   sessionSummary: any;
   summaryLoading: boolean;
   studyTime: number;
+  isFocusMode: boolean;
+  setIsFocusMode: (val: boolean) => void;
   sendMessage: (msg: string) => void;
+  togglePinMessage: (msgId: string, currentPinStatus: boolean) => void;
   sendTypingEvent: () => void;
   handleLeaveVideo: () => void;
   handleJoinVideo: () => void;
@@ -32,7 +35,10 @@ export function SessionChat({
   sessionSummary,
   summaryLoading,
   studyTime,
+  isFocusMode,
+  setIsFocusMode,
   sendMessage,
+  togglePinMessage,
   sendTypingEvent,
   handleLeaveVideo,
   handleJoinVideo,
@@ -40,6 +46,8 @@ export function SessionChat({
 }: SessionChatProps) {
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const pinnedMessages = messages.filter((msg) => msg.is_pinned);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -52,6 +60,42 @@ export function SessionChat({
     return `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
       .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  };
+
+  const handleExport = () => {
+    if (!selectedSession) return;
+    
+    let content = `# Study Session Export: ${selectedSession.title}\n\n`;
+    
+    if (sessionSummary) {
+      content += `## AI Summary\n\n${sessionSummary.summary}\n\n`;
+      if (sessionSummary.key_takeaways?.length > 0) {
+        content += `### Key Takeaways\n`;
+        sessionSummary.key_takeaways.forEach((takeaway: string) => {
+          content += `- ${takeaway}\n`;
+        });
+        content += `\n`;
+      }
+    }
+
+    content += `## Chat Logs\n\n`;
+    messages.forEach((msg) => {
+      const time = new Date(msg.created_at).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      content += `**[${time}] ${msg.username}:**\n${msg.message}\n\n`;
+    });
+
+    const blob = new Blob([content], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Session_Export_${selectedSession.title?.replace(/\s+/g, '_') || "Log"}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -73,12 +117,27 @@ export function SessionChat({
                     className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm border w-fit ${
                       userStatus === "Active"
                         ? "bg-cyan-500/10 border-cyan-400/20 text-cyan-300"
+                        : userStatus === "Busy"
+                        ? "bg-red-500/10 border-red-400/20 text-red-300"
                         : "bg-yellow-500/10 border-yellow-400/20 text-yellow-300"
                     }`}
                   >
-                    {userStatus === "Active" ? "⚡" : "🌙"}
+                    {userStatus === "Active" ? "⚡ " : userStatus === "Busy" ? "⛔ " : "🌙 "}
                     {userStatus}
                   </div>
+
+                  <button
+                    onClick={() => setIsFocusMode(!isFocusMode)}
+                    className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm border w-fit transition-colors ${
+                      isFocusMode
+                        ? "bg-red-500/10 border-red-400/20 text-red-300"
+                        : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+                    }`}
+                    title={isFocusMode ? "Disable Focus Mode" : "Enable Focus Mode (Sets status to Busy and silences notifications)"}
+                  >
+                    {isFocusMode ? <BellOff size={14} /> : <Bell size={14} />}
+                    Focus Mode
+                  </button>
                 </div>
 
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
@@ -104,6 +163,15 @@ export function SessionChat({
                 </div>
               </div>
             </div>
+            
+            <button
+              onClick={handleExport}
+              title="Export Session Notes and Chat"
+              className="flex items-center gap-2 bg-white/5 border border-white/10 text-cyan-300 hover:text-cyan-200 hover:bg-white/10 px-4 py-2 rounded-xl transition-all shadow-sm"
+            >
+              <Download size={18} />
+              <span className="hidden md:inline">Export</span>
+            </button>
           </div>
 
           {isVideoActive && (
@@ -129,6 +197,33 @@ export function SessionChat({
             </button>
           )}
 
+          {/* PINNED MESSAGES HEADER */}
+          {pinnedMessages.length > 0 && (
+            <div className="mt-4 bg-white/5 border border-cyan-500/20 rounded-2xl p-4 shadow-lg shadow-cyan-500/5">
+              <div className="flex items-center gap-2 mb-3 border-b border-white/5 pb-2">
+                <Pin className="text-cyan-400" size={16} />
+                <h3 className="font-semibold text-cyan-300 text-sm">Pinned Resources</h3>
+              </div>
+              <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
+                {pinnedMessages.map((msg) => (
+                  <div key={`pinned-${msg.id}`} className="bg-black/20 rounded-xl p-3 border border-white/5 relative group">
+                    <p className="text-xs text-cyan-500 font-medium mb-1">{msg.username}</p>
+                    <div className="text-sm">
+                      <MarkdownRenderer content={msg.message} />
+                    </div>
+                    <button
+                      onClick={() => togglePinMessage(msg.id, true)}
+                      className="absolute top-2 right-2 p-1.5 bg-white/5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-white/10 text-gray-400 hover:text-red-400 transition"
+                      title="Unpin message"
+                    >
+                      <PinOff size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* MESSAGES */}
           <div className="flex-1 overflow-y-auto py-5 space-y-4">
             {messages.map((msg) => {
@@ -140,15 +235,33 @@ export function SessionChat({
                   className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[80%] px-4 py-3 rounded-2xl ${
+                    className={`max-w-[80%] px-4 py-3 rounded-2xl overflow-hidden ${
                       isCurrentUser
                         ? "bg-gradient-to-r from-cyan-400 to-purple-500 text-black"
                         : "bg-white/10"
                     }`}
                   >
-                    {!isCurrentUser && (
-                      <p className="text-xs text-cyan-300 mb-1">{msg.username}</p>
-                    )}
+                    <div className="flex items-center justify-between mb-1">
+                      {!isCurrentUser && (
+                        <p className="text-xs text-cyan-300">{msg.username}</p>
+                      )}
+                      {msg.is_pinned && isCurrentUser && (
+                        <p className="text-xs text-black/60 font-bold ml-auto flex items-center gap-1"><Pin size={10} /> Pinned</p>
+                      )}
+                      {msg.is_pinned && !isCurrentUser && (
+                        <p className="text-xs text-cyan-300/60 font-bold ml-auto flex items-center gap-1"><Pin size={10} /> Pinned</p>
+                      )}
+                    </div>
+                    
+                    <button
+                      onClick={() => togglePinMessage(msg.id, !!msg.is_pinned)}
+                      className={`absolute top-2 right-2 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition ${
+                        isCurrentUser ? "hover:bg-black/10 text-black/70" : "hover:bg-white/10 text-white/70"
+                      }`}
+                      title={msg.is_pinned ? "Unpin message" : "Pin message"}
+                    >
+                      {msg.is_pinned ? <PinOff size={14} /> : <Pin size={14} />}
+                    </button>
 
                     <MarkdownRenderer content={msg.message} />
 

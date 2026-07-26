@@ -4,6 +4,7 @@ import fs from "fs";
 import crypto from "crypto";
 import { getSupabaseAdmin } from "../utils/supabase.js";
 import { HttpError } from "../utils/httpError.js";
+import { fileTypeFromFile } from "file-type";
 
 // Ensure files do not exceed 50MB
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
@@ -110,6 +111,56 @@ export const handleUpload = async (req, res, next) => {
       throw new HttpError(401, "Authentication required.");
     }
 
+    // Server-side content verification (magic bytes and signature checking)
+    const BINARY_MIMETYPES = new Set([
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/zip",
+    ]);
+
+    const detected = await fileTypeFromFile(file.path);
+
+    if (BINARY_MIMETYPES.has(file.mimetype)) {
+      const isDocxAsZip = file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" && detected?.mime === "application/zip";
+      const isZipAsDocx = file.mimetype === "application/zip" && detected?.mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+      if (!detected || (detected.mime !== file.mimetype && !isDocxAsZip && !isZipAsDocx)) {
+        fs.unlinkSync(file.path);
+        throw new HttpError(415, "Unsupported or suspicious upload: file content does not match the provided MIME type.");
+      }
+    } else {
+      // Ensure text uploads are not disguised binaries or archives
+      if (detected && !detected.mime.startsWith("text/") && !detected.mime.startsWith("application/xml")) {
+        fs.unlinkSync(file.path);
+        throw new HttpError(415, "Unsupported or suspicious upload: binary content detected in text upload.");
+      }
+
+      // Inspect first 4096 bytes for raw null bytes (0x00) indicating binary content in text uploads
+      let containsNullByte = false;
+      const fd = fs.openSync(file.path, "r");
+      try {
+        const buffer = Buffer.alloc(4096);
+        const bytesRead = fs.readSync(fd, buffer, 0, buffer.length, 0);
+        for (let i = 0; i < bytesRead; i++) {
+          if (buffer[i] === 0x00) {
+            containsNullByte = true;
+            break;
+          }
+        }
+      } finally {
+        fs.closeSync(fd);
+      }
+
+      if (containsNullByte) {
+        fs.unlinkSync(file.path);
+        throw new HttpError(415, "Unsupported or suspicious upload: null bytes found in text upload.");
+      }
+    }
+
     // The storage path is always generated on the server from the
     // authenticated user's own id. Client-supplied filePath/folder-path
     // values are never used to build it, so a user can never write into
@@ -126,6 +177,11 @@ export const handleUpload = async (req, res, next) => {
 
     // Upload to Supabase Storage using a ReadStream
     const fileStream = fs.createReadStream(file.path);
+    
+    // Prevent unhandled stream errors if the file is deleted or fails to read
+    fileStream.on("error", (err) => {
+      console.error("ReadStream error:", err);
+    });
 
     const { data, error } = await supabaseAdmin.storage
       .from(folder)

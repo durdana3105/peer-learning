@@ -31,6 +31,8 @@ interface LeaderboardEntry {
   sessions_joined: number;
   badges: string[];
   updated_at?: string;
+  decayed_score?: number;
+  raw_score?: number;
 }
 
 type LeaderboardRowProps = {
@@ -89,8 +91,12 @@ const LeaderboardRow = memo(({ entry, index, isCurrentUser }: LeaderboardRowProp
         <div className="flex items-center gap-2 rounded-2xl bg-cyan-500/10 px-4 py-3">
           <Flame className="h-5 w-5 text-yellow-400" />
           <div>
-            <p className="text-xs text-gray-400">XP</p>
-            <h2 className="text-xl font-black text-cyan-400">{entry.xp}</h2>
+            <p className="text-xs text-gray-400">
+              Score {entry.raw_score != null && `(${entry.raw_score} raw)`}
+            </p>
+            <h2 className="text-xl font-black text-cyan-400">
+              {entry.decayed_score != null ? Math.round(entry.decayed_score) : entry.xp}
+            </h2>
           </div>
         </div>
       </div>
@@ -120,37 +126,11 @@ const Leaderboard = () => {
     setLoadError(null);
 
     try {
-      let query = supabase
-        .from("leaderboard" as any)
-        .select("*");
-
-      if (filter === "Weekly") {
-
-        const lastWeek = new Date();
-
-        lastWeek.setDate(lastWeek.getDate() - 7);
-
-        query = query.gte(
-          "updated_at",
-          lastWeek.toISOString()
-        );
-      }
-
-      if (filter === "Monthly") {
-
-        const lastMonth = new Date();
-
-        lastMonth.setMonth(lastMonth.getMonth() - 1);
-
-        query = query.gte(
-          "updated_at",
-          lastMonth.toISOString()
-        );
-      }
-
-      const { data, error } = await query
-        .order("xp", { ascending: false })
-        .limit(50);
+      const { data, error } = await supabase.rpc("get_decayed_leaderboard" as any, {
+        decay_days: 30,
+        limit_count: 50,
+        p_filter: filter,
+      });
 
       if (error) throw error;
 
@@ -159,7 +139,7 @@ const Leaderboard = () => {
           badges:
             entry.badges && entry.badges.length > 0
               ? entry.badges
-              : [getBadgeByXP(entry.xp)],
+              : [getBadgeByXP(entry.raw_score)],
         }));
 
       setEntries(updatedData as LeaderboardEntry[]);
@@ -522,7 +502,7 @@ const Leaderboard = () => {
                   </h3>
 
                   <p className="text-sm text-gray-400">
-                    {entry.xp} XP
+                    {entry.decayed_score != null ? Math.round(entry.decayed_score) : entry.xp} XP
                   </p>
 
                   <div

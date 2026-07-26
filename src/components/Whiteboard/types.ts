@@ -7,7 +7,8 @@ export type WhiteboardEventType =
   | "draw-move"
   | "draw-end"
   | "clear"
-  | "undo";
+  | "undo"
+  | "redo";
 
 export type Point = {
   x: number;
@@ -31,6 +32,8 @@ export type WhiteboardEvent = {
     tool?: ToolType;
 
     strokeId?: string;
+
+    normalized?: boolean;
   };
 
   created_at?: string;

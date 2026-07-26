@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { memo, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, MessageCircle, Search, Send } from "lucide-react";
+import { useChatShortcuts } from "@/hooks/useChatShortcuts";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { toast } from "sonner";
@@ -119,6 +120,9 @@ const Chat = () => {
   const [typingUserId, setTypingUserId] = useState<string | null>(null);
   const [showConversationList, setShowConversationList] = useState(true);
   const awardXP = useAwardXP();
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -420,6 +424,15 @@ const Chat = () => {
     setTypingUserId(null);
   }, []);
 
+  useChatShortcuts({
+    searchInputRef,
+    items: filteredUsers,
+    selectedItem: selectedUser,
+    onSelect: selectUser,
+    onEscape: () => setShowConversationList(true),
+    getItemId: (user) => user.id,
+  });
+
   if (!currentUser) {
     return (
       <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-slate-950 px-4 text-white">
@@ -451,6 +464,7 @@ const Chat = () => {
             <label className="mt-4 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
               <Search className="h-4 w-4 text-slate-400" />
               <input
+                ref={searchInputRef}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search learners"

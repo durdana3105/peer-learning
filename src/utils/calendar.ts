@@ -3,6 +3,7 @@
  *
  * @param title          Session title
  * @param description    Session description
+ * @param sessionId      Stable unique session identifier
  * @param startDate      Session start time (Date object)
  * @param durationMinutes Session duration in minutes (default 60)
  */
@@ -16,6 +17,7 @@ export const escapeICalText = (text: string) =>
 export const generateICS = (
   title: string,
   description: string,
+  sessionId: string | number,
   startDate: Date,
   durationMinutes: number = 60
 ) => {
@@ -32,7 +34,7 @@ export const generateICS = (
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",
-    `UID:${startDate.getTime()}@peerlearning.com`,
+    `UID:${sessionId}-${startDate.getTime()}@peerlearning.com`,
     `DTSTAMP:${formatDate(new Date())}`,
     `DTSTART:${formatDate(startDate)}`,
     `DTEND:${formatDate(endDate)}`,

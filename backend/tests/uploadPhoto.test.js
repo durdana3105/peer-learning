@@ -1,5 +1,6 @@
 import fs from "fs";
 import crypto from "crypto";
+import { once } from "events";
 import path from "path";
 import { fileURLToPath } from "url";
 import express from "express";
@@ -16,9 +17,12 @@ const profilesUploadDir = path.resolve(__dirname, "../uploads/profiles");
 // Extended with a storage stub so the /api/upload suite below (uploadController.js)
 // can assert on the path passed to storage.upload().
 const { storageUploadMock, storageFromMock } = vi.hoisted(() => {
-  const storageUploadMock = vi.fn(() =>
-    Promise.resolve({ data: { path: "mock-path" }, error: null })
-  );
+  const storageUploadMock = vi.fn(async (_filePath, fileStream) => {
+    const finished = once(fileStream, "end");
+    fileStream.resume();
+    await finished;
+    return { data: { path: "mock-path" }, error: null };
+  });
   const storageFromMock = vi.fn(() => ({
     upload: storageUploadMock,
     getPublicUrl: (filePath) => ({
@@ -339,5 +343,58 @@ describe("POST /api/upload", () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data.path.startsWith(`${TEST_USER_ID}/`)).toBe(true);
     expect(res.body.data.path.endsWith(".pdf")).toBe(true);
+  });
+
+  it("returns 415 when a file with spoofed MIME type (mismatched magic bytes) is uploaded", async () => {
+    const token = makeToken();
+    // Raw script bytes uploaded with contentType "image/png" under avatars
+    const spoofedBytes = Buffer.from("#!/bin/bash\necho pwned\n");
+    const res = await request(uploadApp)
+      .post("/api/upload")
+      .set("Authorization", `Bearer ${token}`)
+      .field("folder", "avatars")
+      .attach("file", spoofedBytes, {
+        filename: "avatar.png",
+        contentType: "image/png",
+      });
+
+    expect(res.status).toBe(415);
+    expect(res.body.error).toMatch(/file content does not match the provided MIME type/i);
+    expect(storageUploadMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 415 when a binary archive or executable is uploaded under a text MIME type", async () => {
+    const token = makeToken();
+    // Tiny PNG bytes uploaded with contentType "text/plain" under resources
+    const res = await request(uploadApp)
+      .post("/api/upload")
+      .set("Authorization", `Bearer ${token}`)
+      .field("folder", "resources")
+      .attach("file", TINY_PNG, {
+        filename: "notes.txt",
+        contentType: "text/plain",
+      });
+
+    expect(res.status).toBe(415);
+    expect(res.body.error).toMatch(/binary content detected in text upload/i);
+    expect(storageUploadMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 415 when a text file upload contains raw null bytes (0x00)", async () => {
+    const token = makeToken();
+    // Buffer with ASCII chars and an injected NULL byte
+    const suspiciousText = Buffer.from([0x63, 0x6f, 0x6e, 0x73, 0x6f, 0x6c, 0x65, 0x2e, 0x6c, 0x6f, 0x67, 0x28, 0x30, 0x29, 0x3b, 0x00, 0x0a]);
+    const res = await request(uploadApp)
+      .post("/api/upload")
+      .set("Authorization", `Bearer ${token}`)
+      .field("folder", "resources")
+      .attach("file", suspiciousText, {
+        filename: "script.js",
+        contentType: "text/javascript",
+      });
+
+    expect(res.status).toBe(415);
+    expect(res.body.error).toMatch(/null bytes found in text upload/i);
+    expect(storageUploadMock).not.toHaveBeenCalled();
   });
 });

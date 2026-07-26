@@ -1,11 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { Bot, Send, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { API_BASE_URL } from "@/config/api";
 
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
 const AIPage = () => {
-  const [messages, setMessages] = useState<any[]>([
+  const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
       content:
@@ -22,12 +26,12 @@ const AIPage = () => {
     const prompt = input;
 
     // USER MESSAGE
-    const userMessage = {
+    const userMessage: Message = {
       role: "user",
       content: prompt,
     };
 
-    setMessages((prev: any) => [
+    setMessages((prev) => [
       ...prev,
       userMessage,
     ]);
@@ -38,7 +42,7 @@ const AIPage = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        setMessages((prev: any) => [
+        setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
@@ -49,7 +53,7 @@ const AIPage = () => {
         return;
       }
       
-      const formattedMessages = [...messages, userMessage].map((msg: any) => ({
+      const formattedMessages = [...messages, userMessage].map((msg) => ({
         role: msg.role,
         content: msg.content,
       }));
@@ -73,7 +77,7 @@ const AIPage = () => {
       const data = await res.json();
       const aiReply = data?.answer;
 
-      setMessages((prev: any) => [
+      setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
@@ -82,7 +86,7 @@ const AIPage = () => {
       ]);
     } catch (error) {
       console.error(error);
-      setMessages((prev: any) => [
+      setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
@@ -142,7 +146,7 @@ const AIPage = () => {
 
         {/* MESSAGES LAYER */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          {messages.map((msg: any, index: number) => {
+          {messages.map((msg, index: number) => {
             const isUser = msg.role === "user";
 
             return (

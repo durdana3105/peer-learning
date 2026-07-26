@@ -1,4 +1,5 @@
 import { memo, useMemo, useState, useRef } from "react";
+import { useChatShortcuts } from "@/hooks/useChatShortcuts";
 import { Inbox, Search } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ProfileSummary, ConversationSummary, MessageRow } from "@/hooks/useMessages";
@@ -71,6 +72,7 @@ type SidebarProps = {
   loadingConversations: boolean;
   onSelectProfile: (profile: ProfileSummary) => void;
   showSidebarOnMobile: boolean;
+  onEscape?: () => void;
 };
 
 export function Sidebar({
@@ -83,6 +85,7 @@ export function Sidebar({
   loadingConversations,
   onSelectProfile,
   showSidebarOnMobile,
+  onEscape,
 }: SidebarProps) {
   const [search, setSearch] = useState("");
   const conversationListRef = useRef<HTMLDivElement | null>(null);
@@ -125,6 +128,27 @@ export function Sidebar({
     overscan: 8,
   });
 
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const navigatableItems = useMemo(() => {
+    const items = [...filteredConversationSummaries.map((c) => c.profile)];
+    filteredProfiles.forEach((p) => {
+      if (!items.find((i) => i.id === p.id)) {
+        items.push(p);
+      }
+    });
+    return items;
+  }, [filteredConversationSummaries, filteredProfiles]);
+
+  useChatShortcuts({
+    searchInputRef,
+    items: navigatableItems,
+    selectedItem: selectedUser,
+    onSelect: onSelectProfile,
+    onEscape,
+    getItemId: (p) => p.id,
+  });
+
   return (
     <aside
       className={`${showSidebarOnMobile ? "flex" : "hidden"} w-full flex-col border-r border-white/10 bg-slate-950/80 md:flex md:w-[380px]`}
@@ -147,6 +171,7 @@ export function Sidebar({
         <label className="mt-4 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 shadow-inner shadow-black/10">
           <Search className="h-4 w-4 text-slate-400" />
           <input
+            ref={searchInputRef}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search conversations or people"

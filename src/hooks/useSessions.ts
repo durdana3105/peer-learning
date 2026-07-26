@@ -23,6 +23,18 @@ export function useSessions(user: any) {
 
   const [activities, setActivities] = useState<any[]>([]);
   const [userStatus, setUserStatus] = useState("Active");
+  const [isFocusMode, setIsFocusMode] = useState(false);
+  const isFocusModeRef = useRef(isFocusMode);
+
+  useEffect(() => {
+    isFocusModeRef.current = isFocusMode;
+    if (isFocusMode) {
+      setUserStatus("Busy");
+    } else {
+      setUserStatus("Active");
+    }
+  }, [isFocusMode]);
+
   const [typingUser, setTypingUser] = useState<string | null>(null);
   const [participantCount, setParticipantCount] = useState(1);
   const [isVideoActive, setIsVideoActive] = useState(false);
@@ -58,11 +70,14 @@ export function useSessions(user: any) {
   const filteredSessions = useMemo(() => {
     let filtered = sessions;
 
+    // Derive allowed statuses from the single source of truth: TAB_TO_STATUS
     const allowedStatuses = TAB_TO_STATUS[selectedTab] || [];
+
     filtered = filtered.filter((s) =>
       allowedStatuses.includes(s.status?.toLowerCase())
     );
 
+    // Apply search if present
     if (search) {
       filtered = filtered.filter(
         (s) =>
@@ -115,68 +130,93 @@ export function useSessions(user: any) {
         .order("created_at", { ascending: true });
 
       if (error) {
-        console.error("Failed to fetch session messages:", error);
-        toast({
-          title: "Failed to load messages",
-          description: "Could not load session messages. Please try again.",
-          variant: "destructive",
-        });
-      } else {
-        setMessages(data || []);
+        console.error("Failed to fetch messages:", error);
+        toast({ title: "Error", description: "Failed to load messages.", variant: "destructive" });
+        return;
       }
+
+      setMessages(data || []);
     };
 
     fetchMessages();
 
-    const roomChannel = supabase.channel(`room:${selectedSession.id}`, {
-      config: {
-        presence: {
-          key: user?.id || "anonymous",
+    let isMounted = true;
+    let roomChannel: any = null;
+
+    // Debounce the Realtime connection to prevent connection leaks on rapid navigation
+    const timeoutId = setTimeout(async () => {
+      if (!isMounted) return;
+
+      // Cleanup any stale channel in the ref before establishing a new one
+      if (channelRef.current) {
+        await supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+
+      if (!isMounted) return;
+
+      roomChannel = supabase.channel(`room:${selectedSession.id}`, {
+        config: {
+          presence: {
+            key: user?.id || "anonymous",
+          },
         },
-      },
-    });
-
-    channelRef.current = roomChannel;
-
-    roomChannel
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `session_id=eq.${selectedSession.id}` }, (payload: any) => {
-        if (payload.new.session_id === selectedSession.id) {
-          setMessages((prev) => [...prev, payload.new]);
-        }
-      })
-      .on("presence", { event: "sync" }, () => {
-        const state = roomChannel.presenceState();
-        setParticipantCount(Math.max(1, Object.keys(state).length));
-      })
-      .on("broadcast", { event: "typing" }, ({ payload }) => {
-        if (payload.user === (user?.user_metadata?.full_name || "Someone")) return;
-        setTypingUser(payload.user);
-        clearTimeout(typingTimeoutRef.current);
-        typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
-      })
-      .on("broadcast", { event: "activity" }, ({ payload }) => {
-        setActivities((prev) => [payload, ...prev]);
-      })
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          await roomChannel.track({ online_at: new Date().toISOString() });
-
-          roomChannel.send({
-            type: "broadcast",
-            event: "activity",
-            payload: {
-              id: Date.now(),
-              text: `${user?.user_metadata?.full_name || "Someone"} joined the session`,
-              time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            },
-          });
-        }
       });
 
+      channelRef.current = roomChannel;
+
+      roomChannel
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `session_id=eq.${selectedSession.id}` }, (payload: any) => {
+          if (payload.new.session_id === selectedSession.id) {
+            setMessages((prev) => [...prev, payload.new]);
+          }
+        })
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `session_id=eq.${selectedSession.id}` }, (payload: any) => {
+          if (payload.new.session_id === selectedSession.id) {
+            setMessages((prev) => prev.map(msg => msg.id === payload.new.id ? payload.new : msg));
+          }
+        })
+        .on("presence", { event: "sync" }, () => {
+          const state = roomChannel.presenceState();
+          setParticipantCount(Math.max(1, Object.keys(state).length));
+        })
+        .on("broadcast", { event: "typing" }, ({ payload }) => {
+          if (payload.user === (user?.user_metadata?.full_name || "Someone")) return;
+          setTypingUser(payload.user);
+          clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
+        })
+        .on("broadcast", { event: "activity" }, ({ payload }) => {
+          setActivities((prev) => [payload, ...prev]);
+        })
+        .subscribe(async (status) => {
+          if (status === "SUBSCRIBED" && isMounted) {
+            await roomChannel.track({ online_at: new Date().toISOString() });
+
+            roomChannel.send({
+              type: "broadcast",
+              event: "activity",
+              payload: {
+                id: Date.now(),
+                text: `${user?.user_metadata?.full_name || "Someone"} joined the session`,
+                time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              },
+            });
+          }
+        });
+    }, 300);
+
     return () => {
-      supabase.removeChannel(roomChannel);
+      isMounted = false;
+      clearTimeout(timeoutId);
+      if (roomChannel) {
+        supabase.removeChannel(roomChannel).catch(console.error);
+        if (channelRef.current === roomChannel) {
+          channelRef.current = null;
+        }
+      }
     };
-  }, [selectedSession, user]);
+  }, [selectedSession, user, toast]);
 
   useEffect(() => {
     if (!selectedSession) return;
@@ -197,10 +237,13 @@ export function useSessions(user: any) {
 
   useEffect(() => {
     const handleActivity = () => {
+      if (isFocusModeRef.current) return;
       setUserStatus("Active");
       clearTimeout(idleTimerRef.current);
       idleTimerRef.current = setTimeout(() => {
-        setUserStatus("Idle");
+        if (!isFocusModeRef.current) {
+          setUserStatus("Idle");
+        }
       }, 15000);
     };
 
@@ -251,7 +294,7 @@ export function useSessions(user: any) {
         // since opening the video does not by itself confirm participation.
         if (!existingParticipant) {
           awardedSessionsRef.current.add(sessionId);
-          awardXP({ activity: "session_join" });
+          awardXP({ activity: "session_join", referenceId: sessionId });
         }
       }
     } catch (err: any) {
@@ -291,6 +334,28 @@ export function useSessions(user: any) {
       toast({ title: "Failed to send message", description: err.message || "An unexpected error occurred.", variant: "destructive" });
     }
   }, [selectedSession, user, toast]);
+
+  const togglePinMessage = useCallback(async (messageId: string, currentPinnedState: boolean) => {
+    if (!selectedSession) return;
+    try {
+      const { error } = await (supabase as any)
+        .from("messages")
+        .update({ is_pinned: !currentPinnedState })
+        .eq("id", messageId)
+        .eq("session_id", selectedSession.id);
+        
+      if (error) throw error;
+      
+      // Optimistic UI update
+      setMessages((prev) => prev.map(msg => msg.id === messageId ? { ...msg, is_pinned: !currentPinnedState } : msg));
+      
+      if (!currentPinnedState) {
+        toast({ title: "Message Pinned", description: "This message is now pinned to the top of the chat." });
+      }
+    } catch (err: any) {
+      toast({ title: "Failed to update pin status", description: err.message || "An unexpected error occurred.", variant: "destructive" });
+    }
+  }, [selectedSession, toast]);
 
   const sendTypingEvent = useCallback(() => {
     if (channelRef.current) {
@@ -370,8 +435,11 @@ export function useSessions(user: any) {
     sessionSummary,
     summaryLoading,
     studyTime,
+    isFocusMode,
+    setIsFocusMode,
     handleJoinSession,
     sendMessage,
+    togglePinMessage,
     sendTypingEvent,
     handleLeaveVideo,
     handleJoinVideo,

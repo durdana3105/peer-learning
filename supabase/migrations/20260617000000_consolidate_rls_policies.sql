@@ -596,8 +596,8 @@ CREATE POLICY "Users can manage own portfolio_profiles"
 -- skills_taxonomy
 CREATE POLICY "Anyone can read skills taxonomy" 
   ON public.skills_taxonomy FOR SELECT USING (true);
-CREATE POLICY "Anyone can insert skills taxonomy" 
-  ON public.skills_taxonomy FOR INSERT WITH CHECK (true);
+CREATE POLICY "Admins can insert skills taxonomy" 
+  ON public.skills_taxonomy FOR INSERT WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
 -- doubts
 CREATE POLICY "Anyone can view doubts" 

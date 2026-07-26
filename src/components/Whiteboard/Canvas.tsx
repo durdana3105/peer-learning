@@ -2,12 +2,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
+import { toast } from "sonner";
 import {
   Point,
   ToolType,
   WhiteboardEvent,
 } from "./types";
 import { nextSegment } from "./strokePath";
+import { normalizePoint, denormalizePoint } from "./coords";
 
 type Props = {
   roomId: string;
@@ -23,6 +25,8 @@ export default function Canvas({ roomId }: Props) {
 
   const strokesRef = useRef<WhiteboardEvent[]>([]);
 
+  const redoStackRef = useRef<WhiteboardEvent[][]>([]);
+
   const currentStrokeId = useRef<string | null>(null);
 
   const lastPointRef = useRef<Map<string, Point>>(new Map());
@@ -34,6 +38,10 @@ export default function Canvas({ roomId }: Props) {
   const [tool, setTool] = useState<ToolType>("pen");
 
   const [color, setColor] = useState("#ffffff");
+
+  const [canUndo, setCanUndo] = useState(false);
+
+  const [canRedo, setCanRedo] = useState(false);
 
   const [lineWidth] = useState(3);
 
@@ -87,6 +95,14 @@ export default function Canvas({ roomId }: Props) {
 
     if (!segment) return;
 
+    // New events store normalized fractions; denormalize to the local canvas size.
+    const from = event.payload.normalized
+      ? denormalizePoint(segment.from, ctx.canvas.width, ctx.canvas.height)
+      : segment.from;
+    const to = event.payload.normalized
+      ? denormalizePoint(segment.to, ctx.canvas.width, ctx.canvas.height)
+      : segment.to;
+
     ctx.strokeStyle =
       event.payload.tool === "eraser"
         ? "#020617"
@@ -95,8 +111,8 @@ export default function Canvas({ roomId }: Props) {
     ctx.lineWidth = event.payload.lineWidth || 3;
 
     ctx.beginPath();
-    ctx.moveTo(segment.from.x, segment.from.y);
-    ctx.lineTo(segment.to.x, segment.to.y);
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
     ctx.stroke();
   };
 
@@ -114,12 +130,16 @@ export default function Canvas({ roomId }: Props) {
   }, []);
 
   const persistEvent = async (event: WhiteboardEvent) => {
-    await supabase.from("whiteboard_events" as any).insert({
+    const { error } = await supabase.from("whiteboard_events" as any).insert({
       room_id: roomId,
       user_id: user?.id,
       type: event.type,
       payload: event.payload,
     });
+    if (error) {
+      console.error("Whiteboard save failed:", error);
+      toast.error("Drawing could not be saved. Please check your connection.");
+    }
   };
 
   const broadcastEvent = (event: WhiteboardEvent) => {
@@ -140,6 +160,9 @@ export default function Canvas({ roomId }: Props) {
     };
 
     strokesRef.current.push(ownedEvent);
+
+    setCanUndo(true);
+    setCanRedo(false);
 
     const ctx = getContext();
 
@@ -174,17 +197,20 @@ export default function Canvas({ roomId }: Props) {
         setHostId((room as any).created_by);
       }
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("whiteboard_events" as any)
         .select("*")
         .eq("room_id", roomId)
-        .order("created_at", {
-          ascending: true,
-        });
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Failed to load whiteboard history:", error);
+        toast.error("Could not load whiteboard history. Please refresh.");
+        return;
+      }
 
       if (data) {
         strokesRef.current = data as any;
-
         replayCanvas();
       }
     };
@@ -243,10 +269,12 @@ export default function Canvas({ roomId }: Props) {
 
     const rect = canvas.getBoundingClientRect();
 
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
+    return normalizePoint(
+      e.clientX - rect.left,
+      e.clientY - rect.top,
+      rect.width,
+      rect.height
+    );
   };
 
   const startDrawing = (
@@ -262,6 +290,9 @@ export default function Canvas({ roomId }: Props) {
 
     currentStrokeId.current = strokeId;
 
+// New drawing clears redo history
+    redoStackRef.current = [];
+
     pushEvent({
       type: "draw-start",
       payload: {
@@ -270,6 +301,7 @@ export default function Canvas({ roomId }: Props) {
         lineWidth,
         tool,
         strokeId,
+        normalized: true,
       },
     });
   };
@@ -292,6 +324,7 @@ export default function Canvas({ roomId }: Props) {
         tool,
         strokeId:
           currentStrokeId.current || undefined,
+        normalized: true,
       },
     });
   };
@@ -322,8 +355,7 @@ export default function Canvas({ roomId }: Props) {
   for (let i = events.length - 1; i >= 0; i--) {
     if (events[i].user_id !== user?.id) continue;
 
-    const strokeId =
-      events[i].payload?.strokeId;
+    const strokeId = events[i].payload?.strokeId;
 
     if (strokeId) {
       lastStrokeId = strokeId;
@@ -333,25 +365,37 @@ export default function Canvas({ roomId }: Props) {
 
   if (!lastStrokeId) return;
 
-  const updated = events.filter(
-    (event) =>
-      event.payload?.strokeId !==
-      lastStrokeId
+  const removedStroke = events.filter(
+    (event) => event.payload?.strokeId === lastStrokeId
   );
 
-  strokesRef.current = updated;
-
-  replayCanvas();
-
-  await supabase
+  // First delete from database
+  const { error: undoError } = await supabase
     .from("whiteboard_events" as any)
     .delete()
     .eq("room_id", roomId)
     .eq("user_id", user?.id)
-    .eq(
-      "payload->>strokeId",
-      lastStrokeId
-    );
+    .eq("payload->>strokeId", lastStrokeId);
+
+  if (undoError) {
+    console.error("Undo failed to sync:", undoError);
+    toast.error("Undo could not be saved. Please check your connection.");
+    return;
+  }
+
+  // Update local history only after database success
+  redoStackRef.current.push(removedStroke);
+
+  const updated = events.filter(
+    (event) => event.payload?.strokeId !== lastStrokeId
+  );
+
+  strokesRef.current = updated;
+
+  setCanUndo(updated.length > 0);
+  setCanRedo(true);
+
+  replayCanvas();
 
   broadcastEvent({
     type: "undo",
@@ -361,34 +405,80 @@ export default function Canvas({ roomId }: Props) {
   });
 };
 
-  const clearBoard = async () => {
-  if (user?.id !== hostId) return;
+  const redoLastStroke = async () => {
+  const stroke = redoStackRef.current[
+    redoStackRef.current.length - 1
+  ];
 
-  const ctx = getContext();
+  if (!stroke) return;
 
-  if (!ctx) return;
+  // Persist first
+  for (const event of stroke) {
+    const { error } = await supabase
+      .from("whiteboard_events" as any)
+      .insert({
+        room_id: roomId,
+        user_id: user?.id,
+        type: event.type,
+        payload: event.payload,
+      });
 
-  ctx.clearRect(
-    0,
-    0,
-    ctx.canvas.width,
-    ctx.canvas.height
-  );
+    if (error) {
+      console.error("Redo failed to sync:", error);
+      toast.error("Redo could not be saved. Please check your connection.");
+      return;
+    }
+  }
 
-  lastPointRef.current.clear();
+  // Only remove from redo stack after success
+  redoStackRef.current.pop();
 
-  strokesRef.current = [];
+  strokesRef.current.push(...stroke);
 
-  await supabase
-    .from("whiteboard_events" as any)
-    .delete()
-    .eq("room_id", roomId);
+  replayCanvas();
 
-  broadcastEvent({
-    type: "clear",
-    payload: {},
-  });
+  setCanRedo(redoStackRef.current.length > 0);
+  setCanUndo(true);
+
+  for (const event of stroke) {
+    broadcastEvent(event);
+  }
 };
+
+  const clearBoard = async () => {
+    if (user?.id !== hostId) return;
+
+    const ctx = getContext();
+
+    if (!ctx) return;
+
+    ctx.clearRect(
+      0,
+      0,
+      ctx.canvas.width,
+      ctx.canvas.height
+    );
+
+    lastPointRef.current.clear();
+
+    strokesRef.current = [];
+    redoStackRef.current = [];
+
+    const { error: clearError } = await supabase
+      .from("whiteboard_events" as any)
+      .delete()
+      .eq("room_id", roomId);
+
+    if (clearError) {
+      console.error("Clear board failed to sync:", clearError);
+      toast.error("Board could not be cleared on the server. Please try again.");
+    }
+
+    broadcastEvent({
+      type: "clear",
+      payload: {},
+    });
+  };
 
   return (
     <div
@@ -398,22 +488,20 @@ export default function Canvas({ roomId }: Props) {
       <div className="flex items-center gap-3 p-3 border-b border-slate-800 bg-slate-900">
         <button
           onClick={() => setTool("pen")}
-          className={`px-3 py-1 rounded text-sm ${
-            tool === "pen"
-              ? "bg-blue-600 text-white"
-              : "bg-slate-800 text-slate-300"
-          }`}
+          className={`px-3 py-1 rounded text-sm ${tool === "pen"
+            ? "bg-blue-600 text-white"
+            : "bg-slate-800 text-slate-300"
+            }`}
         >
           Pen
         </button>
 
         <button
           onClick={() => setTool("eraser")}
-          className={`px-3 py-1 rounded text-sm ${
-            tool === "eraser"
-              ? "bg-blue-600 text-white"
-              : "bg-slate-800 text-slate-300"
-          }`}
+          className={`px-3 py-1 rounded text-sm ${tool === "eraser"
+            ? "bg-blue-600 text-white"
+            : "bg-slate-800 text-slate-300"
+            }`}
         >
           Eraser
         </button>
@@ -426,56 +514,71 @@ export default function Canvas({ roomId }: Props) {
           }
           className="w-10 h-10 bg-transparent border-none"
         />
-       <div className="ml-auto flex items-center gap-2">
-  <button
-    onClick={undoLastStroke}
-    className="px-3 py-1 rounded text-sm bg-slate-800 text-slate-300 hover:bg-slate-700"
-  >
-    Undo
-  </button>
-
-  {user?.id === hostId && (
-    <button
-      onClick={clearBoard}
-      className="px-3 py-1 rounded text-sm bg-red-600 text-white hover:bg-red-700"
-    >
-      Clear
-    </button>
-  )}
-</div>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={undoLastStroke}
+            disabled={!canUndo}
+            className={`px-3 py-1 rounded text-sm ${
+              canUndo
+                ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                : "bg-slate-700 text-slate-500 cursor-not-allowed"
+            }`}
+            >
+            Undo
+          </button>
+          <button
+            onClick={redoLastStroke}
+            disabled={!canRedo}
+            className={`px-3 py-1 rounded text-sm ${
+              canRedo
+                ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                : "bg-slate-700 text-slate-500 cursor-not-allowed"
+            }`}
+            >
+            Redo
+            </button>
+          {user?.id === hostId && (
+            <button
+              onClick={clearBoard}
+              className="px-3 py-1 rounded text-sm bg-red-600 text-white hover:bg-red-700"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       <canvas
         ref={canvasRef}
         className="flex-1 w-full h-full cursor-crosshair touch-none"
-       onMouseDown={startDrawing}
-onMouseMove={draw}
-onMouseUp={stopDrawing}
-onMouseLeave={stopDrawing}
+        onMouseDown={startDrawing}
+        onMouseMove={draw}
+        onMouseUp={stopDrawing}
+        onMouseLeave={stopDrawing}
 
-onTouchStart={(e) => {
-  e.preventDefault();
+        onTouchStart={(e) => {
+          e.preventDefault();
 
-  const touch = e.touches[0];
+          const touch = e.touches[0];
 
-  startDrawing({
-    clientX: touch.clientX,
-    clientY: touch.clientY,
-  } as any);
-}}
+          startDrawing({
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+          } as any);
+        }}
 
-onTouchMove={(e) => {
-  e.preventDefault();
+        onTouchMove={(e) => {
+          e.preventDefault();
 
-  const touch = e.touches[0];
+          const touch = e.touches[0];
 
-  draw({
-    clientX: touch.clientX,
-    clientY: touch.clientY,
-  } as any);
-}}
+          draw({
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+          } as any);
+        }}
 
-onTouchEnd={stopDrawing}
+        onTouchEnd={stopDrawing}
       />
     </div>
   );

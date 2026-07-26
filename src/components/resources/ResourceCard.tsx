@@ -35,6 +35,7 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [localUpvotes, setLocalUpvotes] = useState(resource.upvotes_count || 0);
   const [localDownvotes, setLocalDownvotes] = useState(resource.downvotes_count || 0);
+  const [pendingVote, setPendingVote] = useState<1 | -1 | null | undefined>(undefined);
 
   const isOwner = currentUser?.id === resource.uploaded_by;
 
@@ -42,6 +43,8 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
     resource.id,
     currentUser?.id
   );
+
+  const displayedVote = pendingVote !== undefined ? pendingVote : vote;
 
   useEffect(() => {
     setLocalUpvotes(resource.upvotes_count || 0);
@@ -98,6 +101,8 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
       return;
     }
 
+    if (pendingVote !== undefined) return;
+
     const previousVote = vote;
     const newVote = previousVote === type ? null : type;
 
@@ -108,6 +113,7 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
     if (newVote === 1) upvoteDelta += 1;
     if (newVote === -1) downvoteDelta += 1;
 
+    setPendingVote(newVote);
     setLocalUpvotes((prev) => prev + upvoteDelta);
     setLocalDownvotes((prev) => prev + downvoteDelta);
 
@@ -117,6 +123,8 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
       setLocalUpvotes((prev) => prev - upvoteDelta);
       setLocalDownvotes((prev) => prev - downvoteDelta);
       toast.error("Failed to register vote");
+    } finally {
+      setPendingVote(undefined);
     }
   };
 
@@ -188,19 +196,21 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
           <Button 
             variant="ghost" 
             size="sm" 
-            className={cn("gap-1.5", vote === 1 && "text-green-600 bg-green-50")}
+            className={cn("gap-1.5", displayedVote === 1 && "text-green-600 bg-green-50")}
             onClick={() => handleVote(1)}
+            disabled={pendingVote !== undefined}
           >
-            <ThumbsUp className="h-4 w-4" fill={vote === 1 ? "currentColor" : "none"} />
+            <ThumbsUp className="h-4 w-4" fill={displayedVote === 1 ? "currentColor" : "none"} />
             <span className="text-xs font-medium">{localUpvotes}</span>
           </Button>
           <Button 
             variant="ghost" 
             size="sm" 
-            className={cn("gap-1.5", vote === -1 && "text-red-600 bg-red-50")}
+            className={cn("gap-1.5", displayedVote === -1 && "text-red-600 bg-red-50")}
             onClick={() => handleVote(-1)}
+            disabled={pendingVote !== undefined}
           >
-            <ThumbsDown className="h-4 w-4" fill={vote === -1 ? "currentColor" : "none"} />
+            <ThumbsDown className="h-4 w-4" fill={displayedVote === -1 ? "currentColor" : "none"} />
             <span className="text-xs font-medium">{localDownvotes}</span>
           </Button>
         </div>

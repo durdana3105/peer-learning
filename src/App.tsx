@@ -1,6 +1,6 @@
 import React, { useEffect, Suspense, useState, useRef } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, Router } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Router, useLocation } from "react-router-dom";
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -24,6 +24,7 @@ import MouseSparkles from "./components/MouseSparkles";
 import BackToTop from "./components/BackToTop";
 import { useAuth } from "@/contexts/useAuth";
 import SplashScreen from "./components/SplashScreen";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 
 
@@ -44,7 +45,9 @@ const Signup = React.lazy(() => import("./pages/Signup"));
 const Onboarding = React.lazy(() => import("./pages/Onboarding"));
 const Profile = React.lazy(() => import("./pages/Profile"));
 const EditProfile = React.lazy(() => import("./pages/EditProfile"));
+const Settings = React.lazy(() => import("./pages/Settings"));
 const Notifications = React.lazy(() => import("./pages/Notifications"));
+const Settings = React.lazy(() => import("./pages/Settings"));
 const Leaderboard = React.lazy(() => import("./pages/Leaderboard"));
 const Admin = React.lazy(() => import("./pages/Admin"));
 const ForgotPassword = React.lazy(() => import("./pages/ForgotPassword"));
@@ -69,6 +72,7 @@ const MockInterview = React.lazy(() => import("./pages/MockInterview"));
 const TermsAndConditions = React.lazy(
   () => import("./pages/TermsAndConditions")
 );
+const AllReviews = React.lazy(() => import("./pages/AllReviews"));
 
 const queryClient = new QueryClient();
 
@@ -101,8 +105,7 @@ function AppContent() {
     <>
       <MouseSparkles />
       <CookieConsentBanner />
-
-      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#020617]"><div className="h-10 w-10 animate-spin rounded-full border-4 border-cyan-400 border-t-transparent" /></div>}>
+      <Suspense fallback={<SplashScreen />}></Suspense>
         <Routes>
           <Route
             path="/"
@@ -127,6 +130,7 @@ function AppContent() {
           <Route path="/become-mentor" element={<BecomeMentor />} />
           <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
           <Route path="/contact" element={<WithNav><Contact /></WithNav>} />
+          <Route path="/reviews" element={<WithNav><AllReviews /></WithNav>} />
           <Route path="/privacy-policy" element={<WithNav><PrivacyPolicy /></WithNav>} />
           <Route path="/cookies-policy" element={<WithNav><CookiesPolicy /></WithNav>} />
            <Route path="/terms-and-conditions" element={<WithNav><TermsAndConditions /></WithNav>} />
@@ -347,6 +351,15 @@ function AppContent() {
           />
 
           <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/anonymous-doubts"
             element={
               <ProtectedRoute>
@@ -369,8 +382,7 @@ function AppContent() {
           />
 
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
+      </Routes>
 
       {user && (
         <>

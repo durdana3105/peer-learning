@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { askAI, generateSessionSummary } from "../controllers/aiController.js";
 
@@ -13,6 +13,10 @@ describe("aiController", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     process.env.OPENROUTER_API_KEY = "test-key";
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("sends max_tokens when handling askAI", async () => {
@@ -36,6 +40,42 @@ describe("aiController", () => {
     expect(payload.max_tokens).toBeGreaterThanOrEqual(64);
     expect(payload.max_tokens).toBeLessThanOrEqual(512);
     expect(res.json).toHaveBeenCalledWith({ answer: "hello" });
+  });
+
+  it("times out a stalled upstream request", async () => {
+    vi.useFakeTimers();
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(
+      (_url, requestInit) =>
+        new Promise((_, reject) => {
+          requestInit.signal.addEventListener(
+            "abort",
+            () => {
+              const error = new Error("Request aborted");
+              error.name = "AbortError";
+              reject(error);
+            },
+            { once: true }
+          );
+        })
+    );
+    const req = { body: { messages: [{ role: "user", content: "How do I start with DSA?" }] } };
+    const res = createRes();
+    const next = vi.fn();
+
+    const requestPromise = askAI(req, res, next);
+
+    await vi.advanceTimersByTimeAsync(15_000);
+    await requestPromise;
+
+    expect(fetchSpy.mock.calls[0][1].signal.aborted).toBe(true);
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "HttpError",
+        statusCode: 503,
+        details: { retryable: true, reason: "timeout" },
+      })
+    );
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("returns strict summary JSON when model output is valid", async () => {

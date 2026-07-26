@@ -171,10 +171,16 @@ export const getSupabaseDiscover = async (req, res) => {
       return res.status(404).json({ success: false, message: "User profile not found" });
     }
 
+    // Postgres gives no ordering guarantee without ORDER BY, so an unordered
+    // LIMIT can return a different set of rows on every call once the table
+    // has more candidates than the limit - silently hiding some profiles and
+    // making pagination unstable between requests. Order by id so the 1000-row
+    // window is deterministic and consistent across page requests.
     let query = supabaseAdmin
       .from("profiles")
       .select("id, name, skills, interests, learning_goals, teach_subjects, learn_subjects, learning_style, preferred_language, timezone")
       .neq("id", userId)
+      .order("id", { ascending: true })
       .limit(1000);
 
     if (search.trim()) {

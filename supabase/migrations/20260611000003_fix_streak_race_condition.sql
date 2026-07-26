@@ -1,1 +1,0 @@
-CREATE OR REPLACE FUNCTION restore_user_streak() RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$ BEGIN PERFORM 1 FROM profiles WHERE id = auth.uid() FOR UPDATE; END; $$;

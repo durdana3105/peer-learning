@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 
-import { Camera, Save, Sparkles, User, Flame, Zap, Trophy, Lock } from "lucide-react";
+import { Camera, Save, Sparkles, User, Flame, Zap, Trophy, Lock, Settings } from "lucide-react";
 import StreakStats from "@/components/StreakStats";
 import { AvatarUpload } from "@/components/AvatarUpload";
 
@@ -50,11 +50,17 @@ const Profile = () => {
 
       if (!user) return;
 
-      const { data: rawProfileData } = await supabase
+      const { data: rawProfileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .single();
+
+      if (profileError) {
+        console.error("Failed to fetch profile:", profileError);
+        toast.error("Failed to load profile data. Please refresh the page to try again.");
+        return;
+      }
 
       const profileData = rawProfileData as any;
 
@@ -139,12 +145,21 @@ if (profile.bio.length > MAX_BIO_CHARS) {
             </div>
 
             <h1 className="text-5xl font-bold mb-3">Edit Profile</h1>
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-gray-300 px-4 py-2 rounded-full hover:border-cyan-400/50 hover:text-cyan-300 transition mt-2"
-            >
-              ← Back to Dashboard
-            </button>
+            <div className="flex items-center gap-3 mt-2">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-gray-300 px-4 py-2 rounded-full hover:border-cyan-400/50 hover:text-cyan-300 transition"
+              >
+                ← Back to Dashboard
+              </button>
+              
+              <button
+                onClick={() => navigate('/settings')}
+                className="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-gray-300 px-4 py-2 rounded-full hover:border-cyan-400/50 hover:text-cyan-300 transition"
+              >
+                <Settings size={16} /> Notification Settings
+              </button>
+            </div>
             <p className="text-gray-400 text-lg">
               Build your learning identity 🚀
             </p>
@@ -159,7 +174,7 @@ if (profile.bio.length > MAX_BIO_CHARS) {
               <AvatarUpload
                 currentAvatarUrl={profile.avatar_url}
                 onUploadSuccess={(url) => setProfile({ ...profile, avatar_url: url })}
-                onUploadError={(error) => alert(error)}
+                onUploadError={(error) => toast.error(error)}
               />
             </div>
 

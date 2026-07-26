@@ -1,4 +1,3 @@
-```sql
 -- Ensure message timestamps are assigned by the database, not trusted from clients.
 
 ALTER TABLE public.messages
@@ -28,4 +27,3 @@ CREATE TRIGGER a_enforce_messages_created_at
 BEFORE INSERT ON public.messages
 FOR EACH ROW
 EXECUTE FUNCTION public.enforce_messages_created_at();
-```

@@ -95,8 +95,8 @@ export function Features() {
       {/* Stats */}
       <section id="stats" className="container mx-auto mt-20 grid grid-cols-2 gap-6 px-6 py-10 text-center md:grid-cols-4">
         {stats.map((s, i) => (
-          <StatCard
-            key={i}
+<StatCard
+            key={s.label}
             value={s.value}
             label={s.label}
             index={i}
@@ -137,7 +137,7 @@ export function Features() {
             },
           ].map((step, i) => (
             <motion.div
-              key={i}
+              key={step.title}
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.2 }}
@@ -173,7 +173,7 @@ export function Features() {
 
             return (
               <motion.div
-                key={i}
+                key={f.title}
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
@@ -221,7 +221,7 @@ export function Features() {
           },
         ].map((card, i) => (
           <motion.div
-            key={i}
+            key={card.title}
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.2 }}
@@ -232,9 +232,9 @@ export function Features() {
             <h3 className="text-4xl font-black">{card.title}</h3>
 
             <div className="mt-8 space-y-5">
-              {card.items.map((item, idx) => (
+              {card.items.map((item) => (
                 <div
-                  key={idx}
+                  key={item}
                   className="flex items-center gap-3 text-slate-300"
                 >
                   <div className="h-2 w-2 rounded-full bg-cyan-400" />

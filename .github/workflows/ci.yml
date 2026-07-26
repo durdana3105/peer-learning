@@ -29,6 +29,12 @@ jobs:
       - name: Run Linter
         run: npm run lint
 
+      # - name: Verify Supabase Types
+      #   run: |
+      #     npx supabase start
+      #     npm run generate-types
+      #     git diff --exit-code src/integrations/supabase/types.ts || (echo "Supabase types are outdated. Please run 'npm run generate-types' locally and commit." && exit 1)
+
       - name: Run Tests with Coverage
         run: npx vitest run --coverage
         env:

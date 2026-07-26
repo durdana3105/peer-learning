@@ -28,6 +28,8 @@ const storage = multer.diskStorage({
   }
 });
 
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+
 // Configure multer with file size limits and MIME type validation
 const upload = multer({ 
   storage: storage,
@@ -35,7 +37,7 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit to prevent server disk space exhaustion
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
+    if (ALLOWED_IMAGE_TYPES.has(file.mimetype)) {
       cb(null, true);
     } else {
       const error = new Error("Only image files are allowed!");
@@ -78,7 +80,7 @@ router.post("/upload-photo", requireAuth, uploadProfilePhoto, async (req, res) =
 
   try {
     const detected = await fileTypeFromFile(req.file.path);
-    if (!detected || !detected.mime.startsWith("image/")) {
+    if (!detected || !ALLOWED_IMAGE_TYPES.has(detected.mime)) {
       safeUnlink(req.file.path);
       return res.status(415).json({ error: "Only valid image files are allowed." });
     }
