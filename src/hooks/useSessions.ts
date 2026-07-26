@@ -140,58 +140,81 @@ export function useSessions(user: any) {
 
     fetchMessages();
 
-    const roomChannel = supabase.channel(`room:${selectedSession.id}`, {
-      config: {
-        presence: {
-          key: user?.id || "anonymous",
+    let isMounted = true;
+    let roomChannel: any = null;
+
+    // Debounce the Realtime connection to prevent connection leaks on rapid navigation
+    const timeoutId = setTimeout(async () => {
+      if (!isMounted) return;
+
+      // Cleanup any stale channel in the ref before establishing a new one
+      if (channelRef.current) {
+        await supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+
+      if (!isMounted) return;
+
+      roomChannel = supabase.channel(`room:${selectedSession.id}`, {
+        config: {
+          presence: {
+            key: user?.id || "anonymous",
+          },
         },
-      },
-    });
-
-    channelRef.current = roomChannel;
-
-    roomChannel
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `session_id=eq.${selectedSession.id}` }, (payload: any) => {
-        if (payload.new.session_id === selectedSession.id) {
-          setMessages((prev) => [...prev, payload.new]);
-        }
-      })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `session_id=eq.${selectedSession.id}` }, (payload: any) => {
-        if (payload.new.session_id === selectedSession.id) {
-          setMessages((prev) => prev.map(msg => msg.id === payload.new.id ? payload.new : msg));
-        }
-      })
-      .on("presence", { event: "sync" }, () => {
-        const state = roomChannel.presenceState();
-        setParticipantCount(Math.max(1, Object.keys(state).length));
-      })
-      .on("broadcast", { event: "typing" }, ({ payload }) => {
-        if (payload.user === (user?.user_metadata?.full_name || "Someone")) return;
-        setTypingUser(payload.user);
-        clearTimeout(typingTimeoutRef.current);
-        typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
-      })
-      .on("broadcast", { event: "activity" }, ({ payload }) => {
-        setActivities((prev) => [payload, ...prev]);
-      })
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          await roomChannel.track({ online_at: new Date().toISOString() });
-
-          roomChannel.send({
-            type: "broadcast",
-            event: "activity",
-            payload: {
-              id: Date.now(),
-              text: `${user?.user_metadata?.full_name || "Someone"} joined the session`,
-              time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            },
-          });
-        }
       });
 
+      channelRef.current = roomChannel;
+
+      roomChannel
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `session_id=eq.${selectedSession.id}` }, (payload: any) => {
+          if (payload.new.session_id === selectedSession.id) {
+            setMessages((prev) => [...prev, payload.new]);
+          }
+        })
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `session_id=eq.${selectedSession.id}` }, (payload: any) => {
+          if (payload.new.session_id === selectedSession.id) {
+            setMessages((prev) => prev.map(msg => msg.id === payload.new.id ? payload.new : msg));
+          }
+        })
+        .on("presence", { event: "sync" }, () => {
+          const state = roomChannel.presenceState();
+          setParticipantCount(Math.max(1, Object.keys(state).length));
+        })
+        .on("broadcast", { event: "typing" }, ({ payload }) => {
+          if (payload.user === (user?.user_metadata?.full_name || "Someone")) return;
+          setTypingUser(payload.user);
+          clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
+        })
+        .on("broadcast", { event: "activity" }, ({ payload }) => {
+          setActivities((prev) => [payload, ...prev]);
+        })
+        .subscribe(async (status) => {
+          if (status === "SUBSCRIBED" && isMounted) {
+            await roomChannel.track({ online_at: new Date().toISOString() });
+
+            roomChannel.send({
+              type: "broadcast",
+              event: "activity",
+              payload: {
+                id: Date.now(),
+                text: `${user?.user_metadata?.full_name || "Someone"} joined the session`,
+                time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              },
+            });
+          }
+        });
+    }, 300);
+
     return () => {
-      supabase.removeChannel(roomChannel);
+      isMounted = false;
+      clearTimeout(timeoutId);
+      if (roomChannel) {
+        supabase.removeChannel(roomChannel).catch(console.error);
+        if (channelRef.current === roomChannel) {
+          channelRef.current = null;
+        }
+      }
     };
   }, [selectedSession, user, toast]);
 
