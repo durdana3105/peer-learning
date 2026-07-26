@@ -28,6 +28,8 @@ describe("API documentation completeness", () => {
     "/api/cron/reminders",
     "/api/cron/mentorship-reminders",
     "/api/notifications/send-push",
+    "/api/upload",
+    "/api/users/upload-photo",
   ];
 
   for (const route of requiredRoutes) {
@@ -42,6 +44,12 @@ describe("API documentation completeness", () => {
 
   it("docs/api.md documents the WEBHOOK_SECRET auth requirement", () => {
     expect(apiDoc).toContain("WEBHOOK_SECRET");
+  });
+
+  it("docs/api.md documents file upload validation and accepted types", () => {
+    expect(apiDoc.toLowerCase()).toContain("magic byte");
+    expect(apiDoc).toContain("avatars");
+    expect(apiDoc).toContain("resources");
   });
 });
 
