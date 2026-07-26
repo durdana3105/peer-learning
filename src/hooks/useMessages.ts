@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, Dispatch, SetStateAction } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAwardXP } from "@/hooks/useAwardXP";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { logError } from "@/utils/logger";
 
 export type ProfileSummary = {
@@ -245,11 +245,9 @@ export function useMessages(
       } catch (err: any) {
         logError(err, { context: "useMessages.getUsers" });
         setError("Failed to load profiles");
-        toast({
-          title: "Failed to load profiles",
-          description: err.message || "An unexpected error occurred",
-          variant: "destructive",
-        });
+        toast.error("Failed to load profiles", {
+  description: err.message || "An unexpected error occurred"
+});
       } finally {
         setLoadingUsers(false);
       }
@@ -285,11 +283,9 @@ export function useMessages(
         if (cancelled) return;
         logError(err, { context: "useMessages.getConversationSummaries" });
         setError("Failed to load conversations");
-        toast({
-          title: "Failed to load conversations",
-          description: err.message || "An unexpected error occurred",
-          variant: "destructive",
-        });
+        toast.error("Failed to load conversations", {
+  description: err.message || "An unexpected error occurred"
+});
       } finally {
         if (!cancelled) setLoadingConversations(false);
       }
@@ -378,11 +374,9 @@ export function useMessages(
         if (cancelled) return;
         logError(err, { context: "useMessages.loadInitialThread" });
         setError("Failed to load messages");
-        toast({
-          title: "Failed to load messages",
-          description: err.message || "An unexpected error occurred",
-          variant: "destructive",
-        });
+        toast.error("Failed to load messages", {
+  description: err.message || "An unexpected error occurred"
+});
       } finally {
         if (!cancelled) {
           setLoadingThreadMessages(false);
@@ -425,11 +419,9 @@ export function useMessages(
       }
     } catch (err: any) {
       logError(err, { context: "useMessages.loadMoreThreadMessages" });
-      toast({
-        title: "Failed to load earlier messages",
-        description: err.message || "An unexpected error occurred",
-        variant: "destructive",
-      });
+      toast.error("Failed to load earlier messages", {
+  description: err.message || "An unexpected error occurred"
+});
     } finally {
       setLoadingMoreThreadMessages(false);
     }
@@ -544,11 +536,9 @@ export function useMessages(
         );
       } catch (err: any) {
         logError(err, { context: "useMessages.markAsRead" });
-        toast({
-          title: "Failed to mark messages as read",
-          description: err.message || "An unexpected error occurred",
-          variant: "destructive",
-        });
+        toast.error("Failed to mark messages as read", {
+  description: err.message || "An unexpected error occurred"
+});
       }
     };
 
@@ -568,11 +558,9 @@ export function useMessages(
     if (!content || !selectedUser || !currentUserId) return false;
 
     if (content.length > 1000) {
-      toast({
-        title: "Message too long",
-        description: "Message exceeds the 1000 character limit.",
-        variant: "destructive",
-      });
+      toast.error("Message too long", {
+  description: "Message exceeds the 1000 character limit."
+});
       return false;
     }
 
@@ -607,11 +595,9 @@ export function useMessages(
       return true;
     } catch (err: any) {
       logError(err, { context: "useMessages.sendMessage" });
-      toast({
-        title: "Failed to send message",
-        description: err.message || "An unexpected error occurred",
-        variant: "destructive",
-      });
+      toast.error("Failed to send message", {
+  description: err.message || "An unexpected error occurred"
+});
       return false;
     }
   }, [currentUserId, selectedUser, awardXP, upsertRawSummary]);

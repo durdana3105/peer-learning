@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -86,7 +86,7 @@ const normalizeProjects = (value: unknown): Project[] =>
 
 const Portfolio = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
+  
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profileName, setProfileName] = useState("");
@@ -125,11 +125,9 @@ const Portfolio = () => {
       timeout = setTimeout(() => {
         if (isMounted) {
           setLoading(false);
-          toast({
-            title: "Loading timed out",
-            description: "Some data may not have loaded. Please refresh to try again.",
-            variant: "destructive",
-          });
+          toast.error("Loading timed out", {
+  description: "Some data may not have loaded. Please refresh to try again."
+});
         }
       }, 10_000);
 
@@ -145,8 +143,7 @@ const Portfolio = () => {
             .from("portfolio_profiles")
             .select("*")
             .eq("profile_id", user.id)
-            .maybeSingle(),
-        ]);
+            .maybeSingle()]);
 
         clearTimeout(timeout);
         if (!isMounted) return;
@@ -155,22 +152,18 @@ const Portfolio = () => {
         const { data: portfolio, error: portfolioError } = portfolioResult;
 
         if (profileError) {
-          toast({
-            title: "Profile could not load",
-            description: profileError.message,
-            variant: "destructive",
-          });
+          toast.error("Profile could not load", {
+  description: profileError.message
+});
         }
 
         const fallbackSlug = slugify(profile?.name || user.email?.split("@")[0] || "learner");
         setProfileName(profile?.name || user.email?.split("@")[0] || "Learner");
 
         if (portfolioError) {
-          toast({
-            title: "Portfolio could not load",
-            description: portfolioError.message,
-            variant: "destructive",
-          });
+          toast.error("Portfolio could not load", {
+  description: portfolioError.message
+});
         }
 
         if (portfolio) {
@@ -202,11 +195,9 @@ const Portfolio = () => {
         clearTimeout(timeout);
         if (!isMounted) return;
 
-        toast({
-          title: "Portfolio could not load",
-          description: error instanceof Error ? error.message : "Please try again.",
-          variant: "destructive",
-        });
+        toast.error("Portfolio could not load", {
+  description: error instanceof Error ? error.message : "Please try again."
+});
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -218,7 +209,7 @@ const Portfolio = () => {
       isMounted = false;
       clearTimeout(timeout);
     };
-  }, [user, toast]);
+  }, [user]);
 
   const updateAchievement = (index: number, achievement: Achievement) => {
     setForm((current) => ({
@@ -245,11 +236,9 @@ const Portfolio = () => {
 
     const slug = slugify(form.slug);
     if (!slug) {
-      toast({
-        title: "Choose a public URL",
-        description: "Your portfolio needs a short slug before it can be saved.",
-        variant: "destructive",
-      });
+      toast.error("Choose a public URL", {
+  description: "Your portfolio needs a short slug before it can be saved."
+});
       return;
     }
 
@@ -263,21 +252,17 @@ const Portfolio = () => {
 
     if (slugCheckError) {
       setSaving(false);
-      toast({
-        title: "Error checking URL",
-        description: "Failed to verify if the URL is available.",
-        variant: "destructive",
-      });
+      toast.error("Error checking URL", {
+  description: "Failed to verify if the URL is available."
+});
       return;
     }
 
     if (existingSlugUser && (existingSlugUser as any).profile_id !== user.id) {
       setSaving(false);
-      toast({
-        title: "URL already taken",
-        description: "This public URL is already in use by someone else. Please choose another one.",
-        variant: "destructive",
-      });
+      toast.error("URL already taken", {
+  description: "This public URL is already in use by someone else. Please choose another one."
+});
       return;
     }
 
@@ -301,11 +286,9 @@ const Portfolio = () => {
     const timeout = setTimeout(() => {
       isTimeout = true;
       setSaving(false);
-      toast({
-        title: "Save timed out",
-        description: "The connection to the database timed out. Please check your connection and try again.",
-        variant: "destructive",
-      });
+      toast.error("Save timed out", {
+  description: "The connection to the database timed out. Please check your connection and try again."
+});
     }, 10_000);
 
     try {
@@ -321,19 +304,16 @@ const Portfolio = () => {
 
       if (error) {
         console.error("Portfolio upsert returned database error:", error);
-        toast({
-          title: "Portfolio was not saved",
-          description: error.message,
-          variant: "destructive",
-        });
+        toast.error("Portfolio was not saved", {
+  description: error.message
+});
         return;
       }
 
       setForm((current) => ({ ...current, slug }));
-      toast({
-        title: "Portfolio saved",
-        description: form.is_published ? "Your public page is live." : "Your draft is saved.",
-      });
+      toast("Portfolio saved", {
+  description: form.is_published ? "Your public page is live." : "Your draft is saved."
+});
     } catch (error) {
       if (isTimeout) {
         console.warn("Portfolio save threw exception, but it already timed out locally.");
@@ -341,11 +321,9 @@ const Portfolio = () => {
       }
       clearTimeout(timeout);
       console.error("Portfolio save threw exception:", error);
-      toast({
-        title: "Portfolio was not saved",
-        description: error instanceof Error ? error.message : "An unexpected error occurred.",
-        variant: "destructive",
-      });
+      toast.error("Portfolio was not saved", {
+  description: error instanceof Error ? error.message : "An unexpected error occurred."
+});
     } finally {
       if (!isTimeout) {
         setSaving(false);
@@ -356,7 +334,7 @@ const Portfolio = () => {
   const copyShareLink = async () => {
     if (!publicUrl) return;
     await navigator.clipboard.writeText(publicUrl);
-    toast({ title: "Share link copied" });
+    toast("Share link copied");
   };
 
   if (loading) {

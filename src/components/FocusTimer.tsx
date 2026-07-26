@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
 } from '@/components/ui/dropdown-menu';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from "sonner";
 
 const clampDuration = (value: string, min: number, max: number, fallback: number) => {
   const next = Number(value);
@@ -18,7 +18,7 @@ const clampDuration = (value: string, min: number, max: number, fallback: number
 
 export default function FocusTimer() {
   const { user } = useAuth();
-  const { toast } = useToast();
+  
   
   const [isActive, setIsActive] = useState(false);
   const [isBreak, setIsBreak] = useState(false);
@@ -49,10 +49,9 @@ export default function FocusTimer() {
 
   const handleTimerComplete = useCallback(async () => {
     if (!isBreak) {
-      toast({
-        title: "Focus Session Complete! 🎉",
-        description: `Great job focusing for ${workDuration} minutes! Time for a break.`,
-      });
+      toast("Focus Session Complete! 🎉", {
+  description: `Great job focusing for ${workDuration} minutes! Time for a break.`
+});
 
       setIsBreak(true);
       setTimeLeft(breakDuration * 60);
@@ -66,15 +65,14 @@ export default function FocusTimer() {
           .eq('id', user.id);
       }
     } else {
-      toast({
-        title: "Break Over!",
-        description: "Ready for another focus session?",
-      });
+      toast("Break Over!", {
+  description: "Ready for another focus session?"
+});
       setIsBreak(false);
       setIsActive(false);
       setTimeLeft(workDuration * 60);
     }
-  }, [isBreak, workDuration, breakDuration, focusTimeThisWeek, user, toast]);
+  }, [isBreak, workDuration, breakDuration, focusTimeThisWeek, user]);
 
   // Timer logic
   useEffect(() => {

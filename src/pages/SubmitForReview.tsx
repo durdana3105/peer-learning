@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { getSafePeerReviewSubmissionUrl } from "@/utils/peerReviewUrl";
 import { ArrowLeft, Send } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -15,7 +15,7 @@ import { Link } from "react-router-dom";
 export default function SubmitForReview() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  
   
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -32,20 +32,16 @@ export default function SubmitForReview() {
     const safeContentUrl = getSafePeerReviewSubmissionUrl(formData.content_url);
 
     if (safeContentUrl === null) {
-      toast({
-        title: "Validation Error",
-        description: "Please enter a valid http:// or https:// link.",
-        variant: "destructive"
-      });
+      toast.error("Validation Error", {
+  description: "Please enter a valid http:// or https:// link."
+});
       return;
     }
 
     if (!formData.title || (!safeContentUrl && !formData.content)) {
-      toast({
-        title: "Validation Error",
-        description: "Please provide a title and either a link or text content.",
-        variant: "destructive"
-      });
+      toast.error("Validation Error", {
+  description: "Please provide a title and either a link or text content."
+});
       return;
     }
 
@@ -66,16 +62,13 @@ export default function SubmitForReview() {
     setLoading(false);
 
     if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("Error", {
+  description: error.message
+});
     } else {
-      toast({
-        title: "Success",
-        description: "Your work has been submitted for peer review."
-      });
+      toast.success("Success", {
+  description: "Your work has been submitted for peer review."
+});
       navigate("/peer-review");
     }
   };

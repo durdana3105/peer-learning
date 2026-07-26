@@ -5,7 +5,7 @@ import RecentActivity from "@/components/dashboard/RecentActivity";
 import LearningProgress from "@/components/dashboard/LearningProgress";
 import Leaderboard from "@/components/dashboard/Leaderboard";
 import { ErrorBanner } from "@/components/ui/error-banner";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { normalizeError, safeFetchJson } from "@/lib/http";
 
 function ContributorDashboard() {
@@ -95,11 +95,9 @@ function ContributorDashboard() {
 
         setError(normalized.message);
 
-        toast({
-          title: "Contributor dashboard unavailable",
-          description: normalized.message,
-          variant: "destructive",
-        });
+        toast.error("Contributor dashboard unavailable", {
+  description: normalized.message
+});
       } finally {
         if (active && !controller.signal.aborted) {
           setLoading(false);

@@ -1,7 +1,7 @@
  
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { isAbortError, normalizeError, safeSupabaseCall } from "@/lib/http";
 import { logError } from "@/utils/logger";
@@ -121,11 +121,9 @@ export const useResources = (filters?: ResourceFilters) => {
       setError(normalized.message);
       setResources([]);
 
-      toast({
-        title: "Resource load failed",
-        description: normalized.message,
-        variant: "destructive",
-      });
+      toast.error("Resource load failed", {
+  description: normalized.message
+});
     }  
     finally {
       if (!isMountedRef.current || requestId !== requestIdRef.current || controller.signal.aborted) {

@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { getSafePeerReviewSubmissionUrl } from "@/utils/peerReviewUrl";
 import { ArrowLeft, Send, Star, ExternalLink, Code } from "lucide-react";
 
@@ -12,7 +12,7 @@ export default function ReviewSubmission() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  
   
   const [submission, setSubmission] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -35,7 +35,9 @@ export default function ReviewSubmission() {
         .single();
 
       if (subError || !subData) {
-        toast({ title: "Not Found", description: "Submission not found or deleted.", variant: "destructive" });
+        toast.error("Not Found", {
+  description: "Submission not found or deleted."
+});
         navigate("/peer-review");
         return;
       }
@@ -54,7 +56,7 @@ export default function ReviewSubmission() {
     };
 
     fetchDetails();
-  }, [id, user, navigate, toast]);
+  }, [id, user, navigate]);
 
   const handleFeedbackSubmit = async () => {
     if (!user || !id || !feedback.trim()) return;
@@ -80,11 +82,9 @@ export default function ReviewSubmission() {
     );
 
     if (rpcError || !reviewRow) {
-      toast({
-        title: "Error",
-        description: rpcError?.message || "Could not submit feedback.",
-        variant: "destructive",
-      });
+      toast.error("Error", {
+  description: rpcError?.message || "Could not submit feedback."
+});
       setSubmitting(false);
       return;
     }
@@ -102,8 +102,7 @@ export default function ReviewSubmission() {
           .from("peer_submissions")
           .select("status")
           .eq("id", id)
-          .single(),
-      ]);
+          .single()]);
 
     if (reviewFetchError) {
       // The review was created successfully (the RPC returned it); this is
@@ -116,7 +115,9 @@ export default function ReviewSubmission() {
       console.error("Failed to refresh submission status:", submissionFetchError);
     }
 
-    toast({ title: "Success", description: "Feedback submitted successfully." });
+    toast.success("Success", {
+  description: "Feedback submitted successfully."
+});
     setReviews((prev) => [...prev, reviewWithProfile ?? reviewRow]);
     setFeedback("");
 
@@ -136,9 +137,13 @@ export default function ReviewSubmission() {
       .eq('id', reviewId);
 
     if (error) {
-      toast({ title: "Error", description: "Could not save rating.", variant: "destructive" });
+      toast.error("Error", {
+  description: "Could not save rating."
+});
     } else {
-      toast({ title: "Rated", description: "Thanks for rating the feedback!" });
+      toast("Rated", {
+  description: "Thanks for rating the feedback!"
+});
       setReviews(reviews.map(r => r.id === reviewId ? { ...r, rating: ratingValue } : r));
     }
     

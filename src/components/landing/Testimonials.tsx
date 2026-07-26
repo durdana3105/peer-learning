@@ -50,6 +50,89 @@ function mapDbRowToTestimonial(row: {
   };
 }
 
+const seedTestimonials: Testimonial[] = [
+  {
+    text: "PeerLearn helped me crack my first internship interview.",
+    name: "Aisha Khan",
+    role: "AIML Student",
+    rating: 5,
+    avatar: "https://i.pravatar.cc/150?img=32",
+    verified: true,
+    skills: ["Machine Learning", "Python", "DSA"],
+    outcome: "Secured Internship at Google",
+  },
+  {
+    text: "I started mentoring juniors and improved my communication skills.",
+    name: "Rahul Sharma",
+    role: "Senior Mentor",
+    rating: 5,
+    avatar: "https://i.pravatar.cc/150?img=64",
+    verified: true,
+    skills: ["Mentoring", "System Design", "Leadership"],
+    outcome: "Became a Top-Rated Mentor",
+  },
+  {
+    text: "Found amazing teammates for hackathons and projects.",
+    name: "John Patel",
+    role: "Web Developer",
+    rating: 4,
+    avatar: "https://i.pravatar.cc/150?img=45",
+    verified: true,
+    skills: ["React", "Next.js", "Tailwind"],
+    outcome: "Won 2 Hackathons",
+  },
+  {
+    text: "Built a polished project portfolio with mentor guidance.",
+    name: "Maya Singh",
+    role: "Frontend Dev",
+    rating: 5,
+    avatar: "https://i.pravatar.cc/150?img=12",
+    verified: true,
+    skills: ["UI/UX", "JavaScript", "CSS"],
+    outcome: "Landed First Remote Job",
+  },
+  {
+    text: "The mock interviews were exactly what I needed to build confidence.",
+    name: "David Kim",
+    role: "Software Engineer",
+    rating: 5,
+    avatar: "https://i.pravatar.cc/150?img=11",
+    verified: true,
+    skills: ["Interview Prep", "Algorithms", "Java"],
+    outcome: "Passed FAANG Interview",
+  },
+  {
+    text: "Found a study buddy and we kept each other accountable every day.",
+    name: "Sarah Jenkins",
+    role: "Data Science Learner",
+    rating: 4,
+    avatar: "https://i.pravatar.cc/150?img=5",
+    verified: true,
+    skills: ["Data Analysis", "SQL", "Tableau"],
+    outcome: "Completed Certification",
+  },
+  {
+    text: "Gained hands-on experience by reviewing peers' code submissions.",
+    name: "Omar Farooq",
+    role: "Backend Dev",
+    rating: 5,
+    avatar: "https://i.pravatar.cc/150?img=53",
+    verified: true,
+    skills: ["Node.js", "PostgreSQL", "Code Review"],
+    outcome: "Promoted to Mid-Level",
+  },
+  {
+    text: "The community is incredible. Never felt stuck on a bug for long.",
+    name: "Elena Rodriguez",
+    role: "Full Stack Student",
+    rating: 5,
+    avatar: "https://i.pravatar.cc/150?img=44",
+    verified: true,
+    skills: ["React", "Express", "MongoDB"],
+    outcome: "Launched MVP",
+  }
+];
+
 export function Testimonials() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const testimonialAutoScrollRef = useRef<number | null>(null);
@@ -62,71 +145,6 @@ export function Testimonials() {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [liveTestimonials, setLiveTestimonials] = useState<Testimonial[]>([]);
-
-  // Seeded fallback content — always shown so the carousel never looks empty
-  // while real submissions are still trickling in.
-  const seedTestimonials: Testimonial[] = [
-    {
-      text: "PeerLearn helped me crack my first internship interview.",
-      name: "Aisha Khan",
-      role: "AIML Student",
-      rating: 5,
-      avatar: "https://i.pravatar.cc/150?img=32",
-      verified: true,
-      skills: ["Machine Learning", "Python", "DSA"],
-      outcome: "Secured Internship at Google",
-    },
-    {
-      text: "I started mentoring juniors and improved my communication skills.",
-      name: "Rahul Sharma",
-      role: "Senior Mentor",
-      rating: 5,
-      avatar: "https://i.pravatar.cc/150?img=64",
-      verified: true,
-      skills: ["Mentoring", "System Design", "Leadership"],
-      outcome: "Became a Top-Rated Mentor",
-    },
-    {
-      text: "Found amazing teammates for hackathons and projects.",
-      name: "John Patel",
-      role: "Web Developer",
-      rating: 4,
-      avatar: "https://i.pravatar.cc/150?img=45",
-      verified: true,
-      skills: ["React", "Next.js", "Tailwind"],
-      outcome: "Won 2 Hackathons",
-    },
-    {
-      text: "Built a polished project portfolio with mentor guidance.",
-      name: "Maya Singh",
-      role: "Frontend Developer",
-      rating: 5,
-      avatar: "https://i.pravatar.cc/150?img=47",
-      verified: true,
-      skills: ["TypeScript", "Framer Motion", "UI/UX"],
-      outcome: "3 Projects Added to Portfolio",
-    },
-    {
-      text: "Mentors gave real-world advice that helped my internship prep.",
-      name: "Priya Malhotra",
-      role: "ML Intern",
-      rating: 5,
-      avatar: "https://i.pravatar.cc/150?img=33",
-      verified: true,
-      skills: ["TensorFlow", "Computer Vision", "Research"],
-      outcome: "Improved DSA Rating by 450",
-    },
-    {
-      text: "Great community for interview practice and study groups.",
-      name: "Gautam Reddy",
-      role: "DSA Enthusiast",
-      rating: 4,
-      avatar: "https://i.pravatar.cc/150?img=68",
-      verified: true,
-      skills: ["LeetCode", "Competitive Programming"],
-      outcome: "First Open Source Contribution",
-    },
-  ];
 
   const fetchTestimonials = useCallback(async () => {
     const { data, error } = await supabase

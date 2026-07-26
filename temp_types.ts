@@ -449,68 +449,6 @@ export type Database = {
         }
         Relationships: []
       }
-      skill_endorsements: {
-        Row: {
-          id: string
-          skill: string
-          endorsed_user_id: string
-          endorser_id: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          skill: string
-          endorsed_user_id: string
-          endorser_id: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          skill?: string
-          endorsed_user_id?: string
-          endorser_id?: string
-          created_at?: string
-        }
-        Relationships: []
-      }
-      testimonials: {
-        Row: {
-          id: string
-          user_id: string
-          name: string | null
-          rating: number | null
-          review: string
-          status: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          name?: string | null
-          rating?: number | null
-          review: string
-          status?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          name?: string | null
-          rating?: number | null
-          review?: string
-          status?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "testimonials_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       study_rooms: {
         Row: {
           id: string
@@ -691,30 +629,9 @@ export type Database = {
       }
     }
     Views: {
-      skill_endorsement_counts: {
-        Row: {
-          endorsed_user_id: string
-          skill: string
-          endorsement_count: number
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
-      submit_peer_review: {
-        Args: {
-          p_submission_id: string
-          p_feedback: string
-        }
-        Returns: {
-          id: string
-          submission_id: string
-          reviewer_id: string
-          feedback: string
-          rating: number | null
-          created_at: string
-        }
-      }
       award_activity_xp: {
         Args: { _activity_type: string }
         Returns: undefined

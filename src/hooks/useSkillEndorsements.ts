@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export interface SkillEndorsementData {
   count: number;
@@ -23,7 +23,7 @@ export function useSkillEndorsements({
   profileUserId,
   skills,
 }: UseSkillEndorsementsOptions): UseSkillEndorsementsReturn {
-  const { toast } = useToast();
+  
   const skillsKey = JSON.stringify(skills);
   const stableSkills = useMemo(() => JSON.parse(skillsKey) as string[], [skillsKey]);
 
@@ -99,20 +99,16 @@ export function useSkillEndorsements({
   const toggleEndorsement = useCallback(
     async (skill: string) => {
       if (!currentUserId) {
-        toast({
-          title: "Sign in required",
-          description: "Please sign in to endorse skills.",
-          variant: "destructive",
-        });
+        toast.error("Sign in required", {
+  description: "Please sign in to endorse skills."
+});
         return;
       }
 
       if (currentUserId === profileUserId) {
-        toast({
-          title: "Can't endorse yourself",
-          description: "You cannot endorse skills on your own profile.",
-          variant: "destructive",
-        });
+        toast.error("Can't endorse yourself", {
+  description: "You cannot endorse skills on your own profile."
+});
         return;
       }
 
@@ -162,16 +158,14 @@ export function useSkillEndorsements({
             hasEndorsed: isRemoving,
           },
         }));
-        toast({
-          title: "Something went wrong",
-          description: "Could not update endorsement. Please try again.",
-          variant: "destructive",
-        });
+        toast.error("Something went wrong", {
+  description: "Could not update endorsement. Please try again."
+});
       } finally {
         pendingSkillsRef.current.delete(skill);
       }
     },
-    [currentUserId, profileUserId, endorsements, toast]
+    [currentUserId, profileUserId, endorsements]
   );
 
   return { endorsements, loading, toggleEndorsement, currentUserId };

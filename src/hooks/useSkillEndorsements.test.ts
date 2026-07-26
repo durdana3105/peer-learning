@@ -2,7 +2,7 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useSkillEndorsements } from "./useSkillEndorsements";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 // Mock supabase
 vi.mock("@/integrations/supabase/client", () => ({
@@ -15,17 +15,17 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-// Mock useToast
-vi.mock("@/hooks/use-toast", () => ({
-  useToast: vi.fn(),
-}));
+// Mock sonner
+vi.mock("sonner", () => {
+  const mockToast = vi.fn() as any;
+  mockToast.success = vi.fn();
+  mockToast.error = vi.fn();
+  return { toast: mockToast };
+});
 
 describe("useSkillEndorsements rapid interactions", () => {
-  const mockToast = vi.fn();
-
   beforeEach(() => {
     vi.clearAllMocks();
-    (useToast as any).mockReturnValue({ toast: mockToast });
     
     // Default auth mock
     (supabase.auth.getUser as any).mockResolvedValue({

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/useAuth';
 import { Play, Square, Coffee, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from "sonner";
 import { motion } from 'framer-motion';
 import { logError } from '@/utils/logger';
 
@@ -31,7 +31,7 @@ const formatTime = (seconds: number) => {
 };
 
 export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroProps) {
-  const { toast } = useToast();
+  
   const { user } = useAuth();
 
   const isCreator = creatorId !== null && user?.id === creatorId;
@@ -75,11 +75,9 @@ export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroP
         }
       } catch (err: any) {
         logError(err, { context: "GroupPomodoro.fetchTimerState", roomId });
-        toast({
-          title: "Failed to load timer",
-          description: err.message || "Could not sync the room's timer state.",
-          variant: "destructive",
-        });
+        toast.error("Failed to load timer", {
+  description: err.message || "Could not sync the room's timer state."
+});
       }
     };
 
@@ -105,7 +103,7 @@ export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroP
       active = false;
       supabase.removeChannel(channel);
     };
-  }, [roomId, toast]);
+  }, [roomId]);
 
   const clampDurations = useCallback(() => ({
     work: Math.min(WORK_MAX, Math.max(WORK_MIN, Math.floor(workDuration))),
@@ -137,31 +135,27 @@ export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroP
       }
     } catch (err: any) {
       logError(err, { context: "GroupPomodoro.setGroupTimer", roomId, newState });
-      toast({
-        title: 'Timer update failed',
-        description: err.message || 'Could not sync the timer. Please try again.',
-        variant: 'destructive',
-      });
+      toast.error('Timer update failed', {
+  description: err.message || 'Could not sync the timer. Please try again.'
+});
     }
-  }, [clampDurations, roomId, toast]);
+  }, [clampDurations, roomId]);
 
   const handleTimerComplete = useCallback(async () => {
     if (!isCreator) return;
 
     if (timerState === 'work') {
-      toast({
-        title: 'Group Focus Session Complete! 🎉',
-        description: 'Great job focusing! Time for a short break.',
-      });
+      toast('Group Focus Session Complete! 🎉', {
+  description: 'Great job focusing! Time for a short break.'
+});
       await setGroupTimer('break');
     } else if (timerState === 'break') {
-      toast({
-        title: 'Break Over!',
-        description: 'Back to focus?',
-      });
+      toast('Break Over!', {
+  description: 'Back to focus?'
+});
       await setGroupTimer('idle');
     }
-  }, [isCreator, timerState, setGroupTimer, toast]);
+  }, [isCreator, timerState, setGroupTimer]);
 
   // Countdown logic
   useEffect(() => {

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { useAuth } from "@/contexts/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { AUTH_SERVICE_UNAVAILABLE_MESSAGE, runSupabaseAuthRequest } from "@/lib/supabaseAuthErrors";
 
 
@@ -27,7 +27,7 @@ const Login = () => {
   const [errors, setErrors] = useState<Errors>({});
 
   const { user, loading, signIn } = useAuth();
-  const { toast } = useToast();
+  
   const navigate = useNavigate();
 
   if (!loading && user) return <Navigate to="/dashboard" replace />;
@@ -57,15 +57,11 @@ const Login = () => {
 
     if (error) {
       setAuthError(error.message);
-      toast({
-        title: "Login failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Login failed", {
+  description: error.message
+});
     } else {
-      toast({
-        title: "Welcome back 🚀",
-      });
+      toast("Welcome back 🚀");
 
       navigate("/dashboard");
     }
@@ -76,11 +72,9 @@ const Login = () => {
 
     if (supabaseMisconfigured) {
       setAuthError(AUTH_SERVICE_UNAVAILABLE_MESSAGE);
-      toast({
-        title: "Not configured",
-        description: AUTH_SERVICE_UNAVAILABLE_MESSAGE,
-        variant: "destructive",
-      });
+      toast.error("Not configured", {
+  description: AUTH_SERVICE_UNAVAILABLE_MESSAGE
+});
       return;
     }
 
@@ -98,11 +92,9 @@ const Login = () => {
     if (error) {
       setIsLoading(false);
       setAuthError(error.message);
-      toast({
-        title: "Google login failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Google login failed", {
+  description: error.message
+});
       return;
     }
 

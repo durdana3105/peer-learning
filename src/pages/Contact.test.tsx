@@ -3,7 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Contact from "./Contact";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 vi.mock("framer-motion", () => ({
   motion: {
@@ -19,19 +19,20 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-vi.mock("@/hooks/use-toast", () => ({
-  useToast: vi.fn(),
-}));
+vi.mock("sonner", () => {
+  const mockToast = vi.fn() as any;
+  mockToast.success = vi.fn();
+  mockToast.error = vi.fn();
+  return { toast: mockToast };
+});
 
 describe("Contact", () => {
-  const toast = vi.fn();
   const insert = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage?.clear();
+    localStorage?.clear?.();
 
-    (useToast as any).mockReturnValue({ toast });
     (supabase.from as any).mockReturnValue({ insert });
     insert.mockResolvedValue({ error: null });
   });
@@ -72,16 +73,11 @@ describe("Contact", () => {
 
     await waitFor(() => {
       expect(toast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: expect.stringMatching(/^Message Sent!/),
-        })
+        expect.stringMatching(/^Message Sent!/),
+        expect.any(Object)
       );
     });
 
-    expect(toast).not.toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: "Submission Failed",
-      })
-    );
+    expect(toast.error).not.toHaveBeenCalled();
   });
 });

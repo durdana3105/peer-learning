@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { toast } from "sonner";
 
 type UnknownRecord = Record<string, unknown>;

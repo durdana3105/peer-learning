@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { format, addHours } from "date-fns";
 import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAwardXP } from "@/hooks/useAwardXP";
 
 export const formSchema = z
@@ -45,7 +45,7 @@ interface UseCreateSessionProps {
 
 export function useCreateSession({ onSuccess, setOpen }: UseCreateSessionProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
+  
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<number>(60);
   const [useCustom, setUseCustom] = useState(false);
@@ -74,11 +74,9 @@ export function useCreateSession({ onSuccess, setOpen }: UseCreateSessionProps) 
 
   const onSubmit = useCallback(async (values: FormValues) => {
     if (!user) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to create a session.",
-        variant: "destructive",
-      });
+      toast.error("Error", {
+  description: "You must be logged in to create a session."
+});
       return;
     }
 
@@ -104,10 +102,9 @@ export function useCreateSession({ onSuccess, setOpen }: UseCreateSessionProps) 
 
       if (error) throw error;
 
-      toast({
-        title: "Session scheduled! 🎉",
-        description: `"${values.title}" is scheduled for ${format(scheduledAt, "PPP 'at' p")}.`,
-      });
+      toast("Session scheduled! 🎉", {
+  description: `"${values.title}" is scheduled for ${format(scheduledAt, "PPP 'at' p")}.`
+});
 
       form.reset();
       setSelectedPreset(60);
@@ -118,15 +115,13 @@ export function useCreateSession({ onSuccess, setOpen }: UseCreateSessionProps) 
     } catch (error: unknown) {
       const msg =
         error instanceof Error ? error.message : "Something went wrong.";
-      toast({
-        title: "Error",
-        description: msg,
-        variant: "destructive",
-      });
+      toast.error("Error", {
+  description: msg
+});
     } finally {
       setIsLoading(false);
     }
-  }, [user, resolveDurationMinutes, form, toast, awardXP, onSuccess, setOpen]);
+  }, [user, resolveDurationMinutes, form, awardXP, onSuccess, setOpen]);
 
   return {
     form,

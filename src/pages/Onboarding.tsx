@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -52,7 +52,7 @@ const roleOptions: {
 
 const Onboarding = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  
   const { setNeedsOnboarding } = useAuth();
   const [selectedRole, setSelectedRole] = useState<RoleChoice | null>(null);
 
@@ -79,11 +79,9 @@ const Onboarding = () => {
     const timeout = setTimeout(() => {
       isTimeout = true;
       setSelectedRole(null);
-      toast({
-        title: "Selection timed out",
-        description: "The request to the server timed out. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Selection timed out", {
+  description: "The request to the server timed out. Please try again."
+});
     }, 10_000);
 
     try {
@@ -96,11 +94,9 @@ const Onboarding = () => {
       if (!user) {
         clearTimeout(timeout);
         setSelectedRole(null);
-        toast({
-          title: "Authentication required",
-          description: "Please log in to continue.",
-          variant: "destructive",
-        });
+        toast.error("Authentication required", {
+  description: "Please log in to continue."
+});
         navigate("/login", { replace: true });
         return;
       }
@@ -115,11 +111,9 @@ const Onboarding = () => {
 
       if (error) {
         setSelectedRole(null);
-        toast({
-          title: "Could not update role",
-          description: error.message,
-          variant: "destructive",
-        });
+        toast.error("Could not update role", {
+  description: error.message
+});
         return;
       }
 
@@ -129,11 +123,9 @@ const Onboarding = () => {
       if (isTimeout) return;
       clearTimeout(timeout);
       setSelectedRole(null);
-      toast({
-        title: "Could not update role",
-        description: err instanceof Error ? err.message : "An unexpected error occurred.",
-        variant: "destructive",
-      });
+      toast.error("Could not update role", {
+  description: err instanceof Error ? err.message : "An unexpected error occurred."
+});
     }
   };
 

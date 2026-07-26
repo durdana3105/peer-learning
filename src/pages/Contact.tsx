@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Link } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 type ContactFormData = {
@@ -138,7 +138,7 @@ function parseSupabaseError(errorMessage: string): string {
 }
 
 export default function Contact() {
-  const { toast } = useToast();
+  
   const [formData, setFormData] = useState<ContactFormData>({
     first_name: "",
     last_name: "",
@@ -174,22 +174,18 @@ export default function Contact() {
     e.preventDefault();
 
     if (!validate()) {
-      toast({
-        title: "Validation Error",
-        description: "Please check the form for errors.",
-        variant: "destructive",
-      });
+      toast.error("Validation Error", {
+  description: "Please check the form for errors."
+});
       return;
     }
 
     // Client-side rate limit check (fast, no DB round-trip needed)
     const rateLimitCheck = checkRateLimit(formData.message);
     if (!rateLimitCheck.allowed) {
-      toast({
-        title: "Slow Down",
-        description: rateLimitCheck.reason,
-        variant: "destructive",
-      });
+      toast.error("Slow Down", {
+  description: rateLimitCheck.reason
+});
       return;
     }
 
@@ -218,11 +214,9 @@ export default function Contact() {
       // Record locally so future submissions are caught client-side first
       recordSubmission(formData.message);
 
-      toast({
-        title: "Message Sent! 🎉",
-        description:
-          "We've received your message and will get back to you shortly.",
-      });
+      toast("Message Sent! 🎉", {
+  description: "We've received your message and will get back to you shortly."
+});
 
       setFormData({
         first_name: "",
@@ -237,11 +231,9 @@ export default function Contact() {
         error instanceof Error
           ? error.message
           : "An unexpected error occurred. Please try again.";
-      toast({
-        title: "Submission Failed",
-        description: message,
-        variant: "destructive",
-      });
+      toast.error("Submission Failed", {
+  description: message
+});
     } finally {
       setIsSubmitting(false);
     }

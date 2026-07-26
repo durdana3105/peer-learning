@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { useState } from "react";
 import { Bot, Send, X, User } from "lucide-react";
 import { API_BASE_URL } from "@/config/api";
