@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import rehypeSanitize from 'rehype-sanitize';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import type { PluggableList } from 'unified';
 
 interface MarkdownRendererProps {
@@ -10,7 +10,19 @@ interface MarkdownRendererProps {
 }
 
 const remarkPlugins: PluggableList = [remarkGfm];
-const rehypePlugins: PluggableList = [rehypeSanitize];
+const strictSchema = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    a: ['href', 'title', 'target', 'rel'],
+  },
+  protocols: {
+    ...defaultSchema.protocols,
+    href: ['http', 'https', 'mailto'],
+  },
+};
+
+const rehypePlugins: PluggableList = [[rehypeSanitize, strictSchema]];
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   content,
