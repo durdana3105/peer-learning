@@ -2,12 +2,22 @@ import crypto from "crypto";
 import { HttpError } from "../utils/httpError.js";
 import { getSupabaseAdmin } from "../utils/supabase.js";
 
+const ALLOWED_ALGORITHMS = ["HS256"];
+
 const base64UrlDecode = (str) => {
   str = str.replace(/-/g, "+").replace(/_/g, "/");
   while (str.length % 4) {
     str += "=";
   }
   return Buffer.from(str, "base64").toString("utf-8");
+};
+
+const constantTimeCompare = (a, b) => {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  if (a.length !== b.length) return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  return crypto.timingSafeEqual(bufA, bufB);
 };
 
 const verifyLocalJwt = (token, secret) => {
@@ -18,13 +28,15 @@ const verifyLocalJwt = (token, secret) => {
     const [headerB64, payloadB64, signatureB64] = parts;
 
     const header = JSON.parse(base64UrlDecode(headerB64));
-    
-    // Prevent algorithm confusion: Only process HS256 tokens using HMAC.
-    if (header.alg !== "HS256") {
+
+    if (!header || typeof header.alg !== "string") {
       return null;
     }
-    
-    // Additional check: if the secret appears to be a PEM-encoded public key, reject HMAC
+
+    if (!ALLOWED_ALGORITHMS.includes(header.alg)) {
+      return null;
+    }
+
     if (secret.startsWith("-----BEGIN")) {
       return null;
     }
@@ -37,19 +49,27 @@ const verifyLocalJwt = (token, secret) => {
       .replace(/\//g, "_")
       .replace(/=/g, "");
 
-    const expectedSignatureBuffer = Buffer.from(expectedSignature);
-    const signatureBuffer = Buffer.from(signatureB64);
-
-    if (
-      expectedSignatureBuffer.length !== signatureBuffer.length ||
-      !crypto.timingSafeEqual(expectedSignatureBuffer, signatureBuffer)
-    ) {
+    if (!constantTimeCompare(expectedSignature, signatureB64)) {
       return null;
     }
 
     const payload = JSON.parse(base64UrlDecode(payloadB64));
 
-    if (payload.exp && Date.now() >= payload.exp * 1000) {
+    const now = Math.floor(Date.now() / 1000);
+
+    if (typeof payload.exp === "number" && now >= payload.exp) {
+      return null;
+    }
+
+    if (typeof payload.iat === "number" && now < payload.iat) {
+      return null;
+    }
+
+    if (payload.iss && payload.iss !== "supabase") {
+      return null;
+    }
+
+    if (payload.aud && !Array.isArray(payload.aud) && typeof payload.aud !== "string") {
       return null;
     }
 
@@ -71,7 +91,6 @@ if (!jwtSecret && isProduction) {
   process.exit(1);
 }
 
-// Rate limiter specifically for the slow fallback path
 const FALLBACK_WINDOW_MS = 60_000;
 const FALLBACK_MAX_REQUESTS = 10;
 const fallbackRateCounts = new Map();
@@ -120,7 +139,6 @@ export const requireAuth = async (req, res, next) => {
   }
 
   if (jwtSecret) {
-    // LOCAL HMAC verification - no network call
     const payload = verifyLocalJwt(token, jwtSecret);
     if (!payload) {
       next(new HttpError(401, "Invalid or expired session"));
@@ -132,14 +150,13 @@ export const requireAuth = async (req, res, next) => {
       email: payload.email,
       user_metadata: payload.user_metadata,
       app_metadata: payload.app_metadata,
-      role: payload.role
+      role: payload.role,
     };
     return next();
   }
 
-  // DEVELOPMENT ONLY FALLBACK
   console.warn("[security] Using slow network fallback for JWT verification. Do not use in production.");
-  
+
   const clientIp = req.socket?.remoteAddress || req.ip || "unknown";
   if (isFallbackRateLimited(clientIp)) {
     next(new HttpError(429, "Too many verification requests. Please try again later."));
@@ -154,7 +171,7 @@ export const requireAuth = async (req, res, next) => {
     }
 
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-    
+
     if (error || !user) {
       next(new HttpError(401, "Invalid or expired session"));
       return;
