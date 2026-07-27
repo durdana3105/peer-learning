@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAwardXP } from "@/hooks/useAwardXP";
 import { useToast } from "@/hooks/use-toast";
 import { API_BASE_URL } from "@/config/api";
+import { validateMessageContent } from "@/utils/sanitize";
 // UI tab labels don't match the DB's session status values, so each tab
 // must be translated to the status (or statuses) it represents before filtering.
 const TAB_TO_STATUS: Record<string, string[]> = {
@@ -305,6 +306,14 @@ export function useSessions(user: any) {
   const sendMessage = useCallback(async (msgText: string) => {
     if (!msgText.trim() || !selectedSession) return;
 
+    // SECURITY (#1852): Validate and sanitize message content to prevent Stored XSS
+    const validation = validateMessageContent(msgText);
+    if (!validation.valid) {
+      toast({ title: "Invalid message", description: validation.error, variant: "destructive" });
+      return;
+    }
+    const sanitizedText = validation.content;
+
     const activity = {
       id: Date.now(),
       text: `${user?.user_metadata?.full_name || "Someone"} sent a message`,
@@ -326,7 +335,7 @@ export function useSessions(user: any) {
           session_id: selectedSession.id,
           user_id: user?.id,
           username: user?.user_metadata?.full_name || "Anonymous",
-          message: msgText,
+          message: sanitizedText,
         });
 
       if (error) throw error;

@@ -1,4 +1,5 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
+import { sanitizeMessageContent } from "@/utils/sanitize";
 
 interface MessageBubbleProps {
   text: string;
@@ -12,6 +13,8 @@ const MessageBubble = ({
   time,
 }: MessageBubbleProps) => {
   const isUser = sender === "user";
+  // SECURITY (#1852): Sanitize message content to prevent XSS on render
+  const safeText = useMemo(() => sanitizeMessageContent(text), [text]);
 
   return (
     <div className={`flex mb-3 ${isUser ? "justify-end" : "justify-start"}`}>
@@ -22,7 +25,7 @@ const MessageBubble = ({
             : "bg-white text-black rounded-bl-none"
         }`}
       >
-        <p>{text}</p>
+        <p>{safeText}</p>
         <span className="block text-xs mt-1 opacity-70 text-right">{time}</span>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAwardXP } from "@/hooks/useAwardXP";
 import { toast } from "@/hooks/use-toast";
 import { logError } from "@/utils/logger";
+import { validateMessageContent } from "@/utils/sanitize";
 
 export type ProfileSummary = {
   id: string;
@@ -567,14 +568,17 @@ export function useMessages(
   const sendMessage = useCallback(async (content: string) => {
     if (!content || !selectedUser || !currentUserId) return false;
 
-    if (content.length > 1000) {
+    // SECURITY (#1852): Validate and sanitize message content to prevent Stored XSS
+    const validation = validateMessageContent(content);
+    if (!validation.valid) {
       toast({
-        title: "Message too long",
-        description: "Message exceeds the 1000 character limit.",
+        title: "Invalid message",
+        description: validation.error,
         variant: "destructive",
       });
       return false;
     }
+    const sanitizedContent = validation.content;
 
     try {
       const { data, error: insertError } = await supabase
@@ -582,8 +586,8 @@ export function useMessages(
         .insert({
           sender_id: currentUserId,
           receiver_id: selectedUser.id,
-          content,
-          text: content,
+          content: sanitizedContent,
+          text: sanitizedContent,
         })
         .select("id,sender_id,receiver_id,content,text,message,created_at,read_at")
         .single();
