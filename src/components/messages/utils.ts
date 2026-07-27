@@ -1,4 +1,5 @@
 import { ProfileSummary, MessageRow } from "@/hooks/useMessages";
+import { sanitizeMessageContent } from "@/utils/sanitize";
 
 export const getDisplayName = (profile?: Pick<ProfileSummary, "name" | "email"> | null) =>
   profile?.name?.trim() || profile?.email?.split("@")[0] || "Learner";
@@ -6,8 +7,11 @@ export const getDisplayName = (profile?: Pick<ProfileSummary, "name" | "email"> 
 export const getInitial = (profile?: Pick<ProfileSummary, "name" | "email"> | null) =>
   getDisplayName(profile).charAt(0).toUpperCase();
 
-export const getMessageBody = (message: MessageRow) =>
-  message.content || message.text || message.message || "";
+/** SECURITY (#1852): Sanitize message body to prevent Stored XSS on render */
+export const getMessageBody = (message: MessageRow) => {
+  const raw = message.content || message.text || message.message || "";
+  return sanitizeMessageContent(raw);
+};
 
 export const getRoleLabel = (profile: ProfileSummary) => {
   if (profile.is_mentor && profile.is_learner) return "Mentor + Learner";

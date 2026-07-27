@@ -70,6 +70,17 @@ app.use(cookieParser());
 app.use((req, res, next) => {
   req.requestId = req.headers["x-request-id"] || randomUUID();
   res.setHeader("x-request-id", req.requestId);
+  // SECURITY: Content-Security-Policy header to mitigate XSS attacks.
+  // Blocks inline scripts, restricts sources, and prevents clickjacking.
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'"
+  );
+  // Additional security headers
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   next();
 });
 
