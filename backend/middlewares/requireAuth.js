@@ -2,12 +2,22 @@ import crypto from "crypto";
 import { HttpError } from "../utils/httpError.js";
 import { getSupabaseAdmin } from "../utils/supabase.js";
 
+const ALLOWED_ALGORITHMS = ["HS256"];
+
 const base64UrlDecode = (str) => {
   str = str.replace(/-/g, "+").replace(/_/g, "/");
   while (str.length % 4) {
     str += "=";
   }
   return Buffer.from(str, "base64").toString("utf-8");
+};
+
+const constantTimeCompare = (a, b) => {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  if (a.length !== b.length) return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  return crypto.timingSafeEqual(bufA, bufB);
 };
 
 const verifyLocalJwt = (token, secret) => {
@@ -18,13 +28,15 @@ const verifyLocalJwt = (token, secret) => {
     const [headerB64, payloadB64, signatureB64] = parts;
 
     const header = JSON.parse(base64UrlDecode(headerB64));
-    
-    // Prevent algorithm confusion: Only process HS256 tokens using HMAC.
-    if (header.alg !== "HS256") {
+
+    if (!header || typeof header.alg !== "string") {
       return null;
     }
-    
-    // Additional check: if the secret appears to be a PEM-encoded public key, reject HMAC
+
+    if (!ALLOWED_ALGORITHMS.includes(header.alg)) {
+      return null;
+    }
+
     if (secret.startsWith("-----BEGIN")) {
       return null;
     }
@@ -37,19 +49,27 @@ const verifyLocalJwt = (token, secret) => {
       .replace(/\//g, "_")
       .replace(/=/g, "");
 
-    const expectedSignatureBuffer = Buffer.from(expectedSignature);
-    const signatureBuffer = Buffer.from(signatureB64);
-
-    if (
-      expectedSignatureBuffer.length !== signatureBuffer.length ||
-      !crypto.timingSafeEqual(expectedSignatureBuffer, signatureBuffer)
-    ) {
+    if (!constantTimeCompare(expectedSignature, signatureB64)) {
       return null;
     }
 
     const payload = JSON.parse(base64UrlDecode(payloadB64));
 
-    if (payload.exp && Date.now() >= payload.exp * 1000) {
+    const now = Math.floor(Date.now() / 1000);
+
+    if (typeof payload.exp === "number" && now >= payload.exp) {
+      return null;
+    }
+
+    if (typeof payload.iat === "number" && now < payload.iat) {
+      return null;
+    }
+
+    if (payload.iss && payload.iss !== "supabase") {
+      return null;
+    }
+
+    if (payload.aud && !Array.isArray(payload.aud) && typeof payload.aud !== "string") {
       return null;
     }
 
@@ -71,7 +91,6 @@ if (!jwtSecret && isProduction) {
   process.exit(1);
 }
 
-// Rate limiter specifically for the slow fallback path
 const FALLBACK_WINDOW_MS = 60_000;
 const FALLBACK_MAX_REQUESTS = 10;
 const fallbackRateCounts = new Map();
@@ -120,7 +139,6 @@ export const requireAuth = async (req, res, next) => {
   }
 
   if (jwtSecret) {
-    // LOCAL HMAC verification - no network call
     const payload = verifyLocalJwt(token, jwtSecret);
     if (!payload) {
       next(new HttpError(401, "Invalid or expired session"));
@@ -132,14 +150,13 @@ export const requireAuth = async (req, res, next) => {
       email: payload.email,
       user_metadata: payload.user_metadata,
       app_metadata: payload.app_metadata,
-      role: payload.role
+      role: payload.role,
     };
     return next();
   }
 
-  // DEVELOPMENT ONLY FALLBACK
   console.warn("[security] Using slow network fallback for JWT verification. Do not use in production.");
-  
+
   const clientIp = req.socket?.remoteAddress || req.ip || "unknown";
   if (isFallbackRateLimited(clientIp)) {
     next(new HttpError(429, "Too many verification requests. Please try again later."));
@@ -154,7 +171,7 @@ export const requireAuth = async (req, res, next) => {
     }
 
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-    
+
     if (error || !user) {
       next(new HttpError(401, "Invalid or expired session"));
       return;
@@ -237,3 +254,62 @@ export const requireProfileRole = (...allowedRoles) => async (req, res, next) =>
  * Any request missing the is_admin=true flag in the database will be rejected with 403.
  */
 export const requireAdminRole = requireProfileRole("admin");
+
+/**
+ * Middleware that enforces resource ownership.
+ *
+ * Extracts the resource owner's ID from one of three sources (in order):
+ *   1. req.params.<paramName>  – URL parameter (e.g. /api/users/:userId)
+ *   2. req.body.<bodyField>   – request body field
+ *   3. req.query.<queryField>  – query string parameter
+ *
+ * Then compares it against the authenticated user's ID (req.user.id).
+ * Admins and the resource owner are allowed through.
+ *
+ * @param {Object} options
+ * @param {string}  options.paramName   - Name of the URL param containing the owner ID
+ * @param {string}  [options.bodyField] - Name of the body field (fallback)
+ * @param {string}  [options.queryField] - Name of the query field (fallback)
+ * @returns {Function} Express middleware
+ *
+ * @example
+ *   router.get('/:userId/profile', requireAuth, requireOwnershipOrAdmin({ paramName: 'userId' }), handler);
+ */
+export const requireOwnershipOrAdmin = ({ paramName, bodyField, queryField } = {}) => async (req, res, next) => {
+  if (!req.user?.id) {
+    return next(new HttpError(401, "Authentication required"));
+  }
+
+  // Check if user has admin role (admins bypass ownership check)
+  const isAdmin = req.user?.role === "admin"
+    || req.user?.app_metadata?.role === "admin"
+    || req.roles?.includes("admin");
+
+  if (isAdmin) {
+    return next();
+  }
+
+  // Resolve the target user ID from params > body > query
+  const targetUserId = (paramName && req.params?.[paramName])
+    || (bodyField && req.body?.[bodyField])
+    || (queryField && req.query?.[queryField]);
+
+  if (!targetUserId) {
+    return next(new HttpError(400, "Missing resource identifier"));
+  }
+
+  // Strict UUID format check to prevent injection
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(targetUserId)) {
+    return next(new HttpError(400, "Invalid resource identifier format"));
+  }
+
+  if (req.user.id !== targetUserId) {
+    console.warn(
+      `[security] IDOR blocked: user ${req.user.id} attempted to access resource owned by ${targetUserId}`
+    );
+    return next(new HttpError(403, "Not authorized to access this resource"));
+  }
+
+  next();
+};
