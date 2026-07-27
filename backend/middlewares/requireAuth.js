@@ -254,3 +254,62 @@ export const requireProfileRole = (...allowedRoles) => async (req, res, next) =>
  * Any request missing the is_admin=true flag in the database will be rejected with 403.
  */
 export const requireAdminRole = requireProfileRole("admin");
+
+/**
+ * Middleware that enforces resource ownership.
+ *
+ * Extracts the resource owner's ID from one of three sources (in order):
+ *   1. req.params.<paramName>  – URL parameter (e.g. /api/users/:userId)
+ *   2. req.body.<bodyField>   – request body field
+ *   3. req.query.<queryField>  – query string parameter
+ *
+ * Then compares it against the authenticated user's ID (req.user.id).
+ * Admins and the resource owner are allowed through.
+ *
+ * @param {Object} options
+ * @param {string}  options.paramName   - Name of the URL param containing the owner ID
+ * @param {string}  [options.bodyField] - Name of the body field (fallback)
+ * @param {string}  [options.queryField] - Name of the query field (fallback)
+ * @returns {Function} Express middleware
+ *
+ * @example
+ *   router.get('/:userId/profile', requireAuth, requireOwnershipOrAdmin({ paramName: 'userId' }), handler);
+ */
+export const requireOwnershipOrAdmin = ({ paramName, bodyField, queryField } = {}) => async (req, res, next) => {
+  if (!req.user?.id) {
+    return next(new HttpError(401, "Authentication required"));
+  }
+
+  // Check if user has admin role (admins bypass ownership check)
+  const isAdmin = req.user?.role === "admin"
+    || req.user?.app_metadata?.role === "admin"
+    || req.roles?.includes("admin");
+
+  if (isAdmin) {
+    return next();
+  }
+
+  // Resolve the target user ID from params > body > query
+  const targetUserId = (paramName && req.params?.[paramName])
+    || (bodyField && req.body?.[bodyField])
+    || (queryField && req.query?.[queryField]);
+
+  if (!targetUserId) {
+    return next(new HttpError(400, "Missing resource identifier"));
+  }
+
+  // Strict UUID format check to prevent injection
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(targetUserId)) {
+    return next(new HttpError(400, "Invalid resource identifier format"));
+  }
+
+  if (req.user.id !== targetUserId) {
+    console.warn(
+      `[security] IDOR blocked: user ${req.user.id} attempted to access resource owned by ${targetUserId}`
+    );
+    return next(new HttpError(403, "Not authorized to access this resource"));
+  }
+
+  next();
+};

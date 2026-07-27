@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { User, FileText, Code, Save, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { API_BASE_URL } from "@/config/api";
 
 interface ProfileState {
   name: string;
@@ -21,31 +22,46 @@ const EditProfile = () => {
 
   useEffect(() => {
     const getProfile = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData?.session?.user;
+      const token = sessionData?.session?.access_token;
 
-      if (!user) return;
+      if (!user || !token) return;
 
       setUserId(user.id);
 
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
+      // SECURITY (IDOR #1853): Fetch profile via server-side endpoint with
+      // authorization checks instead of direct Supabase client call.
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/users/${user.id}/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        });
 
-      setProfile(
-        data
-          ? {
-              name: data.name || "",
-              bio: data.bio || "",
-              skills: Array.isArray(data.skills)
-                ? data.skills.join(", ")
-                : data.skills || "",
-            }
-          : { name: "", bio: "", skills: "" }
-      );
+        if (!res.ok) {
+          throw new Error(`Failed to fetch profile: ${res.status}`);
+        }
+
+        const result = await res.json();
+        const data = result.profile;
+
+        setProfile(
+          data
+            ? {
+                name: data.name || "",
+                bio: data.bio || "",
+                skills: Array.isArray(data.skills)
+                  ? data.skills.join(", ")
+                  : data.skills || "",
+              }
+            : { name: "", bio: "", skills: "" }
+        );
+      } catch (err) {
+        console.error("Failed to fetch profile via secure endpoint:", err);
+        toast.error("Failed to load profile. Please try again.");
+      }
     };
 
     getProfile();
@@ -65,9 +81,24 @@ const EditProfile = () => {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      if (!token || !userId) {
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
+
+      // SECURITY (IDOR #1853): Update profile via server-side endpoint with
+      // ownership validation instead of direct Supabase client call.
+      const res = await fetch(`${API_BASE_URL}/api/users/${userId}/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
           name: profile.name,
           bio: profile.bio,
           skills:
@@ -77,10 +108,14 @@ const EditProfile = () => {
                   .map((s) => s.trim())
                   .filter(Boolean)
               : profile.skills,
-        })
-        .eq("id", userId as string);
+        }),
+      });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Update failed" }));
+        throw new Error(errorData.error || `Update failed: ${res.status}`);
+      }
+
       toast.success("Profile updated successfully!");
       navigate("/profile");
     } catch (err: unknown) {

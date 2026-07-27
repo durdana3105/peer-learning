@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
+import { API_BASE_URL } from "@/config/api";
 
 import { Camera, Save, Sparkles, User, Flame, Zap, Trophy, Lock, Settings } from "lucide-react";
 import StreakStats from "@/components/StreakStats";
@@ -41,76 +42,91 @@ const Profile = () => {
     achievements: [],
   });
 
-  // FETCH PROFILE
+  // FETCH PROFILE — uses server-side endpoint with authorization checks
+  // to prevent IDOR attacks (issue #1853)
   useEffect(() => {
     const fetchProfile = async () => {
       const { data } = await supabase.auth.getSession();
-
+      const token = data?.session?.access_token;
       const user = data?.session?.user;
 
-      if (!user) return;
+      if (!user || !token) return;
 
-      const { data: rawProfileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (profileError) {
-        console.error("Failed to fetch profile:", profileError);
-        toast.error("Failed to load profile data. Please refresh the page to try again.");
-        return;
-      }
-
-      const profileData = rawProfileData as any;
-
-      if (profileData) {
-        setProfile({
-          name: profileData.name || "",
-          bio: profileData.bio || "",
-          skills: profileData.skills?.join(", ") || "",
-          avatar_url: profileData.avatar_url || avatars[0],
-          streak: profileData.streak || 0,
-          xp: profileData.points || 0,
-          level: calculateLevel(profileData.points || 0),
-          badge: getBadgeByXP(profileData.points || 0),
-          achievements: getAchievements(profileData.points || 0),
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/users/${user.id}/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
         });
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch profile: ${res.status}`);
+        }
+
+        const result = await res.json();
+        const profileData = result.profile;
+
+        if (profileData) {
+          setProfile({
+            name: profileData.name || "",
+            bio: profileData.bio || "",
+            skills: Array.isArray(profileData.skills) ? profileData.skills.join(", ") : profileData.skills || "",
+            avatar_url: profileData.avatar_url || avatars[0],
+            streak: profileData.streak || 0,
+            xp: profileData.points || 0,
+            level: calculateLevel(profileData.points || 0),
+            badge: getBadgeByXP(profileData.points || 0),
+            achievements: getAchievements(profileData.points || 0),
+          });
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch profile:", err);
+        toast.error("Failed to load profile data. Please refresh the page to try again.");
       }
     };
 
     fetchProfile();
   }, []);
 
-  // SAVE PROFILE
+  // SAVE PROFILE — uses server-side endpoint with ownership validation
+  // to prevent IDOR attacks (issue #1853)
   const handleSave = async () => {
     setLoading(true);
     try {
       const { data } = await supabase.auth.getSession();
       const user = data?.session?.user;
-      if (!user) {
+      const token = data?.session?.access_token;
+      if (!user || !token) {
         toast.error("Your session has expired. Please log in again.");
         return;
       }
-if (profile.bio.length > MAX_BIO_CHARS) {
+      if (profile.bio.length > MAX_BIO_CHARS) {
         toast.error(`Bio must be ${MAX_BIO_CHARS} characters or fewer.`);
         return;
       }
-      const { error } = await supabase
-        .from("profiles")
-        .update({
+
+      const res = await fetch(`${API_BASE_URL}/api/users/${user.id}/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
           name: profile.name,
           bio: profile.bio,
           skills: Array.isArray(profile.skills) ? profile.skills : profile.skills.split(",").map((s: string) => s.trim()).filter(Boolean),
           avatar_url: profile.avatar_url,
-        })
-        .eq("id", user.id);
+        }),
+      });
 
-      if (error) {
-        toast.error("Failed to update profile: " + error.message);
-      } else {
-        toast.success("Profile updated successfully!");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Update failed" }));
+        throw new Error(errorData.error || `Update failed: ${res.status}`);
       }
+
+      toast.success("Profile updated successfully!");
     } catch (err: any) {
       toast.error("An unexpected error occurred: " + err.message);
     } finally {

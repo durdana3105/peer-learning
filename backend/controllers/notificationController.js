@@ -3,6 +3,10 @@ import webpush from "web-push";
 import { sanitizeNotificationActionUrl } from "../utils/notificationActionUrl.js";
 import { collectExpiredSubscriptionIds } from "../utils/pushDeliveryCleanup.js";
 
+// Strict UUID v4 validation to prevent injection attacks
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const isValidUUID = (str) => typeof str === "string" && UUID_REGEX.test(str);
+
 const getSupabaseClient = () => {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -43,17 +47,31 @@ export const sendPushNotification = async (req, res, next) => {
         error: "Invalid request payload",
       });
     }
+
+    // Strict UUID validation on user_id to prevent injection and malformed input
+    if (!isValidUUID(user_id)) {
+      return res.status(400).json({
+        error: "Invalid user_id format",
+      });
+    }
+
     if (title.length > 100 || body.length > 500) {
       return res.status(400).json({
         error: "Notification content too long",
       });
     }
 
-    // Security Fix: Prevent IDOR. Enforce that standard users can only send push notifications to themselves.
-    // If a webhook secret is used, req.user will be undefined (which bypasses this check if we allow webhooks to send to anyone).
-    // If user auth is used, req.user is set.
-    const isAdmin = req.user?.role === "admin" || req.user?.app_metadata?.role === "admin" || req.roles?.includes("admin");
-    if (req.user?.id && req.user.id !== user_id && !isAdmin) {
+    // Security Fix (IDOR #1853): Enforce that standard users can ONLY send
+    // push notifications to themselves. Admins and webhook-authenticated
+    // callers (req.user is undefined) may target any user_id.
+    const isAdmin = req.user?.role === "admin"
+      || req.user?.app_metadata?.role === "admin"
+      || req.roles?.includes("admin");
+
+    if (req.user?.id && !isAdmin && req.user.id !== user_id) {
+      console.warn(
+        `[security] IDOR blocked: user ${req.user.id} attempted to send push notification to ${user_id}`
+      );
       return res.status(403).json({ error: "Not authorized to send push notifications to this user" });
     }
 
