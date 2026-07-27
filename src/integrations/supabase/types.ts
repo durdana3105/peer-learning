@@ -15,6 +15,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      testimonials: {
+  Row: {
+    id: string
+    user_id: string
+    name: string | null
+    rating: number | null
+    review: string
+    status: string
+    created_at: string
+  }
+  Insert: {
+    id?: string
+    user_id: string
+    name?: string | null
+    rating?: number | null
+    review: string
+    status?: string
+    created_at?: string
+  }
+  Update: {
+    id?: string
+    user_id?: string
+    name?: string | null
+    rating?: number | null
+    review?: string
+    status?: string
+    created_at?: string
+  }
+  Relationships: []
+},
       mentorship_paths: {
         Row: {
           id: string
@@ -104,7 +134,7 @@ export type Database = {
       peer_submissions: {
         Row: {
           id: string
-          user_id: string
+          user_id: string | null
           title: string
           description: string | null
           content_url: string | null
@@ -115,7 +145,7 @@ export type Database = {
         }
         Insert: {
           id?: string
-          user_id: string
+          user_id: string | null
           title: string
           description?: string | null
           content_url?: string | null
@@ -126,7 +156,7 @@ export type Database = {
         }
         Update: {
           id?: string
-          user_id?: string
+          user_id?: string | null
           title?: string
           description?: string | null
           content_url?: string | null
@@ -310,6 +340,7 @@ export type Database = {
           availability: string | null
           preferred_language: string | null
           timezone: string | null
+          notification_preferences: Json | null
         }
         Insert: {
           avatar_url?: string | null
@@ -338,6 +369,7 @@ export type Database = {
           availability?: string | null
           preferred_language?: string | null
           timezone?: string | null
+          notification_preferences?: Json | null
         }
         Update: {
           avatar_url?: string | null
@@ -366,6 +398,7 @@ export type Database = {
           availability?: string | null
           preferred_language?: string | null
           timezone?: string | null
+          notification_preferences?: Json | null
         }
         Relationships: []
       }
@@ -845,5 +878,5 @@ export const Constants = {
   },
 } as const
 
-export type Database = any;
+
 
