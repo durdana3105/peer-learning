@@ -116,6 +116,22 @@ create table if not exists public.sessions (
   updated_at timestamptz not null default now()
 );
 
+alter table public.sessions
+  add column if not exists start_time timestamptz;
+
+alter table public.sessions
+  add column if not exists duration text default '1 Hour';
+
+alter table public.sessions
+  add column if not exists is_live boolean not null default false;
+
+alter table public.sessions
+  add column if not exists updated_at timestamptz not null default now();
+
+create index if not exists sessions_start_time_idx
+on public.sessions (start_time)
+where start_time is not null;
+
 create index if not exists sessions_status_created_idx
 on public.sessions (status, created_at desc);
 
