@@ -85,6 +85,10 @@ const PRIVATE_PROFILE_FIELDS = PUBLIC_PROFILE_FIELDS + ", email, last_active, la
 // SECURITY (IDOR #1853): Server-side profile endpoint with authorization.
 // Replaces direct Supabase client calls that could be manipulated.
 // Returns public fields for other users, private fields for own profile.
+// NOTE: This endpoint intentionally does NOT use requireOwnershipOrAdmin
+// because any authenticated user should be able to view public profile data
+// (name, bio, skills, etc.). The field-level filtering below ensures that
+// private fields (email, last_active, etc.) are only returned to the owner.
 router.get("/:userId/profile", requireAuth, async (req, res) => {
   try {
     const { userId } = req.params;
