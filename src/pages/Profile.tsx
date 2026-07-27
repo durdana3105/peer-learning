@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
+import { API_BASE_URL } from "@/config/api";
 
 import { Camera, Save, Sparkles, User, Flame, Zap, Trophy, Lock, Settings } from "lucide-react";
 import StreakStats from "@/components/StreakStats";
@@ -96,21 +97,33 @@ if (profile.bio.length > MAX_BIO_CHARS) {
         toast.error(`Bio must be ${MAX_BIO_CHARS} characters or fewer.`);
         return;
       }
-      const { error } = await supabase
-        .from("profiles")
-        .update({
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/users/${user.id}/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
           name: profile.name,
           bio: profile.bio,
           skills: Array.isArray(profile.skills) ? profile.skills : profile.skills.split(",").map((s: string) => s.trim()).filter(Boolean),
           avatar_url: profile.avatar_url,
-        })
-        .eq("id", user.id);
+        }),
+      });
 
-      if (error) {
-        toast.error("Failed to update profile: " + error.message);
-      } else {
-        toast.success("Profile updated successfully!");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to update profile");
       }
+
+      toast.success("Profile updated successfully!");
     } catch (err: any) {
       toast.error("An unexpected error occurred: " + err.message);
     } finally {
