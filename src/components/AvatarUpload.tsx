@@ -25,21 +25,21 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     if (!ALLOWED_AVATAR_TYPES.has(file.type)) {
       onUploadError(
-        "Please select a valid image file (JPG, PNG, GIF, or WebP)."
+        "Please select a valid image file (JPG, PNG, GIF, or WebP).",
       );
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
       onUploadError(
-        "Image is too large. Please upload an image smaller than 5MB."
+        "Image is too large. Please upload an image smaller than 5MB.",
       );
       return;
     }
@@ -54,7 +54,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
 
       if (!user) {
         throw new Error(
-          "You must be signed in before uploading a profile picture."
+          "You must be signed in before uploading a profile picture.",
         );
       }
 
@@ -77,18 +77,18 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
       if (!res.ok) {
         if (res.status === 401) {
           throw new Error(
-            "Your session has expired. Please sign in again and retry the upload."
+            "Your session has expired. Please sign in again and retry the upload.",
           );
         }
 
         if (res.status === 413) {
           throw new Error(
-            "Image is too large. Please upload an image smaller than 5MB."
+            "Image is too large. Please upload an image smaller than 5MB.",
           );
         }
 
         throw new Error(
-          `Unable to upload your profile picture. Please try again. (${res.status})`
+          `Unable to upload your profile picture. Please try again. (${res.status})`,
         );
       }
 
@@ -98,13 +98,13 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
         onUploadSuccess(uploadResponse.data.url);
       } else {
         throw new Error(
-          "The server returned an unexpected response. Please try again."
+          "The server returned an unexpected response. Please try again.",
         );
       }
     } catch (err: any) {
       onUploadError(
         err.message ||
-          "Unable to upload your profile picture. Please try again later."
+          "Unable to upload your profile picture. Please try again later.",
       );
     } finally {
       setIsUploading(false);

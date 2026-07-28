@@ -1,6 +1,13 @@
 import React, { useEffect, Suspense, useState, useRef } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, Router, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Router,
+  useLocation,
+} from "react-router-dom";
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -25,9 +32,6 @@ import BackToTop from "./components/BackToTop";
 import { useAuth } from "@/contexts/useAuth";
 import SplashScreen from "./components/SplashScreen";
 import ErrorBoundary from "./components/ErrorBoundary";
-
-
-
 
 // Lazy-loaded page & route-specific components (code-split per route)
 const Landing = React.lazy(() => import("./pages/Landing"));
@@ -54,7 +58,9 @@ const ForgotPassword = React.lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = React.lazy(() => import("./pages/ResetPassword"));
 const AnonymousDoubts = React.lazy(() => import("./pages/AnonymousDoubts"));
 const AIPage = React.lazy(() => import("./pages/aipage"));
-const ContributorDashboard = React.lazy(() => import("./pages/ContributorDashboard"));
+const ContributorDashboard = React.lazy(
+  () => import("./pages/ContributorDashboard"),
+);
 const BecomeMentor = React.lazy(() => import("./pages/BecomeMentor"));
 const Portfolio = React.lazy(() => import("./pages/Portfolio"));
 const AuthCallback = React.lazy(() => import("./pages/AuthCallback"));
@@ -65,12 +71,14 @@ const Room = React.lazy(() => import("./components/Room/Room"));
 const Contact = React.lazy(() => import("./pages/Contact"));
 const PrivacyPolicy = React.lazy(() => import("./pages/privacy"));
 const CookiesPolicy = React.lazy(() => import("./pages/cookies-policy"));
-const PeerReviewDashboard = React.lazy(() => import("./pages/PeerReviewDashboard"));
+const PeerReviewDashboard = React.lazy(
+  () => import("./pages/PeerReviewDashboard"),
+);
 const SubmitForReview = React.lazy(() => import("./pages/SubmitForReview"));
 const ReviewSubmission = React.lazy(() => import("./pages/ReviewSubmission"));
 const MockInterview = React.lazy(() => import("./pages/MockInterview"));
 const TermsAndConditions = React.lazy(
-  () => import("./pages/TermsAndConditions")
+  () => import("./pages/TermsAndConditions"),
 );
 const AllReviews = React.lazy(() => import("./pages/AllReviews"));
 
@@ -106,292 +114,333 @@ function AppContent() {
       <MouseSparkles />
       <CookieConsentBanner />
       <Suspense fallback={<SplashScreen />}></Suspense>
-        <Routes>
-          <Route
-            path="/"
-            element={user ? <Navigate to="/dashboard" replace /> : <WithNav><Index /></WithNav>}
-          />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            user ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <WithNav>
+                <Index />
+              </WithNav>
+            )
+          }
+        />
 
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route
-            path="/ai"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <AIPage />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/become-mentor" element={<BecomeMentor />} />
-          <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
-          <Route path="/contact" element={<WithNav><Contact /></WithNav>} />
-          <Route path="/reviews" element={<WithNav><AllReviews /></WithNav>} />
-          <Route path="/privacy-policy" element={<WithNav><PrivacyPolicy /></WithNav>} />
-          <Route path="/cookies-policy" element={<WithNav><CookiesPolicy /></WithNav>} />
-           <Route path="/terms-and-conditions" element={<WithNav><TermsAndConditions /></WithNav>} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route
+          path="/ai"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <AIPage />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/become-mentor" element={<BecomeMentor />} />
+        <Route path="/portfolio/:slug" element={<PublicPortfolio />} />
+        <Route
+          path="/contact"
+          element={
+            <WithNav>
+              <Contact />
+            </WithNav>
+          }
+        />
+        <Route
+          path="/reviews"
+          element={
+            <WithNav>
+              <AllReviews />
+            </WithNav>
+          }
+        />
+        <Route
+          path="/privacy-policy"
+          element={
+            <WithNav>
+              <PrivacyPolicy />
+            </WithNav>
+          }
+        />
+        <Route
+          path="/cookies-policy"
+          element={
+            <WithNav>
+              <CookiesPolicy />
+            </WithNav>
+          }
+        />
+        <Route
+          path="/terms-and-conditions"
+          element={
+            <WithNav>
+              <TermsAndConditions />
+            </WithNav>
+          }
+        />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <Dashboard />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <Dashboard />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/mentor-dashboard"
-            element={
-              <ProtectedMentorRoute>
-                <WithNav>
-                  <MentorDashboard />
-                </WithNav>
-              </ProtectedMentorRoute>
-            }
-          />
+        <Route
+          path="/mentor-dashboard"
+          element={
+            <ProtectedMentorRoute>
+              <WithNav>
+                <MentorDashboard />
+              </WithNav>
+            </ProtectedMentorRoute>
+          }
+        />
 
-          <Route
-            path="/learner-dashboard"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <LearnerDashboard />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/learner-dashboard"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <LearnerDashboard />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/rooms"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <StudyRooms />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/rooms"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <StudyRooms />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/rooms/:id"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <Room />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/rooms/:id"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <Room />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/discover"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <Discover />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/discover"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <Discover />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/sessions"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <Sessions />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/sessions"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <Sessions />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/messages"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <Messages user={user} />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/messages"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <Messages user={user} />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/chat"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <Chat />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <Chat />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/notifications"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <Notifications />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <Notifications />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/leaderboard"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <Leaderboard />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/leaderboard"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <Leaderboard />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/resources"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <ResourceHub />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/resources"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <ResourceHub />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/portfolio"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <Portfolio />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/portfolio"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <Portfolio />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <WithNav>
-                  <Admin />
-                </WithNav>
-              </AdminRoute>
-            }
-          />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <WithNav>
+                <Admin />
+              </WithNav>
+            </AdminRoute>
+          }
+        />
 
-          <Route
-            path="/peer-review"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <PeerReviewDashboard />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/peer-review/new"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <SubmitForReview />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/peer-review/:id"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <ReviewSubmission />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/peer-review"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <PeerReviewDashboard />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/peer-review/new"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <SubmitForReview />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/peer-review/:id"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <ReviewSubmission />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/mock-interview"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <MockInterview />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/mock-interview"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <MockInterview />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/edit-profile"
-            element={
-              <ProtectedRoute>
-                <EditProfile />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/edit-profile"
+          element={
+            <ProtectedRoute>
+              <EditProfile />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/anonymous-doubts"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <AnonymousDoubts />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/anonymous-doubts"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <AnonymousDoubts />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/contributor-dashboard"
-            element={
-              <ProtectedRoute>
-                <WithNav>
-                  <ContributorDashboard />
-                </WithNav>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/contributor-dashboard"
+          element={
+            <ProtectedRoute>
+              <WithNav>
+                <ContributorDashboard />
+              </WithNav>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
-
       {user && (
         <>
           <Chatbot />
           <FloatingAI />
         </>
       )}
-
-      <BackToTop />  {/* ? ADDED THIS LINE */}
+      <BackToTop /> {/* ? ADDED THIS LINE */}
     </>
   );
 }

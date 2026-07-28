@@ -4,20 +4,32 @@ import { CheckCircle2, Loader2, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const DEFAULT_SKILLS = [
-  "JavaScript", "TypeScript", "React", "Node.js", "Python",
-  "Java", "C++", "SQL", "MongoDB", "Express.js",
-  "Next.js", "GraphQL", "Docker", "Git", "REST APIs",
-  "Machine Learning", "Data Structures", "Algorithms",
-  "System Design", "CSS", "HTML", "Vue.js", "Angular",
+  "JavaScript",
+  "TypeScript",
+  "React",
+  "Node.js",
+  "Python",
+  "Java",
+  "C++",
+  "SQL",
+  "MongoDB",
+  "Express.js",
+  "Next.js",
+  "GraphQL",
+  "Docker",
+  "Git",
+  "REST APIs",
+  "Machine Learning",
+  "Data Structures",
+  "Algorithms",
+  "System Design",
+  "CSS",
+  "HTML",
+  "Vue.js",
+  "Angular",
 ];
 
-const steps = [
-  "Basic Info",
-  "Skills",
-  "Experience",
-  "Mentorship",
-  "Success",
-];
+const steps = ["Basic Info", "Skills", "Experience", "Mentorship", "Success"];
 
 const mentorshipOptions = [
   "Live Sessions",
@@ -42,7 +54,7 @@ export default function MentorForm() {
     mentorship_types: [] as string[],
   });
 
-// Clear validation error reactively when user fixes input (#1614)
+  // Clear validation error reactively when user fixes input (#1614)
   useEffect(() => {
     if (!error) return;
     const isValid =
@@ -68,7 +80,9 @@ export default function MentorForm() {
 
     setFormData((prev) => ({
       ...prev,
-      skills: prev.skills.includes(skill) ? prev.skills : [...prev.skills, skill],
+      skills: prev.skills.includes(skill)
+        ? prev.skills
+        : [...prev.skills, skill],
     }));
 
     setCustomSkill("");
@@ -116,10 +130,7 @@ export default function MentorForm() {
   };
 
   const validateExperience = () => {
-    return (
-      formData.github.trim() !== "" &&
-      formData.linkedin.trim() !== ""
-    );
+    return formData.github.trim() !== "" && formData.linkedin.trim() !== "";
   };
 
   const validateMentorship = () => {
@@ -137,10 +148,14 @@ export default function MentorForm() {
     const timeout = setTimeout(() => {
       isTimeout = true;
       setLoading(false);
-      setError("Submission timed out. Please check your network and try again.");
+      setError(
+        "Submission timed out. Please check your network and try again.",
+      );
     }, 10_000);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (isTimeout) return;
       if (!user) {
         if (!isTimeout) clearTimeout(timeout);
@@ -148,21 +163,19 @@ export default function MentorForm() {
         setLoading(false);
         return;
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
-        .from("mentors")
-        .insert([
-          {
-            user_id: user.id,
-            full_name: formData.full_name,
-            college: formData.college,
-            bio: formData.bio,
-            github: formData.github,
-            linkedin: formData.linkedin,
-            skills: formData.skills,
-            mentorship_types: formData.mentorship_types,
-          },
-        ]);
+
+      const { error } = await (supabase as any).from("mentors").insert([
+        {
+          user_id: user.id,
+          full_name: formData.full_name,
+          college: formData.college,
+          bio: formData.bio,
+          github: formData.github,
+          linkedin: formData.linkedin,
+          skills: formData.skills,
+          mentorship_types: formData.mentorship_types,
+        },
+      ]);
       if (isTimeout) return;
       clearTimeout(timeout);
       if (error) {
@@ -186,7 +199,6 @@ export default function MentorForm() {
 
   return (
     <div className="mx-auto max-w-4xl rounded-[32px] border border-white/10 bg-white/5 p-10 backdrop-blur-2xl">
-
       {/* Progress */}
       {step !== 4 && (
         <div className="mb-10">
@@ -222,19 +234,25 @@ export default function MentorForm() {
             <input
               placeholder="Full Name"
               value={formData.full_name}
-              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, full_name: e.target.value })
+              }
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
             <input
               placeholder="College Name"
               value={formData.college}
-              onChange={(e) => setFormData({ ...formData, college: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, college: e.target.value })
+              }
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
             <textarea
               placeholder="Short Bio"
               value={formData.bio}
-              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, bio: e.target.value })
+              }
               className="h-32 w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
           </div>
@@ -311,13 +329,17 @@ export default function MentorForm() {
             <input
               placeholder="https://github.com/Username"
               value={formData.github}
-              onChange={(e) => setFormData({ ...formData, github: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, github: e.target.value })
+              }
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
             <input
               placeholder="https://www.linkedin.com/in/Username"
               value={formData.linkedin}
-              onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, linkedin: e.target.value })
+              }
               className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 outline-none transition focus:border-cyan-400"
             />
           </div>

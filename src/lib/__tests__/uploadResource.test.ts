@@ -85,7 +85,7 @@ describe("uploadResource", () => {
     expect(mocks.insert).toHaveBeenCalledWith(
       expect.objectContaining({
         file_url: "user-123/backend-path.pdf",
-      })
+      }),
     );
     expect(mocks.storageFrom).toHaveBeenCalledWith("resources");
     expect(mocks.remove).toHaveBeenCalledWith(["user-123/backend-path.pdf"]);
@@ -110,7 +110,7 @@ describe("uploadResource", () => {
       expect.objectContaining({
         context: "uploadResource.cleanup",
         filePath: "user-123/backend-path.pdf",
-      })
+      }),
     );
   });
 
@@ -143,7 +143,7 @@ describe("uploadResource", () => {
 
     expect(result.success).toBe(true);
     expect(mocks.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ uploaded_by: "user-123" })
+      expect.objectContaining({ uploaded_by: "user-123" }),
     );
   });
 });

@@ -49,7 +49,7 @@ describe("Contact", () => {
     render(
       <MemoryRouter>
         <Contact />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     fireEvent.change(screen.getByLabelText(/first name/i), {
@@ -74,14 +74,14 @@ describe("Contact", () => {
       expect(toast).toHaveBeenCalledWith(
         expect.objectContaining({
           title: expect.stringMatching(/^Message Sent!/),
-        })
+        }),
       );
     });
 
     expect(toast).not.toHaveBeenCalledWith(
       expect.objectContaining({
         title: "Submission Failed",
-      })
+      }),
     );
   });
 });

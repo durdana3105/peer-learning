@@ -10,7 +10,10 @@ type NotificationChannels = {
   email: boolean;
   inApp: boolean;
 };
-type NotificationPreferences = Record<NotificationCategory, NotificationChannels>;
+type NotificationPreferences = Record<
+  NotificationCategory,
+  NotificationChannels
+>;
 
 const DEFAULT_PREFERENCES: NotificationPreferences = {
   messages: { email: true, inApp: true },
@@ -20,14 +23,17 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
 
 const Settings = () => {
   const navigate = useNavigate();
-  const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
+  const [preferences, setPreferences] =
+    useState<NotificationPreferences>(DEFAULT_PREFERENCES);
   const [isSaving, setIsSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const loadPreferences = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (user) {
           setUserId(user.id);
           const { data, error } = await supabase
@@ -37,14 +43,16 @@ const Settings = () => {
             .maybeSingle();
 
           if (data && data.notification_preferences) {
-            setPreferences(data.notification_preferences as NotificationPreferences);
+            setPreferences(
+              data.notification_preferences as NotificationPreferences,
+            );
             return;
           }
         }
       } catch (e) {
         console.error("Failed to load preferences from DB", e);
       }
-      
+
       // Fallback to local storage if DB fetch fails or is null
       const saved = localStorage.getItem("notification_preferences");
       if (saved) {
@@ -55,11 +63,14 @@ const Settings = () => {
         }
       }
     };
-    
+
     loadPreferences();
   }, []);
 
-  const handleToggle = (category: NotificationCategory, channel: keyof NotificationChannels) => {
+  const handleToggle = (
+    category: NotificationCategory,
+    channel: keyof NotificationChannels,
+  ) => {
     setPreferences((prev) => ({
       ...prev,
       [category]: {
@@ -77,11 +88,14 @@ const Settings = () => {
           .from("profiles")
           .update({ notification_preferences: preferences })
           .eq("id", userId);
-          
+
         if (error) throw error;
       }
 
-      localStorage.setItem("notification_preferences", JSON.stringify(preferences));
+      localStorage.setItem(
+        "notification_preferences",
+        JSON.stringify(preferences),
+      );
       toast.success("Notification preferences saved successfully!");
     } catch (error) {
       console.error(error);
@@ -117,8 +131,12 @@ const Settings = () => {
                 <Bell size={28} />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold">Notification Preferences</h1>
-                <p className="text-gray-400 mt-1">Control how and when you want to be notified.</p>
+                <h1 className="text-3xl md:text-4xl font-bold">
+                  Notification Preferences
+                </h1>
+                <p className="text-gray-400 mt-1">
+                  Control how and when you want to be notified.
+                </p>
               </div>
             </div>
           </div>
@@ -128,10 +146,12 @@ const Settings = () => {
             <div className="grid grid-cols-12 gap-4 p-5 border-b border-white/5 bg-white/5 font-semibold text-sm text-gray-300 uppercase tracking-wider">
               <div className="col-span-6 md:col-span-8">Event</div>
               <div className="col-span-3 md:col-span-2 text-center flex items-center justify-center gap-2">
-                <Mail size={16} /> <span className="hidden md:inline">Email</span>
+                <Mail size={16} />{" "}
+                <span className="hidden md:inline">Email</span>
               </div>
               <div className="col-span-3 md:col-span-2 text-center flex items-center justify-center gap-2">
-                <Smartphone size={16} /> <span className="hidden md:inline">In-App</span>
+                <Smartphone size={16} />{" "}
+                <span className="hidden md:inline">In-App</span>
               </div>
             </div>
 
@@ -139,8 +159,12 @@ const Settings = () => {
               {/* New Messages */}
               <div className="grid grid-cols-12 gap-4 p-5 items-center hover:bg-white/5 transition">
                 <div className="col-span-6 md:col-span-8">
-                  <h3 className="font-semibold text-lg text-gray-200">New Messages</h3>
-                  <p className="text-sm text-gray-400 mt-1">Direct messages from peers and mentors.</p>
+                  <h3 className="font-semibold text-lg text-gray-200">
+                    New Messages
+                  </h3>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Direct messages from peers and mentors.
+                  </p>
                 </div>
                 <div className="col-span-3 md:col-span-2 flex justify-center">
                   <ToggleSwitch
@@ -159,8 +183,12 @@ const Settings = () => {
               {/* Upcoming Sessions */}
               <div className="grid grid-cols-12 gap-4 p-5 items-center hover:bg-white/5 transition">
                 <div className="col-span-6 md:col-span-8">
-                  <h3 className="font-semibold text-lg text-gray-200">Upcoming Sessions</h3>
-                  <p className="text-sm text-gray-400 mt-1">Reminders before your study sessions start.</p>
+                  <h3 className="font-semibold text-lg text-gray-200">
+                    Upcoming Sessions
+                  </h3>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Reminders before your study sessions start.
+                  </p>
                 </div>
                 <div className="col-span-3 md:col-span-2 flex justify-center">
                   <ToggleSwitch
@@ -179,8 +207,12 @@ const Settings = () => {
               {/* Friend Requests */}
               <div className="grid grid-cols-12 gap-4 p-5 items-center hover:bg-white/5 transition">
                 <div className="col-span-6 md:col-span-8">
-                  <h3 className="font-semibold text-lg text-gray-200">Friend Requests</h3>
-                  <p className="text-sm text-gray-400 mt-1">When someone sends you a connection request.</p>
+                  <h3 className="font-semibold text-lg text-gray-200">
+                    Friend Requests
+                  </h3>
+                  <p className="text-sm text-gray-400 mt-1">
+                    When someone sends you a connection request.
+                  </p>
                 </div>
                 <div className="col-span-3 md:col-span-2 flex justify-center">
                   <ToggleSwitch
@@ -215,7 +247,13 @@ const Settings = () => {
 };
 
 // Simple custom toggle switch component
-const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => {
+const ToggleSwitch = ({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: () => void;
+}) => {
   return (
     <button
       type="button"

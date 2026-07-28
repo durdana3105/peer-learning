@@ -59,7 +59,9 @@ describe("requireAuth local JWT verification", () => {
     });
     app.use(errorHandler);
 
-    const response = await request(app).get("/me").set("Authorization", `Bearer ${token}`);
+    const response = await request(app)
+      .get("/me")
+      .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(200);
     expect(response.body.user).toMatchObject({

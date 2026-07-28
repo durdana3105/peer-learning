@@ -32,10 +32,10 @@ supabase/migrations/20260518_notification_automation.sql
 
 Important tables:
 
-| Table | Purpose |
-|---|---|
-| `notifications` | One row per in-app or push notification. `push_sent_at` is NULL until dispatched. |
-| `push_subscriptions` | Browser push endpoint registrations per user. |
+| Table                  | Purpose                                                                            |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| `notifications`        | One row per in-app or push notification. `push_sent_at` is NULL until dispatched.  |
+| `push_subscriptions`   | Browser push endpoint registrations per user.                                      |
 | `session_participants` | Used by the reminder cron to resolve all users who should receive a session alert. |
 
 ---
@@ -95,10 +95,10 @@ npx web-push generate-vapid-keys
 
 Two separate secrets govern push-delivery authority. They must not be confused.
 
-| Secret | Env var | Protects endpoint | Who sends it | Trust level |
-|---|---|---|---|---|
-| Cron secret | `CRON_SECRET` | `POST /api/cron/dispatch-notifications`<br>`POST /api/cron/reminders`<br>`POST /api/cron/mentorship-reminders` | Scheduler (Vercel Cron, pg_cron, etc.) | Bulk system operations — processes up to 100 notifications per call |
-| Webhook secret | `WEBHOOK_SECRET` | `POST /api/notifications/send-push` | Trusted internal service or admin tooling | Single-user targeted push |
+| Secret         | Env var          | Protects endpoint                                                                                              | Who sends it                              | Trust level                                                         |
+| -------------- | ---------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------- |
+| Cron secret    | `CRON_SECRET`    | `POST /api/cron/dispatch-notifications`<br>`POST /api/cron/reminders`<br>`POST /api/cron/mentorship-reminders` | Scheduler (Vercel Cron, pg_cron, etc.)    | Bulk system operations — processes up to 100 notifications per call |
+| Webhook secret | `WEBHOOK_SECRET` | `POST /api/notifications/send-push`                                                                            | Trusted internal service or admin tooling | Single-user targeted push                                           |
 
 Both are sent as `Authorization: Bearer <secret>` and verified with `crypto.timingSafeEqual` (SHA-256 hashed) to prevent timing attacks.
 
@@ -155,11 +155,11 @@ The `requireCronSecret` middleware enforces a **60-second per-route cooldown**. 
 
 ### Normal operating metrics
 
-| Metric | Expected |
-|---|---|
+| Metric                                           | Expected                                            |
+| ------------------------------------------------ | --------------------------------------------------- |
 | `POST /api/cron/dispatch-notifications` response | `{ "sent": N, "processed": M }` where `N ≤ M ≤ 100` |
-| `POST /api/cron/reminders` response | `{ "inserted": N }` |
-| Queue depth (see below) | < 200 rows during normal load |
+| `POST /api/cron/reminders` response              | `{ "inserted": N }`                                 |
+| Queue depth (see below)                          | < 200 rows during normal load                       |
 
 ### Monitoring queue depth
 
@@ -187,9 +187,11 @@ A rising queue depth that does not drain between cron runs indicates one of:
    A healthy response is `{ "sent": N, "processed": M }`. If `processed > 0` but `sent = 0`, all push attempts are failing — verify VAPID config and check the web-push error logs.
 
 3. **Check queue depth.**
+
    ```sql
    SELECT COUNT(*) FROM notifications WHERE push_sent_at IS NULL;
    ```
+
    If depth is large and not decreasing, the 100-row batch cap is the bottleneck (see Manual Drain below).
 
 4. **Check for expired subscriptions causing silent failures.**
@@ -244,12 +246,12 @@ Consider implementing subscription cleanup in `dispatchPushNotifications` (see c
 
 ### Alert thresholds (recommended)
 
-| Condition | Recommended action |
-|---|---|
-| Queue depth > 500 for > 10 min | Page on-call — cron likely not running |
+| Condition                                        | Recommended action                                 |
+| ------------------------------------------------ | -------------------------------------------------- |
+| Queue depth > 500 for > 10 min                   | Page on-call — cron likely not running             |
 | `sent / processed < 0.5` for 3+ consecutive runs | Investigate VAPID config or subscription staleness |
-| Cron audit log silent for > 3 min | Check scheduler; cron may have been disabled |
-| HTTP 401/403 on cron endpoint | `CRON_SECRET` rotation issue — check env vars |
+| Cron audit log silent for > 3 min                | Check scheduler; cron may have been disabled       |
+| HTTP 401/403 on cron endpoint                    | `CRON_SECRET` rotation issue — check env vars      |
 
 ---
 

@@ -23,22 +23,22 @@ const SplashScreen = () => {
 
         {/* Logo */}
         <motion.img
-  src="/logo.png"
-  alt="PeerLearning Logo"
-  initial={{
-    scale: 0,
-    opacity: 0,
-  }}
-  animate={{
-    scale: 1,
-    opacity: 1,
-  }}
-  transition={{
-    duration: 1,
-    ease: "easeOut",
-  }}
-  className="h-44 w-44 object-contain"
-/>
+          src="/logo.png"
+          alt="PeerLearning Logo"
+          initial={{
+            scale: 0,
+            opacity: 0,
+          }}
+          animate={{
+            scale: 1,
+            opacity: 1,
+          }}
+          transition={{
+            duration: 1,
+            ease: "easeOut",
+          }}
+          className="h-44 w-44 object-contain"
+        />
 
         {/* Text */}
         <motion.h1

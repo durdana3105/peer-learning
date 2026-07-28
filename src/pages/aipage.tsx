@@ -31,16 +31,15 @@ const AIPage = () => {
       content: prompt,
     };
 
-    setMessages((prev) => [
-      ...prev,
-      userMessage,
-    ]);
+    setMessages((prev) => [...prev, userMessage]);
 
     setInput("");
     setLoading(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         setMessages((prev) => [
           ...prev,
@@ -52,7 +51,7 @@ const AIPage = () => {
         setLoading(false);
         return;
       }
-      
+
       const formattedMessages = [...messages, userMessage].map((msg) => ({
         role: msg.role,
         content: msg.content,
@@ -64,7 +63,7 @@ const AIPage = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session?.access_token}`,
         },
-        credentials:"include",
+        credentials: "include",
         body: JSON.stringify({
           messages: formattedMessages,
         }),
@@ -73,7 +72,7 @@ const AIPage = () => {
       if (!res.ok) {
         throw new Error("Failed to get response");
       }
-      
+
       const data = await res.json();
       const aiReply = data?.answer;
 
@@ -102,11 +101,10 @@ const AIPage = () => {
     <div className="min-h-screen bg-[#020617] text-white p-6">
       {/* HEADER */}
       <div className="mb-8">
-        <h1 className="text-5xl font-bold mb-3">
-          AI Matchmaker 🤖
-        </h1>
+        <h1 className="text-5xl font-bold mb-3">AI Matchmaker 🤖</h1>
         <p className="text-gray-400 text-lg">
-          Find matched study peers, look up ranked mentors, and balance your technical learning goals.
+          Find matched study peers, look up ranked mentors, and balance your
+          technical learning goals.
         </p>
       </div>
 
@@ -121,7 +119,9 @@ const AIPage = () => {
             <h2 className="font-bold text-xl">
               AI Mentor Recommendation Engine
             </h2>
-            <p className="text-sm text-green-400">● Live Profile Matching Active</p>
+            <p className="text-sm text-green-400">
+              ● Live Profile Matching Active
+            </p>
           </div>
         </div>
 

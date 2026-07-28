@@ -1,10 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import {
-  Sparkles,
-  ArrowRight,
-  CheckCircle,
-} from "lucide-react";
+import { Sparkles, ArrowRight, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { toast } from "sonner";
@@ -25,9 +21,10 @@ interface Testimonial {
 // Deterministic placeholder avatar for user-submitted testimonials
 // (we don't collect a role/avatar/skills/outcome on the submission form).
 function avatarForUser(userId: string) {
-  const seed = Math.abs(
-    Array.from(userId).reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
-  ) % 70;
+  const seed =
+    Math.abs(
+      Array.from(userId).reduce((acc, ch) => acc + ch.charCodeAt(0), 0),
+    ) % 70;
   return `https://i.pravatar.cc/150?img=${seed}`;
 }
 
@@ -152,7 +149,7 @@ export function Testimonials() {
   // Real submissions first, seeded content fills out the rest.
   const testimonials = useMemo(
     () => [...liveTestimonials, ...seedTestimonials],
-    [liveTestimonials]
+    [liveTestimonials],
   );
 
   // Duplicate the source list so the carousel can loop seamlessly. The scroll loop relies on this being an exact doubling (it wraps at scrollWidth / 2).
@@ -458,7 +455,7 @@ export function Testimonials() {
                   animate={{ opacity: 1, x: 0 }}
                   className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-300"
                 >
-                   Thank you! Your feedback has been submitted.
+                  Thank you! Your feedback has been submitted.
                 </motion.div>
               )}
             </div>

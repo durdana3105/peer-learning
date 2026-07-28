@@ -5,7 +5,9 @@ import { createRateLimiter } from "../middlewares/rateLimiter.js";
 
 const buildApp = (maxRequests) => {
   const app = express();
-  app.get("/ping", createRateLimiter({ maxRequests }), (_req, res) => res.json({ ok: true }));
+  app.get("/ping", createRateLimiter({ maxRequests }), (_req, res) =>
+    res.json({ ok: true }),
+  );
   return app;
 };
 
@@ -14,11 +16,15 @@ describe("rate limiter key derivation", () => {
     const app = buildApp(3);
 
     for (let i = 0; i < 3; i++) {
-      const res = await request(app).get("/ping").set("User-Agent", `agent-${i}`);
+      const res = await request(app)
+        .get("/ping")
+        .set("User-Agent", `agent-${i}`);
       expect(res.status).toBe(200);
     }
 
-    const blocked = await request(app).get("/ping").set("User-Agent", "agent-rotated");
+    const blocked = await request(app)
+      .get("/ping")
+      .set("User-Agent", "agent-rotated");
     expect(blocked.status).toBe(429);
   });
 });

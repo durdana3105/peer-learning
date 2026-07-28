@@ -1,12 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
-import {
-  GraduationCap,
-  Trophy,
-  Users,
-  Briefcase,
-} from "lucide-react";
+import { GraduationCap, Trophy, Users, Briefcase } from "lucide-react";
 
 import MentorForm from "@/components/mentor/MentorForm";
 
@@ -37,21 +32,20 @@ export default function BecomeMentor() {
   return (
     <div className="min-h-screen overflow-hidden bg-gradient-to-br from-[#020617] via-[#071127] to-[#020B1F] px-6 py-20 text-white">
       {/* Back Button */}
-      
-<div className="mb-2">
-  <Link
-    to="/"
-    className="absolute top-6 left-6 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-3 py-1 pr-4 pb-1-5 text-md font-medium text-black transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/20"
-  >
-    ← Back
-  </Link>
-</div>
+
+      <div className="mb-2">
+        <Link
+          to="/"
+          className="absolute top-6 left-6 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 px-3 py-1 pr-4 pb-1-5 text-md font-medium text-black transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/20"
+        >
+          ← Back
+        </Link>
+      </div>
       {/* Glow */}
       <div className="absolute left-10 top-20 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl" />
       <div className="absolute right-10 top-40 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl" />
 
       <div className="relative z-10 mx-auto max-w-7xl">
-        
         {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
@@ -72,9 +66,8 @@ export default function BecomeMentor() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-300/70">
-            Become a verified mentor and help students through
-            live sessions, doubt solving, mock interviews,
-            and project guidance.
+            Become a verified mentor and help students through live sessions,
+            doubt solving, mock interviews, and project guidance.
           </p>
         </motion.div>
 
@@ -93,13 +86,9 @@ export default function BecomeMentor() {
                 <b.icon />
               </div>
 
-              <h3 className="text-2xl font-bold">
-                {b.title}
-              </h3>
+              <h3 className="text-2xl font-bold">{b.title}</h3>
 
-              <p className="mt-4 leading-7 text-slate-300/70">
-                {b.desc}
-              </p>
+              <p className="mt-4 leading-7 text-slate-300/70">{b.desc}</p>
             </motion.div>
           ))}
         </div>

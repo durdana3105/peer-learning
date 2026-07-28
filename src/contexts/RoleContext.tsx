@@ -76,7 +76,7 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
         setCurrentMode(
           storedMode === "mentor" || storedMode === "learner"
             ? storedMode
-            : "learner"
+            : "learner",
         );
       } else {
         setCurrentMode("learner");
@@ -86,21 +86,24 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
     void fetchRoleProfile();
   }, [user, loading]);
 
-  const setMode = useCallback((mode: UserMode) => {
-    setCurrentMode(mode);
+  const setMode = useCallback(
+    (mode: UserMode) => {
+      setCurrentMode(mode);
 
-    if (isDualRole && hasFunctionalConsent()) {
-      try {
-        localStorage.setItem("peerlearn_mode", mode);
-      } catch {
-        // ignore storage access failures
+      if (isDualRole && hasFunctionalConsent()) {
+        try {
+          localStorage.setItem("peerlearn_mode", mode);
+        } catch {
+          // ignore storage access failures
+        }
       }
-    }
-  }, [isDualRole]);
+    },
+    [isDualRole],
+  );
 
   const contextValue = useMemo(
     () => ({ currentMode, isMentor, isLearner, isDualRole, setMode }),
-    [currentMode, isMentor, isLearner, isDualRole, setMode]
+    [currentMode, isMentor, isLearner, isDualRole, setMode],
   );
 
   return (

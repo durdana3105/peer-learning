@@ -6,7 +6,7 @@ export const normalizePoint = (
   x: number,
   y: number,
   width: number,
-  height: number
+  height: number,
 ): Point => ({
   x: width > 0 ? x / width : 0,
   y: height > 0 ? y / height : 0,
@@ -16,7 +16,7 @@ export const normalizePoint = (
 export const denormalizePoint = (
   point: Point,
   width: number,
-  height: number
+  height: number,
 ): Point => ({
   x: point.x * width,
   y: point.y * height,

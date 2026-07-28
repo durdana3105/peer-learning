@@ -11,10 +11,16 @@ import { useRoomPresence } from "@/hooks/useRoomPresence";
 import { ChatBox } from "./ChatBox";
 import { InviteMenu } from "./InviteMenu";
 import { Video } from "lucide-react";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 import { JitsiMeetingComponent } from "./JitsiMeetingComponent";
 
-const Whiteboard = React.lazy(() => import("@/components/Whiteboard/Whiteboard"));
+const Whiteboard = React.lazy(
+  () => import("@/components/Whiteboard/Whiteboard"),
+);
 
 export default function Room() {
   const { id } = useParams();
@@ -26,7 +32,12 @@ export default function Room() {
   // We need a ref for setActivities to pass to useRoomPresence since it's initialized after
   const [activities, setActivities] = React.useState<string[]>([]);
   const { messages, handleSendMessage, fetchMessages } = useRoomChat(id, user);
-  const { participants } = useRoomPresence(id, user, fetchMessages, setActivities);
+  const { participants } = useRoomPresence(
+    id,
+    user,
+    fetchMessages,
+    setActivities,
+  );
 
   // Overwrite the chat's setActivities so it can update the feed
   React.useEffect(() => {
@@ -34,12 +45,15 @@ export default function Room() {
   }, []);
 
   // Let's create a combined message handler that updates activities
-  const onSendMessage = React.useCallback(async (newMessage: string) => {
-    const sent = await handleSendMessage(newMessage);
-    if (sent) {
-      setActivities((prev) => [`You sent a message`, ...prev]);
-    }
-  }, [handleSendMessage]);
+  const onSendMessage = React.useCallback(
+    async (newMessage: string) => {
+      const sent = await handleSendMessage(newMessage);
+      if (sent) {
+        setActivities((prev) => [`You sent a message`, ...prev]);
+      }
+    },
+    [handleSendMessage],
+  );
 
   if (!room)
     return (
@@ -101,20 +115,32 @@ export default function Room() {
                 <ResizablePanel defaultSize={50} minSize={20}>
                   <JitsiMeetingComponent
                     roomName={`PeerLearning-Room-${id}`}
-                    userName={user?.user_metadata?.full_name || user?.email || "Anonymous Student"}
+                    userName={
+                      user?.user_metadata?.full_name ||
+                      user?.email ||
+                      "Anonymous Student"
+                    }
                     userEmail={user?.email}
                     onReadyToClose={() => setIsVideoActive(false)}
                   />
                 </ResizablePanel>
                 <ResizableHandle withHandle />
                 <ResizablePanel defaultSize={50} minSize={20}>
-                  <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800" />}>
+                  <Suspense
+                    fallback={
+                      <div className="h-full w-full animate-pulse bg-slate-800" />
+                    }
+                  >
                     <Whiteboard roomId={id!} />
                   </Suspense>
                 </ResizablePanel>
               </ResizablePanelGroup>
             ) : (
-              <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800" />}>
+              <Suspense
+                fallback={
+                  <div className="h-full w-full animate-pulse bg-slate-800" />
+                }
+              >
                 <Whiteboard roomId={id!} />
               </Suspense>
             )}

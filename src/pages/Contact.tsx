@@ -30,7 +30,7 @@ type FormErrors = Partial<Record<keyof ContactFormData, string>>;
 // --- Rate limit constants (must mirror the DB-level policy values) ---
 const RATE_LIMIT_MAX = 3;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
-const COOLDOWN_MS = 60 * 1000;               // 1 minute between submissions
+const COOLDOWN_MS = 60 * 1000; // 1 minute between submissions
 const STORAGE_KEY = "contact_submissions";
 
 type SubmissionRecord = {
@@ -57,19 +57,19 @@ const saveSubmissionRecord = (record: SubmissionRecord) => {
 };
 
 const checkRateLimit = (
-  message: string
+  message: string,
 ): { allowed: boolean; reason?: string } => {
   const now = Date.now();
   const record = getSubmissionRecord();
 
   const recentTimestamps = record.timestamps.filter(
-    (t) => now - t < RATE_LIMIT_WINDOW_MS
+    (t) => now - t < RATE_LIMIT_WINDOW_MS,
   );
 
   if (recentTimestamps.length >= RATE_LIMIT_MAX) {
     const oldest = Math.min(...recentTimestamps);
     const resetInMin = Math.ceil(
-      (RATE_LIMIT_WINDOW_MS - (now - oldest)) / 60000
+      (RATE_LIMIT_WINDOW_MS - (now - oldest)) / 60000,
     );
     return {
       allowed: false,
@@ -95,7 +95,8 @@ const checkRateLimit = (
   ) {
     return {
       allowed: false,
-      reason: "You already sent this message. Please write a different message.",
+      reason:
+        "You already sent this message. Please write a different message.",
     };
   }
 
@@ -106,7 +107,7 @@ const recordSubmission = (message: string) => {
   const now = Date.now();
   const record = getSubmissionRecord();
   const recentTimestamps = record.timestamps.filter(
-    (t) => now - t < RATE_LIMIT_WINDOW_MS
+    (t) => now - t < RATE_LIMIT_WINDOW_MS,
   );
   saveSubmissionRecord({
     timestamps: [...recentTimestamps, now],
@@ -248,7 +249,7 @@ export default function Contact() {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
@@ -317,7 +318,9 @@ export default function Contact() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold">Email</h3>
-                  <p className="mt-1 text-slate-300/70">support@peerlearn.com</p>
+                  <p className="mt-1 text-slate-300/70">
+                    support@peerlearn.com
+                  </p>
                 </div>
               </div>
 

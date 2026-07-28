@@ -1,4 +1,11 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Filter, Upload } from "lucide-react";
 
 import FilterSidebar from "@/components/resources/FilterSidebar";
@@ -7,7 +14,13 @@ import UploadDialog from "@/components/resources/UploadDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ErrorBanner } from "@/components/ui/error-banner";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AuthContext } from "@/contexts/AuthContext";
 import { useResources } from "@/hooks/useResources";
@@ -32,7 +45,9 @@ const ResourceHub = () => {
   const [savedOnly, setSavedOnly] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const [gridColumnCount, setGridColumnCount] = useState(getResourceGridColumnCount);
+  const [gridColumnCount, setGridColumnCount] = useState(
+    getResourceGridColumnCount,
+  );
 
   // Debounce search to prevent network spam on every keystroke
   useEffect(() => {
@@ -45,7 +60,10 @@ const ResourceHub = () => {
   const { resources, loading, error, refetch } = useResources({
     search: debouncedSearch,
     tags: selectedTags,
-    fileType: selectedType === "all" || selectedType === "code" ? undefined : selectedType,
+    fileType:
+      selectedType === "all" || selectedType === "code"
+        ? undefined
+        : selectedType,
     savedOnly,
   });
 
@@ -54,13 +72,19 @@ const ResourceHub = () => {
       return resources;
     }
 
-    return resources.filter((resource) => ["py", "js", "ts", "md", "txt"].includes(resource.file_type));
+    return resources.filter((resource) =>
+      ["py", "js", "ts", "md", "txt"].includes(resource.file_type),
+    );
   }, [resources, selectedType]);
 
   const gridRows = useMemo(() => {
     const rows: Resource[][] = [];
 
-    for (let index = 0; index < displayedResources.length; index += gridColumnCount) {
+    for (
+      let index = 0;
+      index < displayedResources.length;
+      index += gridColumnCount
+    ) {
       rows.push(displayedResources.slice(index, index + gridColumnCount));
     }
 
@@ -137,21 +161,30 @@ const ResourceHub = () => {
       <div className="mx-auto max-w-7xl space-y-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Resource Hub</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Resource Hub
+            </h1>
             <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-              Browse shared notes, code samples, assignments, and study references uploaded by the community.
+              Browse shared notes, code samples, assignments, and study
+              references uploaded by the community.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Sheet open={isMobileFiltersOpen} onOpenChange={setIsMobileFiltersOpen}>
+            <Sheet
+              open={isMobileFiltersOpen}
+              onOpenChange={setIsMobileFiltersOpen}
+            >
               <SheetTrigger asChild>
                 <Button variant="outline" className="lg:hidden">
                   <Filter className="h-4 w-4" />
                   Filters
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-full max-w-sm overflow-y-auto">
+              <SheetContent
+                side="left"
+                className="w-full max-w-sm overflow-y-auto"
+              >
                 <SheetHeader>
                   <SheetTitle>Filter Resources</SheetTitle>
                 </SheetHeader>
@@ -159,7 +192,10 @@ const ResourceHub = () => {
               </SheetContent>
             </Sheet>
 
-            <Button onClick={() => setIsUploadOpen(true)} disabled={!currentUser}>
+            <Button
+              onClick={() => setIsUploadOpen(true)}
+              disabled={!currentUser}
+            >
               <Upload className="h-4 w-4" />
               Upload Resource
             </Button>
@@ -178,19 +214,32 @@ const ResourceHub = () => {
                 onAction={refetch}
               />
             ) : loading ? (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{renderSkeletons()}</div>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {renderSkeletons()}
+              </div>
             ) : displayedResources.length === 0 ? (
               <Card>
                 <CardContent className="flex min-h-[240px] flex-col items-center justify-center gap-2 p-6 text-center">
-                  <h2 className="text-xl font-semibold text-foreground">No resources found</h2>
+                  <h2 className="text-xl font-semibold text-foreground">
+                    No resources found
+                  </h2>
                   <p className="max-w-md text-sm text-muted-foreground">
-                    Try adjusting your search or filters, or upload the first resource for this topic.
+                    Try adjusting your search or filters, or upload the first
+                    resource for this topic.
                   </p>
                 </CardContent>
               </Card>
             ) : (
-              <div ref={rowsParentRef} className="h-[1200px] overflow-y-auto pr-2">
-                <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: "relative" }}>
+              <div
+                ref={rowsParentRef}
+                className="h-[1200px] overflow-y-auto pr-2"
+              >
+                <div
+                  style={{
+                    height: `${rowVirtualizer.getTotalSize()}px`,
+                    position: "relative",
+                  }}
+                >
                   {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                     const row = gridRows[virtualRow.index];
 
@@ -210,7 +259,11 @@ const ResourceHub = () => {
                       >
                         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                           {row.map((resource: Resource) => (
-                            <ResourceCard key={resource.id} resource={resource} onDelete={refetch} />
+                            <ResourceCard
+                              key={resource.id}
+                              resource={resource}
+                              onDelete={refetch}
+                            />
                           ))}
                         </div>
                       </div>

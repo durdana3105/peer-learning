@@ -22,7 +22,8 @@ vi.mock("../utils/supabase.js", () => ({
 }));
 
 // Import after mocks are in place
-const { getRecommendedPartners } = await import("../controllers/matchController.js");
+const { getRecommendedPartners } =
+  await import("../controllers/matchController.js");
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -104,7 +105,7 @@ describe("getRecommendedPartners", () => {
         target_teach: CURRENT_USER_PROFILE.teach_subjects,
         target_learn: CURRENT_USER_PROFILE.learn_subjects,
         target_interests: CURRENT_USER_PROFILE.interests,
-      })
+      }),
     );
   });
 
@@ -166,9 +167,9 @@ describe("getRecommendedPartners", () => {
     expect(mockRpc).toHaveBeenCalledWith(
       "match_users",
       expect.objectContaining({
-        page_limit: 6,       // limit+1 = 5+1
-        page_offset: 10,     // (3 - 1) * 5
-      })
+        page_limit: 6, // limit+1 = 5+1
+        page_offset: 10, // (3 - 1) * 5
+      }),
     );
   });
 
@@ -255,7 +256,10 @@ describe("getRecommendedPartners", () => {
   // -------------------------------------------------------------------------
   it("returns 404 when current user profile is not found", async () => {
     // Override single() to simulate missing profile
-    mockSingle.mockResolvedValueOnce({ data: null, error: { message: "Not found" } });
+    mockSingle.mockResolvedValueOnce({
+      data: null,
+      error: { message: "Not found" },
+    });
 
     const req = { user: { email: CURRENT_USER_EMAIL }, query: {} };
     const res = createRes();
@@ -267,7 +271,10 @@ describe("getRecommendedPartners", () => {
   });
 
   it("returns 500 when the match_users RPC fails", async () => {
-    mockRpc.mockResolvedValueOnce({ data: null, error: { message: "DB error" } });
+    mockRpc.mockResolvedValueOnce({
+      data: null,
+      error: { message: "DB error" },
+    });
 
     const req = { user: { email: CURRENT_USER_EMAIL }, query: {} };
     const res = createRes();

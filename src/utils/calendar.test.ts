@@ -22,14 +22,14 @@ describe("calendar exports", () => {
   const generateCalendarText = async (
     title: string,
     description: string,
-    sessionId: string | number = "session-123"
+    sessionId: string | number = "session-123",
   ) => {
     generateICS(
       title,
       description,
       sessionId,
       new Date("2026-07-05T10:00:00Z"),
-      60
+      60,
     );
 
     expect(createdBlob).toBeDefined();
@@ -39,7 +39,7 @@ describe("calendar exports", () => {
   it("escapes title newlines without creating a new ICS property", async () => {
     const text = await generateCalendarText(
       "React Review\nLOCATION:Injected Room",
-      "Session details"
+      "Session details",
     );
 
     expect(text).toContain("SUMMARY:React Review\\nLOCATION:Injected Room");
@@ -48,7 +48,7 @@ describe("calendar exports", () => {
 
   it("escapes commas, semicolons, and backslashes in descriptions", () => {
     expect(escapeICalText("Discuss hooks, state; and effects \\ notes")).toBe(
-      "Discuss hooks\\, state\\; and effects \\\\ notes"
+      "Discuss hooks\\, state\\; and effects \\\\ notes",
     );
   });
 
@@ -63,24 +63,24 @@ describe("calendar exports", () => {
     const firstExport = await generateCalendarText(
       "React Review",
       "Discuss hooks",
-      "session-123"
+      "session-123",
     );
     const repeatedExport = await generateCalendarText(
       "React Review",
       "Discuss hooks",
-      "session-123"
+      "session-123",
     );
     const differentSession = await generateCalendarText(
       "React Review",
       "Discuss hooks",
-      "session-456"
+      "session-456",
     );
 
     const uid = "UID:session-123-1783245600000@peerlearning.com";
     expect(firstExport).toContain(uid);
     expect(repeatedExport).toContain(uid);
     expect(differentSession).toContain(
-      "UID:session-456-1783245600000@peerlearning.com"
+      "UID:session-456-1783245600000@peerlearning.com",
     );
   });
 });

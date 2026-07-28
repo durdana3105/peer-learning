@@ -38,8 +38,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   }, [messages, typing, virtualizer]);
 
   return (
-    <div ref={parentRef} className="flex h-full flex-col overflow-y-auto bg-gray-100 p-4">
-      <div style={{ height: totalSize + (typing ? 40 : 0), position: "relative" }}>
+    <div
+      ref={parentRef}
+      className="flex h-full flex-col overflow-y-auto bg-gray-100 p-4"
+    >
+      <div
+        style={{ height: totalSize + (typing ? 40 : 0), position: "relative" }}
+      >
         {virtualItems.map((virtualItem) => {
           const message = messages[virtualItem.index];
 
@@ -59,7 +64,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         })}
 
         {typing ? (
-          <div className="absolute left-0 top-0 w-full" style={{ transform: `translateY(${totalSize}px)` }}>
+          <div
+            className="absolute left-0 top-0 w-full"
+            style={{ transform: `translateY(${totalSize}px)` }}
+          >
             <TypingIndicator />
           </div>
         ) : null}

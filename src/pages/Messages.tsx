@@ -32,10 +32,13 @@ export default function Messages({ user }: MessagesProps) {
     sendMessage,
   } = useMessages(currentUserId);
 
-  const handleSelectProfile = useCallback((profile: ProfileSummary) => {
-    setSelectedUser(profile);
-    setShowSidebarOnMobile(false);
-  }, [setSelectedUser]);
+  const handleSelectProfile = useCallback(
+    (profile: ProfileSummary) => {
+      setSelectedUser(profile);
+      setShowSidebarOnMobile(false);
+    },
+    [setSelectedUser],
+  );
 
   if (!currentUserId) {
     return (

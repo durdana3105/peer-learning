@@ -16,8 +16,7 @@ const ALLOWED_FILE_TYPES = new Set([
 ]);
 
 type UploadResourceResult =
-  | { success: true; data: Resource }
-  | { success: false; error: string };
+  { success: true; data: Resource } | { success: false; error: string };
 
 type UploadApiResponse = {
   success: boolean;
@@ -49,7 +48,7 @@ export const uploadResource = async (
   file: File,
   title: string,
   description: string,
-  tags: string[]
+  tags: string[],
 ): Promise<UploadResourceResult> => {
   const {
     data: { user },
@@ -68,7 +67,8 @@ export const uploadResource = async (
   if (!ALLOWED_FILE_TYPES.has(fileType)) {
     return {
       success: false,
-      error: "Invalid file type. Allowed types: pdf, docx, zip, py, js, ts, md, txt",
+      error:
+        "Invalid file type. Allowed types: pdf, docx, zip, py, js, ts, md, txt",
     };
   }
 

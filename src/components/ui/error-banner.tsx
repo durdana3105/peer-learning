@@ -10,7 +10,12 @@ type ErrorBannerProps = {
   onAction?: () => void;
 };
 
-export function ErrorBanner({ title, description, actionLabel = "Retry", onAction }: ErrorBannerProps) {
+export function ErrorBanner({
+  title,
+  description,
+  actionLabel = "Retry",
+  onAction,
+}: ErrorBannerProps) {
   return (
     <Card className="border-destructive/30 bg-destructive/5">
       <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
@@ -25,7 +30,11 @@ export function ErrorBanner({ title, description, actionLabel = "Retry", onActio
         </div>
 
         {onAction ? (
-          <Button variant="outline" className="gap-2 self-start border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={onAction}>
+          <Button
+            variant="outline"
+            className="gap-2 self-start border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={onAction}
+          >
             <RefreshCcw className="h-4 w-4" />
             {actionLabel}
           </Button>

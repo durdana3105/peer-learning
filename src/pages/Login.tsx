@@ -1,4 +1,7 @@
-import { supabase, supabaseMisconfigured } from "@/integrations/supabase/client";
+import {
+  supabase,
+  supabaseMisconfigured,
+} from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -10,8 +13,10 @@ import { Input } from "@/components/ui/input";
 
 import { useAuth } from "@/contexts/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { AUTH_SERVICE_UNAVAILABLE_MESSAGE, runSupabaseAuthRequest } from "@/lib/supabaseAuthErrors";
-
+import {
+  AUTH_SERVICE_UNAVAILABLE_MESSAGE,
+  runSupabaseAuthRequest,
+} from "@/lib/supabaseAuthErrors";
 
 type Errors = {
   email?: string;
@@ -92,7 +97,7 @@ const Login = () => {
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
-      })
+      }),
     );
 
     if (error) {
@@ -118,8 +123,13 @@ const Login = () => {
   }
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden text-white" style={{ background: 'linear-gradient(135deg, #020617 0%, #0d0d2b 40%, #020617 100%)' }}>
-
+    <div
+      className="relative flex min-h-screen overflow-hidden text-white"
+      style={{
+        background:
+          "linear-gradient(135deg, #020617 0%, #0d0d2b 40%, #020617 100%)",
+      }}
+    >
       {/* Grid */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.04)_1px,transparent_1px)] bg-[size:60px_60px]" />
 
@@ -155,13 +165,13 @@ const Login = () => {
           </h1>
 
           <p className="mt-6 text-lg text-slate-300 leading-relaxed">
-            Join live mentorship sessions, collaborate with classmates,
-            solve doubts instantly, and become part of a futuristic
-            collaborative learning community.
+            Join live mentorship sessions, collaborate with classmates, solve
+            doubts instantly, and become part of a futuristic collaborative
+            learning community.
           </p>
 
           <div className="mt-8 flex gap-4">
-            <Button 
+            <Button
               onClick={() => navigate("/signup")}
               className="rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-8 py-6 text-black font-semibold hover:scale-105 transition-all"
             >
@@ -195,45 +205,74 @@ const Login = () => {
 
       {/* RIGHT LOGIN CARD */}
       <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12 relative z-10">
-
         <motion.div
           initial={{ opacity: 0, y: 40, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.7, type: 'spring' }}
+          transition={{ duration: 0.7, type: "spring" }}
           className="w-full max-w-md relative"
           style={{
-            background: 'rgba(13, 13, 43, 0.7)',
-            backdropFilter: 'blur(28px)',
-            WebkitBackdropFilter: 'blur(28px)',
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderRadius: '28px',
-            boxShadow: '0 0 60px rgba(99,102,241,0.2), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)',
-            padding: '2.5rem',
+            background: "rgba(13, 13, 43, 0.7)",
+            backdropFilter: "blur(28px)",
+            WebkitBackdropFilter: "blur(28px)",
+            border: "1px solid rgba(99,102,241,0.2)",
+            borderRadius: "28px",
+            boxShadow:
+              "0 0 60px rgba(99,102,241,0.2), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)",
+            padding: "2.5rem",
           }}
         >
           {/* Top gradient line */}
-          <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[28px]" style={{ background: 'linear-gradient(90deg, #22d3ee, #6366f1, #a855f7)' }} />
+          <div
+            className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[28px]"
+            style={{
+              background: "linear-gradient(90deg, #22d3ee, #6366f1, #a855f7)",
+            }}
+          />
 
           <div className="mb-7 text-indigo-400">
-            <Link to="/" className="cursor-pointer hover:text-indigo-300 transition-colors">
+            <Link
+              to="/"
+              className="cursor-pointer hover:text-indigo-300 transition-colors"
+            >
               ← Back to Home
             </Link>
           </div>
           {/* LOGO */}
           <div className="mb-8 text-center">
             <Link to="/" className="inline-flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg" style={{ background: 'linear-gradient(135deg, #22d3ee, #6366f1, #a855f7)', boxShadow: '0 0 25px rgba(99,102,241,0.5)' }}>
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #22d3ee, #6366f1, #a855f7)",
+                  boxShadow: "0 0 25px rgba(99,102,241,0.5)",
+                }}
+              >
                 <BookOpen className="h-6 w-6 text-white" />
               </div>
-              <span className="text-3xl font-bold tracking-tight" style={{ fontFamily: 'Outfit, sans-serif', background: 'linear-gradient(135deg, #22d3ee, #6366f1, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <span
+                className="text-3xl font-bold tracking-tight"
+                style={{
+                  fontFamily: "Outfit, sans-serif",
+                  background:
+                    "linear-gradient(135deg, #22d3ee, #6366f1, #a855f7)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
                 PeerLearn
               </span>
             </Link>
 
-            <h2 className="mt-8 text-3xl font-bold text-white" style={{ fontFamily: 'Outfit, sans-serif' }}>
+            <h2
+              className="mt-8 text-3xl font-bold text-white"
+              style={{ fontFamily: "Outfit, sans-serif" }}
+            >
               Welcome Back 👋
             </h2>
-            <p className="mt-2 text-slate-400">Continue your futuristic learning journey</p>
+            <p className="mt-2 text-slate-400">
+              Continue your futuristic learning journey
+            </p>
           </div>
 
           {/* FORM */}
@@ -256,9 +295,7 @@ const Login = () => {
               />
 
               {errors.email && (
-                <p className="mt-2 text-sm text-red-400">
-                  {errors.email}
-                </p>
+                <p className="mt-2 text-sm text-red-400">{errors.email}</p>
               )}
             </div>
 
@@ -281,9 +318,7 @@ const Login = () => {
             </div>
 
             {errors.password && (
-              <p className="text-sm text-red-400">
-                {errors.password}
-              </p>
+              <p className="text-sm text-red-400">{errors.password}</p>
             )}
 
             <div className="flex justify-end">
@@ -296,15 +331,16 @@ const Login = () => {
             </div>
 
             {/* LOGIN BUTTON */}
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button
                 type="submit"
                 disabled={isLoading}
                 className="h-12 w-full rounded-xl font-bold text-white transition-all hover:opacity-90 hover:scale-[1.02]"
-                style={{ background: 'linear-gradient(135deg, #22d3ee, #6366f1, #a855f7)', boxShadow: '0 0 25px rgba(99,102,241,0.4)' }}
+                style={{
+                  background:
+                    "linear-gradient(135deg, #22d3ee, #6366f1, #a855f7)",
+                  boxShadow: "0 0 25px rgba(99,102,241,0.4)",
+                }}
               >
                 {isLoading ? "Logging in..." : "Log In"}
                 <ArrowRight className="ml-2 h-4 w-4" />

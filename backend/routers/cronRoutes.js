@@ -23,25 +23,25 @@ const router = express.Router();
 router.post(
   "/dispatch-notifications",
   requireCronSecret,
-  asyncHandler(dispatchPushNotifications)
+  asyncHandler(dispatchPushNotifications),
 );
 
 router.post(
   "/reminders",
   requireCronSecret,
-  asyncHandler(sendSessionReminders)
+  asyncHandler(sendSessionReminders),
 );
 
 router.post(
   "/mentorship-reminders",
   requireCronSecret,
-  asyncHandler(sendMentorshipCheckinReminders)
+  asyncHandler(sendMentorshipCheckinReminders),
 );
 
 router.post(
   "/reset-weekly-focus",
   requireCronSecret,
-  asyncHandler(resetWeeklyFocusTime)
+  asyncHandler(resetWeeklyFocusTime),
 );
 
 export default router;

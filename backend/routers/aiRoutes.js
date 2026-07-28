@@ -15,9 +15,33 @@ import { aiSchemas } from "../validation/schemas.js";
 
 const router = express.Router();
 
-router.post("/ask", requireAuth, rateLimiter, validate(aiSchemas.askAI), asyncHandler(askAI));
-router.post("/generate-summary", requireAuth, rateLimiter, validate(aiSchemas.generateSessionSummary), asyncHandler(generateSessionSummary));
-router.post("/mock-interview/chat", requireAuth, rateLimiter, validate(aiSchemas.mockInterviewChat), asyncHandler(conductMockInterview));
-router.post("/mock-interview/report", requireAuth, rateLimiter, validate(aiSchemas.mockInterviewReport), asyncHandler(generateMockInterviewReport));
+router.post(
+  "/ask",
+  requireAuth,
+  rateLimiter,
+  validate(aiSchemas.askAI),
+  asyncHandler(askAI),
+);
+router.post(
+  "/generate-summary",
+  requireAuth,
+  rateLimiter,
+  validate(aiSchemas.generateSessionSummary),
+  asyncHandler(generateSessionSummary),
+);
+router.post(
+  "/mock-interview/chat",
+  requireAuth,
+  rateLimiter,
+  validate(aiSchemas.mockInterviewChat),
+  asyncHandler(conductMockInterview),
+);
+router.post(
+  "/mock-interview/report",
+  requireAuth,
+  rateLimiter,
+  validate(aiSchemas.mockInterviewReport),
+  asyncHandler(generateMockInterviewReport),
+);
 
 export default router;

@@ -40,11 +40,13 @@ export function useChatShortcuts<T>({
       // Alt + Up/Down to navigate channels
       if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
         e.preventDefault();
-        
+
         if (items.length === 0) return;
 
         const currentIndex = selectedItem
-          ? items.findIndex((item) => getItemId(item) === getItemId(selectedItem))
+          ? items.findIndex(
+              (item) => getItemId(item) === getItemId(selectedItem),
+            )
           : -1;
 
         let nextIndex = 0;

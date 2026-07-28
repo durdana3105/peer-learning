@@ -5,7 +5,15 @@ import path from "path";
 import { fileURLToPath } from "url";
 import express from "express";
 import request from "supertest";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import cookieParser from "cookie-parser";
 import { errorHandler } from "../middlewares/errorHandler.js";
 
@@ -26,7 +34,9 @@ const { storageUploadMock, storageFromMock } = vi.hoisted(() => {
   const storageFromMock = vi.fn(() => ({
     upload: storageUploadMock,
     getPublicUrl: (filePath) => ({
-      data: { publicUrl: `https://mock.supabase.co/storage/v1/object/public/mock/${filePath}` },
+      data: {
+        publicUrl: `https://mock.supabase.co/storage/v1/object/public/mock/${filePath}`,
+      },
     }),
   }));
   return { storageUploadMock, storageFromMock };
@@ -72,7 +82,7 @@ const makeToken = (overrides = {}) =>
       role: "authenticated",
       ...overrides,
     },
-    TEST_SECRET
+    TEST_SECRET,
   );
 
 // ── Shared app fixtures ────────────────────────────────────────────────────────────
@@ -112,9 +122,10 @@ afterEach(() => {
 // Using a Buffer so the test has zero filesystem dependencies.
 const TINY_PNG = Buffer.from(
   "89504e470d0a1a0a0000000d494844520000000100000001" +
-  "08020000009001" + "2e0000000c4944415478016360f8cfc00000000200" +
-  "01e221bc330000000049454e44ae426082",
-  "hex"
+    "08020000009001" +
+    "2e0000000c4944415478016360f8cfc00000000200" +
+    "01e221bc330000000049454e44ae426082",
+  "hex",
 );
 
 describe("POST /api/users/upload-photo", () => {
@@ -122,17 +133,25 @@ describe("POST /api/users/upload-photo", () => {
   it("returns 401 when no Authorization header or cookie is provided", async () => {
     const res = await request(app)
       .post("/api/users/upload-photo")
-      .attach("profilePhoto", TINY_PNG, { filename: "test.png", contentType: "image/png" });
+      .attach("profilePhoto", TINY_PNG, {
+        filename: "test.png",
+        contentType: "image/png",
+      });
 
     expect(res.status).toBe(401);
-    expect(res.body).toMatchObject({ error: expect.stringMatching(/authentication required/i) });
+    expect(res.body).toMatchObject({
+      error: expect.stringMatching(/authentication required/i),
+    });
   });
 
   it("returns 401 when an invalid JWT is provided", async () => {
     const res = await request(app)
       .post("/api/users/upload-photo")
       .set("Authorization", "Bearer this.is.not.a.valid.jwt")
-      .attach("profilePhoto", TINY_PNG, { filename: "test.png", contentType: "image/png" });
+      .attach("profilePhoto", TINY_PNG, {
+        filename: "test.png",
+        contentType: "image/png",
+      });
 
     expect(res.status).toBe(401);
   });
@@ -141,7 +160,10 @@ describe("POST /api/users/upload-photo", () => {
     const res = await request(app)
       .post("/api/users/upload-photo")
       .set("Cookie", "access_token=bad.token.value")
-      .attach("profilePhoto", TINY_PNG, { filename: "test.png", contentType: "image/png" });
+      .attach("profilePhoto", TINY_PNG, {
+        filename: "test.png",
+        contentType: "image/png",
+      });
 
     expect(res.status).toBe(401);
   });
@@ -151,7 +173,10 @@ describe("POST /api/users/upload-photo", () => {
     const res = await request(app)
       .post("/api/users/upload-photo")
       .set("Authorization", `Bearer ${expiredToken}`)
-      .attach("profilePhoto", TINY_PNG, { filename: "test.png", contentType: "image/png" });
+      .attach("profilePhoto", TINY_PNG, {
+        filename: "test.png",
+        contentType: "image/png",
+      });
 
     expect(res.status).toBe(401);
   });
@@ -162,7 +187,10 @@ describe("POST /api/users/upload-photo", () => {
     const res = await request(app)
       .post("/api/users/upload-photo")
       .set("Authorization", `Bearer ${token}`)
-      .attach("profilePhoto", TINY_PNG, { filename: "photo.png", contentType: "image/png" });
+      .attach("profilePhoto", TINY_PNG, {
+        filename: "photo.png",
+        contentType: "image/png",
+      });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -175,7 +203,10 @@ describe("POST /api/users/upload-photo", () => {
     const res = await request(app)
       .post("/api/users/upload-photo")
       .set("Cookie", `access_token=${token}`)
-      .attach("profilePhoto", TINY_PNG, { filename: "photo.png", contentType: "image/png" });
+      .attach("profilePhoto", TINY_PNG, {
+        filename: "photo.png",
+        contentType: "image/png",
+      });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -204,8 +235,8 @@ describe("POST /api/users/upload-photo", () => {
       .post("/api/users/upload-photo")
       .set("Authorization", `Bearer ${token}`)
       .attach("profilePhoto", fakeBytes, {
-        filename: "exploit.png",       // .png extension
-        contentType: "image/png",      // spoofed MIME header
+        filename: "exploit.png", // .png extension
+        contentType: "image/png", // spoofed MIME header
       });
 
     expect(res.status).toBe(415);
@@ -243,7 +274,10 @@ describe("POST /api/upload", () => {
     const res = await request(uploadApp)
       .post("/api/upload")
       .field("folder", "avatars")
-      .attach("file", TINY_PNG, { filename: "test.png", contentType: "image/png" });
+      .attach("file", TINY_PNG, {
+        filename: "test.png",
+        contentType: "image/png",
+      });
 
     expect(res.status).toBe(401);
     expect(storageUploadMock).not.toHaveBeenCalled();
@@ -256,7 +290,10 @@ describe("POST /api/upload", () => {
       .set("Authorization", `Bearer ${token}`)
       .field("folder", "avatars")
       .field("filePath", "victim-user-id/test.png")
-      .attach("file", TINY_PNG, { filename: "avatar.png", contentType: "image/png" });
+      .attach("file", TINY_PNG, {
+        filename: "avatar.png",
+        contentType: "image/png",
+      });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -295,7 +332,10 @@ describe("POST /api/upload", () => {
     const res = await request(uploadApp)
       .post("/api/upload")
       .set("Authorization", `Bearer ${token}`)
-      .attach("file", TINY_PNG, { filename: "avatar.png", contentType: "image/png" });
+      .attach("file", TINY_PNG, {
+        filename: "avatar.png",
+        contentType: "image/png",
+      });
 
     expect(res.status).toBe(400);
     expect(storageUploadMock).not.toHaveBeenCalled();
@@ -307,7 +347,10 @@ describe("POST /api/upload", () => {
       .post("/api/upload")
       .set("Authorization", `Bearer ${token}`)
       .field("folder", "some-other-bucket")
-      .attach("file", TINY_PNG, { filename: "avatar.png", contentType: "image/png" });
+      .attach("file", TINY_PNG, {
+        filename: "avatar.png",
+        contentType: "image/png",
+      });
 
     expect(res.status).toBe(400);
     expect(storageUploadMock).not.toHaveBeenCalled();
@@ -359,7 +402,9 @@ describe("POST /api/upload", () => {
       });
 
     expect(res.status).toBe(415);
-    expect(res.body.error).toMatch(/file content does not match the provided MIME type/i);
+    expect(res.body.error).toMatch(
+      /file content does not match the provided MIME type/i,
+    );
     expect(storageUploadMock).not.toHaveBeenCalled();
   });
 
@@ -383,7 +428,10 @@ describe("POST /api/upload", () => {
   it("returns 415 when a text file upload contains raw null bytes (0x00)", async () => {
     const token = makeToken();
     // Buffer with ASCII chars and an injected NULL byte
-    const suspiciousText = Buffer.from([0x63, 0x6f, 0x6e, 0x73, 0x6f, 0x6c, 0x65, 0x2e, 0x6c, 0x6f, 0x67, 0x28, 0x30, 0x29, 0x3b, 0x00, 0x0a]);
+    const suspiciousText = Buffer.from([
+      0x63, 0x6f, 0x6e, 0x73, 0x6f, 0x6c, 0x65, 0x2e, 0x6c, 0x6f, 0x67, 0x28,
+      0x30, 0x29, 0x3b, 0x00, 0x0a,
+    ]);
     const res = await request(uploadApp)
       .post("/api/upload")
       .set("Authorization", `Bearer ${token}`)

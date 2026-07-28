@@ -13,7 +13,10 @@ interface ConversationListProps {
   onSelect: (id: number) => void;
 }
 
-const ConversationList = ({ conversations, onSelect }: ConversationListProps) => {
+const ConversationList = ({
+  conversations,
+  onSelect,
+}: ConversationListProps) => {
   const parentRef = useRef<HTMLDivElement | null>(null);
 
   const virtualizer = useVirtualizer({
@@ -45,7 +48,9 @@ const ConversationList = ({ conversations, onSelect }: ConversationListProps) =>
                 style={{ transform: `translateY(${virtualItem.start}px)` }}
               >
                 <h3 className="font-semibold">{conversation.name}</h3>
-                <p className="truncate text-sm text-gray-600">{conversation.lastMessage}</p>
+                <p className="truncate text-sm text-gray-600">
+                  {conversation.lastMessage}
+                </p>
               </div>
             );
           })}

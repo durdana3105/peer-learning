@@ -19,10 +19,17 @@ const app = express();
 
 // SECURITY: Only trust proxy headers when explicitly configured.
 if (process.env.TRUSTED_PROXIES) {
-  app.set("trust proxy", process.env.TRUSTED_PROXIES.split(",").map(s => s.trim()));
-  console.log(`[security] trust proxy enabled for subnets: ${process.env.TRUSTED_PROXIES}`);
+  app.set(
+    "trust proxy",
+    process.env.TRUSTED_PROXIES.split(",").map((s) => s.trim()),
+  );
+  console.log(
+    `[security] trust proxy enabled for subnets: ${process.env.TRUSTED_PROXIES}`,
+  );
 } else if (process.env.TRUST_PROXY === "true") {
-  console.error("[security] FATAL: TRUST_PROXY=true is insecure without TRUSTED_PROXIES. Provide comma-separated subnet ranges via TRUSTED_PROXIES.");
+  console.error(
+    "[security] FATAL: TRUST_PROXY=true is insecure without TRUSTED_PROXIES. Provide comma-separated subnet ranges via TRUSTED_PROXIES.",
+  );
   process.exit(1);
 }
 
@@ -34,34 +41,47 @@ const buildAllowedOrigins = () => {
   const raw = process.env.FRONTEND_URL;
 
   if (raw) {
-    return raw.split(",").map(s => s.trim()).filter(Boolean);
+    return raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
 
   if (process.env.NODE_ENV === "production") {
-    console.error("[security] FATAL: FRONTEND_URL is not set. Refusing to start with a wildcard CORS policy in production.");
+    console.error(
+      "[security] FATAL: FRONTEND_URL is not set. Refusing to start with a wildcard CORS policy in production.",
+    );
     process.exit(1);
   }
 
-  console.warn("[security] FRONTEND_URL not set. Defaulting to localhost origins for development.");
-  return ["http://localhost:5173", "http://localhost:3000", "http://localhost:8080"];
+  console.warn(
+    "[security] FRONTEND_URL not set. Defaulting to localhost origins for development.",
+  );
+  return [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost:8080",
+  ];
 };
 
 const allowedOrigins = new Set(buildAllowedOrigins());
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) {
-      return callback(null, true);
-    }
-    if (allowedOrigins.has(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error(`CORS: origin '${origin}' is not allowed`));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+      if (allowedOrigins.has(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS: origin '${origin}' is not allowed`));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 // AI routes use a tighter body limit; mount before the global parser so it applies.
 app.use("/api/ai", express.json({ limit: "50kb" }));
@@ -91,7 +111,10 @@ const aiLimiter = rateLimit({
   max: 10, // limit each IP to 10 AI requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Too many AI requests from this IP, please try again after 15 minutes" }
+  message: {
+    error:
+      "Too many AI requests from this IP, please try again after 15 minutes",
+  },
 });
 
 app.use("/api", apiLimiter);

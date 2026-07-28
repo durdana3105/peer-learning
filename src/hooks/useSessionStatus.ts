@@ -83,23 +83,23 @@ export function useSessions() {
               [...prev, payload.new as ScheduledSession].sort(
                 (a, b) =>
                   new Date(a.scheduled_at ?? 0).getTime() -
-                  new Date(b.scheduled_at ?? 0).getTime()
-              )
+                  new Date(b.scheduled_at ?? 0).getTime(),
+              ),
             );
           } else if (payload.eventType === "UPDATE") {
             setSessions((prev) =>
               prev.map((s) =>
                 s.id === (payload.new as ScheduledSession).id
                   ? (payload.new as ScheduledSession)
-                  : s
-              )
+                  : s,
+              ),
             );
           } else if (payload.eventType === "DELETE") {
             setSessions((prev) =>
-              prev.filter((s) => s.id !== (payload.old as ScheduledSession).id)
+              prev.filter((s) => s.id !== (payload.old as ScheduledSession).id),
             );
           }
-        }
+        },
       )
       .subscribe();
 
@@ -117,7 +117,7 @@ export function useSessions() {
  */
 export function useCountdown(scheduledAt: string | null) {
   const [ms, setMs] = useState(() =>
-    scheduledAt ? msUntilJoinWindow(scheduledAt) : Infinity
+    scheduledAt ? msUntilJoinWindow(scheduledAt) : Infinity,
   );
 
   useEffect(() => {

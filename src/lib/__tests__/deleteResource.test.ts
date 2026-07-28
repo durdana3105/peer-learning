@@ -80,7 +80,7 @@ describe("deleteResource", () => {
   // calling storage.remove or the delete query.
   it("does not delete another user's resource", async () => {
     mocks.from.mockReturnValueOnce(
-      buildSelectChain({ data: null, error: { message: "no rows" } })
+      buildSelectChain({ data: null, error: { message: "no rows" } }),
     );
 
     const result = await deleteResource("resource-owned-by-user-a");
@@ -104,9 +104,12 @@ describe("deleteResource", () => {
     mocks.from
       .mockReturnValueOnce(
         buildSelectChain({
-          data: { id: "resource-owned-by-user-b", file_url: "user-b/notes.pdf" },
+          data: {
+            id: "resource-owned-by-user-b",
+            file_url: "user-b/notes.pdf",
+          },
           error: null,
-        })
+        }),
       )
       .mockReturnValueOnce(buildDeleteChain({ error: null }));
 
@@ -115,7 +118,10 @@ describe("deleteResource", () => {
     expect(result).toEqual({ success: true });
     expect(mocks.storageFrom).toHaveBeenCalledWith("resources");
     expect(mocks.remove).toHaveBeenCalledWith(["user-b/notes.pdf"]);
-    expect(mocks.deleteEq).toHaveBeenCalledWith("id", "resource-owned-by-user-b");
+    expect(mocks.deleteEq).toHaveBeenCalledWith(
+      "id",
+      "resource-owned-by-user-b",
+    );
   });
 
   it("returns an error and does not attempt the DB delete when storage removal fails", async () => {
@@ -123,7 +129,7 @@ describe("deleteResource", () => {
       buildSelectChain({
         data: { id: "resource-owned-by-user-b", file_url: "user-b/notes.pdf" },
         error: null,
-      })
+      }),
     );
     mocks.remove.mockResolvedValue({ error: { message: "storage error" } });
 
@@ -137,11 +143,16 @@ describe("deleteResource", () => {
     mocks.from
       .mockReturnValueOnce(
         buildSelectChain({
-          data: { id: "resource-owned-by-user-b", file_url: "user-b/notes.pdf" },
+          data: {
+            id: "resource-owned-by-user-b",
+            file_url: "user-b/notes.pdf",
+          },
           error: null,
-        })
+        }),
       )
-      .mockReturnValueOnce(buildDeleteChain({ error: { message: "delete failed" } }));
+      .mockReturnValueOnce(
+        buildDeleteChain({ error: { message: "delete failed" } }),
+      );
 
     const result = await deleteResource("resource-owned-by-user-b");
 
@@ -158,7 +169,10 @@ describe("deleteResource", () => {
     expect(result).toEqual({ success: false, error: "boom" });
     expect(logError).toHaveBeenCalledWith(
       expect.any(Error),
-      expect.objectContaining({ context: "deleteResource", resourceId: "resource-x" })
+      expect.objectContaining({
+        context: "deleteResource",
+        resourceId: "resource-x",
+      }),
     );
   });
 });

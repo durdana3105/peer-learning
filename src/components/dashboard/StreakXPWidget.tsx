@@ -52,7 +52,9 @@ export default function StreakXPWidget() {
               Daily Streak
             </h3>
             <div className="mt-1 flex items-baseline gap-2">
-              <span className="text-4xl font-black text-white">{data.streak}</span>
+              <span className="text-4xl font-black text-white">
+                {data.streak}
+              </span>
               <span className="text-slate-400">days</span>
             </div>
           </div>
@@ -62,7 +64,9 @@ export default function StreakXPWidget() {
               Total XP
             </h3>
             <div className="mt-1 flex items-baseline gap-2 justify-end">
-              <span className="text-3xl font-bold text-cyan-300">{data.totalXP}</span>
+              <span className="text-3xl font-bold text-cyan-300">
+                {data.totalXP}
+              </span>
             </div>
           </div>
         </div>
@@ -70,7 +74,9 @@ export default function StreakXPWidget() {
         <div className="mt-4 relative z-10">
           <div className="flex justify-between text-sm mb-2">
             <span className="text-cyan-300 font-medium">{milestone.level}</span>
-            <span className="text-slate-400">{milestone.progress}% to next</span>
+            <span className="text-slate-400">
+              {milestone.progress}% to next
+            </span>
           </div>
           <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
             <motion.div

@@ -30,7 +30,7 @@ describe("Chatbot Component", () => {
     render(<Chatbot />);
     const toggleButton = screen.getByText("💬");
     expect(toggleButton).toBeInTheDocument();
-    
+
     // Chatbox shouldn't be visible
     expect(screen.queryByText("AI Assistant")).not.toBeInTheDocument();
   });
@@ -46,7 +46,7 @@ describe("Chatbot Component", () => {
   it("should close the chatbox when the close button is clicked", () => {
     render(<Chatbot />);
     const toggleButton = screen.getByText("💬");
-    
+
     // Open
     fireEvent.click(toggleButton);
     expect(screen.getByText("AI Assistant")).toBeInTheDocument();

@@ -75,7 +75,7 @@ export const getNavLinks = (user: User | null, isAdmin: boolean) => {
           to: "/",
           label: "Home",
           icon: BookOpen,
-          onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' })
+          onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }),
         },
         {
           to: "/#features",

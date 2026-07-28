@@ -86,18 +86,21 @@ const FilterSidebar = ({
             />
           </div>
         </div>
-        
+
         <Separator />
-        
+
         <div className="space-y-3">
           <p className="text-sm font-medium text-foreground">My Collection</p>
-          <Button 
-            variant={savedOnly ? "default" : "outline"} 
+          <Button
+            variant={savedOnly ? "default" : "outline"}
             size="sm"
             className="w-full justify-start gap-2"
             onClick={() => onSavedOnlyChange(!savedOnly)}
           >
-            <Bookmark className="h-4 w-4" fill={savedOnly ? "currentColor" : "none"} />
+            <Bookmark
+              className="h-4 w-4"
+              fill={savedOnly ? "currentColor" : "none"}
+            />
             Saved Resources
           </Button>
         </div>
@@ -134,9 +137,14 @@ const FilterSidebar = ({
                   key={tag}
                   type="button"
                   onClick={() => toggleTag(tag)}
-                  className={cn("rounded-full", isSelected ? "ring-2 ring-primary/40 ring-offset-2" : "")}
+                  className={cn(
+                    "rounded-full",
+                    isSelected ? "ring-2 ring-primary/40 ring-offset-2" : "",
+                  )}
                 >
-                  <Badge variant={isSelected ? "default" : "outline"}>{tag}</Badge>
+                  <Badge variant={isSelected ? "default" : "outline"}>
+                    {tag}
+                  </Badge>
                 </button>
               );
             })}

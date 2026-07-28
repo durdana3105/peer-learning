@@ -16,11 +16,7 @@ export function useNavbarProfile() {
       }
 
       const [{ data: profile }, { data: roleData }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("name")
-          .eq("id", user.id)
-          .single(),
+        supabase.from("profiles").select("name").eq("id", user.id).single(),
         supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }),
       ]);
 

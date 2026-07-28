@@ -80,7 +80,9 @@ export default function StreakStats() {
           className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl"
         >
           <p className="text-xs text-slate-400">Total XP</p>
-          <p className="mt-2 text-3xl font-bold text-cyan-300">{data.totalXP}</p>
+          <p className="mt-2 text-3xl font-bold text-cyan-300">
+            {data.totalXP}
+          </p>
           <p className="mt-1 text-xs text-slate-500">Lifetime</p>
         </motion.div>
 
@@ -89,7 +91,9 @@ export default function StreakStats() {
           className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl"
         >
           <p className="text-xs text-slate-400">Daily Reward</p>
-          <p className="mt-2 text-3xl font-bold text-blue-300">+{data.dailyXP}</p>
+          <p className="mt-2 text-3xl font-bold text-blue-300">
+            +{data.dailyXP}
+          </p>
           <p className="mt-1 text-xs text-slate-500">Per day</p>
         </motion.div>
       </div>

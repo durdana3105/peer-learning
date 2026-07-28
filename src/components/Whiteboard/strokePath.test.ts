@@ -2,7 +2,11 @@ import { describe, it, expect } from "vitest";
 import { nextSegment } from "./strokePath";
 import { Point, WhiteboardEvent } from "./types";
 
-const ev = (type: WhiteboardEvent["type"], strokeId?: string, point?: Point): WhiteboardEvent => ({
+const ev = (
+  type: WhiteboardEvent["type"],
+  strokeId?: string,
+  point?: Point,
+): WhiteboardEvent => ({
   type,
   payload: { strokeId, point },
 });
@@ -12,14 +16,18 @@ describe("nextSegment concurrent stroke isolation", () => {
     const last = new Map<string, Point>();
 
     // Stroke A starts and moves.
-    expect(nextSegment(ev("draw-start", "A", { x: 10, y: 10 }), last)).toBeNull();
+    expect(
+      nextSegment(ev("draw-start", "A", { x: 10, y: 10 }), last),
+    ).toBeNull();
     expect(nextSegment(ev("draw-move", "A", { x: 20, y: 20 }), last)).toEqual({
       from: { x: 10, y: 10 },
       to: { x: 20, y: 20 },
     });
 
     // Stroke B starts in the middle (the interleaving that corrupted the shared path).
-    expect(nextSegment(ev("draw-start", "B", { x: 200, y: 200 }), last)).toBeNull();
+    expect(
+      nextSegment(ev("draw-start", "B", { x: 200, y: 200 }), last),
+    ).toBeNull();
 
     // Stroke A's next move must connect from A's own last point (20,20), not B's start.
     expect(nextSegment(ev("draw-move", "A", { x: 30, y: 30 }), last)).toEqual({
@@ -28,10 +36,12 @@ describe("nextSegment concurrent stroke isolation", () => {
     });
 
     // Stroke B's move connects from B's own start.
-    expect(nextSegment(ev("draw-move", "B", { x: 210, y: 210 }), last)).toEqual({
-      from: { x: 200, y: 200 },
-      to: { x: 210, y: 210 },
-    });
+    expect(nextSegment(ev("draw-move", "B", { x: 210, y: 210 }), last)).toEqual(
+      {
+        from: { x: 200, y: 200 },
+        to: { x: 210, y: 210 },
+      },
+    );
   });
 
   it("a move with no prior start draws a zero-length segment (a dot)", () => {

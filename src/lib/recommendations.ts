@@ -95,7 +95,11 @@ export const buildResourceScore = (
   },
   topics: RecommendationTopic[],
 ) => {
-  const text = [resource.title, resource.description || "", ...(resource.tags || [])].join(" ");
+  const text = [
+    resource.title,
+    resource.description || "",
+    ...(resource.tags || []),
+  ].join(" ");
 
   const hits: TopicHit[] = [];
   const baseScore = topics.reduce((total, topic) => {
@@ -108,7 +112,10 @@ export const buildResourceScore = (
     return total + topicScore * topic.weight;
   }, 0);
 
-  const ageInDays = Math.max(0, (Date.now() - new Date(resource.created_at).getTime()) / 86400000);
+  const ageInDays = Math.max(
+    0,
+    (Date.now() - new Date(resource.created_at).getTime()) / 86400000,
+  );
   const recencyBoost = ageInDays < 7 ? 4 : ageInDays < 30 ? 2 : 0;
   const typeBoost = ["py", "js", "ts"].includes(resource.file_type) ? 2 : 0;
 
@@ -122,7 +129,10 @@ export const buildResourceScore = (
 
 export const buildMentorScore = (
   mentor: RecommendationProfile & { is_mentor?: boolean },
-  profile: Pick<RecommendationProfile, "interests" | "learn_subjects" | "skills">,
+  profile: Pick<
+    RecommendationProfile,
+    "interests" | "learn_subjects" | "skills"
+  >,
   topics: RecommendationTopic[],
 ) => {
   const mentorTopics = normalizeList([
@@ -143,11 +153,17 @@ export const buildMentorScore = (
   const topicMatches = topics.reduce((total, topic) => {
     const mentorWeight = scoreTopicInText(topic.topic, mentorText);
     const learnerWeight = scoreTopicInText(topic.topic, learnerText);
-    return total + mentorWeight * topic.weight + learnerWeight * Math.max(topic.weight - 1, 1);
+    return (
+      total +
+      mentorWeight * topic.weight +
+      learnerWeight * Math.max(topic.weight - 1, 1)
+    );
   }, 0);
 
   const ratingBoost = (mentor.rating || 0) * 4;
-  const activityBoost = Math.min((mentor.points || 0) / 60, 8) + Math.min((mentor.sessions_completed || 0) / 3, 8);
+  const activityBoost =
+    Math.min((mentor.points || 0) / 60, 8) +
+    Math.min((mentor.sessions_completed || 0) / 3, 8);
 
   return {
     score: topicMatches + ratingBoost + activityBoost,
@@ -169,9 +185,23 @@ export const buildSessionScore = (
 ) => {
   const text = [session.title || "", session.description || ""].join(" ");
 
-  const topicScore = topics.reduce((total, topic) => total + scoreTopicInText(topic.topic, text) * topic.weight, 0);
+  const topicScore = topics.reduce(
+    (total, topic) =>
+      total + scoreTopicInText(topic.topic, text) * topic.weight,
+    0,
+  );
   const soonness = session.scheduled_at
-    ? Math.max(0, 9 - Math.min(9, Math.ceil((new Date(session.scheduled_at).getTime() - Date.now()) / 86400000)))
+    ? Math.max(
+        0,
+        9 -
+          Math.min(
+            9,
+            Math.ceil(
+              (new Date(session.scheduled_at).getTime() - Date.now()) /
+                86400000,
+            ),
+          ),
+      )
     : 1;
   const statusBoost = session.status === "upcoming" ? 3 : 0;
 
@@ -185,13 +215,23 @@ export const buildSessionScore = (
 };
 
 export const buildPracticeRecommendations = (
-  profile: Pick<RecommendationProfile, "points" | "sessions_completed" | "streak">,
+  profile: Pick<
+    RecommendationProfile,
+    "points" | "sessions_completed" | "streak"
+  >,
   topics: RecommendationTopic[],
 ) => {
   const practiceLevel =
-    (profile.sessions_completed || 0) + Math.floor((profile.points || 0) / 120) + Math.floor((profile.streak || 0) / 3);
+    (profile.sessions_completed || 0) +
+    Math.floor((profile.points || 0) / 120) +
+    Math.floor((profile.streak || 0) / 3);
 
-  const difficulty = practiceLevel >= 12 ? "Advanced" : practiceLevel >= 5 ? "Intermediate" : "Foundational";
+  const difficulty =
+    practiceLevel >= 12
+      ? "Advanced"
+      : practiceLevel >= 5
+        ? "Intermediate"
+        : "Foundational";
 
   return topics.slice(0, 3).map((topic, index) => ({
     id: `${topic.topic}-${index}`,
@@ -199,6 +239,10 @@ export const buildPracticeRecommendations = (
     title: `${topic.topic} challenge`,
     description: `Work through a ${difficulty.toLowerCase()} problem set designed around ${topic.topic} and sharpen the exact skills you are building right now.`,
     difficulty,
-    score: Math.round(topic.weight * 10 + Math.max(0, 18 - index * 3) + Math.min(practiceLevel, 12)),
+    score: Math.round(
+      topic.weight * 10 +
+        Math.max(0, 18 - index * 3) +
+        Math.min(practiceLevel, 12),
+    ),
   }));
 };

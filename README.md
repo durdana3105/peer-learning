@@ -44,46 +44,55 @@ A modern peer-to-peer learning platform where students can connect, collaborate,
 ## Features
 
 ### 🔐 Authentication System
+
 - Secure signup & login
 - Protected routes
 - User session management
 
 ### 👤 User Profiles
+
 - Personalized user profiles
 - Skills & interests showcase
 - Learning preferences
 
 ### 🔍 Peer Discovery
+
 - Find peers based on skills
 - Connect with learners worldwide
 - Smart matching system
 
 ### 📚 Learning Sessions
+
 - Create study sessions
 - Join collaborative learning groups
 - Interactive peer discussions
 
 ### 💬 Real-Time Chat
+
 - Instant messaging system
 - Community interaction
 - Smooth communication experience
 
 ### 🤖 AI-Powered Assistance
+
 - AI chatbot for learning support
 - Smart recommendations
 - Enhanced user guidance
 
 ### 🏆 Leaderboard System
+
 - Rankings based on activity
 - Community engagement rewards
 - Motivation through gamification
 
 ### 📊 Personalized Dashboard
+
 - Track learning progress
 - Session overview
 - Activity management
 
 ### ⚡ Modern Responsive UI
+
 - Fully responsive design
 - Mobile-friendly interface
 - Smooth user experience
@@ -93,18 +102,23 @@ A modern peer-to-peer learning platform where students can connect, collaborate,
 ## Screenshots
 
 ### 🏠 Home Page
+
 <img width="100%" alt="Home Page" src="./src/screenshots/home.png">
 
 ### 🔐 Authentication
+
 <img width="100%" alt="Login Page" src="./src/screenshots/login.png">
 
 ### 👨‍🏫 Become a Mentor
+
 <img width="100%" alt="Become a Mentor" src="./src/screenshots/become-mentor.png">
 
 ### 🤖 AI Assistant
+
 <img width="100%" alt="AI Assistant" src="./src/screenshots/ai-chat.png">
 
 ### Demo Video
+
 [Watch Demo](https://github.com/user-attachments/assets/6af694a1-e98d-4d31-b99f-eeacddab3ebc)
 
 ---
@@ -117,22 +131,22 @@ Many students struggle to find suitable learning partners, mentors, and collabor
 
 ## Tech Stack
 
-| Category | Technologies |
-|----------|--------------|
-| **Frontend** | React 18, TypeScript, Vite |
-| **UI & Styling** | Tailwind CSS, Radix UI, Shadcn UI, Framer Motion |
-| **Backend** | Node.js, Express.js |
-| **Database** | Supabase, PostgreSQL |
-| **Authentication** | Supabase Authentication |
-| **State Management & Data Fetching** | TanStack React Query |
-| **Forms & Validation** | React Hook Form, Zod |
-| **Charts & Data Visualization** | Chart.js, React Chart.js 2, Recharts |
-| **API Communication** | Axios |
-| **AI Integration** | OpenRouter API |
-| **Video Conferencing** | Jitsi React SDK |
-| **Testing** | Vitest, Playwright, Supertest, Testing Library |
-| **Code Quality** | ESLint |
-| **Deployment** | Vercel |
+| Category                             | Technologies                                     |
+| ------------------------------------ | ------------------------------------------------ |
+| **Frontend**                         | React 18, TypeScript, Vite                       |
+| **UI & Styling**                     | Tailwind CSS, Radix UI, Shadcn UI, Framer Motion |
+| **Backend**                          | Node.js, Express.js                              |
+| **Database**                         | Supabase, PostgreSQL                             |
+| **Authentication**                   | Supabase Authentication                          |
+| **State Management & Data Fetching** | TanStack React Query                             |
+| **Forms & Validation**               | React Hook Form, Zod                             |
+| **Charts & Data Visualization**      | Chart.js, React Chart.js 2, Recharts             |
+| **API Communication**                | Axios                                            |
+| **AI Integration**                   | OpenRouter API                                   |
+| **Video Conferencing**               | Jitsi React SDK                                  |
+| **Testing**                          | Vitest, Playwright, Supertest, Testing Library   |
+| **Code Quality**                     | ESLint                                           |
+| **Deployment**                       | Vercel                                           |
 
 ---
 
@@ -171,18 +185,21 @@ graph TD
 The Peer Learning Platform follows a modern full-stack architecture designed to provide scalability, maintainability, and real-time collaboration.
 
 **Frontend Layer**
+
 - Built using React 18, TypeScript, and Vite.
 - Uses reusable UI components powered by Shadcn UI and Radix UI.
 - Handles routing, state management, authentication, and user interactions.
 - Uses TanStack React Query for efficient server-state management.
 
 **Backend Layer**
+
 - Built with Node.js and Express.js.
 - Processes API requests.
 - Handles AI assistant communication.
 - Performs request validation and middleware processing.
 
 **Database Layer** — Supabase provides:
+
 - PostgreSQL database
 - Authentication
 - Real-time subscriptions
@@ -261,41 +278,44 @@ peer-learning-platform/
 
 ### Where should you make changes?
 
-| If you want to... | Modify this location |
-|--------------------|-----------------------|
-| Create a new page | `src/pages/` |
-| Build reusable UI components | `src/components/ui/` |
-| Modify chat functionality | `src/components/chat/` |
-| Improve dashboard features | `src/components/dashboard/` |
-| Work on mentor-related features | `src/components/mentor/` |
-| Add recommendation features | `src/components/recommendations/` |
-| Update the collaborative whiteboard | `src/components/whiteboard/` |
-| Add custom React hooks | `src/hooks/` |
-| Manage global state or contexts | `src/contexts/` |
-| Configure Supabase integration | `src/integrations/` |
-| Add helper or utility functions | `src/utils/` |
-| Add backend API endpoints | `backend/routers/` |
-| Implement backend business logic | `backend/controllers/` |
-| Create middleware | `backend/middlewares/` |
-| Add request validation | `backend/validation/` |
-| Write backend tests | `backend/tests/` |
-| Update technical documentation | `docs/` |
+| If you want to...                   | Modify this location              |
+| ----------------------------------- | --------------------------------- |
+| Create a new page                   | `src/pages/`                      |
+| Build reusable UI components        | `src/components/ui/`              |
+| Modify chat functionality           | `src/components/chat/`            |
+| Improve dashboard features          | `src/components/dashboard/`       |
+| Work on mentor-related features     | `src/components/mentor/`          |
+| Add recommendation features         | `src/components/recommendations/` |
+| Update the collaborative whiteboard | `src/components/whiteboard/`      |
+| Add custom React hooks              | `src/hooks/`                      |
+| Manage global state or contexts     | `src/contexts/`                   |
+| Configure Supabase integration      | `src/integrations/`               |
+| Add helper or utility functions     | `src/utils/`                      |
+| Add backend API endpoints           | `backend/routers/`                |
+| Implement backend business logic    | `backend/controllers/`            |
+| Create middleware                   | `backend/middlewares/`            |
+| Add request validation              | `backend/validation/`             |
+| Write backend tests                 | `backend/tests/`                  |
+| Update technical documentation      | `docs/`                           |
 
 ---
 
 ## Installation & Setup
 
 ### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/durdana3105/peer-learning.git
 ```
 
 ### 2. Navigate to Project Directory
+
 ```bash
 cd peer-learning
 ```
 
 ### 3. Install Dependencies
+
 ```bash
 npm install
 ```
@@ -316,6 +336,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 ### 5. Start Development Server
+
 ```bash
 npm run dev
 ```
@@ -323,6 +344,7 @@ npm run dev
 ### Technical Documentation
 
 For deeper technical insights, refer to:
+
 - [Database Architecture & Schema](./docs/database.md)
 - [API Documentation](./docs/api.md)
 
@@ -361,11 +383,13 @@ graph TD
 ## Deployment
 
 This project can be easily deployed on:
+
 - Vercel
 - Netlify
 - Render
 
 **Build Command**
+
 ```bash
 npm run build
 ```
@@ -381,20 +405,23 @@ If you encounter issues during setup, installation, or configuration, refer to t
 ## Feature Roadmap
 
 ### ✅ Completed
+
 - **Secure Authentication** — Email/Password and OAuth integration.
 - **Real-Time Chat & Study Sessions** — Live messaging and collaborative learning environments.
 - **Gamification System** — XP, levels, leaderboards, and streak counts.
 
 ### 🚧 In Progress
-- **Session Scheduling** — Plan study sessions ahead of time. *(Target: Q3)*
-- **AI-based Peer Recommendations** — Smart matching system for peers. *(Target: Q3)*
+
+- **Session Scheduling** — Plan study sessions ahead of time. _(Target: Q3)_
+- **AI-based Peer Recommendations** — Smart matching system for peers. _(Target: Q3)_
 
 ### 📋 Planned
-- **Video Calling Integration** — Seamless face-to-face peer collaboration. *(Target: Q4)*
-- **Real-time Notifications** — Alerts for new messages and upcoming sessions. *(Target: Q4)*
-- **Mentor Matching System** — Dedicated workflows for connecting students with mentors. *(Target: Q1 2027)*
-- **Multi-language Support** — Expanding accessibility for a global audience. *(Target: Q1 2027)*
-- **Dedicated Mobile App** — Native applications for iOS and Android. *(Target: 2027)*
+
+- **Video Calling Integration** — Seamless face-to-face peer collaboration. _(Target: Q4)_
+- **Real-time Notifications** — Alerts for new messages and upcoming sessions. _(Target: Q4)_
+- **Mentor Matching System** — Dedicated workflows for connecting students with mentors. _(Target: Q1 2027)_
+- **Multi-language Support** — Expanding accessibility for a global audience. _(Target: Q1 2027)_
+- **Dedicated Mobile App** — Native applications for iOS and Android. _(Target: 2027)_
 
 ---
 
@@ -467,6 +494,7 @@ A: This repository is configured for Vercel deployment. Deploy the frontend and 
 
 **Q: Why does authentication fail even though I set up Supabase?**
 A: Common causes:
+
 - `.env` variables are missing, wrong, or not loaded.
 - The site URL in Supabase Auth settings does not match your local URL (`http://localhost:5173`) or deployed URL.
 - OAuth provider callback URLs are not configured correctly.
@@ -475,6 +503,7 @@ Verify the keys and URLs carefully in both Supabase and the app.
 
 **Q: What should I do if the app still fails to start?**
 A: Check these steps:
+
 - Confirm `.env.example` was copied to `.env` and values were filled.
 - Run `npm install` again after deleting `node_modules` if dependencies appear broken.
 - Make sure your Node.js version is compatible with the repo (CI uses Node 20.x).

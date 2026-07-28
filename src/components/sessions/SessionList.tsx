@@ -106,10 +106,11 @@ export function SessionList({
                   e.stopPropagation();
                   generateICS(
                     s.title || "Peer Learning Session",
-                    s.description || "Join us for a collaborative learning session.",
+                    s.description ||
+                      "Join us for a collaborative learning session.",
                     s.id,
                     s.scheduled_at ? new Date(s.scheduled_at) : new Date(),
-                    s.duration_minutes || 60
+                    s.duration_minutes || 60,
                   );
                 }}
                 className="bg-white/10 border border-white/10 hover:bg-white/20 p-3 rounded-2xl transition text-white"

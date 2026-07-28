@@ -3,9 +3,27 @@ import { Link } from "react-router-dom";
 
 // Mock data
 const joinedCommunities = [
-  { id: "1", name: "Frontend Masters", members: 1240, active: 34, color: "bg-blue-500" },
-  { id: "2", name: "UI/UX Designers", members: 890, active: 12, color: "bg-purple-500" },
-  { id: "3", name: "React Enthusiasts", members: 2100, active: 89, color: "bg-cyan-500" },
+  {
+    id: "1",
+    name: "Frontend Masters",
+    members: 1240,
+    active: 34,
+    color: "bg-blue-500",
+  },
+  {
+    id: "2",
+    name: "UI/UX Designers",
+    members: 890,
+    active: 12,
+    color: "bg-purple-500",
+  },
+  {
+    id: "3",
+    name: "React Enthusiasts",
+    members: 2100,
+    active: 89,
+    color: "bg-cyan-500",
+  },
 ];
 
 export default function CommunitiesWidget() {
@@ -30,7 +48,9 @@ export default function CommunitiesWidget() {
             aria-label={`Explore ${community.name} on Discover`}
           >
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl ${community.color} flex items-center justify-center text-white font-bold text-lg shadow-inner`}>
+              <div
+                className={`w-10 h-10 rounded-xl ${community.color} flex items-center justify-center text-white font-bold text-lg shadow-inner`}
+              >
                 {community.name.charAt(0)}
               </div>
               <div>
@@ -45,7 +65,9 @@ export default function CommunitiesWidget() {
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs text-slate-300">{community.active} active</span>
+                <span className="text-xs text-slate-300">
+                  {community.active} active
+                </span>
               </div>
             </div>
           </Link>

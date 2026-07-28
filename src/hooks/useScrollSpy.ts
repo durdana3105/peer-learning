@@ -5,10 +5,7 @@ interface UseScrollSpyOptions {
   offset?: number;
 }
 
-export function useScrollSpy({
-  sectionIds,
-  offset = 80,
-}: UseScrollSpyOptions) {
+export function useScrollSpy({ sectionIds, offset = 80 }: UseScrollSpyOptions) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {

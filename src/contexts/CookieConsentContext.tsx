@@ -30,9 +30,9 @@ interface CookieConsentContextType {
   closeBanner: () => void;
 }
 
-const CookieConsentContext = createContext<CookieConsentContextType | undefined>(
-  undefined,
-);
+const CookieConsentContext = createContext<
+  CookieConsentContextType | undefined
+>(undefined);
 
 export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -108,7 +108,9 @@ export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({
 export const useCookieConsent = () => {
   const context = useContext(CookieConsentContext);
   if (!context) {
-    throw new Error("useCookieConsent must be used within a CookieConsentProvider");
+    throw new Error(
+      "useCookieConsent must be used within a CookieConsentProvider",
+    );
   }
   return context;
 };

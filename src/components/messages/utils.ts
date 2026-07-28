@@ -1,10 +1,12 @@
 import { ProfileSummary, MessageRow } from "@/hooks/useMessages";
 
-export const getDisplayName = (profile?: Pick<ProfileSummary, "name" | "email"> | null) =>
-  profile?.name?.trim() || profile?.email?.split("@")[0] || "Learner";
+export const getDisplayName = (
+  profile?: Pick<ProfileSummary, "name" | "email"> | null,
+) => profile?.name?.trim() || profile?.email?.split("@")[0] || "Learner";
 
-export const getInitial = (profile?: Pick<ProfileSummary, "name" | "email"> | null) =>
-  getDisplayName(profile).charAt(0).toUpperCase();
+export const getInitial = (
+  profile?: Pick<ProfileSummary, "name" | "email"> | null,
+) => getDisplayName(profile).charAt(0).toUpperCase();
 
 export const getMessageBody = (message: MessageRow) =>
   message.content || message.text || message.message || "";
@@ -34,7 +36,10 @@ export const formatRelativeTime = (value: string | null) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
 
-  const diffMinutes = Math.max(1, Math.floor((Date.now() - date.getTime()) / 60000));
+  const diffMinutes = Math.max(
+    1,
+    Math.floor((Date.now() - date.getTime()) / 60000),
+  );
 
   if (diffMinutes < 60) return `${diffMinutes}m ago`;
 

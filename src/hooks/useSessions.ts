@@ -74,7 +74,7 @@ export function useSessions(user: any) {
     const allowedStatuses = TAB_TO_STATUS[selectedTab] || [];
 
     filtered = filtered.filter((s) =>
-      allowedStatuses.includes(s.status?.toLowerCase())
+      allowedStatuses.includes(s.status?.toLowerCase()),
     );
 
     // Apply search if present
@@ -82,7 +82,7 @@ export function useSessions(user: any) {
       filtered = filtered.filter(
         (s) =>
           s.title?.toLowerCase().includes(search.toLowerCase()) ||
-          s.tags?.join(" ").toLowerCase().includes(search.toLowerCase())
+          s.tags?.join(" ").toLowerCase().includes(search.toLowerCase()),
       );
     }
 
@@ -99,7 +99,9 @@ export function useSessions(user: any) {
       filteredSessions.some((s) => s.id === selectedSession.id);
 
     if (!stillVisible) {
-      setSelectedSession(filteredSessions.length > 0 ? filteredSessions[0] : null);
+      setSelectedSession(
+        filteredSessions.length > 0 ? filteredSessions[0] : null,
+      );
     }
   }, [filteredSessions, selectedTab, selectedSession]);
 
@@ -131,7 +133,11 @@ export function useSessions(user: any) {
 
       if (error) {
         console.error("Failed to fetch messages:", error);
-        toast({ title: "Error", description: "Failed to load messages.", variant: "destructive" });
+        toast({
+          title: "Error",
+          description: "Failed to load messages.",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -166,25 +172,51 @@ export function useSessions(user: any) {
       channelRef.current = roomChannel;
 
       roomChannel
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `session_id=eq.${selectedSession.id}` }, (payload: any) => {
-          if (payload.new.session_id === selectedSession.id) {
-            setMessages((prev) => [...prev, payload.new]);
-          }
-        })
-        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `session_id=eq.${selectedSession.id}` }, (payload: any) => {
-          if (payload.new.session_id === selectedSession.id) {
-            setMessages((prev) => prev.map(msg => msg.id === payload.new.id ? payload.new : msg));
-          }
-        })
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+            filter: `session_id=eq.${selectedSession.id}`,
+          },
+          (payload: any) => {
+            if (payload.new.session_id === selectedSession.id) {
+              setMessages((prev) => [...prev, payload.new]);
+            }
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "messages",
+            filter: `session_id=eq.${selectedSession.id}`,
+          },
+          (payload: any) => {
+            if (payload.new.session_id === selectedSession.id) {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === payload.new.id ? payload.new : msg,
+                ),
+              );
+            }
+          },
+        )
         .on("presence", { event: "sync" }, () => {
           const state = roomChannel.presenceState();
           setParticipantCount(Math.max(1, Object.keys(state).length));
         })
         .on("broadcast", { event: "typing" }, ({ payload }) => {
-          if (payload.user === (user?.user_metadata?.full_name || "Someone")) return;
+          if (payload.user === (user?.user_metadata?.full_name || "Someone"))
+            return;
           setTypingUser(payload.user);
           clearTimeout(typingTimeoutRef.current);
-          typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
+          typingTimeoutRef.current = setTimeout(
+            () => setTypingUser(null),
+            3000,
+          );
         })
         .on("broadcast", { event: "activity" }, ({ payload }) => {
           setActivities((prev) => [payload, ...prev]);
@@ -199,7 +231,10 @@ export function useSessions(user: any) {
               payload: {
                 id: Date.now(),
                 text: `${user?.user_metadata?.full_name || "Someone"} joined the session`,
-                time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                time: new Date().toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
               },
             });
           }
@@ -221,7 +256,9 @@ export function useSessions(user: any) {
   useEffect(() => {
     if (!selectedSession) return;
     const timer = setInterval(() => {
-      const start = new Date(selectedSession.start_time || selectedSession.created_at).getTime();
+      const start = new Date(
+        selectedSession.start_time || selectedSession.created_at,
+      ).getTime();
       const elapsed = Math.floor((Date.now() - start) / 1000);
       const remaining = Math.max(0, 3600 - elapsed);
 
@@ -268,94 +305,134 @@ export function useSessions(user: any) {
     };
   }, []);
 
-  const handleJoinSession = useCallback(async (e: React.MouseEvent, sessionId: string) => {
-    e.stopPropagation();
-    try {
-      const { data: existingParticipant } = await (supabase as any)
-        .from("session_participants")
-        .select("*")
-        .eq("session_id", sessionId)
-        .eq("user_id", user?.id)
-        .maybeSingle();
+  const handleJoinSession = useCallback(
+    async (e: React.MouseEvent, sessionId: string) => {
+      e.stopPropagation();
+      try {
+        const { data: existingParticipant } = await (supabase as any)
+          .from("session_participants")
+          .select("*")
+          .eq("session_id", sessionId)
+          .eq("user_id", user?.id)
+          .maybeSingle();
 
-      const { error } = await supabase.rpc("join_session", { p_session_id: sessionId });
-      if (error) {
-        if (error.message.includes("Session is full")) {
-          toast({ title: "Session Full", description: "This session has reached its seat limit.", variant: "destructive" });
+        const { error } = await supabase.rpc("join_session", {
+          p_session_id: sessionId,
+        });
+        if (error) {
+          if (error.message.includes("Session is full")) {
+            toast({
+              title: "Session Full",
+              description: "This session has reached its seat limit.",
+              variant: "destructive",
+            });
+          } else {
+            throw error;
+          }
         } else {
-          throw error;
-        }
-      } else {
-        toast({ title: "Success! 🎉", description: "You have joined the session." });
+          toast({
+            title: "Success! 🎉",
+            description: "You have joined the session.",
+          });
 
-        // Only award XP here, after join_session has actually succeeded and
-        // confirmed the user as a participant. This is the single source of
-        // truth for "session_join" XP — handleJoinVideo must NOT award it,
-        // since opening the video does not by itself confirm participation.
-        if (!existingParticipant) {
-          awardedSessionsRef.current.add(sessionId);
-          awardXP({ activity: "session_join", referenceId: sessionId });
+          // Only award XP here, after join_session has actually succeeded and
+          // confirmed the user as a participant. This is the single source of
+          // truth for "session_join" XP — handleJoinVideo must NOT award it,
+          // since opening the video does not by itself confirm participation.
+          if (!existingParticipant) {
+            awardedSessionsRef.current.add(sessionId);
+            awardXP({ activity: "session_join", referenceId: sessionId });
+          }
         }
+      } catch (err: any) {
+        toast({
+          title: "Error",
+          description: err.message || "Failed to join session.",
+          variant: "destructive",
+        });
       }
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to join session.", variant: "destructive" });
-    }
-  }, [user, awardXP, toast]);
+    },
+    [user, awardXP, toast],
+  );
 
-  const sendMessage = useCallback(async (msgText: string) => {
-    if (!msgText.trim() || !selectedSession) return;
+  const sendMessage = useCallback(
+    async (msgText: string) => {
+      if (!msgText.trim() || !selectedSession) return;
 
-    const activity = {
-      id: Date.now(),
-      text: `${user?.user_metadata?.full_name || "Someone"} sent a message`,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
+      const activity = {
+        id: Date.now(),
+        text: `${user?.user_metadata?.full_name || "Someone"} sent a message`,
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
 
-    if (channelRef.current) {
-      channelRef.current.send({
-        type: "broadcast",
-        event: "activity",
-        payload: activity,
-      });
-    }
+      if (channelRef.current) {
+        channelRef.current.send({
+          type: "broadcast",
+          event: "activity",
+          payload: activity,
+        });
+      }
 
-    try {
-      const { error } = await (supabase as any)
-        .from("messages")
-        .insert({
+      try {
+        const { error } = await (supabase as any).from("messages").insert({
           session_id: selectedSession.id,
           user_id: user?.id,
           username: user?.user_metadata?.full_name || "Anonymous",
           message: msgText,
         });
 
-      if (error) throw error;
-    } catch (err: any) {
-      toast({ title: "Failed to send message", description: err.message || "An unexpected error occurred.", variant: "destructive" });
-    }
-  }, [selectedSession, user, toast]);
-
-  const togglePinMessage = useCallback(async (messageId: string, currentPinnedState: boolean) => {
-    if (!selectedSession) return;
-    try {
-      const { error } = await (supabase as any)
-        .from("messages")
-        .update({ is_pinned: !currentPinnedState })
-        .eq("id", messageId)
-        .eq("session_id", selectedSession.id);
-        
-      if (error) throw error;
-      
-      // Optimistic UI update
-      setMessages((prev) => prev.map(msg => msg.id === messageId ? { ...msg, is_pinned: !currentPinnedState } : msg));
-      
-      if (!currentPinnedState) {
-        toast({ title: "Message Pinned", description: "This message is now pinned to the top of the chat." });
+        if (error) throw error;
+      } catch (err: any) {
+        toast({
+          title: "Failed to send message",
+          description: err.message || "An unexpected error occurred.",
+          variant: "destructive",
+        });
       }
-    } catch (err: any) {
-      toast({ title: "Failed to update pin status", description: err.message || "An unexpected error occurred.", variant: "destructive" });
-    }
-  }, [selectedSession, toast]);
+    },
+    [selectedSession, user, toast],
+  );
+
+  const togglePinMessage = useCallback(
+    async (messageId: string, currentPinnedState: boolean) => {
+      if (!selectedSession) return;
+      try {
+        const { error } = await (supabase as any)
+          .from("messages")
+          .update({ is_pinned: !currentPinnedState })
+          .eq("id", messageId)
+          .eq("session_id", selectedSession.id);
+
+        if (error) throw error;
+
+        // Optimistic UI update
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId
+              ? { ...msg, is_pinned: !currentPinnedState }
+              : msg,
+          ),
+        );
+
+        if (!currentPinnedState) {
+          toast({
+            title: "Message Pinned",
+            description: "This message is now pinned to the top of the chat.",
+          });
+        }
+      } catch (err: any) {
+        toast({
+          title: "Failed to update pin status",
+          description: err.message || "An unexpected error occurred.",
+          variant: "destructive",
+        });
+      }
+    },
+    [selectedSession, toast],
+  );
 
   const sendTypingEvent = useCallback(() => {
     if (channelRef.current) {
@@ -375,13 +452,17 @@ export function useSessions(user: any) {
     try {
       setSummaryLoading(true);
 
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
       const res = await fetch(`${API_BASE_URL}/api/ai/generate-summary`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          ...(session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {}),
         },
         credentials: "include",
         body: JSON.stringify({ messages }),
@@ -394,13 +475,11 @@ export function useSessions(user: any) {
       const parsedData = await res.json();
       setSessionSummary(parsedData);
 
-      await (supabase as any)
-        .from("session_summaries")
-        .insert({
-          session_id: selectedSession.id,
-          summary: parsedData.summary,
-          key_takeaways: parsedData.key_takeaways || [],
-        });
+      await (supabase as any).from("session_summaries").insert({
+        session_id: selectedSession.id,
+        summary: parsedData.summary,
+        key_takeaways: parsedData.key_takeaways || [],
+      });
     } catch (error) {
       console.error("Summary generation failed", error);
     } finally {

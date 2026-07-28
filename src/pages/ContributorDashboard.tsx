@@ -65,7 +65,10 @@ function ContributorDashboard() {
         }
 
         const totalContributions = Array.isArray(contributorsData)
-          ? contributorsData.reduce((acc: number, contributor) => acc + contributor.contributions, 0)
+          ? contributorsData.reduce(
+              (acc: number, contributor) => acc + contributor.contributions,
+              0,
+            )
           : 0;
 
         setStats([
@@ -83,7 +86,9 @@ function ContributorDashboard() {
           },
           {
             title: "Contributors",
-            value: Array.isArray(contributorsData) ? contributorsData.length : 0,
+            value: Array.isArray(contributorsData)
+              ? contributorsData.length
+              : 0,
           },
         ]);
       } catch (error) {
@@ -91,7 +96,10 @@ function ContributorDashboard() {
           return;
         }
 
-        const normalized = normalizeError(error, "Unable to load GitHub contributor data.");
+        const normalized = normalizeError(
+          error,
+          "Unable to load GitHub contributor data.",
+        );
 
         setError(normalized.message);
 
@@ -118,10 +126,8 @@ function ContributorDashboard() {
   return (
     <div className="min-h-screen bg-black text-white pt-32 pb-12">
       <div className="max-w-7xl mx-auto px-6 md:px-8">
-
         {/* Header */}
         <div className="mb-10">
-
           <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 text-cyan-300 text-sm font-medium mb-6">
             🚀 Community Contributor Space
           </div>
@@ -134,13 +140,15 @@ function ContributorDashboard() {
           </h1>
 
           <p className="text-zinc-400 text-lg md:text-xl max-w-3xl leading-relaxed">
-            Track your real-time GitHub contributions inside the PeerLearn repository.
+            Track your real-time GitHub contributions inside the PeerLearn
+            repository.
           </p>
 
           <p className="mt-3 text-sm text-cyan-300/80">
-            {loading ? "Refreshing GitHub stats..." : "Live repository data is synced from GitHub."}
+            {loading
+              ? "Refreshing GitHub stats..."
+              : "Live repository data is synced from GitHub."}
           </p>
-
         </div>
 
         {error ? (
@@ -156,11 +164,9 @@ function ContributorDashboard() {
 
         {/* Welcome Banner */}
         <div className="relative overflow-hidden rounded-3xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-purple-500/10 p-8 md:p-10 mb-12">
-
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.15),transparent_40%)]"></div>
 
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
                 Open Source Contributions 🚀
@@ -172,11 +178,8 @@ function ContributorDashboard() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-
               <div className="bg-black/30 border border-cyan-500/10 backdrop-blur-xl rounded-2xl px-6 py-5">
-                <p className="text-zinc-400 text-sm mb-1">
-                  Repository
-                </p>
+                <p className="text-zinc-400 text-sm mb-1">Repository</p>
 
                 <h3 className="text-lg font-bold text-cyan-400">
                   peer-learning
@@ -184,15 +187,10 @@ function ContributorDashboard() {
               </div>
 
               <div className="bg-black/30 border border-cyan-500/10 backdrop-blur-xl rounded-2xl px-6 py-5">
-                <p className="text-zinc-400 text-sm mb-1">
-                  Organization
-                </p>
+                <p className="text-zinc-400 text-sm mb-1">Organization</p>
 
-                <h3 className="text-lg font-bold text-purple-400">
-                  GitHub
-                </h3>
+                <h3 className="text-lg font-bold text-purple-400">GitHub</h3>
               </div>
-
             </div>
           </div>
         </div>
@@ -200,26 +198,19 @@ function ContributorDashboard() {
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8 mb-12">
           {stats.map((item, index) => (
-            <StatsCard
-              key={index}
-              title={item.title}
-              value={item.value}
-            />
+            <StatsCard key={index} title={item.title} value={item.value} />
           ))}
         </div>
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-12">
-
           <RecentActivity />
 
           <LearningProgress />
-
         </div>
 
         {/* Leaderboard */}
         <Leaderboard />
-
       </div>
     </div>
   );

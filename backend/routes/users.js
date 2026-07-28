@@ -22,19 +22,27 @@ const storage = multer.diskStorage({
     cb(null, profilesDir);
   },
   filename: function (req, file, cb) {
-    const userId = req.user?.id ?? 'unknown'
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, `profile-${userId}-${uniqueSuffix}${path.extname(file.originalname)}`)
-  }
+    const userId = req.user?.id ?? "unknown";
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(
+      null,
+      `profile-${userId}-${uniqueSuffix}${path.extname(file.originalname)}`,
+    );
+  },
 });
 
-const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
 
 // Configure multer with file size limits and MIME type validation
-const upload = multer({ 
+const upload = multer({
   storage: storage,
-  limits: { 
-    fileSize: 5 * 1024 * 1024 // 5MB limit to prevent server disk space exhaustion
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit to prevent server disk space exhaustion
   },
   fileFilter: (req, file, cb) => {
     if (ALLOWED_IMAGE_TYPES.has(file.mimetype)) {
@@ -44,17 +52,19 @@ const upload = multer({
       error.code = "UNSUPPORTED_MEDIA_TYPE";
       cb(error, false);
     }
-  }
+  },
 });
 
 const uploadProfilePhoto = (req, res, next) => {
   upload.single("profilePhoto")(req, res, (err) => {
     if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
-      return res.status(413).json({ error: "Profile photo exceeds 5MB limit." });
+      return res
+        .status(413)
+        .json({ error: "Profile photo exceeds 5MB limit." });
     }
     if (err) {
       if (err.code === "UNSUPPORTED_MEDIA_TYPE") {
-         return res.status(415).json({ error: err.message });
+        return res.status(415).json({ error: err.message });
       }
       return next(err);
     }
@@ -73,27 +83,36 @@ const safeUnlink = (filePath) => {
 };
 
 // User profile photo upload endpoint
-router.post("/upload-photo", requireAuth, uploadProfilePhoto, async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded or invalid file type." });
-  }
-
-  try {
-    const detected = await fileTypeFromFile(req.file.path);
-    if (!detected || !ALLOWED_IMAGE_TYPES.has(detected.mime)) {
-      safeUnlink(req.file.path);
-      return res.status(415).json({ error: "Only valid image files are allowed." });
+router.post(
+  "/upload-photo",
+  requireAuth,
+  uploadProfilePhoto,
+  async (req, res) => {
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ error: "No file uploaded or invalid file type." });
     }
-  } catch (err) {
-    safeUnlink(req.file.path);
-    return res.status(500).json({ error: "Error validating file type." });
-  }
 
-  res.json({ 
-    success: true, 
-    message: "Profile photo uploaded successfully.",
-    fileUrl: `/uploads/profiles/${req.file.filename}`
-  });
-});
+    try {
+      const detected = await fileTypeFromFile(req.file.path);
+      if (!detected || !ALLOWED_IMAGE_TYPES.has(detected.mime)) {
+        safeUnlink(req.file.path);
+        return res
+          .status(415)
+          .json({ error: "Only valid image files are allowed." });
+      }
+    } catch (err) {
+      safeUnlink(req.file.path);
+      return res.status(500).json({ error: "Error validating file type." });
+    }
+
+    res.json({
+      success: true,
+      message: "Profile photo uploaded successfully.",
+      fileUrl: `/uploads/profiles/${req.file.filename}`,
+    });
+  },
+);
 
 export default router;

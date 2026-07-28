@@ -1,12 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 
 type DownloadResourceResult =
-  | { success: true }
-  | { success: false; error: string };
+  { success: true } | { success: false; error: string };
 
 export const downloadResource = async (
   fileUrl: string,
-  filename: string
+  filename: string,
 ): Promise<DownloadResourceResult> => {
   const { data, error } = await supabase.storage
     .from("resources")

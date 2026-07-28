@@ -1,16 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/useAuth';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/useAuth";
+import { toast } from "sonner";
 
 export default function StudyRooms() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const [rooms, setRooms] = useState<any[]>([]);
-  const [newTopic, setNewTopic] = useState('');
+  const [newTopic, setNewTopic] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [loading, setLoading] = useState(false);
   const [joiningRoomId, setJoiningRoomId] = useState<string | null>(null);
@@ -19,13 +18,13 @@ export default function StudyRooms() {
     fetchRooms();
 
     const channel = supabase
-      .channel('study-rooms-changes')
+      .channel("study-rooms-changes")
       .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'study_rooms' },
+        "postgres_changes",
+        { event: "*", schema: "public", table: "study_rooms" },
         () => {
           fetchRooms();
-        }
+        },
       )
       .subscribe();
 
@@ -36,9 +35,9 @@ export default function StudyRooms() {
 
   const fetchRooms = async () => {
     const { data, error } = await supabase
-      .from('study_rooms' as any)
-      .select('*')
-      .order('created_at', { ascending: false });
+      .from("study_rooms" as any)
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (!error && data) {
       setRooms(data);
@@ -50,22 +49,20 @@ export default function StudyRooms() {
 
     setLoading(true);
 
-    const { error } = await supabase
-      .from('study_rooms' as any)
-      .insert([
-        {
-          topic: newTopic,
-          created_by: user.id,
-          is_private: isPrivate,
-        },
-      ]);
+    const { error } = await supabase.from("study_rooms" as any).insert([
+      {
+        topic: newTopic,
+        created_by: user.id,
+        is_private: isPrivate,
+      },
+    ]);
 
     if (!error) {
-      setNewTopic('');
+      setNewTopic("");
       setIsPrivate(false);
     } else {
-      console.error('Error creating room:', error);
-      toast.error('Failed to create room.');
+      console.error("Error creating room:", error);
+      toast.error("Failed to create room.");
     }
 
     setLoading(false);
@@ -81,13 +78,13 @@ export default function StudyRooms() {
 
     setJoiningRoomId(room.id);
 
-    const { error } = await supabase.rpc('join_public_study_room', {
+    const { error } = await supabase.rpc("join_public_study_room", {
       p_room_id: room.id,
     });
 
     if (error) {
-      console.error('Error joining room:', error);
-      toast.error(error.message || 'Failed to join room.');
+      console.error("Error joining room:", error);
+      toast.error(error.message || "Failed to join room.");
       setJoiningRoomId(null);
       return;
     }
@@ -117,7 +114,7 @@ export default function StudyRooms() {
               onChange={(e) => setNewTopic(e.target.value)}
               placeholder="Enter room topic (e.g., Data Structures, React.js)"
               className="flex-1 bg-slate-950 border border-slate-800 text-white p-3 rounded-lg focus:outline-none focus:border-blue-500 transition"
-              onKeyDown={(e) => e.key === 'Enter' && handleCreateRoom()}
+              onKeyDown={(e) => e.key === "Enter" && handleCreateRoom()}
             />
 
             <label className="flex items-center gap-2 text-sm text-slate-300">
@@ -135,7 +132,7 @@ export default function StudyRooms() {
               disabled={loading || !newTopic.trim()}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
             >
-              {loading ? 'Creating...' : 'Create Room'}
+              {loading ? "Creating..." : "Create Room"}
             </button>
           </div>
         </div>
@@ -174,8 +171,7 @@ export default function StudyRooms() {
                       </div>
 
                       <p className="text-sm text-slate-500 mt-1">
-                        Created{' '}
-                        {new Date(room.created_at).toLocaleDateString()}
+                        Created {new Date(room.created_at).toLocaleDateString()}
                       </p>
                     </div>
 
@@ -185,7 +181,7 @@ export default function StudyRooms() {
                         disabled={isJoining}
                         className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-sm font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {isJoining ? 'Joining...' : 'Join'}
+                        {isJoining ? "Joining..." : "Join"}
                       </button>
                     ) : (
                       <span className="px-4 py-2 text-sm text-slate-500 rounded-lg border border-slate-700 cursor-not-allowed select-none">

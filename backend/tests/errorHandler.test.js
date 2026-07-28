@@ -6,8 +6,14 @@ const makeRes = () => ({
   headersSent: false,
   statusCode: null,
   body: null,
-  status(code) { this.statusCode = code; return this; },
-  json(payload) { this.body = payload; return this; },
+  status(code) {
+    this.statusCode = code;
+    return this;
+  },
+  json(payload) {
+    this.body = payload;
+    return this;
+  },
   setHeader() {},
 });
 
@@ -19,10 +25,17 @@ describe("errorHandler logging", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const res = makeRes();
 
-    errorHandler(new HttpError(401, "Authentication required"), { requestId: "req-1" }, res, () => {});
+    errorHandler(
+      new HttpError(401, "Authentication required"),
+      { requestId: "req-1" },
+      res,
+      () => {},
+    );
 
     expect(res.statusCode).toBe(401);
-    const loggedUnhandled = errorSpy.mock.calls.some((args) => String(args[0]).includes("Unhandled error"));
+    const loggedUnhandled = errorSpy.mock.calls.some((args) =>
+      String(args[0]).includes("Unhandled error"),
+    );
     expect(loggedUnhandled).toBe(false);
     expect(warnSpy).toHaveBeenCalled();
   });
@@ -34,7 +47,9 @@ describe("errorHandler logging", () => {
     errorHandler(new Error("boom"), { requestId: "req-2" }, res, () => {});
 
     expect(res.statusCode).toBe(500);
-    const unhandledLogs = errorSpy.mock.calls.filter((args) => String(args[0]).includes("Unhandled error"));
+    const unhandledLogs = errorSpy.mock.calls.filter((args) =>
+      String(args[0]).includes("Unhandled error"),
+    );
     expect(unhandledLogs).toHaveLength(1);
   });
 
@@ -42,7 +57,12 @@ describe("errorHandler logging", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const res = makeRes();
 
-    errorHandler(new HttpError(500, "boom"), { requestId: "req-3" }, res, () => {});
+    errorHandler(
+      new HttpError(500, "boom"),
+      { requestId: "req-3" },
+      res,
+      () => {},
+    );
 
     expect(res.statusCode).toBe(500);
     expect(errorSpy).toHaveBeenCalled();

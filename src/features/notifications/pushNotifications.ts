@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from "@/integrations/supabase/client";
 import { env } from "@/env";
 import { sanitizeNotificationActionUrl } from "./actionUrl";
@@ -17,8 +16,15 @@ export function isBrowserNotificationSupported() {
   return "Notification" in window && "serviceWorker" in navigator;
 }
 
-export async function showBrowserNotification(title: string, body: string, actionUrl = "/notifications") {
-  if (!isBrowserNotificationSupported() || Notification.permission !== "granted") {
+export async function showBrowserNotification(
+  title: string,
+  body: string,
+  actionUrl = "/notifications",
+) {
+  if (
+    !isBrowserNotificationSupported() ||
+    Notification.permission !== "granted"
+  ) {
     return;
   }
 
@@ -75,4 +81,3 @@ export async function registerBrowserPush(userId: string) {
 
   return { ok: true, reason: "subscribed" as const };
 }
-

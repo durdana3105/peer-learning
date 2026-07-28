@@ -94,10 +94,14 @@ describe("Database Security & RLS Policies", () => {
 
     describe("saved_resources table", () => {
       it("allows users to select their own saved resources", async () => {
-        const mockSelect = vi.fn().mockResolvedValue({ data: [{ id: "res-1" }], error: null });
+        const mockSelect = vi
+          .fn()
+          .mockResolvedValue({ data: [{ id: "res-1" }], error: null });
         (supabase.from as any).mockReturnValue({ select: mockSelect });
 
-        const { data, error } = await supabase.from("saved_resources").select("*");
+        const { data, error } = await supabase
+          .from("saved_resources")
+          .select("*");
 
         expect(supabase.from).toHaveBeenCalledWith("saved_resources");
         expect(mockSelect).toHaveBeenCalledWith("*");

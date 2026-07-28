@@ -18,12 +18,12 @@ const verifyLocalJwt = (token, secret) => {
     const [headerB64, payloadB64, signatureB64] = parts;
 
     const header = JSON.parse(base64UrlDecode(headerB64));
-    
+
     // Prevent algorithm confusion: Only process HS256 tokens using HMAC.
     if (header.alg !== "HS256") {
       return null;
     }
-    
+
     // Additional check: if the secret appears to be a PEM-encoded public key, reject HMAC
     if (secret.startsWith("-----BEGIN")) {
       return null;
@@ -67,7 +67,9 @@ const jwtSecret = process.env.SUPABASE_JWT_SECRET;
 const isProduction = process.env.NODE_ENV === "production";
 
 if (!jwtSecret && isProduction) {
-  console.error("[security] FATAL: SUPABASE_JWT_SECRET is not set in production. Set it from your Supabase project settings.");
+  console.error(
+    "[security] FATAL: SUPABASE_JWT_SECRET is not set in production. Set it from your Supabase project settings.",
+  );
   process.exit(1);
 }
 
@@ -110,7 +112,10 @@ export const requireAuth = async (req, res, next) => {
 
   if (req.cookies && req.cookies.access_token) {
     token = req.cookies.access_token;
-  } else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
+  } else if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer ")
+  ) {
     token = req.headers.authorization.slice(7);
   }
 
@@ -132,29 +137,44 @@ export const requireAuth = async (req, res, next) => {
       email: payload.email,
       user_metadata: payload.user_metadata,
       app_metadata: payload.app_metadata,
-      role: payload.role
+      role: payload.role,
     };
     return next();
   }
 
   // DEVELOPMENT ONLY FALLBACK
-  console.warn("[security] Using slow network fallback for JWT verification. Do not use in production.");
-  
+  console.warn(
+    "[security] Using slow network fallback for JWT verification. Do not use in production.",
+  );
+
   const clientIp = req.socket?.remoteAddress || req.ip || "unknown";
   if (isFallbackRateLimited(clientIp)) {
-    next(new HttpError(429, "Too many verification requests. Please try again later."));
+    next(
+      new HttpError(
+        429,
+        "Too many verification requests. Please try again later.",
+      ),
+    );
     return;
   }
 
   try {
     const supabaseAdmin = getSupabaseAdmin();
     if (!supabaseAdmin) {
-      next(new HttpError(500, "Supabase configuration is missing for verification fallback"));
+      next(
+        new HttpError(
+          500,
+          "Supabase configuration is missing for verification fallback",
+        ),
+      );
       return;
     }
 
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-    
+    const {
+      data: { user },
+      error,
+    } = await supabaseAdmin.auth.getUser(token);
+
     if (error || !user) {
       next(new HttpError(401, "Invalid or expired session"));
       return;
@@ -186,51 +206,56 @@ const deriveActiveRoles = (profile) => {
   return roles;
 };
 
-export const requireProfileRole = (...allowedRoles) => async (req, res, next) => {
-  try {
-    const supabaseAdmin = getSupabaseAdmin();
+export const requireProfileRole =
+  (...allowedRoles) =>
+  async (req, res, next) => {
+    try {
+      const supabaseAdmin = getSupabaseAdmin();
 
-    if (!supabaseAdmin) {
-      next(new HttpError(500, "Supabase configuration is missing"));
-      return;
-    }
+      if (!supabaseAdmin) {
+        next(new HttpError(500, "Supabase configuration is missing"));
+        return;
+      }
 
-    if (!req.user?.id) {
-      next(new HttpError(401, "Authentication required"));
-      return;
-    }
+      if (!req.user?.id) {
+        next(new HttpError(401, "Authentication required"));
+        return;
+      }
 
-    const { data: profile, error } = await supabaseAdmin
-      .from("profiles")
-      .select("id, is_mentor, is_learner, is_admin")
-      .eq("id", req.user.id)
-      .maybeSingle();
+      const { data: profile, error } = await supabaseAdmin
+        .from("profiles")
+        .select("id, is_mentor, is_learner, is_admin")
+        .eq("id", req.user.id)
+        .maybeSingle();
 
-    if (error) {
+      if (error) {
+        console.error("Profile authorization error:", error);
+        next(new HttpError(500, "Unable to verify account permissions"));
+        return;
+      }
+
+      if (!profile) {
+        next(new HttpError(403, "Not authorized to access this resource"));
+        return;
+      }
+
+      const activeRoles = deriveActiveRoles(profile);
+      if (
+        allowedRoles.length > 0 &&
+        !allowedRoles.some((role) => activeRoles.includes(role))
+      ) {
+        next(new HttpError(403, "Not authorized to access this resource"));
+        return;
+      }
+
+      req.profile = profile;
+      req.roles = activeRoles;
+      next();
+    } catch (error) {
       console.error("Profile authorization error:", error);
       next(new HttpError(500, "Unable to verify account permissions"));
-      return;
     }
-
-    if (!profile) {
-      next(new HttpError(403, "Not authorized to access this resource"));
-      return;
-    }
-
-    const activeRoles = deriveActiveRoles(profile);
-    if (allowedRoles.length > 0 && !allowedRoles.some((role) => activeRoles.includes(role))) {
-      next(new HttpError(403, "Not authorized to access this resource"));
-      return;
-    }
-
-    req.profile = profile;
-    req.roles = activeRoles;
-    next();
-  } catch (error) {
-    console.error("Profile authorization error:", error);
-    next(new HttpError(500, "Unable to verify account permissions"));
-  }
-};
+  };
 
 /**
  * Shorthand middleware explicitly requiring the Admin role.

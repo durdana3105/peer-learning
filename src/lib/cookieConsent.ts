@@ -1,5 +1,6 @@
 /** Cookie category identifiers used for consent preferences. */
-export type CookieCategory = "essential" | "analytics" | "functional" | "marketing";
+export type CookieCategory =
+  "essential" | "analytics" | "functional" | "marketing";
 
 /** Persisted cookie consent preferences for the current user. */
 export interface CookiePreferences {
@@ -71,7 +72,8 @@ const readConsentFromStorage = (storage: Storage): CookiePreferences | null => {
 /** Read stored consent from sessionStorage, falling back to localStorage. */
 export const getStoredConsent = (): CookiePreferences | null => {
   return (
-    readConsentFromStorage(sessionStorage) ?? readConsentFromStorage(localStorage)
+    readConsentFromStorage(sessionStorage) ??
+    readConsentFromStorage(localStorage)
   );
 };
 

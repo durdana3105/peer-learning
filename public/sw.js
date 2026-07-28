@@ -39,26 +39,33 @@ self.addEventListener("push", (event) => {
       data: {
         url: self.sanitizeNotificationActionUrl(data.action_url),
       },
-    })
+    }),
   );
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const safePath = self.sanitizeNotificationActionUrl(event.notification.data?.url);
+  const safePath = self.sanitizeNotificationActionUrl(
+    event.notification.data?.url,
+  );
   const targetUrl = new URL(safePath, self.location.origin).href;
 
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if ("focus" in client && client.url.startsWith(self.location.origin)) {
-          client.navigate(targetUrl);
-          return client.focus();
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (
+            "focus" in client &&
+            client.url.startsWith(self.location.origin)
+          ) {
+            client.navigate(targetUrl);
+            return client.focus();
+          }
         }
-      }
 
-      return clients.openWindow(targetUrl);
-    })
+        return clients.openWindow(targetUrl);
+      }),
   );
 });

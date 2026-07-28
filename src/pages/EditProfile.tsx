@@ -44,7 +44,7 @@ const EditProfile = () => {
                 ? data.skills.join(", ")
                 : data.skills || "",
             }
-          : { name: "", bio: "", skills: "" }
+          : { name: "", bio: "", skills: "" },
       );
     };
 
@@ -136,7 +136,6 @@ const EditProfile = () => {
 
           {/* Form fields */}
           <div className="space-y-6">
-
             {/* Name */}
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm font-medium text-slate-300">
@@ -152,7 +151,9 @@ const EditProfile = () => {
                 maxLength={50}
                 className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
               />
-              <p className={`text-xs text-right ${nameCharsLeft <= 10 ? "text-amber-400" : "text-slate-500"}`}>
+              <p
+                className={`text-xs text-right ${nameCharsLeft <= 10 ? "text-amber-400" : "text-slate-500"}`}
+              >
                 {nameCharsLeft} characters left
               </p>
             </div>
@@ -173,7 +174,9 @@ const EditProfile = () => {
                 rows={4}
                 className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition"
               />
-              <p className={`text-xs text-right ${bioCharsLeft <= 30 ? "text-amber-400" : "text-slate-500"}`}>
+              <p
+                className={`text-xs text-right ${bioCharsLeft <= 30 ? "text-amber-400" : "text-slate-500"}`}
+              >
                 {bioCharsLeft} characters left
               </p>
             </div>
@@ -192,7 +195,9 @@ const EditProfile = () => {
                 }
                 className="bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
               />
-              <p className="text-xs text-slate-500">Separate skills with commas.</p>
+              <p className="text-xs text-slate-500">
+                Separate skills with commas.
+              </p>
             </div>
           </div>
 

@@ -18,40 +18,49 @@ export default function SolvedDoubtsWidget() {
           .from("peer_reviews")
           .select("created_at")
           .eq("reviewer_id", user.id);
-          
+
         if (error) throw error;
         if (!mounted) return;
-        
+
         const reviews = data || [];
-        
+
         const total = reviews.length;
-        
+
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        
-        const currentMonthCount = reviews.filter(r => new Date(r.created_at) >= startOfMonth).length;
-        const lastMonthCount = reviews.filter(r => {
+        const startOfLastMonth = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          1,
+        );
+
+        const currentMonthCount = reviews.filter(
+          (r) => new Date(r.created_at) >= startOfMonth,
+        ).length;
+        const lastMonthCount = reviews.filter((r) => {
           const d = new Date(r.created_at);
           return d >= startOfLastMonth && d < startOfMonth;
         }).length;
-        
+
         setTotalSolved(total);
         setThisMonth(currentMonthCount);
-        
+
         if (lastMonthCount === 0) {
           setGrowth(currentMonthCount > 0 ? "+100%" : "+0%");
         } else {
-          const percent = Math.round(((currentMonthCount - lastMonthCount) / lastMonthCount) * 100);
-          setGrowth(`${percent > 0 ? '+' : ''}${percent}%`);
+          const percent = Math.round(
+            ((currentMonthCount - lastMonthCount) / lastMonthCount) * 100,
+          );
+          setGrowth(`${percent > 0 ? "+" : ""}${percent}%`);
         }
-        
       } catch (err) {
         console.error("Failed to load doubts solved data:", err);
       }
     }
     fetchData();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [user]);
 
   return (
@@ -77,7 +86,9 @@ export default function SolvedDoubtsWidget() {
 
         <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/30 flex justify-between items-center">
           <span className="text-sm text-slate-300">This Month</span>
-          <span className="text-lg font-bold text-emerald-400">{thisMonth}</span>
+          <span className="text-lg font-bold text-emerald-400">
+            {thisMonth}
+          </span>
         </div>
       </div>
     </div>

@@ -1,6 +1,5 @@
 # Contributing Guidelines
 
-
 Thank you for your interest in contributing to the Peer Learning project! We welcome contributions from the community and are pleased to have you join us. By participating in this project, you agree to abide by our code of conduct and these contributing guidelines.
 
 ## How to Contribute
@@ -10,6 +9,7 @@ To contribute to this repository, please follow these standard steps:
 ### 1. Forking the Repository
 
 Before making any changes, you need to create your own copy of the project.
+
 1. Click the **Fork** button at the top right corner of this repository's page to create a copy of the repository in your own GitHub account.
 2. Clone your forked repository to your local machine:
    ```bash
@@ -27,6 +27,7 @@ Before making any changes, you need to create your own copy of the project.
 ### 2. Creating Branches
 
 Always create a new branch for your work. Do not make changes directly on the main branch.
+
 1. Make sure your local `main` branch is up to date with the upstream `main` branch:
    ```bash
    git fetch upstream
@@ -43,6 +44,7 @@ Always create a new branch for your work. Do not make changes directly on the ma
 ### 3. Making Commits
 
 Make your changes in your newly created branch. Follow these guidelines for committing your work:
+
 1. Stage your changes:
    ```bash
    git add .
@@ -51,12 +53,13 @@ Make your changes in your newly created branch. Follow these guidelines for comm
    ```bash
    git commit -m "Brief description of the changes made"
    ```
-   * Write commits in the imperative mood (e.g., "Add feature" instead of "Added feature").
-   * Keep commit messages concise but descriptive.
+   - Write commits in the imperative mood (e.g., "Add feature" instead of "Added feature").
+   - Keep commit messages concise but descriptive.
 
 ### 4. Following Coding Standards
 
 To maintain consistency and code quality across the project, please adhere to the following coding standards:
+
 - Ensure your code is properly formatted and clean.
 - Write clear and meaningful variable, function, and class names.
 - Add comments to explain complex logic or non-obvious code.
@@ -66,6 +69,7 @@ To maintain consistency and code quality across the project, please adhere to th
 ### 5. Submitting Pull Requests
 
 Once you are ready to share your changes, submit a pull request (PR).
+
 1. Push your branch to your forked repository on GitHub:
    ```bash
    git push origin your-branch-name
@@ -79,6 +83,7 @@ Once you are ready to share your changes, submit a pull request (PR).
 ### Code Review Process
 
 After you submit your PR, project maintainers will review your code.
+
 - Be prepared to answer questions and address any requested changes.
 - You can make updates to your PR by simply committing to your local branch and pushing to your fork. The PR will update automatically.
 
@@ -107,6 +112,7 @@ Thank you for your interest in contributing to this project! Contributions help 
 ## Reporting Issues
 
 If you find bugs or have suggestions:
+
 - Open an issue
 - Clearly describe the problem
 - Include steps to reproduce if applicable
@@ -123,4 +129,3 @@ If you find bugs or have suggestions:
 Please be respectful and collaborative with other contributors to maintain a healthy open-source environment.
 
 Happy Contributing!
-

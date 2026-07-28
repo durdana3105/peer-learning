@@ -1,5 +1,15 @@
 import { memo, useContext, useEffect, useMemo, useState } from "react";
-import { Archive, Bookmark, Code, Download, FileText, Loader2, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
+import {
+  Archive,
+  Bookmark,
+  Code,
+  Download,
+  FileText,
+  Loader2,
+  ThumbsDown,
+  ThumbsUp,
+  Trash2,
+} from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -9,7 +19,13 @@ import { downloadResource } from "@/lib/downloadResource";
 import type { Resource } from "@/types/resource";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useResourceInteractions } from "@/hooks/useResourceInteractions";
 import { cn } from "@/lib/utils";
 
@@ -34,14 +50,18 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [localUpvotes, setLocalUpvotes] = useState(resource.upvotes_count || 0);
-  const [localDownvotes, setLocalDownvotes] = useState(resource.downvotes_count || 0);
-  const [pendingVote, setPendingVote] = useState<1 | -1 | null | undefined>(undefined);
+  const [localDownvotes, setLocalDownvotes] = useState(
+    resource.downvotes_count || 0,
+  );
+  const [pendingVote, setPendingVote] = useState<1 | -1 | null | undefined>(
+    undefined,
+  );
 
   const isOwner = currentUser?.id === resource.uploaded_by;
 
   const { vote, isSaved, toggleVote, toggleSave } = useResourceInteractions(
     resource.id,
-    currentUser?.id
+    currentUser?.id,
   );
 
   const displayedVote = pendingVote !== undefined ? pendingVote : vote;
@@ -68,7 +88,9 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
   const handleDownload = async () => {
     setIsDownloading(true);
 
-    const filename = resource.title.toLowerCase().endsWith(`.${resource.file_type}`)
+    const filename = resource.title
+      .toLowerCase()
+      .endsWith(`.${resource.file_type}`)
       ? resource.title
       : `${resource.title}.${resource.file_type}`;
 
@@ -163,7 +185,10 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
             aria-label={isSaved ? "Unsave resource" : "Save resource"}
             title={isSaved ? "Unsave resource" : "Save resource"}
           >
-            <Bookmark className="h-5 w-5" fill={isSaved ? "currentColor" : "none"} />
+            <Bookmark
+              className="h-5 w-5"
+              fill={isSaved ? "currentColor" : "none"}
+            />
           </Button>
         </div>
       </CardHeader>
@@ -193,31 +218,51 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
 
       <CardFooter className="mt-auto flex flex-col gap-3">
         <div className="flex items-center gap-2 w-full justify-start border-b pb-3">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={cn("gap-1.5", displayedVote === 1 && "text-green-600 bg-green-50")}
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "gap-1.5",
+              displayedVote === 1 && "text-green-600 bg-green-50",
+            )}
             onClick={() => handleVote(1)}
             disabled={pendingVote !== undefined}
           >
-            <ThumbsUp className="h-4 w-4" fill={displayedVote === 1 ? "currentColor" : "none"} />
+            <ThumbsUp
+              className="h-4 w-4"
+              fill={displayedVote === 1 ? "currentColor" : "none"}
+            />
             <span className="text-xs font-medium">{localUpvotes}</span>
           </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={cn("gap-1.5", displayedVote === -1 && "text-red-600 bg-red-50")}
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "gap-1.5",
+              displayedVote === -1 && "text-red-600 bg-red-50",
+            )}
             onClick={() => handleVote(-1)}
             disabled={pendingVote !== undefined}
           >
-            <ThumbsDown className="h-4 w-4" fill={displayedVote === -1 ? "currentColor" : "none"} />
+            <ThumbsDown
+              className="h-4 w-4"
+              fill={displayedVote === -1 ? "currentColor" : "none"}
+            />
             <span className="text-xs font-medium">{localDownvotes}</span>
           </Button>
         </div>
 
         <div className="flex flex-wrap gap-2 w-full">
-          <Button onClick={handleDownload} disabled={isDownloading || isDeleting} className="flex-1">
-            {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          <Button
+            onClick={handleDownload}
+            disabled={isDownloading || isDeleting}
+            className="flex-1"
+          >
+            {isDownloading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
             {isDownloading ? "Downloading..." : "Download"}
           </Button>
 
@@ -228,7 +273,11 @@ const ResourceCard = ({ resource, onDelete }: ResourceCardProps) => {
               disabled={isDeleting || isDownloading}
               className="flex-1"
             >
-              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
               {isDeleting ? "Deleting..." : "Delete"}
             </Button>
           ) : null}

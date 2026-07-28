@@ -64,13 +64,18 @@ const parseGithubUsername = (url: string) => {
   }
 };
 
-const normalizeArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
+const normalizeArray = <T,>(value: unknown): T[] =>
+  Array.isArray(value) ? (value as T[]) : [];
 
 const sanitizeUrl = (url: string | null | undefined): string => {
   if (!url) return "";
   const trimmed = url.trim();
   const lower = trimmed.toLowerCase();
-  if (lower.startsWith("javascript:") || lower.startsWith("data:") || lower.startsWith("vbscript:")) {
+  if (
+    lower.startsWith("javascript:") ||
+    lower.startsWith("data:") ||
+    lower.startsWith("vbscript:")
+  ) {
     return "";
   }
   return trimmed;
@@ -93,9 +98,12 @@ const PublicPortfolio = () => {
       setLoading(true);
 
       try {
-        const { data: portfolioData, error: portfolioError } = await (supabase as any)
+        const { data: portfolioData, error: portfolioError } = await (
+          supabase as any
+        )
           .from("portfolio_profiles")
-          .select(`
+          .select(
+            `
             profile_id,
             headline,
             github_url,
@@ -104,7 +112,8 @@ const PublicPortfolio = () => {
             achievements,
             projects,
             learning_progress
-          `)
+          `,
+          )
           .eq("slug", slug)
           .eq("is_published", true)
           .maybeSingle();
@@ -131,14 +140,16 @@ const PublicPortfolio = () => {
 
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
-          .select(`
+          .select(
+            `
             name,
             bio,
             avatar_url,
             badges,
             points,
             sessions_completed
-          `)
+          `,
+          )
           .eq("id", pd.profile_id)
           .maybeSingle();
 
@@ -148,7 +159,8 @@ const PublicPortfolio = () => {
           console.error("Profile query failed:", profileError);
         }
 
-        const progress = pd.learning_progress as Partial<LearningProgress> | null;
+        const progress =
+          pd.learning_progress as Partial<LearningProgress> | null;
 
         setPortfolio({
           profile_id: pd.profile_id,
@@ -157,7 +169,10 @@ const PublicPortfolio = () => {
           linkedin_url: sanitizeUrl(pd.linkedin_url),
           skills: pd.skills || [],
           achievements: normalizeArray<Achievement>(pd.achievements),
-          projects: normalizeArray<Project>(pd.projects).map((p: Project) => ({ ...p, url: sanitizeUrl(p.url) })),
+          projects: normalizeArray<Project>(pd.projects).map((p: Project) => ({
+            ...p,
+            url: sanitizeUrl(p.url),
+          })),
           learning_progress: {
             focus:
               typeof progress?.focus === "string"
@@ -184,11 +199,15 @@ const PublicPortfolio = () => {
     };
   }, [slug]);
 
-  const { endorsements, loading: endorsementsLoading, toggleEndorsement, currentUserId } =
-    useSkillEndorsements({
-      profileUserId: portfolio?.profile_id ?? "",
-      skills: portfolio?.skills ?? [],
-    });
+  const {
+    endorsements,
+    loading: endorsementsLoading,
+    toggleEndorsement,
+    currentUserId,
+  } = useSkillEndorsements({
+    profileUserId: portfolio?.profile_id ?? "",
+    skills: portfolio?.skills ?? [],
+  });
 
   const isOwnProfile = currentUserId === portfolio?.profile_id;
 
@@ -211,8 +230,14 @@ const PublicPortfolio = () => {
         <div>
           <UserRound className="mx-auto mb-4 h-12 w-12 text-slate-500" />
           <h1 className="text-3xl font-bold">Portfolio not found</h1>
-          <p className="mt-3 text-slate-400">This public portfolio may be unpublished or the link may be incorrect.</p>
-          <Button asChild className="mt-6 bg-cyan-400 text-slate-950 hover:bg-cyan-300">
+          <p className="mt-3 text-slate-400">
+            This public portfolio may be unpublished or the link may be
+            incorrect.
+          </p>
+          <Button
+            asChild
+            className="mt-6 bg-cyan-400 text-slate-950 hover:bg-cyan-300"
+          >
             <Link to="/">Go home</Link>
           </Button>
         </div>
@@ -224,7 +249,9 @@ const PublicPortfolio = () => {
   const name = profile?.name || "PeerLearn member";
   const progressPercent = Math.min(
     100,
-    (portfolio.learning_progress.completed / Math.max(portfolio.learning_progress.goal, 1)) * 100,
+    (portfolio.learning_progress.completed /
+      Math.max(portfolio.learning_progress.goal, 1)) *
+      100,
   );
 
   return (
@@ -234,33 +261,60 @@ const PublicPortfolio = () => {
           <div>
             <div className="mb-6 flex items-center gap-4">
               <img
-                src={profile?.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${name}`}
+                src={
+                  profile?.avatar_url ||
+                  `https://api.dicebear.com/9.x/avataaars/svg?seed=${name}`
+                }
                 alt={name}
                 className="h-20 w-20 rounded-full border border-white/20 bg-white/10 object-cover"
               />
               <div>
-                <p className="text-sm uppercase tracking-[0.25em] text-cyan-200">Portfolio</p>
-                <h1 className="mt-1 text-4xl font-black tracking-tight md:text-6xl">{name}</h1>
+                <p className="text-sm uppercase tracking-[0.25em] text-cyan-200">
+                  Portfolio
+                </p>
+                <h1 className="mt-1 text-4xl font-black tracking-tight md:text-6xl">
+                  {name}
+                </h1>
               </div>
             </div>
 
             <p className="max-w-3xl text-2xl font-semibold text-slate-100">
-              {portfolio.headline || "Learning in public and building with peers."}
+              {portfolio.headline ||
+                "Learning in public and building with peers."}
             </p>
-            {profile?.bio && <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">{profile.bio}</p>}
+            {profile?.bio && (
+              <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">
+                {profile.bio}
+              </p>
+            )}
 
             <div className="mt-8 flex flex-wrap gap-3">
               {portfolio.github_url && (
-                <Button asChild className="bg-white text-slate-950 hover:bg-slate-200">
-                  <a href={portfolio.github_url} target="_blank" rel="noreferrer">
+                <Button
+                  asChild
+                  className="bg-white text-slate-950 hover:bg-slate-200"
+                >
+                  <a
+                    href={portfolio.github_url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     <Github className="mr-2 h-4 w-4" />
                     GitHub
                   </a>
                 </Button>
               )}
               {portfolio.linkedin_url && (
-                <Button asChild variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10">
-                  <a href={portfolio.linkedin_url} target="_blank" rel="noreferrer">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="border-white/20 bg-white/5 text-white hover:bg-white/10"
+                >
+                  <a
+                    href={portfolio.linkedin_url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     <Linkedin className="mr-2 h-4 w-4" />
                     LinkedIn
                   </a>
@@ -273,11 +327,15 @@ const PublicPortfolio = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-slate-400">XP</p>
-                <p className="mt-1 text-3xl font-bold text-cyan-200">{profile?.points || 0}</p>
+                <p className="mt-1 text-3xl font-bold text-cyan-200">
+                  {profile?.points || 0}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-slate-400">Sessions</p>
-                <p className="mt-1 text-3xl font-bold text-emerald-200">{profile?.sessions_completed || 0}</p>
+                <p className="mt-1 text-3xl font-bold text-emerald-200">
+                  {profile?.sessions_completed || 0}
+                </p>
               </div>
             </div>
             <div className="mt-6">
@@ -336,17 +394,29 @@ const PublicPortfolio = () => {
           <div className="grid gap-4 md:grid-cols-2">
             {portfolio.projects.length > 0 ? (
               portfolio.projects.map((project, index) => (
-                <article key={`${project.title}-${index}`} className="rounded-lg border border-white/10 bg-white/5 p-5">
+                <article
+                  key={`${project.title}-${index}`}
+                  className="rounded-lg border border-white/10 bg-white/5 p-5"
+                >
                   <div className="flex items-start justify-between gap-4">
                     <h3 className="text-xl font-semibold">{project.title}</h3>
                     {project.url && (
-                      <a href={project.url} target="_blank" rel="noreferrer" className="text-cyan-300 hover:text-cyan-200">
+                      <a
+                        href={project.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-cyan-300 hover:text-cyan-200"
+                      >
                         <ExternalLink className="h-5 w-5" />
                       </a>
                     )}
                   </div>
-                  {project.description && <p className="mt-3 text-slate-300">{project.description}</p>}
-                  {project.tech && <p className="mt-4 text-sm text-cyan-200">{project.tech}</p>}
+                  {project.description && (
+                    <p className="mt-3 text-slate-300">{project.description}</p>
+                  )}
+                  {project.tech && (
+                    <p className="mt-4 text-sm text-cyan-200">{project.tech}</p>
+                  )}
                 </article>
               ))
             ) : (
@@ -363,9 +433,16 @@ const PublicPortfolio = () => {
           <div className="grid gap-4 md:grid-cols-2">
             {portfolio.achievements.length > 0 ? (
               portfolio.achievements.map((achievement, index) => (
-                <article key={`${achievement.title}-${index}`} className="rounded-lg border border-white/10 bg-white/5 p-5">
+                <article
+                  key={`${achievement.title}-${index}`}
+                  className="rounded-lg border border-white/10 bg-white/5 p-5"
+                >
                   <h3 className="text-xl font-semibold">{achievement.title}</h3>
-                  {achievement.description && <p className="mt-3 text-slate-300">{achievement.description}</p>}
+                  {achievement.description && (
+                    <p className="mt-3 text-slate-300">
+                      {achievement.description}
+                    </p>
+                  )}
                 </article>
               ))
             ) : (

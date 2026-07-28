@@ -7,7 +7,7 @@ const envSchema = z.object({
   SUPABASE_JWT_SECRET: z.string().min(1),
   OPENROUTER_API_KEY: z.string().min(1),
   FRONTEND_URL: z.string().default("http://localhost:5173"),
-  SITE_URL: z.string().url().optional()
+  SITE_URL: z.string().url().optional(),
 });
 
 export const validateEnv = () => {

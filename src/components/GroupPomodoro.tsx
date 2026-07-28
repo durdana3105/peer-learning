@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback, memo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/useAuth';
-import { Play, Square, Coffee, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { motion } from 'framer-motion';
-import { logError } from '@/utils/logger';
+import { useState, useEffect, useCallback, memo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/useAuth";
+import { Play, Square, Coffee, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { motion } from "framer-motion";
+import { logError } from "@/utils/logger";
 
 const WORK_MIN = 1;
 const WORK_MAX = 120;
@@ -18,7 +18,7 @@ interface GroupPomodoroProps {
 }
 
 interface StudyRoomTimerState {
-  timer_state: 'idle' | 'work' | 'break' | null;
+  timer_state: "idle" | "work" | "break" | null;
   timer_end_time: string | null;
   timer_work_duration: number | null;
   timer_break_duration: number | null;
@@ -27,16 +27,21 @@ interface StudyRoomTimerState {
 const formatTime = (seconds: number) => {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
-  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 };
 
-export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroProps) {
+export default memo(function GroupPomodoro({
+  roomId,
+  creatorId,
+}: GroupPomodoroProps) {
   const { toast } = useToast();
   const { user } = useAuth();
 
   const isCreator = creatorId !== null && user?.id === creatorId;
 
-  const [timerState, setTimerState] = useState<'idle' | 'work' | 'break'>('idle');
+  const [timerState, setTimerState] = useState<"idle" | "work" | "break">(
+    "idle",
+  );
   const [endTime, setEndTime] = useState<Date | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [workDuration, setWorkDuration] = useState(25);
@@ -49,9 +54,11 @@ export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroP
     const fetchTimerState = async () => {
       try {
         const { data, error } = await supabase
-          .from('study_rooms' as any)
-          .select('timer_state, timer_end_time, timer_work_duration, timer_break_duration')
-          .eq('id', roomId)
+          .from("study_rooms" as any)
+          .select(
+            "timer_state, timer_end_time, timer_work_duration, timer_break_duration",
+          )
+          .eq("id", roomId)
           .single();
 
         if (error) {
@@ -61,12 +68,12 @@ export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroP
         if (data && active) {
           const timerData = data as unknown as StudyRoomTimerState;
 
-          setTimerState(timerData.timer_state || 'idle');
+          setTimerState(timerData.timer_state || "idle");
 
           setEndTime(
             timerData.timer_end_time
               ? new Date(timerData.timer_end_time)
-              : null
+              : null,
           );
 
           setWorkDuration(timerData.timer_work_duration || 25);
@@ -87,18 +94,24 @@ export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroP
 
     const channel = supabase
       .channel(`room-timer-${roomId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'study_rooms',
-        filter: `id=eq.${roomId}`
-      }, (payload) => {
-        const newData = payload.new;
-        setTimerState(newData.timer_state || 'idle');
-        setEndTime(newData.timer_end_time ? new Date(newData.timer_end_time) : null);
-        setWorkDuration(newData.timer_work_duration || 25);
-        setBreakDuration(newData.timer_break_duration || 5);
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "study_rooms",
+          filter: `id=eq.${roomId}`,
+        },
+        (payload) => {
+          const newData = payload.new;
+          setTimerState(newData.timer_state || "idle");
+          setEndTime(
+            newData.timer_end_time ? new Date(newData.timer_end_time) : null,
+          );
+          setWorkDuration(newData.timer_work_duration || 25);
+          setBreakDuration(newData.timer_break_duration || 5);
+        },
+      )
       .subscribe();
 
     return () => {
@@ -107,59 +120,71 @@ export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroP
     };
   }, [roomId, toast]);
 
-  const clampDurations = useCallback(() => ({
-    work: Math.min(WORK_MAX, Math.max(WORK_MIN, Math.floor(workDuration))),
-    brk: Math.min(BREAK_MAX, Math.max(BREAK_MIN, Math.floor(breakDuration))),
-  }), [workDuration, breakDuration]);
+  const clampDurations = useCallback(
+    () => ({
+      work: Math.min(WORK_MAX, Math.max(WORK_MIN, Math.floor(workDuration))),
+      brk: Math.min(BREAK_MAX, Math.max(BREAK_MIN, Math.floor(breakDuration))),
+    }),
+    [workDuration, breakDuration],
+  );
 
-  const setGroupTimer = useCallback(async (newState: 'idle' | 'work' | 'break') => {
-    const { work, brk } = clampDurations();
-    const clampedDuration = newState === 'work' ? work : newState === 'break' ? brk : 0;
+  const setGroupTimer = useCallback(
+    async (newState: "idle" | "work" | "break") => {
+      const { work, brk } = clampDurations();
+      const clampedDuration =
+        newState === "work" ? work : newState === "break" ? brk : 0;
 
-    const newEndTime =
-      newState !== 'idle'
-        ? new Date(Date.now() + clampedDuration * 60 * 1000).toISOString()
-        : null;
+      const newEndTime =
+        newState !== "idle"
+          ? new Date(Date.now() + clampedDuration * 60 * 1000).toISOString()
+          : null;
 
-    try {
-      const { error } = await supabase
-        .from('study_rooms' as any)
-        .update({
-          timer_state: newState,
-          timer_end_time: newEndTime,
-          timer_work_duration: work,
-          timer_break_duration: brk,
-        })
-        .eq('id', roomId);
+      try {
+        const { error } = await supabase
+          .from("study_rooms" as any)
+          .update({
+            timer_state: newState,
+            timer_end_time: newEndTime,
+            timer_work_duration: work,
+            timer_break_duration: brk,
+          })
+          .eq("id", roomId);
 
-      if (error) {
-        throw new Error(error.message);
+        if (error) {
+          throw new Error(error.message);
+        }
+      } catch (err: any) {
+        logError(err, {
+          context: "GroupPomodoro.setGroupTimer",
+          roomId,
+          newState,
+        });
+        toast({
+          title: "Timer update failed",
+          description:
+            err.message || "Could not sync the timer. Please try again.",
+          variant: "destructive",
+        });
       }
-    } catch (err: any) {
-      logError(err, { context: "GroupPomodoro.setGroupTimer", roomId, newState });
-      toast({
-        title: 'Timer update failed',
-        description: err.message || 'Could not sync the timer. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  }, [clampDurations, roomId, toast]);
+    },
+    [clampDurations, roomId, toast],
+  );
 
   const handleTimerComplete = useCallback(async () => {
     if (!isCreator) return;
 
-    if (timerState === 'work') {
+    if (timerState === "work") {
       toast({
-        title: 'Group Focus Session Complete! 🎉',
-        description: 'Great job focusing! Time for a short break.',
+        title: "Group Focus Session Complete! 🎉",
+        description: "Great job focusing! Time for a short break.",
       });
-      await setGroupTimer('break');
-    } else if (timerState === 'break') {
+      await setGroupTimer("break");
+    } else if (timerState === "break") {
       toast({
-        title: 'Break Over!',
-        description: 'Back to focus?',
+        title: "Break Over!",
+        description: "Back to focus?",
       });
-      await setGroupTimer('idle');
+      await setGroupTimer("idle");
     }
   }, [isCreator, timerState, setGroupTimer, toast]);
 
@@ -167,10 +192,13 @@ export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroP
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
-    if (timerState !== 'idle' && endTime) {
+    if (timerState !== "idle" && endTime) {
       interval = setInterval(() => {
         const now = new Date();
-        const diff = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
+        const diff = Math.max(
+          0,
+          Math.floor((endTime.getTime() - now.getTime()) / 1000),
+        );
 
         setTimeLeft(diff);
 
@@ -180,7 +208,9 @@ export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroP
         }
       }, 1000);
     } else {
-      setTimeLeft(timerState === 'break' ? breakDuration * 60 : workDuration * 60);
+      setTimeLeft(
+        timerState === "break" ? breakDuration * 60 : workDuration * 60,
+      );
     }
 
     return () => {
@@ -188,33 +218,31 @@ export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroP
     };
   }, [timerState, endTime, workDuration, breakDuration, handleTimerComplete]);
 
-
-
   return (
     <div className="rounded-xl border border-white/10 bg-[#0a0f25] p-5 backdrop-blur-md">
       <div className="flex flex-col items-center justify-center space-y-4">
         <div className="flex items-center gap-2">
-          {timerState === 'work' ? (
+          {timerState === "work" ? (
             <Clock size={20} className="text-red-400 animate-pulse" />
           ) : (
             <Coffee size={20} className="text-green-400" />
           )}
           <h3 className="font-semibold text-lg text-white">
-            {timerState === 'work'
-              ? 'Group Focus'
-              : timerState === 'break'
-              ? 'Group Break'
-              : 'Group Pomodoro'}
+            {timerState === "work"
+              ? "Group Focus"
+              : timerState === "break"
+                ? "Group Break"
+                : "Group Pomodoro"}
           </h3>
         </div>
 
         <div
           className={`text-6xl font-mono font-bold tracking-widest ${
-            timerState === 'work'
-              ? 'text-red-400'
-              : timerState === 'break'
-              ? 'text-green-400'
-              : 'text-slate-300'
+            timerState === "work"
+              ? "text-red-400"
+              : timerState === "break"
+                ? "text-green-400"
+                : "text-slate-300"
           }`}
         >
           {formatTime(timeLeft)}
@@ -222,16 +250,16 @@ export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroP
 
         {isCreator && (
           <div className="flex gap-3 pt-4 w-full">
-            {timerState === 'idle' ? (
+            {timerState === "idle" ? (
               <Button
-                onClick={() => setGroupTimer('work')}
+                onClick={() => setGroupTimer("work")}
                 className="flex-1 font-semibold bg-red-500 hover:bg-red-600"
               >
                 <Play size={16} className="mr-2" /> Start Focus
               </Button>
             ) : (
               <Button
-                onClick={() => setGroupTimer('idle')}
+                onClick={() => setGroupTimer("idle")}
                 className="flex-1 font-semibold bg-slate-700 hover:bg-slate-600"
               >
                 <Square size={16} className="mr-2" /> Stop Sync Timer
@@ -240,7 +268,7 @@ export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroP
           </div>
         )}
 
-        {isCreator && timerState === 'idle' && (
+        {isCreator && timerState === "idle" && (
           <div className="flex justify-between w-full mt-4 border-t border-white/10 pt-4 px-2">
             <div className="flex flex-col items-center">
               <span className="text-xs text-slate-400 mb-1">Work (min)</span>
@@ -248,7 +276,12 @@ export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroP
                 type="number"
                 value={workDuration}
                 onChange={(e) =>
-                  setWorkDuration(Math.min(WORK_MAX, Math.max(WORK_MIN, Number(e.target.value))))
+                  setWorkDuration(
+                    Math.min(
+                      WORK_MAX,
+                      Math.max(WORK_MIN, Number(e.target.value)),
+                    ),
+                  )
                 }
                 className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1 text-sm text-center focus:outline-none focus:border-cyan-500 text-white"
                 min={WORK_MIN}
@@ -261,7 +294,12 @@ export default memo(function GroupPomodoro({ roomId, creatorId }: GroupPomodoroP
                 type="number"
                 value={breakDuration}
                 onChange={(e) =>
-                  setBreakDuration(Math.min(BREAK_MAX, Math.max(BREAK_MIN, Number(e.target.value))))
+                  setBreakDuration(
+                    Math.min(
+                      BREAK_MAX,
+                      Math.max(BREAK_MIN, Number(e.target.value)),
+                    ),
+                  )
                 }
                 className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1 text-sm text-center focus:outline-none focus:border-cyan-500 text-white"
                 min={BREAK_MIN}

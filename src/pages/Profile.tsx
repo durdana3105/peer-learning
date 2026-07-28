@@ -4,7 +4,17 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 
-import { Camera, Save, Sparkles, User, Flame, Zap, Trophy, Lock, Settings } from "lucide-react";
+import {
+  Camera,
+  Save,
+  Sparkles,
+  User,
+  Flame,
+  Zap,
+  Trophy,
+  Lock,
+  Settings,
+} from "lucide-react";
 import StreakStats from "@/components/StreakStats";
 import { AvatarUpload } from "@/components/AvatarUpload";
 
@@ -13,7 +23,7 @@ import {
   getBadgeByXP,
   getAchievements,
   ALL_BADGES,
-  ALL_ACHIEVEMENTS
+  ALL_ACHIEVEMENTS,
 } from "../lib/gamification";
 
 const avatars = [
@@ -58,7 +68,9 @@ const Profile = () => {
 
       if (profileError) {
         console.error("Failed to fetch profile:", profileError);
-        toast.error("Failed to load profile data. Please refresh the page to try again.");
+        toast.error(
+          "Failed to load profile data. Please refresh the page to try again.",
+        );
         return;
       }
 
@@ -92,7 +104,7 @@ const Profile = () => {
         toast.error("Your session has expired. Please log in again.");
         return;
       }
-if (profile.bio.length > MAX_BIO_CHARS) {
+      if (profile.bio.length > MAX_BIO_CHARS) {
         toast.error(`Bio must be ${MAX_BIO_CHARS} characters or fewer.`);
         return;
       }
@@ -101,7 +113,12 @@ if (profile.bio.length > MAX_BIO_CHARS) {
         .update({
           name: profile.name,
           bio: profile.bio,
-          skills: Array.isArray(profile.skills) ? profile.skills : profile.skills.split(",").map((s: string) => s.trim()).filter(Boolean),
+          skills: Array.isArray(profile.skills)
+            ? profile.skills
+            : profile.skills
+                .split(",")
+                .map((s: string) => s.trim())
+                .filter(Boolean),
           avatar_url: profile.avatar_url,
         })
         .eq("id", user.id);
@@ -147,14 +164,14 @@ if (profile.bio.length > MAX_BIO_CHARS) {
             <h1 className="text-5xl font-bold mb-3">Edit Profile</h1>
             <div className="flex items-center gap-3 mt-2">
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate("/dashboard")}
                 className="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-gray-300 px-4 py-2 rounded-full hover:border-cyan-400/50 hover:text-cyan-300 transition"
               >
                 ← Back to Dashboard
               </button>
-              
+
               <button
-                onClick={() => navigate('/settings')}
+                onClick={() => navigate("/settings")}
                 className="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-gray-300 px-4 py-2 rounded-full hover:border-cyan-400/50 hover:text-cyan-300 transition"
               >
                 <Settings size={16} /> Notification Settings
@@ -173,7 +190,9 @@ if (profile.bio.length > MAX_BIO_CHARS) {
             <div className="flex justify-center mb-8">
               <AvatarUpload
                 currentAvatarUrl={profile.avatar_url}
-                onUploadSuccess={(url) => setProfile({ ...profile, avatar_url: url })}
+                onUploadSuccess={(url) =>
+                  setProfile({ ...profile, avatar_url: url })
+                }
                 onUploadError={(error) => toast.error(error)}
               />
             </div>
@@ -195,10 +214,11 @@ if (profile.bio.length > MAX_BIO_CHARS) {
                       avatar_url: avatar,
                     })
                   }
-                  className={`relative rounded-full p-1 transition-all ${profile.avatar_url === avatar
-                    ? "bg-gradient-to-r from-cyan-400 to-purple-500"
-                    : "bg-white/10"
-                    }`}
+                  className={`relative rounded-full p-1 transition-all ${
+                    profile.avatar_url === avatar
+                      ? "bg-gradient-to-r from-cyan-400 to-purple-500"
+                      : "bg-white/10"
+                  }`}
                 >
                   <img
                     src={avatar}
@@ -266,7 +286,7 @@ if (profile.bio.length > MAX_BIO_CHARS) {
             </div>
           </div>
 
-{/* BIO */}
+          {/* BIO */}
           <div className="mt-6">
             <label className="block text-sm text-gray-400 mb-2">Bio</label>
             <div className="relative">
@@ -286,8 +306,8 @@ if (profile.bio.length > MAX_BIO_CHARS) {
                   profile.bio.length >= MAX_BIO_CHARS
                     ? "text-red-400"
                     : profile.bio.length >= MAX_BIO_CHARS * 0.9
-                    ? "text-amber-400"
-                    : "text-gray-500"
+                      ? "text-amber-400"
+                      : "text-gray-500"
                 }`}
               >
                 {profile.bio.length}/{MAX_BIO_CHARS}
@@ -319,7 +339,9 @@ if (profile.bio.length > MAX_BIO_CHARS) {
               </p>
               <div className="mt-6 pt-6 border-t border-cyan-400/10">
                 <p className="text-sm text-gray-400 mb-1">Current Level</p>
-                <p className="text-2xl font-bold text-cyan-300">Level {profile.level}</p>
+                <p className="text-2xl font-bold text-cyan-300">
+                  Level {profile.level}
+                </p>
               </div>
             </motion.div>
           </div>
@@ -334,7 +356,9 @@ if (profile.bio.length > MAX_BIO_CHARS) {
             <div className="space-y-10">
               {/* BADGES */}
               <div>
-                <h3 className="text-xl font-semibold mb-4 text-gray-300">Milestone Badges</h3>
+                <h3 className="text-xl font-semibold mb-4 text-gray-300">
+                  Milestone Badges
+                </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {ALL_BADGES.map((badge) => {
                     const isUnlocked = profile.xp >= badge.xpRequired;
@@ -342,21 +366,28 @@ if (profile.bio.length > MAX_BIO_CHARS) {
                       <motion.div
                         key={badge.id}
                         whileHover={isUnlocked ? { scale: 1.05 } : {}}
-                        className={`relative overflow-hidden rounded-2xl p-5 border transition-all ${isUnlocked
-                          ? "bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.15)]"
-                          : "bg-white/5 border-white/5 opacity-60 grayscale"
-                          }`}
+                        className={`relative overflow-hidden rounded-2xl p-5 border transition-all ${
+                          isUnlocked
+                            ? "bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.15)]"
+                            : "bg-white/5 border-white/5 opacity-60 grayscale"
+                        }`}
                       >
                         {!isUnlocked && (
                           <div className="absolute top-3 right-3 text-gray-500">
                             <Lock size={16} />
                           </div>
                         )}
-                        <div className="text-4xl mb-3">{badge.name.split(' ')[0]}</div>
-                        <h4 className={`font-bold ${isUnlocked ? "text-yellow-400" : "text-gray-400"}`}>
-                          {badge.name.substring(badge.name.indexOf(' ') + 1)}
+                        <div className="text-4xl mb-3">
+                          {badge.name.split(" ")[0]}
+                        </div>
+                        <h4
+                          className={`font-bold ${isUnlocked ? "text-yellow-400" : "text-gray-400"}`}
+                        >
+                          {badge.name.substring(badge.name.indexOf(" ") + 1)}
                         </h4>
-                        <p className="text-xs text-gray-400 mt-1">{badge.description}</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {badge.description}
+                        </p>
 
                         {/* Progress Bar for Locked */}
                         {!isUnlocked && (
@@ -364,10 +395,14 @@ if (profile.bio.length > MAX_BIO_CHARS) {
                             <div className="w-full bg-black/50 rounded-full h-1.5 mb-1 overflow-hidden">
                               <div
                                 className="bg-gray-500 h-1.5 rounded-full"
-                                style={{ width: `${Math.min(100, (profile.xp / badge.xpRequired) * 100)}%` }}
+                                style={{
+                                  width: `${Math.min(100, (profile.xp / badge.xpRequired) * 100)}%`,
+                                }}
                               />
                             </div>
-                            <p className="text-[10px] text-right text-gray-500">{profile.xp} / {badge.xpRequired} XP</p>
+                            <p className="text-[10px] text-right text-gray-500">
+                              {profile.xp} / {badge.xpRequired} XP
+                            </p>
                           </div>
                         )}
                       </motion.div>
@@ -378,7 +413,9 @@ if (profile.bio.length > MAX_BIO_CHARS) {
 
               {/* ACHIEVEMENTS */}
               <div>
-                <h3 className="text-xl font-semibold mb-4 text-gray-300">Achievements</h3>
+                <h3 className="text-xl font-semibold mb-4 text-gray-300">
+                  Achievements
+                </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {ALL_ACHIEVEMENTS.map((achievement) => {
                     const isUnlocked = profile.xp >= achievement.xpRequired;
@@ -386,13 +423,16 @@ if (profile.bio.length > MAX_BIO_CHARS) {
                       <motion.div
                         key={achievement.id}
                         whileHover={isUnlocked ? { y: -5 } : {}}
-                        className={`rounded-2xl p-4 border flex flex-col items-center text-center transition-all ${isUnlocked
-                          ? "bg-cyan-500/10 border-cyan-400/30 shadow-[0_0_15px_rgba(34,211,238,0.1)]"
-                          : "bg-white/5 border-white/5 opacity-50 grayscale"
-                          }`}
+                        className={`rounded-2xl p-4 border flex flex-col items-center text-center transition-all ${
+                          isUnlocked
+                            ? "bg-cyan-500/10 border-cyan-400/30 shadow-[0_0_15px_rgba(34,211,238,0.1)]"
+                            : "bg-white/5 border-white/5 opacity-50 grayscale"
+                        }`}
                       >
                         <div className="text-3xl mb-2">{achievement.icon}</div>
-                        <h4 className={`font-bold text-sm ${isUnlocked ? "text-cyan-300" : "text-gray-500"}`}>
+                        <h4
+                          className={`font-bold text-sm ${isUnlocked ? "text-cyan-300" : "text-gray-500"}`}
+                        >
                           {achievement.name}
                         </h4>
                         {!isUnlocked && (

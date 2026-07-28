@@ -6,11 +6,7 @@ interface MessageBubbleProps {
   time: string;
 }
 
-const MessageBubble = ({
-  text,
-  sender,
-  time,
-}: MessageBubbleProps) => {
+const MessageBubble = ({ text, sender, time }: MessageBubbleProps) => {
   const isUser = sender === "user";
 
   return (

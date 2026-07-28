@@ -54,7 +54,10 @@ export const chatSchemas = {
         temperature: z.number().min(0).max(2).default(0.7),
       })
       .superRefine((data, ctx) => {
-        const totalLength = data.messages.reduce((sum, message) => sum + message.content.length, 0);
+        const totalLength = data.messages.reduce(
+          (sum, message) => sum + message.content.length,
+          0,
+        );
 
         if (totalLength > 20000) {
           ctx.addIssue({
@@ -68,66 +71,78 @@ export const chatSchemas = {
 };
 
 export const ALLOWED_INTERVIEW_ROLES = [
-    "Software Engineer",
-    "Frontend Engineer",
-    "Backend Engineer",
-    "Full Stack Engineer",
-    "Data Scientist",
-    "Data Engineer",
-    "Machine Learning Engineer",
-    "DevOps Engineer",
-    "Site Reliability Engineer",
-    "Product Manager",
-    "Engineering Manager",
-    "QA Engineer",
-    "Security Engineer",
-    "Mobile Engineer",
-    "Cloud Architect",
-  ];
+  "Software Engineer",
+  "Frontend Engineer",
+  "Backend Engineer",
+  "Full Stack Engineer",
+  "Data Scientist",
+  "Data Engineer",
+  "Machine Learning Engineer",
+  "DevOps Engineer",
+  "Site Reliability Engineer",
+  "Product Manager",
+  "Engineering Manager",
+  "QA Engineer",
+  "Security Engineer",
+  "Mobile Engineer",
+  "Cloud Architect",
+];
 
 export const aiSchemas = {
   askAI: {
     body: z.object({
-      messages: z.array(
-        z.object({
-          role: z.enum(["user", "assistant"]),
-          content: z.string().trim().min(1).max(4000),
-        })
-      ).min(1).max(MAX_ASK_MESSAGES),
+      messages: z
+        .array(
+          z.object({
+            role: z.enum(["user", "assistant"]),
+            content: z.string().trim().min(1).max(4000),
+          }),
+        )
+        .min(1)
+        .max(MAX_ASK_MESSAGES),
       systemPrompt: z.string().optional(),
-      model: z.string().optional()
+      model: z.string().optional(),
     }),
   },
   mockInterviewChat: {
     body: z.object({
-      messages: z.array(
-        z.object({
-          role: z.enum(["user", "assistant"]),
-          content: z.string().trim().min(1).max(2000),
-        })
-      ).min(1).max(50),
-      role: z.string().trim().min(1).max(100)
+      messages: z
+        .array(
+          z.object({
+            role: z.enum(["user", "assistant"]),
+            content: z.string().trim().min(1).max(2000),
+          }),
+        )
+        .min(1)
+        .max(50),
+      role: z
+        .string()
+        .trim()
+        .min(1)
+        .max(100)
         .regex(/^[a-zA-Z0-9 ,\-_]+$/, "Role contains invalid characters")
         .refine((val) => ALLOWED_INTERVIEW_ROLES.includes(val), {
-            message: `Role must be one of: ${ALLOWED_INTERVIEW_ROLES.join(", ")}`,
-          }
-        ),
+          message: `Role must be one of: ${ALLOWED_INTERVIEW_ROLES.join(", ")}`,
+        }),
     }),
   },
   mockInterviewReport: {
     body: z
       .object({
-        messages: z.array(
-          z.object({
-            role: z.enum(["user", "assistant"]),
-            content: z.string().trim().min(1).max(4000),
-          })
-        ).min(1).max(100),
+        messages: z
+          .array(
+            z.object({
+              role: z.enum(["user", "assistant"]),
+              content: z.string().trim().min(1).max(4000),
+            }),
+          )
+          .min(1)
+          .max(100),
       })
       .superRefine((data, ctx) => {
         const totalLength = data.messages.reduce(
           (sum, m) => sum + m.content.length,
-          0
+          0,
         );
         if (totalLength > 20000) {
           ctx.addIssue({
@@ -141,12 +156,16 @@ export const aiSchemas = {
   generateSessionSummary: {
     body: z
       .object({
-        messages: z.array(summarizeMessageSchema).min(1).max(MAX_SUMMARY_MESSAGES),
+        messages: z
+          .array(summarizeMessageSchema)
+          .min(1)
+          .max(MAX_SUMMARY_MESSAGES),
       })
       .superRefine((data, ctx) => {
         const totalLength = data.messages.reduce(
-          (sum, message) => sum + message.message.length + (message.username?.length || 0),
-          0
+          (sum, message) =>
+            sum + message.message.length + (message.username?.length || 0),
+          0,
         );
 
         if (totalLength > 20000) {
@@ -169,17 +188,24 @@ export const matchSchemas = {
         .refine(
           (val) =>
             val === undefined ||
-            (/^\d+$/.test(val) && parseInt(val, 10) >= 1 && parseInt(val, 10) <= 1000),
+            (/^\d+$/.test(val) &&
+              parseInt(val, 10) >= 1 &&
+              parseInt(val, 10) <= 1000),
           {
             message: "page must be an integer between 1 and 1000",
-          }
+          },
         ),
       limit: z
         .string()
         .optional()
-        .refine((val) => val === undefined || (/^\d+$/.test(val) && parseInt(val) >= 1 && parseInt(val) <= 20), {
-          message: "limit must be an integer between 1 and 20",
-        }),
+        .refine(
+          (val) =>
+            val === undefined ||
+            (/^\d+$/.test(val) && parseInt(val) >= 1 && parseInt(val) <= 20),
+          {
+            message: "limit must be an integer between 1 and 20",
+          },
+        ),
     }),
   },
   getSupabaseDiscover: {
@@ -189,19 +215,26 @@ export const matchSchemas = {
       limit: z
         .string()
         .optional()
-        .refine((val) => val === undefined || (/^\d+$/.test(val) && parseInt(val) >= 1 && parseInt(val) <= 100), {
-          message: "limit must be an integer between 1 and 100",
-        }),
+        .refine(
+          (val) =>
+            val === undefined ||
+            (/^\d+$/.test(val) && parseInt(val) >= 1 && parseInt(val) <= 100),
+          {
+            message: "limit must be an integer between 1 and 100",
+          },
+        ),
       page: z
         .string()
         .optional()
         .refine(
           (val) =>
             val === undefined ||
-            (/^\d+$/.test(val) && parseInt(val, 10) >= 1 && parseInt(val, 10) <= 1000),
+            (/^\d+$/.test(val) &&
+              parseInt(val, 10) >= 1 &&
+              parseInt(val, 10) <= 1000),
           {
             message: "page must be an integer between 1 and 1000",
-          }
+          },
         ),
     }),
   },

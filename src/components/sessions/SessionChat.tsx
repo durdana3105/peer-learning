@@ -1,5 +1,14 @@
 import { useRef, useState, useEffect } from "react";
-import { Send, Video, Sparkles, BellOff, Bell, Download, Pin, PinOff } from "lucide-react";
+import {
+  Send,
+  Video,
+  Sparkles,
+  BellOff,
+  Bell,
+  Download,
+  Pin,
+  PinOff,
+} from "lucide-react";
 import { LiveCodeRunner } from "@/components/studyroom/LiveCodeRunner";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
@@ -46,7 +55,7 @@ export function SessionChat({
 }: SessionChatProps) {
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+
   const pinnedMessages = messages.filter((msg) => msg.is_pinned);
 
   useEffect(() => {
@@ -64,9 +73,9 @@ export function SessionChat({
 
   const handleExport = () => {
     if (!selectedSession) return;
-    
+
     let content = `# Study Session Export: ${selectedSession.title}\n\n`;
-    
+
     if (sessionSummary) {
       content += `## AI Summary\n\n${sessionSummary.summary}\n\n`;
       if (sessionSummary.key_takeaways?.length > 0) {
@@ -91,7 +100,7 @@ export function SessionChat({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Session_Export_${selectedSession.title?.replace(/\s+/g, '_') || "Log"}.md`;
+    a.download = `Session_Export_${selectedSession.title?.replace(/\s+/g, "_") || "Log"}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -110,7 +119,8 @@ export function SessionChat({
               <div className="flex flex-col gap-3 mt-4">
                 <div className="flex flex-wrap gap-3">
                   <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-400/20 text-green-300 px-3 py-1 rounded-full text-sm w-fit">
-                    🟢 {participantCount} learner{participantCount !== 1 ? "s" : ""} online
+                    🟢 {participantCount} learner
+                    {participantCount !== 1 ? "s" : ""} online
                   </div>
 
                   <div
@@ -118,11 +128,15 @@ export function SessionChat({
                       userStatus === "Active"
                         ? "bg-cyan-500/10 border-cyan-400/20 text-cyan-300"
                         : userStatus === "Busy"
-                        ? "bg-red-500/10 border-red-400/20 text-red-300"
-                        : "bg-yellow-500/10 border-yellow-400/20 text-yellow-300"
+                          ? "bg-red-500/10 border-red-400/20 text-red-300"
+                          : "bg-yellow-500/10 border-yellow-400/20 text-yellow-300"
                     }`}
                   >
-                    {userStatus === "Active" ? "⚡ " : userStatus === "Busy" ? "⛔ " : "🌙 "}
+                    {userStatus === "Active"
+                      ? "⚡ "
+                      : userStatus === "Busy"
+                        ? "⛔ "
+                        : "🌙 "}
                     {userStatus}
                   </div>
 
@@ -133,7 +147,11 @@ export function SessionChat({
                         ? "bg-red-500/10 border-red-400/20 text-red-300"
                         : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
                     }`}
-                    title={isFocusMode ? "Disable Focus Mode" : "Enable Focus Mode (Sets status to Busy and silences notifications)"}
+                    title={
+                      isFocusMode
+                        ? "Disable Focus Mode"
+                        : "Enable Focus Mode (Sets status to Busy and silences notifications)"
+                    }
                   >
                     {isFocusMode ? <BellOff size={14} /> : <Bell size={14} />}
                     Focus Mode
@@ -142,7 +160,9 @@ export function SessionChat({
 
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-white">Shared Study Timer</h3>
+                    <h3 className="font-semibold text-white">
+                      Shared Study Timer
+                    </h3>
                     <span className="text-cyan-300 font-mono text-lg">
                       {formatTime(studyTime)}
                     </span>
@@ -163,7 +183,7 @@ export function SessionChat({
                 </div>
               </div>
             </div>
-            
+
             <button
               onClick={handleExport}
               title="Export Session Notes and Chat"
@@ -202,12 +222,19 @@ export function SessionChat({
             <div className="mt-4 bg-white/5 border border-cyan-500/20 rounded-2xl p-4 shadow-lg shadow-cyan-500/5">
               <div className="flex items-center gap-2 mb-3 border-b border-white/5 pb-2">
                 <Pin className="text-cyan-400" size={16} />
-                <h3 className="font-semibold text-cyan-300 text-sm">Pinned Resources</h3>
+                <h3 className="font-semibold text-cyan-300 text-sm">
+                  Pinned Resources
+                </h3>
               </div>
               <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
                 {pinnedMessages.map((msg) => (
-                  <div key={`pinned-${msg.id}`} className="bg-black/20 rounded-xl p-3 border border-white/5 relative group">
-                    <p className="text-xs text-cyan-500 font-medium mb-1">{msg.username}</p>
+                  <div
+                    key={`pinned-${msg.id}`}
+                    className="bg-black/20 rounded-xl p-3 border border-white/5 relative group"
+                  >
+                    <p className="text-xs text-cyan-500 font-medium mb-1">
+                      {msg.username}
+                    </p>
                     <div className="text-sm">
                       <MarkdownRenderer content={msg.message} />
                     </div>
@@ -246,17 +273,23 @@ export function SessionChat({
                         <p className="text-xs text-cyan-300">{msg.username}</p>
                       )}
                       {msg.is_pinned && isCurrentUser && (
-                        <p className="text-xs text-black/60 font-bold ml-auto flex items-center gap-1"><Pin size={10} /> Pinned</p>
+                        <p className="text-xs text-black/60 font-bold ml-auto flex items-center gap-1">
+                          <Pin size={10} /> Pinned
+                        </p>
                       )}
                       {msg.is_pinned && !isCurrentUser && (
-                        <p className="text-xs text-cyan-300/60 font-bold ml-auto flex items-center gap-1"><Pin size={10} /> Pinned</p>
+                        <p className="text-xs text-cyan-300/60 font-bold ml-auto flex items-center gap-1">
+                          <Pin size={10} /> Pinned
+                        </p>
                       )}
                     </div>
-                    
+
                     <button
                       onClick={() => togglePinMessage(msg.id, !!msg.is_pinned)}
                       className={`absolute top-2 right-2 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition ${
-                        isCurrentUser ? "hover:bg-black/10 text-black/70" : "hover:bg-white/10 text-white/70"
+                        isCurrentUser
+                          ? "hover:bg-black/10 text-black/70"
+                          : "hover:bg-white/10 text-white/70"
                       }`}
                       title={msg.is_pinned ? "Unpin message" : "Pin message"}
                     >
@@ -297,7 +330,9 @@ export function SessionChat({
 
             <div className="space-y-3 max-h-40 overflow-y-auto">
               {activities.length === 0 ? (
-                <div className="text-sm text-gray-500">No recent activity yet.</div>
+                <div className="text-sm text-gray-500">
+                  No recent activity yet.
+                </div>
               ) : (
                 activities.map((activity) => (
                   <div
@@ -306,7 +341,9 @@ export function SessionChat({
                   >
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-white">{activity.text}</p>
-                      <span className="text-xs text-gray-400">{activity.time}</span>
+                      <span className="text-xs text-gray-400">
+                        {activity.time}
+                      </span>
                     </div>
                   </div>
                 ))
@@ -316,7 +353,7 @@ export function SessionChat({
 
           {/* INPUT */}
           <div className="pt-4 border-t border-white/10 flex gap-3">
-            <LiveCodeRunner 
+            <LiveCodeRunner
               onShare={(code, lang, output) => {
                 let formattedMessage = `\`\`\`${lang}\n${code}\n\`\`\``;
                 if (output) {
@@ -356,7 +393,9 @@ export function SessionChat({
           {/* SUMMARY LOADING */}
           {summaryLoading && (
             <div className="mt-5 bg-white/5 border border-white/10 rounded-2xl p-5">
-              <p className="text-cyan-300 font-semibold">Generating AI Summary...</p>
+              <p className="text-cyan-300 font-semibold">
+                Generating AI Summary...
+              </p>
             </div>
           )}
 
@@ -370,14 +409,18 @@ export function SessionChat({
               <p className="text-gray-300 mb-5">{sessionSummary.summary}</p>
               {sessionSummary.key_takeaways?.length > 0 && (
                 <div>
-                  <h4 className="font-semibold mb-3 text-cyan-300">Key Takeaways</h4>
+                  <h4 className="font-semibold mb-3 text-cyan-300">
+                    Key Takeaways
+                  </h4>
                   <ul className="space-y-2">
-                    {sessionSummary.key_takeaways.map((takeaway: string, index: number) => (
-                      <li key={index} className="text-gray-300 flex gap-2">
-                        <span>•</span>
-                        <span>{takeaway}</span>
-                      </li>
-                    ))}
+                    {sessionSummary.key_takeaways.map(
+                      (takeaway: string, index: number) => (
+                        <li key={index} className="text-gray-300 flex gap-2">
+                          <span>•</span>
+                          <span>{takeaway}</span>
+                        </li>
+                      ),
+                    )}
                   </ul>
                 </div>
               )}

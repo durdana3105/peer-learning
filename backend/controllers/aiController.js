@@ -61,7 +61,7 @@ const budgetResponseTokens = (inputText, ceiling) => {
   if (available < RESPONSE_TOKEN_FLOOR) {
     throw new HttpError(
       400,
-      "Input is too long for the selected model context window."
+      "Input is too long for the selected model context window.",
     );
   }
 
@@ -102,10 +102,18 @@ const parseStrictMockInterviewReport = (content) => {
     return direct.data;
   }
 
-  throw new Error("Model did not return a valid mock interview report JSON payload.");
+  throw new Error(
+    "Model did not return a valid mock interview report JSON payload.",
+  );
 };
 
-const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, responseFormat, model }) => {
+const callOpenRouter = async ({
+  messages,
+  maxTokens,
+  temperature = 0.7,
+  responseFormat,
+  model,
+}) => {
   if (!process.env.OPENROUTER_API_KEY) {
     throw new HttpError(503, "AI service is not configured.");
   }
@@ -122,7 +130,10 @@ const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, response
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), AI_UPSTREAM_TIMEOUT_MS);
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    AI_UPSTREAM_TIMEOUT_MS,
+  );
   let response;
 
   try {
@@ -151,7 +162,7 @@ const callOpenRouter = async ({ messages, maxTokens, temperature = 0.7, response
     const errData = await response.json().catch(() => null);
     throw new HttpError(
       response.status,
-      errData?.error?.message || "AI API request failed"
+      errData?.error?.message || "AI API request failed",
     );
   }
 
@@ -167,40 +178,59 @@ export const askAI = async (req, res, next) => {
     }
 
     if (messages.length > MAX_ASK_MESSAGES) {
-      return res.status(400).json({ error: `Maximum of ${MAX_ASK_MESSAGES} messages allowed.` });
+      return res
+        .status(400)
+        .json({ error: `Maximum of ${MAX_ASK_MESSAGES} messages allowed.` });
     }
 
     // Validate every message: role, type, and content length
     let totalContentLength = 0;
     for (const m of messages) {
       if (m.role !== "user" && m.role !== "assistant") {
-        return res.status(400).json({ error: "Messages can only contain user or assistant roles." });
+        return res
+          .status(400)
+          .json({
+            error: "Messages can only contain user or assistant roles.",
+          });
       }
       if (typeof m.content !== "string") {
-        return res.status(400).json({ error: "Each message must have a string content field." });
+        return res
+          .status(400)
+          .json({ error: "Each message must have a string content field." });
       }
       if (m.content.length > MAX_MESSAGE_CONTENT_LENGTH) {
-        return res.status(400).json({ error: `Each message must be under ${MAX_MESSAGE_CONTENT_LENGTH} characters.` });
+        return res
+          .status(400)
+          .json({
+            error: `Each message must be under ${MAX_MESSAGE_CONTENT_LENGTH} characters.`,
+          });
       }
       totalContentLength += m.content.length;
     }
 
     if (totalContentLength > MAX_TOTAL_CONTENT_LENGTH) {
-      return res.status(400).json({ error: "Total message content exceeds maximum allowed length." });
+      return res
+        .status(400)
+        .json({
+          error: "Total message content exceeds maximum allowed length.",
+        });
     }
 
     const latestMessage = messages[messages.length - 1].content;
     const maxTokens = budgetResponseTokens(latestMessage, ASK_AI_MAX_TOKENS);
 
-    const model = ALLOWED_MODELS.includes(requestedModel) ? requestedModel : OPENROUTER_MODEL;
-    
+    const model = ALLOWED_MODELS.includes(requestedModel)
+      ? requestedModel
+      : OPENROUTER_MODEL;
+
     const openRouterMessages = [
       {
         role: "system",
         content:
-          systemPrompt || "You are an AI peer mentor for students. Answer questions about coding, AI, DSA, and roadmaps in a supportive, clear, and approachable way.",
+          systemPrompt ||
+          "You are an AI peer mentor for students. Answer questions about coding, AI, DSA, and roadmaps in a supportive, clear, and approachable way.",
       },
-      ...messages.map(m => ({ role: m.role, content: m.content }))
+      ...messages.map((m) => ({ role: m.role, content: m.content })),
     ];
 
     const data = await callOpenRouter({
@@ -245,8 +275,12 @@ export const generateSessionSummary = async (req, res, next) => {
     const sanitizedMessages = [];
 
     for (const msg of messages) {
-      const username = typeof msg.username === "string" ? msg.username.slice(0, 100) : "User";
-      const message = typeof msg.message === "string" ? msg.message.slice(0, MAX_SUMMARY_MESSAGE_LENGTH) : "";
+      const username =
+        typeof msg.username === "string" ? msg.username.slice(0, 100) : "User";
+      const message =
+        typeof msg.message === "string"
+          ? msg.message.slice(0, MAX_SUMMARY_MESSAGE_LENGTH)
+          : "";
 
       if (!message) continue;
 
@@ -268,7 +302,10 @@ export const generateSessionSummary = async (req, res, next) => {
       .map((msg) => `${msg.username}: ${msg.message}`)
       .join("\n");
 
-    const maxTokens = budgetResponseTokens(conversationText, SUMMARY_MAX_TOKENS);
+    const maxTokens = budgetResponseTokens(
+      conversationText,
+      SUMMARY_MAX_TOKENS,
+    );
 
     const data = await callOpenRouter({
       maxTokens,
@@ -289,13 +326,24 @@ export const generateSessionSummary = async (req, res, next) => {
 
     const content = extractMessageContent(data);
     if (!content) {
-      throw new HttpError(502, "Summary generation returned an empty response.");
+      throw new HttpError(
+        502,
+        "Summary generation returned an empty response.",
+      );
     }
 
     res.json(parseStrictSummaryContent(content));
   } catch (error) {
-    if (error instanceof SyntaxError || error.message === "Model did not return a valid summary JSON payload.") {
-      next(new HttpError(502, "Summary generation returned an invalid response format."));
+    if (
+      error instanceof SyntaxError ||
+      error.message === "Model did not return a valid summary JSON payload."
+    ) {
+      next(
+        new HttpError(
+          502,
+          "Summary generation returned an invalid response format.",
+        ),
+      );
     } else {
       next(error);
     }
@@ -320,7 +368,11 @@ export const conductMockInterview = async (req, res, next) => {
         typeof m !== "object" ||
         (m.role !== "user" && m.role !== "assistant")
       ) {
-        return res.status(400).json({ error: "Messages can only contain user or assistant roles." });
+        return res
+          .status(400)
+          .json({
+            error: "Messages can only contain user or assistant roles.",
+          });
       }
     }
 
@@ -330,7 +382,7 @@ export const conductMockInterview = async (req, res, next) => {
     }
 
     const maxTokens = budgetResponseTokens(latestMessage, ASK_AI_MAX_TOKENS);
-    
+
     const openRouterMessages = [
       {
         role: "system",
@@ -341,7 +393,9 @@ export const conductMockInterview = async (req, res, next) => {
         3. Provide very brief, constructive feedback on their previous answer (if applicable), then ask the next question.
         4. Do not break character. Do not provide a list of questions at once.`,
       },
-      ...messages.slice(-20).map(m => ({ role: m.role, content: m.content || "" }))
+      ...messages
+        .slice(-20)
+        .map((m) => ({ role: m.role, content: m.content || "" })),
     ];
 
     const data = await callOpenRouter({
@@ -370,11 +424,17 @@ export const generateMockInterviewReport = async (req, res, next) => {
     }
 
     const conversationText = messages
-      .map((msg) => `${msg.role === 'assistant' ? 'Interviewer' : 'Candidate'}: ${msg.content}`)
+      .map(
+        (msg) =>
+          `${msg.role === "assistant" ? "Interviewer" : "Candidate"}: ${msg.content}`,
+      )
       .join("\n")
       .slice(-20000);
 
-    const maxTokens = budgetResponseTokens(conversationText, SUMMARY_MAX_TOKENS);
+    const maxTokens = budgetResponseTokens(
+      conversationText,
+      SUMMARY_MAX_TOKENS,
+    );
 
     const data = await callOpenRouter({
       maxTokens,
@@ -383,7 +443,8 @@ export const generateMockInterviewReport = async (req, res, next) => {
       messages: [
         {
           role: "system",
-          content: "You are an expert technical recruiter evaluating a mock interview. Return only strict JSON with exactly these keys: strengths (array of strings), areas_for_improvement (array of strings), overall_score (number between 0 and 100), and summary (string).",
+          content:
+            "You are an expert technical recruiter evaluating a mock interview. Return only strict JSON with exactly these keys: strengths (array of strings), areas_for_improvement (array of strings), overall_score (number between 0 and 100), and summary (string).",
         },
         {
           role: "user",
@@ -399,8 +460,16 @@ export const generateMockInterviewReport = async (req, res, next) => {
 
     res.json(parseStrictMockInterviewReport(content));
   } catch (error) {
-    if (error instanceof SyntaxError || error.message.includes("valid mock interview report JSON payload")) {
-      next(new HttpError(502, "Report generation returned an invalid response format."));
+    if (
+      error instanceof SyntaxError ||
+      error.message.includes("valid mock interview report JSON payload")
+    ) {
+      next(
+        new HttpError(
+          502,
+          "Report generation returned an invalid response format.",
+        ),
+      );
     } else {
       next(error);
     }

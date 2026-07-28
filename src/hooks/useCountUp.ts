@@ -7,7 +7,11 @@ import { useEffect, useState } from "react";
  * @param duration Animation duration in milliseconds. Defaults to 2000.
  * @param trigger Boolean to start the animation. Defaults to true.
  */
-export function useCountUp(end: number, duration: number = 2000, trigger: boolean = true) {
+export function useCountUp(
+  end: number,
+  duration: number = 2000,
+  trigger: boolean = true,
+) {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -17,7 +21,9 @@ export function useCountUp(end: number, duration: number = 2000, trigger: boolea
     }
 
     // Respect prefers-reduced-motion media query
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     if (prefersReducedMotion) {
       setCount(end);
       return;

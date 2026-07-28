@@ -35,7 +35,7 @@ const LearnerDashboard = () => {
         `${API_BASE_URL}/api/match/recommendations`,
         {
           credentials: "include",
-        }
+        },
       );
       if (!response.ok) throw new Error("Failed to fetch partners");
       const data = await response.json();
@@ -74,7 +74,7 @@ const LearnerDashboard = () => {
             sender_id: string;
             receiver_id: string;
             status: ConnectionStatus;
-          }
+          },
         ) => {
           const peerId =
             connection.sender_id === user.id
@@ -83,7 +83,7 @@ const LearnerDashboard = () => {
           statuses[peerId] = connection.status;
           return statuses;
         },
-        {}
+        {},
       );
 
       setConnectionStatuses(nextStatuses);
@@ -112,7 +112,7 @@ const LearnerDashboard = () => {
         toast.info(
           connectionStatuses[partnerId] === "accepted"
             ? "You are already connected with this learner."
-            : "A connection request already exists."
+            : "A connection request already exists.",
         );
         return;
       }
@@ -123,7 +123,7 @@ const LearnerDashboard = () => {
         .from("peer_connections")
         .select("sender_id, receiver_id, status")
         .or(
-          `and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`
+          `and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`,
         )
         .limit(1);
 
@@ -142,7 +142,7 @@ const LearnerDashboard = () => {
         toast.info(
           existingConnection.status === "accepted"
             ? "You are already connected with this learner."
-            : "A connection request already exists."
+            : "A connection request already exists.",
         );
         return;
       }
@@ -162,14 +162,14 @@ const LearnerDashboard = () => {
               .from("peer_connections")
               .select("status")
               .or(
-                `and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`
+                `and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`,
               )
               .limit(1);
 
           if (duplicateLookupError) {
             console.error(
               "Failed to fetch duplicate peer connection:",
-              duplicateLookupError
+              duplicateLookupError,
             );
           } else {
             const duplicateConnection = duplicateConnections?.[0];
@@ -196,7 +196,7 @@ const LearnerDashboard = () => {
       }));
       toast.success("Connection request sent.");
     },
-    [connectionStatuses, user?.id]
+    [connectionStatuses, user?.id],
   );
 
   const displayName =
@@ -212,7 +212,6 @@ const LearnerDashboard = () => {
       <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[150px] pointer-events-none" />
 
       <div className="mx-auto max-w-7xl space-y-8 relative z-10">
-        
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-2">
@@ -222,14 +221,16 @@ const LearnerDashboard = () => {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
               Welcome back, {displayName}
             </h1>
-            <p className="text-slate-400">Here's your learning progress today.</p>
+            <p className="text-slate-400">
+              Here's your learning progress today.
+            </p>
           </div>
-          
+
           <Link
             to="/mock-interview"
             className="group relative inline-flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-6 py-3 rounded-xl font-medium transition-all shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_30px_rgba(8,145,178,0.5)] whitespace-nowrap"
           >
-            <Bot className="group-hover:rotate-12 transition-transform" /> 
+            <Bot className="group-hover:rotate-12 transition-transform" />
             Practice AI Interview
           </Link>
         </div>
@@ -271,7 +272,7 @@ const LearnerDashboard = () => {
                 <MentorshipMilestones userId={user.id} isMentor={false} />
               </section>
             )}
-            
+
             <section>
               {loadingPartners ? (
                 <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-8 flex items-center justify-center min-h-[200px]">
@@ -287,7 +288,6 @@ const LearnerDashboard = () => {
             </section>
           </div>
         </div>
-        
       </div>
     </div>
   );

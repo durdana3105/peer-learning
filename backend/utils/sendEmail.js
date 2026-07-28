@@ -24,18 +24,18 @@ export const isValidEmail = (value) => {
     return false;
   }
 
-  const [localPart, domain] = email.split('@');
+  const [localPart, domain] = email.split("@");
   if (localPart.length > 64) {
     return false;
   }
 
   // Prevent consecutive dots (invalid in both local and domain parts)
-  if (email.includes('..')) {
+  if (email.includes("..")) {
     return false;
   }
 
   // Prevent leading or trailing dots in local part
-  if (localPart.startsWith('.') || localPart.endsWith('.')) {
+  if (localPart.startsWith(".") || localPart.endsWith(".")) {
     return false;
   }
 
@@ -43,12 +43,12 @@ export const isValidEmail = (value) => {
   // - No empty labels (consecutive dots already caught above, but defensive)
   // - No label longer than 63 characters
   // - No leading or trailing hyphen (RFC 952)
-  const domainLabels = domain.split('.');
+  const domainLabels = domain.split(".");
   for (const label of domainLabels) {
     if (label.length === 0 || label.length > 63) {
       return false;
     }
-    if (label.startsWith('-') || label.endsWith('-')) {
+    if (label.startsWith("-") || label.endsWith("-")) {
       return false;
     }
   }
@@ -63,7 +63,7 @@ const isSafeUrl = (value, expectedDomain) => {
     const parsed = new URL(String(value));
 
     // Must be https in production
-    if (process.env.NODE_ENV === 'production' && parsed.protocol !== 'https:') {
+    if (process.env.NODE_ENV === "production" && parsed.protocol !== "https:") {
       return false;
     }
 
@@ -77,7 +77,7 @@ const isSafeUrl = (value, expectedDomain) => {
     // Using includes('/reset') would accept paths like /not-reset/reset
     // or /malicious/reset-trap. startsWith ensures the path is actually
     // a reset endpoint, not one that merely contains the word somewhere.
-    if (!parsed.pathname.startsWith('/reset')) {
+    if (!parsed.pathname.startsWith("/reset")) {
       return false;
     }
 
@@ -93,16 +93,17 @@ export const sendEmail = async (email, url) => {
   }
 
   // Validate URL matches configured frontend domain to prevent URL injection
-  const frontendUrl = process.env.PASSWORD_RESET_BASE_URL || process.env.FRONTEND_URL;
+  const frontendUrl =
+    process.env.PASSWORD_RESET_BASE_URL || process.env.FRONTEND_URL;
   if (!frontendUrl) {
     throw new Error(
-      "sendEmail: PASSWORD_RESET_BASE_URL or FRONTEND_URL environment variable must be set."
+      "sendEmail: PASSWORD_RESET_BASE_URL or FRONTEND_URL environment variable must be set.",
     );
   }
 
   if (!isSafeUrl(url, frontendUrl)) {
     throw new Error(
-      "sendEmail: reset URL must be from the configured frontend domain."
+      "sendEmail: reset URL must be from the configured frontend domain.",
     );
   }
 
@@ -111,7 +112,7 @@ export const sendEmail = async (email, url) => {
 
   if (!emailUser || !emailPass) {
     throw new Error(
-      "EMAIL_USER and EMAIL_PASS environment variables must be set before sending email."
+      "EMAIL_USER and EMAIL_PASS environment variables must be set before sending email.",
     );
   }
 

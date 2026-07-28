@@ -22,7 +22,11 @@ router.post(
   rateLimiter,
   validate(chatSchemas.chatCompletion),
   asyncHandler(async (req, res) => {
-    const { model = "openai/gpt-3.5-turbo", max_tokens, temperature = 0.7 } = req.body;
+    const {
+      model = "openai/gpt-3.5-turbo",
+      max_tokens,
+      temperature = 0.7,
+    } = req.body;
 
     const apiKey = process.env.OPENROUTER_API_KEY;
 
@@ -43,7 +47,7 @@ router.post(
 
     const safeMaxTokens = Math.min(
       typeof max_tokens === "number" ? max_tokens : MAX_TOKENS_CAP,
-      MAX_TOKENS_CAP
+      MAX_TOKENS_CAP,
     );
 
     const chatMessages = [
@@ -59,7 +63,7 @@ router.post(
     });
 
     res.json({ reply: response.choices[0].message.content });
-  })
+  }),
 );
 
 export default router;

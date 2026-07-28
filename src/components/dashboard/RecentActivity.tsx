@@ -16,15 +16,18 @@ function timeAgo(dateString: string) {
   const date = new Date(dateString);
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
+
   if (diffInSeconds < 60) return "Just now";
   const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? "s" : ""} ago`;
+  if (diffInMinutes < 60)
+    return `${diffInMinutes} minute${diffInMinutes > 1 ? "s" : ""} ago`;
   const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
+  if (diffInHours < 24)
+    return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
   const diffInDays = Math.floor(diffInHours / 24);
   if (diffInDays === 1) return "Yesterday";
-  if (diffInDays < 30) return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
+  if (diffInDays < 30)
+    return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
   return date.toLocaleDateString();
 }
 
@@ -62,8 +65,10 @@ export default function RecentActivity() {
 
         if (!mounted) return;
 
-        if (sessionsRes.error) console.error("Sessions error:", sessionsRes.error);
-        if (resourcesRes.error) console.error("Resources error:", resourcesRes.error);
+        if (sessionsRes.error)
+          console.error("Sessions error:", sessionsRes.error);
+        if (resourcesRes.error)
+          console.error("Resources error:", resourcesRes.error);
         if (roomsRes.error) console.error("Rooms error:", roomsRes.error);
 
         const entries: ActivityItem[] = [];
@@ -100,7 +105,10 @@ export default function RecentActivity() {
           });
         });
 
-        entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        entries.sort(
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        );
         setActivities(entries.slice(0, 4));
       } catch (err) {
         console.error("Failed to load activity feed:", err);
@@ -109,7 +117,9 @@ export default function RecentActivity() {
       }
     }
     fetchActivities();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [user]);
   return (
     <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 flex flex-col h-full">
@@ -125,7 +135,10 @@ export default function RecentActivity() {
         <div className="absolute left-[19px] top-4 bottom-4 w-px bg-slate-800" />
 
         {activities.map((activity) => (
-          <div key={activity.id} className="relative pl-12 group cursor-pointer">
+          <div
+            key={activity.id}
+            className="relative pl-12 group cursor-pointer"
+          >
             {/* Icon circle on timeline */}
             <div
               className={`absolute left-0 top-1 w-10 h-10 rounded-full flex items-center justify-center border z-10 ${activity.color}`}

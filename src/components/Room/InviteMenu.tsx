@@ -6,7 +6,9 @@ interface InviteMenuProps {
   roomId: string;
 }
 
-export const InviteMenu = React.memo(function InviteMenu({ roomId }: InviteMenuProps) {
+export const InviteMenu = React.memo(function InviteMenu({
+  roomId,
+}: InviteMenuProps) {
   const [inviteEmail, setInviteEmail] = useState("");
   const [isInviting, setIsInviting] = useState(false);
   const [showInviteUI, setShowInviteUI] = useState(false);
@@ -14,7 +16,7 @@ export const InviteMenu = React.memo(function InviteMenu({ roomId }: InviteMenuP
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
     setIsInviting(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const { error } = await (supabase.rpc as any)("invite_to_study_room", {
       p_room_id: roomId,
       p_user_email: inviteEmail,

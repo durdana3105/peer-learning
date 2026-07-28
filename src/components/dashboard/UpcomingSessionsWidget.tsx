@@ -17,7 +17,9 @@ export default function UpcomingSessionsWidget() {
       try {
         const { data, error } = await supabase
           .from("sessions")
-          .select("id, title, status, scheduled_at, duration_minutes, mentor_id")
+          .select(
+            "id, title, status, scheduled_at, duration_minutes, mentor_id",
+          )
           .or(`student_id.eq.${user.id},mentor_id.eq.${user.id}`)
           .in("status", ["scheduled", "live"])
           .order("scheduled_at", { ascending: true })
@@ -32,7 +34,9 @@ export default function UpcomingSessionsWidget() {
       }
     }
     fetchSessions();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [user]);
 
   return (
@@ -42,7 +46,10 @@ export default function UpcomingSessionsWidget() {
           <Calendar size={20} className="text-purple-400" />
           Upcoming Sessions
         </h3>
-        <Link to="/sessions" className="text-sm text-cyan-400 hover:text-cyan-300">
+        <Link
+          to="/sessions"
+          className="text-sm text-cyan-400 hover:text-cyan-300"
+        >
           View all
         </Link>
       </div>
@@ -57,8 +64,11 @@ export default function UpcomingSessionsWidget() {
           upcomingSessions.map((session) => {
             const dateObj = new Date(session.scheduled_at || Date.now());
             const dateStr = dateObj.toLocaleDateString();
-            const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
+            const timeStr = dateObj.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+
             return (
               <div
                 key={session.id}
@@ -82,13 +92,13 @@ export default function UpcomingSessionsWidget() {
                 <p className="text-xs text-slate-400 mb-3">
                   Duration: {session.duration_minutes || 60} mins
                 </p>
-                
+
                 <div className="flex items-center justify-between mt-2 pt-3 border-t border-slate-700/50">
                   <span className="text-xs font-medium text-slate-300 bg-slate-700/50 px-2.5 py-1 rounded-md">
                     {dateStr}
                   </span>
-                  <button 
-                    onClick={() => navigate('/sessions')}
+                  <button
+                    onClick={() => navigate("/sessions")}
                     className="flex items-center gap-1.5 text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-500 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     <Video size={14} /> Join

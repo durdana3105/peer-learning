@@ -5,7 +5,9 @@ interface ChatMessageProps {
   message: Message;
 }
 
-export const ChatMessage = React.memo(function ChatMessage({ message }: ChatMessageProps) {
+export const ChatMessage = React.memo(function ChatMessage({
+  message,
+}: ChatMessageProps) {
   // 💻 Code formatting (fixed)
   const formatMessage = (text: string) => {
     if (text.includes("```")) {
@@ -21,7 +23,7 @@ export const ChatMessage = React.memo(function ChatMessage({ message }: ChatMess
           </pre>
         ) : (
           <span key={i}>{part}</span>
-        )
+        ),
       );
     }
     return <span>{text}</span>;

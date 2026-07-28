@@ -54,7 +54,7 @@ const UploadDialog = ({ open, onOpenChange, onSuccess }: UploadDialogProps) => {
         .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean),
-    [tags]
+    [tags],
   );
 
   const resetForm = () => {
@@ -92,7 +92,7 @@ const UploadDialog = ({ open, onOpenChange, onSuccess }: UploadDialogProps) => {
       file,
       title.trim(),
       description.trim(),
-      parsedTags
+      parsedTags,
     );
 
     setIsUploading(false);
@@ -123,7 +123,8 @@ const UploadDialog = ({ open, onOpenChange, onSuccess }: UploadDialogProps) => {
         <DialogHeader>
           <DialogTitle>Upload Resource</DialogTitle>
           <DialogDescription>
-            Add notes, code, references, and supporting files for the learning community.
+            Add notes, code, references, and supporting files for the learning
+            community.
           </DialogDescription>
         </DialogHeader>
 
@@ -139,7 +140,9 @@ const UploadDialog = ({ open, onOpenChange, onSuccess }: UploadDialogProps) => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Description</label>
+            <label className="text-sm font-medium text-foreground">
+              Description
+            </label>
             <Textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
@@ -163,7 +166,9 @@ const UploadDialog = ({ open, onOpenChange, onSuccess }: UploadDialogProps) => {
               type="file"
               accept={ACCEPTED_FILES}
               className="hidden"
-              onChange={(event) => handleFileSelection(event.target.files?.[0] ?? null)}
+              onChange={(event) =>
+                handleFileSelection(event.target.files?.[0] ?? null)
+              }
             />
             <button
               type="button"
@@ -182,7 +187,7 @@ const UploadDialog = ({ open, onOpenChange, onSuccess }: UploadDialogProps) => {
                 "flex w-full flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-6 py-10 text-center transition-colors",
                 isDragging
                   ? "border-primary bg-primary/5"
-                  : "border-border bg-muted/30 hover:bg-muted/50"
+                  : "border-border bg-muted/30 hover:bg-muted/50",
               )}
             >
               <div className="rounded-full bg-primary/10 p-3 text-primary">
@@ -191,7 +196,8 @@ const UploadDialog = ({ open, onOpenChange, onSuccess }: UploadDialogProps) => {
               <div className="space-y-1">
                 <p className="text-sm font-medium">Drag and drop a file here</p>
                 <p className="text-xs text-muted-foreground">
-                  Or click to browse. Accepted: PDF, DOCX, ZIP, PY, JS, TS, MD, TXT
+                  Or click to browse. Accepted: PDF, DOCX, ZIP, PY, JS, TS, MD,
+                  TXT
                 </p>
               </div>
             </button>
@@ -199,17 +205,28 @@ const UploadDialog = ({ open, onOpenChange, onSuccess }: UploadDialogProps) => {
             {file ? (
               <div className="rounded-lg border bg-muted/30 px-4 py-3 text-sm">
                 <p className="font-medium text-foreground">{file.name}</p>
-                <p className="text-muted-foreground">{formatFileSize(file.size)}</p>
+                <p className="text-muted-foreground">
+                  {formatFileSize(file.size)}
+                </p>
               </div>
             ) : null}
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isUploading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isUploading}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isUploading || !currentUser}>
-              {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              {isUploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
               {isUploading ? "Uploading..." : "Upload Resource"}
             </Button>
           </DialogFooter>

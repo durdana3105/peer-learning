@@ -19,7 +19,7 @@ export const generateICS = (
   description: string,
   sessionId: string | number,
   startDate: Date,
-  durationMinutes: number = 60
+  durationMinutes: number = 60,
 ) => {
   const endDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
 

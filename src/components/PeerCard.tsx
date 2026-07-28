@@ -1,11 +1,5 @@
 import { motion } from "framer-motion";
-import {
-  Star,
-  BookOpen,
-  GraduationCap,
-  Trophy,
-  Flame,
-} from "lucide-react";
+import { Star, BookOpen, GraduationCap, Trophy, Flame } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,11 +12,7 @@ interface PeerCardProps {
   index?: number;
 }
 
-const PeerCard = ({
-  peer,
-  onConnect,
-  index = 0,
-}: PeerCardProps) => {
+const PeerCard = ({ peer, onConnect, index = 0 }: PeerCardProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -42,7 +32,6 @@ const PeerCard = ({
 
       {/* Top Section */}
       <div className="relative z-10 flex items-start gap-4">
-
         {/* Avatar */}
         <div className="relative">
           <img
@@ -58,9 +47,7 @@ const PeerCard = ({
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
-
           <div className="flex items-center justify-between gap-2">
-
             <h3 className="truncate text-lg font-bold text-white">
               {peer.name}
             </h3>
@@ -74,7 +61,6 @@ const PeerCard = ({
 
           {/* Rating + Sessions */}
           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-emerald-300/70">
-
             <div className="flex items-center gap-1">
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
               <span>{peer.rating || 0}</span>
@@ -82,16 +68,13 @@ const PeerCard = ({
 
             <div className="flex items-center gap-1">
               <Trophy className="h-4 w-4 text-green-400" />
-              <span>
-                {peer.sessionsCompleted || 0} Sessions
-              </span>
+              <span>{peer.sessionsCompleted || 0} Sessions</span>
             </div>
 
             <div className="flex items-center gap-1">
               <Flame className="h-4 w-4 text-orange-400" />
               <span>{peer.points || 0} XP</span>
             </div>
-
           </div>
         </div>
       </div>
@@ -103,7 +86,6 @@ const PeerCard = ({
 
       {/* Subjects */}
       <div className="relative z-10 mt-5 space-y-3">
-
         {/* Teach */}
         <div className="flex items-start gap-2">
           <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-green-400" />
@@ -166,7 +148,6 @@ const PeerCard = ({
 
       {/* Buttons */}
       <div className="relative z-10 mt-6 flex gap-3">
-
         <Button
           size="sm"
           onClick={onConnect}
