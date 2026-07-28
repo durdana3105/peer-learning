@@ -88,7 +88,7 @@ describe("Row Level Security coverage (#1525)", () => {
         `the public Supabase anon key) but have no "ENABLE ROW LEVEL SECURITY" ` +
         `migration: ${missingRls.join(", ")}. Add RLS policies for them, or add ` +
         `them to RLS_EXEMPT_TABLES with a comment explaining why they're safe ` +
-        `to leave open.`
+        `to leave open.`,
     ).toEqual([]);
   });
 

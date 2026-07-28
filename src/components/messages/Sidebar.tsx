@@ -2,8 +2,19 @@ import { memo, useMemo, useState, useRef } from "react";
 import { useChatShortcuts } from "@/hooks/useChatShortcuts";
 import { Inbox, Search } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ProfileSummary, ConversationSummary, MessageRow } from "@/hooks/useMessages";
-import { getDisplayName, getInitial, getRoleLabel, getMessageBody, formatTime, formatRelativeTime } from "./utils";
+import {
+  ProfileSummary,
+  ConversationSummary,
+  MessageRow,
+} from "@/hooks/useMessages";
+import {
+  getDisplayName,
+  getInitial,
+  getRoleLabel,
+  getMessageBody,
+  formatTime,
+  formatRelativeTime,
+} from "./utils";
 
 type ConversationRowProps = {
   profile: ProfileSummary;
@@ -14,53 +25,70 @@ type ConversationRowProps = {
   onSelect: (profile: ProfileSummary) => void;
 };
 
-const ConversationRow = memo(({ profile, lastMessage, unreadCount, isOnline, isSelected, onSelect }: ConversationRowProps) => {
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(profile)}
-      className={`flex w-full items-center gap-3 rounded-3xl border p-3 text-left transition-all duration-300 ${
-        isSelected
-          ? "border-cyan-400/60 bg-cyan-500/10 shadow-[0_0_30px_rgba(34,211,238,0.12)]"
-          : "border-white/5 bg-white/5 hover:border-cyan-500/20 hover:bg-white/10"
-      }`}
-    >
-      <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 font-semibold text-black">
-        {getInitial(profile)}
-        <span
-          className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-slate-950 ${
-            isOnline ? "bg-emerald-400" : "bg-slate-500"
-          }`}
-        />
-      </div>
+const ConversationRow = memo(
+  ({
+    profile,
+    lastMessage,
+    unreadCount,
+    isOnline,
+    isSelected,
+    onSelect,
+  }: ConversationRowProps) => {
+    return (
+      <button
+        type="button"
+        onClick={() => onSelect(profile)}
+        className={`flex w-full items-center gap-3 rounded-3xl border p-3 text-left transition-all duration-300 ${
+          isSelected
+            ? "border-cyan-400/60 bg-cyan-500/10 shadow-[0_0_30px_rgba(34,211,238,0.12)]"
+            : "border-white/5 bg-white/5 hover:border-cyan-500/20 hover:bg-white/10"
+        }`}
+      >
+        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 font-semibold text-black">
+          {getInitial(profile)}
+          <span
+            className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-slate-950 ${
+              isOnline ? "bg-emerald-400" : "bg-slate-500"
+            }`}
+          />
+        </div>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <p className="truncate font-semibold text-white">{getDisplayName(profile)}</p>
-            <p className="truncate text-xs text-slate-400">{getRoleLabel(profile)}</p>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-white">
+                {getDisplayName(profile)}
+              </p>
+              <p className="truncate text-xs text-slate-400">
+                {getRoleLabel(profile)}
+              </p>
+            </div>
+
+            {lastMessage?.created_at && (
+              <span className="shrink-0 text-[11px] text-slate-500">
+                {formatTime(lastMessage.created_at)}
+              </span>
+            )}
           </div>
 
-          {lastMessage?.created_at && (
-            <span className="shrink-0 text-[11px] text-slate-500">{formatTime(lastMessage.created_at)}</span>
-          )}
-        </div>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <p className="truncate text-sm text-slate-300">
+              {lastMessage
+                ? getMessageBody(lastMessage)
+                : "Start the conversation"}
+            </p>
 
-        <div className="mt-2 flex items-center justify-between gap-3">
-          <p className="truncate text-sm text-slate-300">
-            {lastMessage ? getMessageBody(lastMessage) : "Start the conversation"}
-          </p>
-
-          {unreadCount > 0 && (
-            <span className="shrink-0 rounded-full bg-cyan-400 px-2.5 py-1 text-[11px] font-semibold text-slate-950">
-              {unreadCount}
-            </span>
-          )}
+            {unreadCount > 0 && (
+              <span className="shrink-0 rounded-full bg-cyan-400 px-2.5 py-1 text-[11px] font-semibold text-slate-950">
+                {unreadCount}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
-    </button>
-  );
-});
+      </button>
+    );
+  },
+);
 
 type SidebarProps = {
   currentUserId: string | null | undefined;
@@ -114,7 +142,11 @@ export function Sidebar({
       if (profile.id === currentUserId) return false;
       if (!query) return true;
 
-      const haystack = [getDisplayName(profile), profile.email ?? "", getRoleLabel(profile)]
+      const haystack = [
+        getDisplayName(profile),
+        profile.email ?? "",
+        getRoleLabel(profile),
+      ]
         .join(" ")
         .toLowerCase();
       return haystack.includes(query);
@@ -156,7 +188,9 @@ export function Sidebar({
       <div className="border-b border-white/10 p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Messages</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">
+              Messages
+            </p>
             <h1 className="mt-2 text-2xl font-semibold text-white">Inbox</h1>
             <p className="mt-2 text-sm text-slate-400">
               Conversations with mentors, learners, and peers.
@@ -183,8 +217,12 @@ export function Sidebar({
       <div className="flex-1 space-y-5 overflow-y-auto p-4 sm:p-5">
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">Conversations</h2>
-            <span className="text-xs text-slate-500">{conversationSummaries.length}</span>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+              Conversations
+            </h2>
+            <span className="text-xs text-slate-500">
+              {conversationSummaries.length}
+            </span>
           </div>
 
           {loadingUsers || loadingConversations ? (
@@ -200,36 +238,47 @@ export function Sidebar({
                 : "No conversations yet. Start a new one from the people list."}
             </div>
           ) : (
-            <div ref={conversationListRef} className="h-[420px] overflow-y-auto pr-1">
-              <div style={{ height: `${conversationVirtualizer.getTotalSize()}px`, position: "relative" }}>
-                {conversationVirtualizer.getVirtualItems().map((virtualItem) => {
-                  const item = filteredConversationSummaries[virtualItem.index];
+            <div
+              ref={conversationListRef}
+              className="h-[420px] overflow-y-auto pr-1"
+            >
+              <div
+                style={{
+                  height: `${conversationVirtualizer.getTotalSize()}px`,
+                  position: "relative",
+                }}
+              >
+                {conversationVirtualizer
+                  .getVirtualItems()
+                  .map((virtualItem) => {
+                    const item =
+                      filteredConversationSummaries[virtualItem.index];
 
-                  return (
-                    <div
-                      key={item.profile.id}
-                      data-index={virtualItem.index}
-                      ref={conversationVirtualizer.measureElement}
-                      style={{
-                        transform: `translateY(${virtualItem.start}px)`,
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        width: "100%",
-                      }}
-                      className="pb-2"
-                    >
-                      <ConversationRow
-                        profile={item.profile}
-                        lastMessage={item.lastMessage}
-                        unreadCount={item.unreadCount}
-                        isOnline={item.isOnline}
-                        isSelected={selectedUser?.id === item.profile.id}
-                        onSelect={onSelectProfile}
-                      />
-                    </div>
-                  );
-                })}
+                    return (
+                      <div
+                        key={item.profile.id}
+                        data-index={virtualItem.index}
+                        ref={conversationVirtualizer.measureElement}
+                        style={{
+                          transform: `translateY(${virtualItem.start}px)`,
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                        }}
+                        className="pb-2"
+                      >
+                        <ConversationRow
+                          profile={item.profile}
+                          lastMessage={item.lastMessage}
+                          unreadCount={item.unreadCount}
+                          isOnline={item.isOnline}
+                          isSelected={selectedUser?.id === item.profile.id}
+                          onSelect={onSelectProfile}
+                        />
+                      </div>
+                    );
+                  })}
               </div>
             </div>
           )}
@@ -237,8 +286,12 @@ export function Sidebar({
 
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">People</h2>
-            <span className="text-xs text-slate-500">{filteredProfiles.length}</span>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+              People
+            </h2>
+            <span className="text-xs text-slate-500">
+              {filteredProfiles.length}
+            </span>
           </div>
 
           {loadingUsers ? (
@@ -277,11 +330,19 @@ export function Sidebar({
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-white">{getDisplayName(profile)}</p>
+                      <p className="truncate font-medium text-white">
+                        {getDisplayName(profile)}
+                      </p>
                       <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
                         <span>{getRoleLabel(profile)}</span>
                         <span>•</span>
-                        <span>{isOnline ? "Online" : formatRelativeTime(profile.last_active || profile.last_seen) || "Offline"}</span>
+                        <span>
+                          {isOnline
+                            ? "Online"
+                            : formatRelativeTime(
+                                profile.last_active || profile.last_seen,
+                              ) || "Offline"}
+                        </span>
                       </div>
                     </div>
                   </button>

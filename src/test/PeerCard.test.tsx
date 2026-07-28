@@ -6,8 +6,14 @@ import type { User } from "@/types";
 // Mock framer-motion to avoid animation issues in tests
 vi.mock("framer-motion", () => ({
   motion: {
-    div: ({ children, className, ...rest }: React.HTMLAttributes<HTMLDivElement>) => (
-      <div className={className} {...rest}>{children}</div>
+    div: ({
+      children,
+      className,
+      ...rest
+    }: React.HTMLAttributes<HTMLDivElement>) => (
+      <div className={className} {...rest}>
+        {children}
+      </div>
     ),
   },
 }));
@@ -25,7 +31,7 @@ const mockPeer: User = {
   learnSubjects: ["Rust", "Go"],
   badges: ["Top Mentor", "Streak Master"],
   skills: [],
-  interests: []
+  interests: [],
 };
 
 describe("PeerCard", () => {
@@ -85,7 +91,9 @@ describe("PeerCard", () => {
 
   it("renders View Profile button", () => {
     render(<PeerCard peer={mockPeer} />);
-    expect(screen.getByRole("button", { name: /view profile/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /view profile/i }),
+    ).toBeInTheDocument();
   });
 
   it("renders avatar with correct alt text", () => {
@@ -96,6 +104,8 @@ describe("PeerCard", () => {
   it("renders fallback bio when bio is empty", () => {
     const peerNoBio = { ...mockPeer, bio: "" };
     render(<PeerCard peer={peerNoBio} />);
-    expect(screen.getByText("Passionate learner and collaborator.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Passionate learner and collaborator."),
+    ).toBeInTheDocument();
   });
 });

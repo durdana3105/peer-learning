@@ -1,15 +1,31 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CheckCircle2, Circle, Plus, Trophy, Calendar, Map } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  CheckCircle2,
+  Circle,
+  Plus,
+  Trophy,
+  Calendar,
+  Map,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 type MentorshipMilestonesProps = {
   userId: string;
   isMentor: boolean;
 };
 
-export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesProps) {
+export function MentorshipMilestones({
+  userId,
+  isMentor,
+}: MentorshipMilestonesProps) {
   const [paths, setPaths] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newGoal, setNewGoal] = useState("");
@@ -20,10 +36,12 @@ export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesP
     try {
       const { data, error } = await supabase
         .from("mentorship_paths")
-        .select(`
+        .select(
+          `
           *,
           mentorship_milestones (*)
-        `)
+        `,
+        )
         .or(`mentor_id.eq.${userId},mentee_id.eq.${userId}`)
         .order("created_at", { ascending: false });
 
@@ -91,7 +109,8 @@ export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesP
     }
   };
 
-  if (loading) return <div className="text-gray-400">Loading mentorship paths...</div>;
+  if (loading)
+    return <div className="text-gray-400">Loading mentorship paths...</div>;
 
   return (
     <div className="space-y-6">
@@ -113,7 +132,9 @@ export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesP
               </DialogHeader>
               <div className="space-y-4 mt-4">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Mentee User ID</label>
+                  <label className="block text-sm text-gray-400 mb-1">
+                    Mentee User ID
+                  </label>
                   <input
                     type="text"
                     value={newMenteeId}
@@ -123,7 +144,9 @@ export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesP
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Learning Goal</label>
+                  <label className="block text-sm text-gray-400 mb-1">
+                    Learning Goal
+                  </label>
                   <input
                     type="text"
                     value={newGoal}
@@ -150,21 +173,32 @@ export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesP
         <div className="grid gap-6">
           {paths.map((path) => {
             const milestones = path.mentorship_milestones || [];
-            const completedCount = milestones.filter((m: any) => m.is_completed).length;
-            const progress = milestones.length === 0 ? 0 : Math.round((completedCount / milestones.length) * 100);
+            const completedCount = milestones.filter(
+              (m: any) => m.is_completed,
+            ).length;
+            const progress =
+              milestones.length === 0
+                ? 0
+                : Math.round((completedCount / milestones.length) * 100);
             const isFullyCompleted = milestones.length > 0 && progress === 100;
 
             return (
-              <div key={path.id} className="bg-slate-900 border border-slate-800 rounded-xl p-5 relative overflow-hidden">
+              <div
+                key={path.id}
+                className="bg-slate-900 border border-slate-800 rounded-xl p-5 relative overflow-hidden"
+              >
                 {isFullyCompleted && (
                   <div className="absolute top-0 right-0 bg-yellow-500/20 text-yellow-400 px-4 py-1 rounded-bl-xl font-semibold flex items-center gap-2 text-sm">
                     <Trophy size={16} /> Completed
                   </div>
                 )}
-                
-                <h3 className="text-lg font-bold text-white mb-2">{path.goal}</h3>
+
+                <h3 className="text-lg font-bold text-white mb-2">
+                  {path.goal}
+                </h3>
                 <p className="text-sm text-slate-400 mb-4">
-                  {isMentor ? "Mentee ID" : "Mentor ID"}: {isMentor ? path.mentee_id : path.mentor_id}
+                  {isMentor ? "Mentee ID" : "Mentor ID"}:{" "}
+                  {isMentor ? path.mentee_id : path.mentor_id}
                 </p>
 
                 {/* Progress Bar */}
@@ -183,9 +217,13 @@ export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesP
 
                 {/* Milestones List */}
                 <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-slate-300">Milestones</h4>
+                  <h4 className="text-sm font-semibold text-slate-300">
+                    Milestones
+                  </h4>
                   {milestones.length === 0 ? (
-                    <p className="text-xs text-slate-500 italic">No milestones set yet.</p>
+                    <p className="text-xs text-slate-500 italic">
+                      No milestones set yet.
+                    </p>
                   ) : (
                     milestones.map((m: any) => (
                       <div key={m.id} className="flex items-start gap-3 group">
@@ -193,13 +231,20 @@ export function MentorshipMilestones({ userId, isMentor }: MentorshipMilestonesP
                           onClick={() => toggleMilestone(m.id, m.is_completed)}
                           className={`mt-0.5 transition-colors ${m.is_completed ? "text-green-400" : "text-slate-600 hover:text-cyan-400"}`}
                         >
-                          {m.is_completed ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+                          {m.is_completed ? (
+                            <CheckCircle2 size={18} />
+                          ) : (
+                            <Circle size={18} />
+                          )}
                         </button>
-                        <div className={`flex-1 ${m.is_completed ? "text-slate-500 line-through" : "text-slate-200"}`}>
+                        <div
+                          className={`flex-1 ${m.is_completed ? "text-slate-500 line-through" : "text-slate-200"}`}
+                        >
                           <p className="text-sm">{m.title}</p>
                           {m.due_date && (
                             <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                              <Calendar size={12} /> {new Date(m.due_date).toLocaleDateString()}
+                              <Calendar size={12} />{" "}
+                              {new Date(m.due_date).toLocaleDateString()}
                             </p>
                           )}
                         </div>

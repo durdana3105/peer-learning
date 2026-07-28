@@ -25,7 +25,7 @@ const RecommendedPartners = ({
   onConnect,
 }: RecommendedPartnersProps) => {
   const [loadingPartnerIds, setLoadingPartnerIds] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
 
   const handleConnect = async (partnerId: string) => {

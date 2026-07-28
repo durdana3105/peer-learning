@@ -24,7 +24,9 @@ const ResetPassword = () => {
     if (!isRecoveryLink) {
       setIsRecoverySession(false);
       setIsCheckingRecovery(false);
-      setMessage("Invalid or expired reset link. Request a new password reset email.");
+      setMessage(
+        "Invalid or expired reset link. Request a new password reset email.",
+      );
       return () => {
         cancelled = true;
       };
@@ -34,19 +36,23 @@ const ResetPassword = () => {
       if (cancelled) return;
       setIsRecoverySession(false);
       setIsCheckingRecovery(false);
-      setMessage("Invalid or expired reset link. Request a new password reset email.");
+      setMessage(
+        "Invalid or expired reset link. Request a new password reset email.",
+      );
     }, 10000);
 
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (cancelled) return;
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (cancelled) return;
 
-      if (event === "PASSWORD_RECOVERY" && session) {
-        window.clearTimeout(timeoutId);
-        setIsRecoverySession(true);
-        setIsCheckingRecovery(false);
-        setMessage("");
-      }
-    });
+        if (event === "PASSWORD_RECOVERY" && session) {
+          window.clearTimeout(timeoutId);
+          setIsRecoverySession(true);
+          setIsCheckingRecovery(false);
+          setMessage("");
+        }
+      },
+    );
 
     return () => {
       cancelled = true;
@@ -64,7 +70,9 @@ const ResetPassword = () => {
     }
 
     if (!isRecoverySession) {
-      setMessage("Invalid or expired reset link. Request a new password reset email.");
+      setMessage(
+        "Invalid or expired reset link. Request a new password reset email.",
+      );
       return;
     }
 
@@ -74,7 +82,7 @@ const ResetPassword = () => {
     }
 
     const { error } = await runSupabaseAuthRequest(() =>
-      supabase.auth.updateUser({ password })
+      supabase.auth.updateUser({ password }),
     );
 
     if (error) {
@@ -109,7 +117,11 @@ const ResetPassword = () => {
           style={styles.input}
         />
 
-        <button type="submit" style={styles.button} disabled={isCheckingRecovery || !isRecoverySession}>
+        <button
+          type="submit"
+          style={styles.button}
+          disabled={isCheckingRecovery || !isRecoverySession}
+        >
           Reset Password
         </button>
       </form>

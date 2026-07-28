@@ -5,11 +5,10 @@ import { User } from "@supabase/supabase-js";
 const MarkdownRenderer = React.lazy(() =>
   import("@/components/MarkdownRenderer").then((module) => ({
     default: module.MarkdownRenderer,
-  }))
+  })),
 );
 
 interface ChatBoxProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   messages: any[];
   user: User | null;
   onSendMessage: (msg: string) => Promise<void>;

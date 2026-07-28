@@ -27,7 +27,11 @@ describe("aiController", () => {
       }),
     });
 
-    const req = { body: { messages: [{ role: "user", content: "How do I start with DSA?" }] } };
+    const req = {
+      body: {
+        messages: [{ role: "user", content: "How do I start with DSA?" }],
+      },
+    };
     const res = createRes();
     const next = vi.fn();
 
@@ -54,11 +58,15 @@ describe("aiController", () => {
               error.name = "AbortError";
               reject(error);
             },
-            { once: true }
+            { once: true },
           );
-        })
+        }),
     );
-    const req = { body: { messages: [{ role: "user", content: "How do I start with DSA?" }] } };
+    const req = {
+      body: {
+        messages: [{ role: "user", content: "How do I start with DSA?" }],
+      },
+    };
     const res = createRes();
     const next = vi.fn();
 
@@ -73,7 +81,7 @@ describe("aiController", () => {
         name: "HttpError",
         statusCode: 503,
         details: { retryable: true, reason: "timeout" },
-      })
+      }),
     );
     expect(vi.getTimerCount()).toBe(0);
   });
@@ -117,7 +125,9 @@ describe("aiController", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
       json: async () => ({
-        choices: [{ message: { content: "Here is your summary in plain text." } }],
+        choices: [
+          { message: { content: "Here is your summary in plain text." } },
+        ],
       }),
     });
 

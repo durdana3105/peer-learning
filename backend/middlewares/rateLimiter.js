@@ -1,13 +1,13 @@
 /**
  * Lightweight, in-memory rate limiter.
- * 
+ *
  * DESIGN DECISION:
- * This rate limiter stores request tracking data in a local Node.js Map. 
+ * This rate limiter stores request tracking data in a local Node.js Map.
  * - PRO: Extremely fast (zero latency), zero infrastructure dependency.
  * - CON: State resets on server restart, and is per-instance (not shared horizontally).
- * 
- * For this project's current scale, this trade-off is accepted. 
- * If distributed rate-limiting is required in the future (e.g., across multiple servers), 
+ *
+ * For this project's current scale, this trade-off is accepted.
+ * If distributed rate-limiting is required in the future (e.g., across multiple servers),
  * this can be extended to use Redis or a Supabase UNLOGGED table.
  */
 
@@ -79,10 +79,10 @@ export const createRateLimiter = (options = {}) => {
     // Set standard RateLimit headers for better API UX
     const remaining = Math.max(0, maxRequests - entry.count);
     const resetTime = new Date(entry.windowStart + windowMs);
-    
-    res.setHeader('X-RateLimit-Limit', maxRequests);
-    res.setHeader('X-RateLimit-Remaining', remaining);
-    res.setHeader('X-RateLimit-Reset', Math.ceil(resetTime.getTime() / 1000));
+
+    res.setHeader("X-RateLimit-Limit", maxRequests);
+    res.setHeader("X-RateLimit-Remaining", remaining);
+    res.setHeader("X-RateLimit-Reset", Math.ceil(resetTime.getTime() / 1000));
 
     if (entry.count > maxRequests) {
       return res.status(429).json({

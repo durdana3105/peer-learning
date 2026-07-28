@@ -38,13 +38,9 @@ export default function ParticipantCard({
       </div>
 
       <div>
-        <p className="text-sm font-medium text-white">
-          {name}
-        </p>
+        <p className="text-sm font-medium text-white">{name}</p>
 
-        <p
-          className={`text-xs ${statusStyles[status].label}`}
-        >
+        <p className={`text-xs ${statusStyles[status].label}`}>
           {statusStyles[status].text}
         </p>
       </div>

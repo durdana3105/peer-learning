@@ -121,7 +121,9 @@ export default function StreakBadge() {
                 </div>
                 <div className="rounded-lg bg-white/5 p-4 text-center">
                   <p className="text-xs text-slate-300">Daily XP</p>
-                  <p className="mt-2 text-2xl font-bold text-blue-300">+{dailyXP}</p>
+                  <p className="mt-2 text-2xl font-bold text-blue-300">
+                    +{dailyXP}
+                  </p>
                 </div>
               </div>
 

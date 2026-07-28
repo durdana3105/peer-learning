@@ -1,8 +1,25 @@
-import { forwardRef, memo, useState, useEffect, useLayoutEffect, useRef } from "react";
+import {
+  forwardRef,
+  memo,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
 import { ArrowLeft, Send, Phone, Video, Loader2 } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ProfileSummary, ConversationSummary, MessageRow } from "@/hooks/useMessages";
-import { getDisplayName, getMessageBody, getRoleLabel, formatRelativeTime, formatTime } from "./utils";
+import {
+  ProfileSummary,
+  ConversationSummary,
+  MessageRow,
+} from "@/hooks/useMessages";
+import {
+  getDisplayName,
+  getMessageBody,
+  getRoleLabel,
+  formatRelativeTime,
+  formatTime,
+} from "./utils";
 
 type ThreadBubbleProps = {
   message: MessageRow;
@@ -14,12 +31,15 @@ type ThreadBubbleProps = {
 const ThreadBubble = memo(
   forwardRef<HTMLDivElement, ThreadBubbleProps>(function ThreadBubble(
     { message, isMine, timeLabel, isRead },
-    ref
+    ref,
   ) {
     const body = getMessageBody(message);
 
     return (
-      <div ref={ref} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+      <div
+        ref={ref}
+        className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+      >
         <div
           className={`max-w-[82%] rounded-3xl px-4 py-3 shadow-xl shadow-black/10 sm:max-w-[70%] ${
             isMine
@@ -27,15 +47,19 @@ const ThreadBubble = memo(
               : "rounded-bl-md border border-white/10 bg-white/10 text-white backdrop-blur-xl"
           }`}
         >
-          <p className="whitespace-pre-wrap break-words text-sm leading-6">{body}</p>
-          <div className={`mt-2 flex items-center justify-between gap-3 text-[11px] ${isMine ? "text-slate-900/70" : "text-slate-400"}`}>
+          <p className="whitespace-pre-wrap break-words text-sm leading-6">
+            {body}
+          </p>
+          <div
+            className={`mt-2 flex items-center justify-between gap-3 text-[11px] ${isMine ? "text-slate-900/70" : "text-slate-400"}`}
+          >
             <span>{timeLabel}</span>
             {isMine && isRead && <span>Read</span>}
           </div>
         </div>
       </div>
     );
-  })
+  }),
 );
 
 type ChatWindowProps = {
@@ -68,7 +92,10 @@ export function ChatWindow({
   const [newMessage, setNewMessage] = useState("");
   const threadMessagesRef = useRef<HTMLDivElement | null>(null);
   const hasAutoScrolledRef = useRef(false);
-  const prependAnchorRef = useRef<{ scrollHeight: number; firstMessageId: string | null } | null>(null);
+  const prependAnchorRef = useRef<{
+    scrollHeight: number;
+    firstMessageId: string | null;
+  } | null>(null);
 
   const threadVirtualizer = useVirtualizer({
     count: threadMessages.length,
@@ -88,7 +115,9 @@ export function ChatWindow({
     }
 
     if (!hasAutoScrolledRef.current) {
-      threadVirtualizer.scrollToIndex(threadMessages.length - 1, { align: "end" });
+      threadVirtualizer.scrollToIndex(threadMessages.length - 1, {
+        align: "end",
+      });
       hasAutoScrolledRef.current = true;
     }
   }, [threadMessages.length, threadVirtualizer]);
@@ -117,7 +146,10 @@ export function ChatWindow({
   const handleLoadMore = async () => {
     const container = threadMessagesRef.current;
     prependAnchorRef.current = container
-      ? { scrollHeight: container.scrollHeight, firstMessageId: threadMessages[0]?.id ?? null }
+      ? {
+          scrollHeight: container.scrollHeight,
+          firstMessageId: threadMessages[0]?.id ?? null,
+        }
       : null;
     await loadMoreThreadMessages();
   };
@@ -134,17 +166,23 @@ export function ChatWindow({
     }
   };
 
-  const selectedDisplayName = selectedUser ? getDisplayName(selectedUser) : "Messages";
+  const selectedDisplayName = selectedUser
+    ? getDisplayName(selectedUser)
+    : "Messages";
   const selectedSubtitle = selectedUser
     ? `${getRoleLabel(selectedUser)} • ${
         selectedConversation?.isOnline
           ? "Online now"
-          : formatRelativeTime(selectedUser.last_active || selectedUser.last_seen) || "Offline"
+          : formatRelativeTime(
+              selectedUser.last_active || selectedUser.last_seen,
+            ) || "Offline"
       }`
     : "Pick a conversation or start a new one.";
 
   return (
-    <section className={`${showSidebarOnMobile ? "hidden" : "flex"} min-w-0 flex-1 flex-col bg-slate-950 md:flex`}>
+    <section
+      className={`${showSidebarOnMobile ? "hidden" : "flex"} min-w-0 flex-1 flex-col bg-slate-950 md:flex`}
+    >
       {selectedUser ? (
         <>
           <header className="flex h-20 items-center justify-between border-b border-white/10 bg-white/5 px-4 backdrop-blur-2xl sm:px-6">
@@ -158,8 +196,12 @@ export function ChatWindow({
               </button>
 
               <div className="min-w-0">
-                <h2 className="truncate text-lg font-semibold text-white">{selectedDisplayName}</h2>
-                <p className="truncate text-xs text-slate-400">{selectedSubtitle}</p>
+                <h2 className="truncate text-lg font-semibold text-white">
+                  {selectedDisplayName}
+                </h2>
+                <p className="truncate text-xs text-slate-400">
+                  {selectedSubtitle}
+                </p>
               </div>
             </div>
 
@@ -179,7 +221,10 @@ export function ChatWindow({
             </div>
           </header>
 
-          <div ref={threadMessagesRef} className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+          <div
+            ref={threadMessagesRef}
+            className="flex-1 overflow-y-auto px-4 py-6 sm:px-6"
+          >
             {loadingThreadMessages && threadMessages.length === 0 ? (
               <div className="space-y-3">
                 <div className="ml-auto h-14 w-2/3 animate-pulse rounded-3xl bg-white/5" />
@@ -196,13 +241,22 @@ export function ChatWindow({
                       disabled={loadingMoreThreadMessages}
                       className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/10 disabled:opacity-50"
                     >
-                      {loadingMoreThreadMessages && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                      {loadingMoreThreadMessages ? "Loading earlier messages..." : "Load earlier messages"}
+                      {loadingMoreThreadMessages && (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      )}
+                      {loadingMoreThreadMessages
+                        ? "Loading earlier messages..."
+                        : "Load earlier messages"}
                     </button>
                   </div>
                 )}
 
-                <div style={{ height: `${threadVirtualizer.getTotalSize()}px`, position: "relative" }}>
+                <div
+                  style={{
+                    height: `${threadVirtualizer.getTotalSize()}px`,
+                    position: "relative",
+                  }}
+                >
                   {threadVirtualizer.getVirtualItems().map((virtualItem) => {
                     const message = threadMessages[virtualItem.index];
                     const isMine = message.sender_id === currentUserId;
@@ -276,7 +330,8 @@ export function ChatWindow({
           </div>
           <h2 className="text-xl font-semibold text-white">Your Messages</h2>
           <p className="mt-2 max-w-sm text-sm text-slate-400">
-            Select a conversation from the sidebar or start a new one to begin messaging.
+            Select a conversation from the sidebar or start a new one to begin
+            messaging.
           </p>
         </div>
       )}

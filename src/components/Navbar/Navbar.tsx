@@ -14,10 +14,13 @@ const Navbar = memo(function Navbar() {
   const { user, profileName, isAdmin, handleLogout } = useNavbarProfile();
   const { setTheme } = useTheme();
 
-  const toggleMobileMenu = useCallback(() => setMobileOpen((prev) => !prev), []);
+  const toggleMobileMenu = useCallback(
+    () => setMobileOpen((prev) => !prev),
+    [],
+  );
 
   const handleMobileMenuKeyDown = (
-    event: React.KeyboardEvent<HTMLButtonElement>
+    event: React.KeyboardEvent<HTMLButtonElement>,
   ) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -33,12 +36,9 @@ const Navbar = memo(function Navbar() {
     <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#050816]/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         {/* LOGO */}
-        <Link
-  to={user ? "/dashboard" : "/"}
-  aria-label="PeerLearn home page"
->
-  <Logo />
-</Link>
+        <Link to={user ? "/dashboard" : "/"} aria-label="PeerLearn home page">
+          <Logo />
+        </Link>
 
         {/* DESKTOP NAV */}
         <DesktopNav user={user} isAdmin={isAdmin} />
@@ -59,9 +59,7 @@ const Navbar = memo(function Navbar() {
           onKeyDown={handleMobileMenuKeyDown}
           className="rounded-lg border border-white/10 bg-white/5 p-3 text-white md:hidden active:scale-95"
           aria-label={
-            mobileOpen
-              ? "Close navigation menu"
-              : "Open navigation menu"
+            mobileOpen ? "Close navigation menu" : "Open navigation menu"
           }
           aria-expanded={mobileOpen}
           aria-controls="mobile-navigation-menu"

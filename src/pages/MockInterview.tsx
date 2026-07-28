@@ -3,9 +3,21 @@ import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { API_BASE_URL } from "@/config/api";
 import { toast } from "sonner";
-import { Loader2, Send, Bot, User, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
+import {
+  Loader2,
+  Send,
+  Bot,
+  User,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowRight,
+} from "lucide-react";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 import { CodeEditor } from "@/components/CodeEditor";
 
 type Message = {
@@ -63,7 +75,11 @@ const MockInterview = () => {
     }
 
     setHasStarted(true);
-    const initialMsg: Message = { role: "user", content: "Hi! I am ready for the mock interview. Please start by asking your first question." };
+    const initialMsg: Message = {
+      role: "user",
+      content:
+        "Hi! I am ready for the mock interview. Please start by asking your first question.",
+    };
     setMessages([initialMsg]);
     await sendMessage([initialMsg]);
   };
@@ -77,21 +93,30 @@ const MockInterview = () => {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/ai/mock-interview/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      const response = await fetch(
+        `${API_BASE_URL}/api/ai/mock-interview/chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          credentials: "include",
+          body: JSON.stringify({ messages: currentMessages, role }),
         },
-        credentials: "include",
-        body: JSON.stringify({ messages: currentMessages, role }),
-      });
+      );
 
       if (!response.ok) throw new Error("Failed to get response");
       const data = await response.json();
-      setMessages((prev) => [...prev, { role: "assistant", content: data.answer }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data.answer },
+      ]);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to process interview message.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to process interview message.";
       toast.error(message);
     } finally {
       setLoading(false);
@@ -111,7 +136,9 @@ const MockInterview = () => {
 
   const endInterview = async () => {
     if (messages.length < 3) {
-      toast.error("You need to answer some questions before ending the interview.");
+      toast.error(
+        "You need to answer some questions before ending the interview.",
+      );
       return;
     }
 
@@ -128,21 +155,27 @@ const MockInterview = () => {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/ai/mock-interview/report`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      const response = await fetch(
+        `${API_BASE_URL}/api/ai/mock-interview/report`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          credentials: "include",
+          body: JSON.stringify({ messages }),
         },
-        credentials: "include",
-        body: JSON.stringify({ messages }),
-      });
+      );
 
       if (!response.ok) throw new Error("Failed to generate report");
       const data = await response.json();
       setReport(data);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to generate evaluation report.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to generate evaluation report.";
       toast.error(message);
       setReportError(message);
     } finally {
@@ -158,11 +191,14 @@ const MockInterview = () => {
             AI-Powered Mock Interviews
           </h1>
           <p className="text-slate-400 text-lg">
-            Simulate a real technical or behavioral interview with our AI. Get immediate feedback and an evaluation report at the end.
+            Simulate a real technical or behavioral interview with our AI. Get
+            immediate feedback and an evaluation report at the end.
           </p>
 
           <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl space-y-6 text-left shadow-2xl mt-8">
-            <h2 className="text-xl font-semibold">Select your Interviewer Role</h2>
+            <h2 className="text-xl font-semibold">
+              Select your Interviewer Role
+            </h2>
             <div className="grid sm:grid-cols-2 gap-4">
               {ROLES.map((r) => (
                 <button
@@ -192,31 +228,64 @@ const MockInterview = () => {
       <div className="min-h-screen bg-[#020617] text-slate-100 p-8 pt-24">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-white mb-2">Interview Evaluation Report</h1>
+            <h1 className="text-3xl font-bold text-white mb-2">
+              Interview Evaluation Report
+            </h1>
             <p className="text-slate-400">Role: {role}</p>
           </div>
 
           {generatingReport ? (
             <div className="flex flex-col items-center justify-center p-12 space-y-4">
               <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
-              <p className="text-slate-400">Analyzing your performance and generating feedback...</p>
+              <p className="text-slate-400">
+                Analyzing your performance and generating feedback...
+              </p>
             </div>
           ) : report ? (
             <div className="grid gap-6 md:grid-cols-2">
               <div className="md:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-2xl flex items-center gap-6">
                 <div className="relative w-32 h-32 shrink-0 flex items-center justify-center">
                   <svg className="w-full h-full transform -rotate-90">
-                    <circle cx="64" cy="64" r="56" fill="transparent" stroke="#1e293b" strokeWidth="12" />
-                    <circle cx="64" cy="64" r="56" fill="transparent" stroke={report.overall_score >= 80 ? "#22c55e" : report.overall_score >= 60 ? "#eab308" : "#ef4444"} strokeWidth="12" strokeDasharray="351.85" strokeDashoffset={351.85 - (351.85 * report.overall_score) / 100} className="transition-all duration-1000" />
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      fill="transparent"
+                      stroke="#1e293b"
+                      strokeWidth="12"
+                    />
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      fill="transparent"
+                      stroke={
+                        report.overall_score >= 80
+                          ? "#22c55e"
+                          : report.overall_score >= 60
+                            ? "#eab308"
+                            : "#ef4444"
+                      }
+                      strokeWidth="12"
+                      strokeDasharray="351.85"
+                      strokeDashoffset={
+                        351.85 - (351.85 * report.overall_score) / 100
+                      }
+                      className="transition-all duration-1000"
+                    />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl font-bold">{report.overall_score}</span>
+                    <span className="text-3xl font-bold">
+                      {report.overall_score}
+                    </span>
                     <span className="text-xs text-slate-400">/100</span>
                   </div>
                 </div>
                 <div>
                   <h3 className="text-xl font-bold mb-2">Overall Summary</h3>
-                  <p className="text-slate-300 leading-relaxed">{report.summary}</p>
+                  <p className="text-slate-300 leading-relaxed">
+                    {report.summary}
+                  </p>
                 </div>
               </div>
 
@@ -257,7 +326,9 @@ const MockInterview = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center gap-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-8 text-center">
-              <p className="text-red-300">{reportError || "Failed to load report. Please try again."}</p>
+              <p className="text-red-300">
+                {reportError || "Failed to load report. Please try again."}
+              </p>
               <button
                 onClick={endInterview}
                 disabled={generatingReport}
@@ -283,7 +354,9 @@ const MockInterview = () => {
             </div>
             <div>
               <h2 className="font-semibold text-lg">{role}</h2>
-              <p className="text-xs text-slate-400">Mock Interview in progress...</p>
+              <p className="text-xs text-slate-400">
+                Mock Interview in progress...
+              </p>
             </div>
           </div>
           <button
@@ -295,18 +368,29 @@ const MockInterview = () => {
         </div>
 
         <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
-          <ResizablePanel defaultSize={40} minSize={30} className="flex flex-col">
+          <ResizablePanel
+            defaultSize={40}
+            minSize={30}
+            className="flex flex-col"
+          >
             {/* Chat Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
               {messages.map((msg, idx) => {
                 if (idx === 0 && msg.role === "user") return null;
                 const isAI = msg.role === "assistant" || msg.role === "system";
                 return (
-                  <div key={idx} className={`flex gap-4 ${isAI ? "" : "flex-row-reverse"}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isAI ? "bg-cyan-500/20 text-cyan-400" : "bg-blue-500/20 text-blue-400"}`}>
+                  <div
+                    key={idx}
+                    className={`flex gap-4 ${isAI ? "" : "flex-row-reverse"}`}
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isAI ? "bg-cyan-500/20 text-cyan-400" : "bg-blue-500/20 text-blue-400"}`}
+                    >
                       {isAI ? <Bot size={16} /> : <User size={16} />}
                     </div>
-                    <div className={`max-w-[80%] rounded-2xl px-5 py-3 ${isAI ? "bg-slate-800 rounded-tl-none text-slate-200" : "bg-blue-600 rounded-tr-none text-white"}`}>
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-5 py-3 ${isAI ? "bg-slate-800 rounded-tl-none text-slate-200" : "bg-blue-600 rounded-tr-none text-white"}`}
+                    >
                       <MarkdownRenderer content={msg.content} />
                     </div>
                   </div>

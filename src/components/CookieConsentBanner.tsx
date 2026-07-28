@@ -25,11 +25,13 @@ const categoryLabels: Record<
 > = {
   essential: {
     title: "Essential Cookies",
-    description: "Required for authentication, security, and core site functionality.",
+    description:
+      "Required for authentication, security, and core site functionality.",
   },
   analytics: {
     title: "Analytics Cookies",
-    description: "Help us understand how visitors use PeerLearn to improve the platform.",
+    description:
+      "Help us understand how visitors use PeerLearn to improve the platform.",
   },
   functional: {
     title: "Functional Cookies",
@@ -37,7 +39,8 @@ const categoryLabels: Record<
   },
   marketing: {
     title: "Marketing Cookies",
-    description: "Used to deliver relevant promotions if we introduce them in the future.",
+    description:
+      "Used to deliver relevant promotions if we introduce them in the future.",
   },
 };
 
@@ -52,9 +55,8 @@ export default function CookieConsentBanner() {
   } = useCookieConsent();
 
   const [customizeOpen, setCustomizeOpen] = useState(false);
-  const [draftPreferences, setDraftPreferences] = useState<CookieCategoryPreferences>(
-    defaultCategoryPreferences(),
-  );
+  const [draftPreferences, setDraftPreferences] =
+    useState<CookieCategoryPreferences>(defaultCategoryPreferences());
 
   useEffect(() => {
     if (customizeOpen) {
@@ -95,10 +97,10 @@ export default function CookieConsentBanner() {
               We use cookies to improve your experience
             </p>
             <p className="text-sm leading-relaxed text-slate-300">
-              PeerLearn uses cookies and similar technologies to keep you signed in,
-              remember your preferences, and understand how our platform is used. You
-              can accept all cookies, reject non-essential cookies, or customize your
-              choices. Read our{" "}
+              PeerLearn uses cookies and similar technologies to keep you signed
+              in, remember your preferences, and understand how our platform is
+              used. You can accept all cookies, reject non-essential cookies, or
+              customize your choices. Read our{" "}
               <Link
                 to="/cookies-policy"
                 className="font-medium text-cyan-400 underline-offset-4 hover:text-cyan-300 hover:underline"
@@ -152,8 +154,9 @@ export default function CookieConsentBanner() {
               Cookie Preferences
             </DialogTitle>
             <DialogDescription className="text-slate-300">
-              Choose which optional cookie categories you allow. Essential cookies
-              cannot be disabled because they are required for the site to work.
+              Choose which optional cookie categories you allow. Essential
+              cookies cannot be disabled because they are required for the site
+              to work.
             </DialogDescription>
           </DialogHeader>
 
@@ -182,7 +185,10 @@ export default function CookieConsentBanner() {
               description={categoryLabels.functional.description}
               checked={draftPreferences.functional}
               onCheckedChange={(checked) =>
-                setDraftPreferences((prev) => ({ ...prev, functional: checked }))
+                setDraftPreferences((prev) => ({
+                  ...prev,
+                  functional: checked,
+                }))
               }
             />
 

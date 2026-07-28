@@ -15,14 +15,18 @@ afterEach(() => {
 describe("AI route robustness", () => {
   it("returns a fallback 503 when the model call aborts", async () => {
     vi.stubEnv("OPENROUTER_API_KEY", "test-openrouter-key");
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(Object.assign(new Error("aborted"), { name: "AbortError" }));
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(
+      Object.assign(new Error("aborted"), { name: "AbortError" }),
+    );
 
     const app = express();
     app.use(express.json());
     app.post("/ask", validate(aiSchemas.askAI), askAI);
     app.use(errorHandler);
 
-    const response = await request(app).post("/ask").send({ messages: [{ role: "user", content: "Explain closures" }] });
+    const response = await request(app)
+      .post("/ask")
+      .send({ messages: [{ role: "user", content: "Explain closures" }] });
 
     expect(response.status).toBe(503);
     expect(response.body).toMatchObject({

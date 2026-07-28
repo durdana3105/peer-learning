@@ -33,8 +33,8 @@ export function SkillBadge({
   const tooltipLabel = !canEndorse
     ? "Sign in to endorse"
     : hasEndorsed
-    ? "Remove endorsement"
-    : "Endorse this skill";
+      ? "Remove endorsement"
+      : "Endorse this skill";
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -44,7 +44,7 @@ export function SkillBadge({
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium transition-colors",
               "bg-secondary text-secondary-foreground",
-              hasEndorsed && "border-primary/40 bg-primary/10 text-primary"
+              hasEndorsed && "border-primary/40 bg-primary/10 text-primary",
             )}
           >
             <span>{skill}</span>
@@ -65,7 +65,7 @@ export function SkillBadge({
                   "disabled:pointer-events-none disabled:opacity-60",
                   hasEndorsed
                     ? "text-primary"
-                    : "text-muted-foreground hover:text-primary"
+                    : "text-muted-foreground hover:text-primary",
                 )}
               >
                 <ThumbsUp

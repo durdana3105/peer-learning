@@ -10,7 +10,7 @@ const tabs = ["Upcoming", "Joined", "Completed"];
 
 export default function Sessions() {
   const { user } = useAuth();
-  
+
   const {
     filteredSessions,
     messages,
@@ -48,7 +48,9 @@ export default function Sessions() {
         {/* HEADER */}
         <div className="mb-10">
           <h1 className="text-4xl font-bold mb-2">Sessions</h1>
-          <p className="text-gray-400">Join collaborative learning sessions 🚀</p>
+          <p className="text-gray-400">
+            Join collaborative learning sessions 🚀
+          </p>
         </div>
 
         <SessionFilters
@@ -70,7 +72,9 @@ export default function Sessions() {
 
             {isVideoActive && selectedSession ? (
               <VideoRoom
-                roomName={selectedSession.jitsi_room_token || selectedSession.id}
+                roomName={
+                  selectedSession.jitsi_room_token || selectedSession.id
+                }
                 userName={user?.user_metadata?.full_name || "Anonymous Learner"}
                 onLeave={handleLeaveVideo}
               />

@@ -1,11 +1,22 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useEffect, useState, ReactNode, useCallback, useRef, useMemo } from "react";
+import {
+  createContext,
+  useEffect,
+  useState,
+  ReactNode,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { API_BASE_URL } from "@/config/api";
 import { runSupabaseAuthRequest } from "@/lib/supabaseAuthErrors";
 
-const syncSessionCookie = async (session: Session | null, setSynced?: (v: boolean) => void) => {
+const syncSessionCookie = async (
+  session: Session | null,
+  setSynced?: (v: boolean) => void,
+) => {
   const MAX_RETRIES = 3;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
@@ -32,7 +43,10 @@ const syncSessionCookie = async (session: Session | null, setSynced?: (v: boolea
       setSynced?.(true);
       return;
     } catch (err) {
-      console.warn(`Cookie sync attempt ${attempt + 1}/${MAX_RETRIES} failed:`, err);
+      console.warn(
+        `Cookie sync attempt ${attempt + 1}/${MAX_RETRIES} failed:`,
+        err,
+      );
       if (attempt < MAX_RETRIES - 1) {
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
       }
@@ -48,12 +62,18 @@ export interface AuthContextType {
   setNeedsOnboarding: (needs: boolean) => void;
   cookieSynced: boolean;
   retrySyncSessionCookie: () => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    name: string,
+  ) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined,
+);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -61,7 +81,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [cookieSynced, setCookieSynced] = useState(true);
-  const profilePromises = useRef<Record<string, Promise<{ is_mentor: boolean; is_learner: boolean } | null> | undefined>>({});
+  const profilePromises = useRef<
+    Record<
+      string,
+      Promise<{ is_mentor: boolean; is_learner: boolean } | null> | undefined
+    >
+  >({});
 
   /**
    * Ensures user profile exists in database without overwriting existing data
@@ -78,7 +103,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           id: user.id,
           is_mentor: false,
           is_learner: false,
-          name: user.user_metadata?.name || user.email?.split("@")[0] || "Learner",
+          name:
+            user.user_metadata?.name || user.email?.split("@")[0] || "Learner",
           email: user.email,
           points: 0,
           sessions_completed: 0,
@@ -109,12 +135,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .maybeSingle();
 
         if (refetchError) {
-          console.error("Failed to refetch profile after upsert:", refetchError.message);
+          console.error(
+            "Failed to refetch profile after upsert:",
+            refetchError.message,
+          );
         }
 
         return profileAfterUpsert ?? null;
       } catch (err) {
-        console.error("Unexpected error while creating/refetching profile:", err);
+        console.error(
+          "Unexpected error while creating/refetching profile:",
+          err,
+        );
         return null;
       } finally {
         delete profilePromises.current[user.id];
@@ -124,7 +156,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     profilePromises.current[user.id] = promise;
     return promise;
   }, []);
-
 
   useEffect(() => {
     let mounted = true;
@@ -155,7 +186,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setNeedsOnboarding(true);
           } else {
             setNeedsOnboarding(
-              finalProfile.is_mentor === false && finalProfile.is_learner === false
+              finalProfile.is_mentor === false &&
+                finalProfile.is_learner === false,
             );
           }
         }
@@ -167,7 +199,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const initializeSession = async () => {
       try {
         const { data, error } = await runSupabaseAuthRequest(() =>
-          supabase.auth.getSession()
+          supabase.auth.getSession(),
         );
 
         if (error) throw error;
@@ -176,7 +208,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         await syncSessionCookie(session, setCookieSynced);
 
         if (session?.user) {
@@ -202,7 +234,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
           setSession(session);
           setUser(session?.user ?? null);
-          
+
           // Fire-and-forget: must NOT block supabase.auth.signUp() from returning.
           // gotrue-js awaits every onAuthStateChange subscriber before resolving
           // the signUp/signIn promise, so awaiting a backend call that may hang
@@ -219,7 +251,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } finally {
           if (mounted) setLoading(false);
         }
-      }
+      },
     );
 
     return () => {
@@ -229,27 +261,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [ensureProfileExists]);
 
-  const signUp = useCallback(async (email: string, password: string, name: string) => {
-    try {
-      const { error } = await runSupabaseAuthRequest(() =>
-        supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { name },
-            emailRedirectTo: `${window.location.origin}/`
-          },
-        })
-      );
+  const signUp = useCallback(
+    async (email: string, password: string, name: string) => {
+      try {
+        const { error } = await runSupabaseAuthRequest(() =>
+          supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: { name },
+              emailRedirectTo: `${window.location.origin}/`,
+            },
+          }),
+        );
 
-      if (error) throw error;
-      return { error: null };
-    } catch (err) {
-      console.error("Sign up error:", err);
-      const normalizedError = err instanceof Error ? err : new Error(String(err));
-      return { error: normalizedError };
-    }
-  }, []);
+        if (error) throw error;
+        return { error: null };
+      } catch (err) {
+        console.error("Sign up error:", err);
+        const normalizedError =
+          err instanceof Error ? err : new Error(String(err));
+        return { error: normalizedError };
+      }
+    },
+    [],
+  );
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
@@ -257,14 +293,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         supabase.auth.signInWithPassword({
           email,
           password,
-        })
+        }),
       );
 
       if (error) throw error;
       return { error: null };
     } catch (err) {
       console.error("Sign in error:", err);
-      const normalizedError = err instanceof Error ? err : new Error(String(err));
+      const normalizedError =
+        err instanceof Error ? err : new Error(String(err));
       return { error: normalizedError };
     }
   }, []);
@@ -276,43 +313,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = useCallback(async () => {
     try {
       const { error } = await runSupabaseAuthRequest(() =>
-        supabase.auth.signOut()
+        supabase.auth.signOut(),
       );
       if (error) throw error;
       return { error: null };
     } catch (err) {
       console.error("Sign out error:", err);
-      const normalizedError = err instanceof Error ? err : new Error(String(err));
+      const normalizedError =
+        err instanceof Error ? err : new Error(String(err));
       return { error: normalizedError };
     }
   }, []);
 
-  const value = useMemo(() => ({
-    session,
-    user,
-    loading,
-    needsOnboarding,
-    setNeedsOnboarding,
-    cookieSynced,
-    retrySyncSessionCookie,
-    signUp,
-    signIn,
-    signOut
-  }), [
-    session,
-    user,
-    loading,
-    needsOnboarding,
-    cookieSynced,
-    retrySyncSessionCookie,
-    signUp,
-    signIn,
-    signOut
-  ]);
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      session,
+      user,
+      loading,
+      needsOnboarding,
+      setNeedsOnboarding,
+      cookieSynced,
+      retrySyncSessionCookie,
+      signUp,
+      signIn,
+      signOut,
+    }),
+    [
+      session,
+      user,
+      loading,
+      needsOnboarding,
+      cookieSynced,
+      retrySyncSessionCookie,
+      signUp,
+      signIn,
+      signOut,
+    ],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

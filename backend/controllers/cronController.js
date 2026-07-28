@@ -68,7 +68,8 @@ export const dispatchPushNotifications = async (req, res, next) => {
   try {
     const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
     const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-    const vapidSubject = process.env.VAPID_SUBJECT || "mailto:admin@example.com";
+    const vapidSubject =
+      process.env.VAPID_SUBJECT || "mailto:admin@example.com";
 
     if (!vapidPublicKey || !vapidPrivateKey) {
       return res.status(500).json({ error: "Missing VAPID push server env" });
@@ -81,7 +82,9 @@ export const dispatchPushNotifications = async (req, res, next) => {
     // invocations cannot double-deliver the same notification, while also
     // allowing rows whose previous claim has expired to be reclaimed.
     const claimedAt = new Date();
-    const claimExpiryThreshold = new Date(claimedAt.getTime() - PUSH_CLAIM_TTL_MS).toISOString();
+    const claimExpiryThreshold = new Date(
+      claimedAt.getTime() - PUSH_CLAIM_TTL_MS,
+    ).toISOString();
 
     const { data: notifications, error: claimError } = await supabase
       .from("notifications")
@@ -149,13 +152,18 @@ export const dispatchPushNotifications = async (req, res, next) => {
             JSON.stringify({
               title: notification.title,
               body: notification.body,
-              action_url: sanitizeNotificationActionUrl(notification.action_url),
-            })
-          )
-        )
+              action_url: sanitizeNotificationActionUrl(
+                notification.action_url,
+              ),
+            }),
+          ),
+        ),
       );
 
-      for (const id of collectExpiredSubscriptionIds(subscriptions, pushResults)) {
+      for (const id of collectExpiredSubscriptionIds(
+        subscriptions,
+        pushResults,
+      )) {
         expiredSubscriptionIds.add(id);
       }
 
@@ -183,9 +191,15 @@ export const dispatchPushNotifications = async (req, res, next) => {
         const attempts = (notification.push_attempts || 0) + 1;
         const update =
           attempts >= MAX_PUSH_ATTEMPTS
-            ? { push_attempts: attempts, push_failed_at: new Date().toISOString() }
+            ? {
+                push_attempts: attempts,
+                push_failed_at: new Date().toISOString(),
+              }
             : { push_attempts: attempts };
-        await supabase.from("notifications").update(update).eq("id", notification.id);
+        await supabase
+          .from("notifications")
+          .update(update)
+          .eq("id", notification.id);
       }
     }
 
@@ -211,7 +225,8 @@ export const sendSessionReminders = async (req, res, next) => {
 
     const { data: sessions, error } = await supabase
       .from("sessions")
-      .select(`
+      .select(
+        `
         id,
         title,
         start_time,
@@ -219,7 +234,8 @@ export const sendSessionReminders = async (req, res, next) => {
         session_participants (
           user_id
         )
-      `)
+      `,
+      )
       .eq("status", "scheduled")
       .gte("start_time", windowStart)
       .lte("start_time", windowEnd);
@@ -281,18 +297,23 @@ export const sendMentorshipCheckinReminders = async (req, res, next) => {
   try {
     const supabase = getSupabaseClient();
     const now = new Date();
-    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    const tomorrow = new Date(
+      now.getTime() + 24 * 60 * 60 * 1000,
+    ).toISOString();
 
     // Lower bound: only look back 7 days to avoid reprocessing ancient overdue
     // milestones on every cron run. This prevents unbounded query growth while
     // still notifying users about recently overdue items. Adjustable if needed.
     const lookbackDays = 7;
-    const windowStart = new Date(now.getTime() - lookbackDays * 24 * 60 * 60 * 1000).toISOString();
+    const windowStart = new Date(
+      now.getTime() - lookbackDays * 24 * 60 * 60 * 1000,
+    ).toISOString();
 
     // Find milestones due within the bounded window [7 days ago … tomorrow]
     const { data: milestones, error } = await supabase
       .from("mentorship_milestones")
-      .select(`
+      .select(
+        `
         id,
         title,
         due_date,
@@ -302,7 +323,8 @@ export const sendMentorshipCheckinReminders = async (req, res, next) => {
           mentee_id,
           goal
         )
-      `)
+      `,
+      )
       .eq("is_completed", false)
       .not("due_date", "is", null)
       .gte("due_date", windowStart)
@@ -321,8 +343,10 @@ export const sendMentorshipCheckinReminders = async (req, res, next) => {
 
       const isOverdue = new Date(m.due_date) < now;
       const title = isOverdue ? "Milestone Overdue" : "Milestone Due Soon";
-      const type = isOverdue ? "mentorship_reminder_overdue" : "mentorship_reminder";
-      const body = `The milestone "${m.title}" for goal "${path.goal}" is ${isOverdue ? 'overdue' : 'due soon'}. Check in with your mentor/mentee!`;
+      const type = isOverdue
+        ? "mentorship_reminder_overdue"
+        : "mentorship_reminder";
+      const body = `The milestone "${m.title}" for goal "${path.goal}" is ${isOverdue ? "overdue" : "due soon"}. Check in with your mentor/mentee!`;
 
       // Notify mentor
       notifications.push({

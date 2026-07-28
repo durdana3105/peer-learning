@@ -2,11 +2,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { logError } from "@/utils/logger";
 
 type DeleteResourceResult =
-  | { success: true }
-  | { success: false; error: string };
+  { success: true } | { success: false; error: string };
 
 export const deleteResource = async (
-  resourceId: string
+  resourceId: string,
 ): Promise<DeleteResourceResult> => {
   try {
     // Verify the caller is authenticated.
@@ -15,7 +14,10 @@ export const deleteResource = async (
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return { success: false, error: "You must be signed in to delete a resource." };
+      return {
+        success: false,
+        error: "You must be signed in to delete a resource.",
+      };
     }
 
     // Fetch the resource and verify ownership in a single query.
@@ -31,7 +33,10 @@ export const deleteResource = async (
       .single();
 
     if (fetchError || !resource) {
-      return { success: false, error: "Resource not found or you do not have permission to delete it." };
+      return {
+        success: false,
+        error: "Resource not found or you do not have permission to delete it.",
+      };
     }
 
     // Use the file_url from the database row, not from caller input,
@@ -56,6 +61,11 @@ export const deleteResource = async (
     return { success: true };
   } catch (err: any) {
     logError(err, { context: "deleteResource", resourceId });
-    return { success: false, error: err.message || "An unexpected error occurred while deleting the resource." };
+    return {
+      success: false,
+      error:
+        err.message ||
+        "An unexpected error occurred while deleting the resource.",
+    };
   }
 };

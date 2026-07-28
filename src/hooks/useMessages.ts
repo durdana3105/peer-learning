@@ -1,4 +1,12 @@
-import { useState, useEffect, useMemo, useCallback, useRef, Dispatch, SetStateAction } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+  Dispatch,
+  SetStateAction,
+} from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAwardXP } from "@/hooks/useAwardXP";
 import { toast } from "@/hooks/use-toast";
@@ -117,17 +125,18 @@ const threadOrFilter = (currentUserId: string, otherUserId: string) =>
  * @param {string | null} [currentUserId] - The UUID of the currently authenticated user.
  * @returns {UseMessagesResult} An object containing all conversation state and methods to interact with messages.
  */
-export function useMessages(
-  currentUserId?: string | null
-): UseMessagesResult {
+export function useMessages(currentUserId?: string | null): UseMessagesResult {
   const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
-  const [rawSummaries, setRawSummaries] = useState<RawConversationSummary[]>([]);
+  const [rawSummaries, setRawSummaries] = useState<RawConversationSummary[]>(
+    [],
+  );
   const [threadMessages, setThreadMessages] = useState<MessageRow[]>([]);
   const [selectedUser, setSelectedUser] = useState<ProfileSummary | null>(null);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingConversations, setLoadingConversations] = useState(true);
   const [loadingThreadMessages, setLoadingThreadMessages] = useState(false);
-  const [loadingMoreThreadMessages, setLoadingMoreThreadMessages] = useState(false);
+  const [loadingMoreThreadMessages, setLoadingMoreThreadMessages] =
+    useState(false);
   const [hasMoreThreadMessages, setHasMoreThreadMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
@@ -166,8 +175,11 @@ export function useMessages(
   }, [rawSummaries, profileMap, onlineUserIds]);
 
   const selectedConversation = useMemo(
-    () => conversationSummaries.find((item) => item.profile.id === selectedUser?.id) ?? null,
-    [conversationSummaries, selectedUser?.id]
+    () =>
+      conversationSummaries.find(
+        (item) => item.profile.id === selectedUser?.id,
+      ) ?? null,
+    [conversationSummaries, selectedUser?.id],
   );
 
   // Insert or refresh a partner's summary row when a message is sent/received,
@@ -177,7 +189,9 @@ export function useMessages(
       setRawSummaries((prev) => {
         const idx = prev.findIndex((r) => r.other_user_id === otherUserId);
         const existing = idx === -1 ? null : prev[idx];
-        const nextUnreadCount = incrementUnread ? (existing?.unread_count ?? 0) + 1 : (existing?.unread_count ?? 0);
+        const nextUnreadCount = incrementUnread
+          ? (existing?.unread_count ?? 0) + 1
+          : (existing?.unread_count ?? 0);
 
         const candidateRow: RawConversationSummary = {
           other_user_id: otherUserId,
@@ -207,7 +221,7 @@ export function useMessages(
         return next;
       });
     },
-    []
+    [],
   );
 
   useEffect(() => {
@@ -270,9 +284,12 @@ export function useMessages(
       setError(null);
 
       try {
-        const { data, error: rpcError } = await (supabase as any).rpc("get_conversation_summaries", {
-          p_user_id: currentUserId,
-        });
+        const { data, error: rpcError } = await (supabase as any).rpc(
+          "get_conversation_summaries",
+          {
+            p_user_id: currentUserId,
+          },
+        );
 
         if (rpcError) {
           throw new Error(rpcError.message);
@@ -325,7 +342,9 @@ export function useMessages(
 
               if (index === -1) {
                 const newProfiles = [...prev, updated];
-                newProfiles.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+                newProfiles.sort((a, b) =>
+                  (a.name || "").localeCompare(b.name || ""),
+                );
                 return newProfiles;
               }
 
@@ -334,7 +353,7 @@ export function useMessages(
               return newProfiles;
             });
           }
-        }
+        },
       )
       .subscribe();
 
@@ -360,7 +379,9 @@ export function useMessages(
       try {
         const { data, error: queryError } = await supabase
           .from("messages")
-          .select("id,sender_id,receiver_id,content,text,message,created_at,read_at")
+          .select(
+            "id,sender_id,receiver_id,content,text,message,created_at,read_at",
+          )
           .or(threadOrFilter(currentUserId, selectedUser.id))
           .order("created_at", { ascending: false })
           .limit(THREAD_PAGE_SIZE);
@@ -398,7 +419,13 @@ export function useMessages(
   }, [currentUserId, selectedUser?.id]);
 
   const loadMoreThreadMessages = useCallback(async () => {
-    if (!currentUserId || !selectedUser?.id || loadingMoreThreadMessages || !hasMoreThreadMessages || threadMessages.length === 0) {
+    if (
+      !currentUserId ||
+      !selectedUser?.id ||
+      loadingMoreThreadMessages ||
+      !hasMoreThreadMessages ||
+      threadMessages.length === 0
+    ) {
       return;
     }
 
@@ -408,7 +435,9 @@ export function useMessages(
     try {
       const { data, error: queryError } = await supabase
         .from("messages")
-        .select("id,sender_id,receiver_id,content,text,message,created_at,read_at")
+        .select(
+          "id,sender_id,receiver_id,content,text,message,created_at,read_at",
+        )
         .or(threadOrFilter(currentUserId, selectedUser.id))
         .lt("created_at", oldestTimestamp)
         .order("created_at", { ascending: false })
@@ -433,7 +462,13 @@ export function useMessages(
     } finally {
       setLoadingMoreThreadMessages(false);
     }
-  }, [currentUserId, selectedUser?.id, loadingMoreThreadMessages, hasMoreThreadMessages, threadMessages]);
+  }, [
+    currentUserId,
+    selectedUser?.id,
+    loadingMoreThreadMessages,
+    hasMoreThreadMessages,
+    threadMessages,
+  ]);
 
   // Manage online presence using Supabase Presence.
   // This tracks which users are currently viewing the app and listens for incoming real-time messages.
@@ -487,7 +522,11 @@ export function useMessages(
 
           if (otherUserId) {
             const isCurrentThread = selectedUserIdRef.current === otherUserId;
-            upsertRawSummary(nextMessage, otherUserId, !isCurrentThread && nextMessage.sender_id !== currentUserId);
+            upsertRawSummary(
+              nextMessage,
+              otherUserId,
+              !isCurrentThread && nextMessage.sender_id !== currentUserId,
+            );
 
             if (isCurrentThread) {
               setThreadMessages((prev) => {
@@ -498,7 +537,7 @@ export function useMessages(
               });
             }
           }
-        }
+        },
       )
       .subscribe();
 
@@ -509,19 +548,25 @@ export function useMessages(
   }, [currentUserId, upsertRawSummary]);
 
   useEffect(() => {
-    if (!currentUserId || !selectedUser?.id || threadMessages.length === 0) return;
+    if (!currentUserId || !selectedUser?.id || threadMessages.length === 0)
+      return;
 
     const unreadIds = threadMessages
-      .filter((message) => message.receiver_id === currentUserId && !message.read_at)
+      .filter(
+        (message) => message.receiver_id === currentUserId && !message.read_at,
+      )
       .map((message) => message.id);
 
     if (unreadIds.length === 0) return;
 
     const markAsRead = async () => {
       try {
-        const { error: rpcError } = await supabase.rpc("mark_messages_as_read", {
-          message_ids: unreadIds,
-        });
+        const { error: rpcError } = await supabase.rpc(
+          "mark_messages_as_read",
+          {
+            message_ids: unreadIds,
+          },
+        );
 
         if (rpcError) {
           throw new Error(rpcError.message);
@@ -530,17 +575,18 @@ export function useMessages(
         setThreadMessages((previous) =>
           previous.map((message) =>
             unreadIds.includes(message.id)
-              ? { ...message, read_at: message.read_at ?? new Date().toISOString() }
-              : message
-          )
+              ? {
+                  ...message,
+                  read_at: message.read_at ?? new Date().toISOString(),
+                }
+              : message,
+          ),
         );
 
         setRawSummaries((prev) =>
           prev.map((r) =>
-            r.other_user_id === selectedUser.id
-              ? { ...r, unread_count: 0 }
-              : r
-          )
+            r.other_user_id === selectedUser.id ? { ...r, unread_count: 0 } : r,
+          ),
         );
       } catch (err: any) {
         logError(err, { context: "useMessages.markAsRead" });
@@ -564,57 +610,62 @@ export function useMessages(
     }
   }, [conversationSummaries, selectedUser]);
 
-  const sendMessage = useCallback(async (content: string) => {
-    if (!content || !selectedUser || !currentUserId) return false;
+  const sendMessage = useCallback(
+    async (content: string) => {
+      if (!content || !selectedUser || !currentUserId) return false;
 
-    if (content.length > 1000) {
-      toast({
-        title: "Message too long",
-        description: "Message exceeds the 1000 character limit.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    try {
-      const { data, error: insertError } = await supabase
-        .from("messages")
-        .insert({
-          sender_id: currentUserId,
-          receiver_id: selectedUser.id,
-          content,
-          text: content,
-        })
-        .select("id,sender_id,receiver_id,content,text,message,created_at,read_at")
-        .single();
-
-      if (insertError) {
-        throw new Error(insertError.message);
-      }
-
-      if (data) {
-        const nextMessage = data as MessageRow;
-        setThreadMessages((prev) => {
-          if (prev.some((m) => m.id === nextMessage.id)) {
-            return prev;
-          }
-          return [...prev, nextMessage];
+      if (content.length > 1000) {
+        toast({
+          title: "Message too long",
+          description: "Message exceeds the 1000 character limit.",
+          variant: "destructive",
         });
-
-        upsertRawSummary(nextMessage, selectedUser.id, false);
-        awardXP.mutate({ activity: "chat_message" });
+        return false;
       }
-      return true;
-    } catch (err: any) {
-      logError(err, { context: "useMessages.sendMessage" });
-      toast({
-        title: "Failed to send message",
-        description: err.message || "An unexpected error occurred",
-        variant: "destructive",
-      });
-      return false;
-    }
-  }, [currentUserId, selectedUser, awardXP, upsertRawSummary]);
+
+      try {
+        const { data, error: insertError } = await supabase
+          .from("messages")
+          .insert({
+            sender_id: currentUserId,
+            receiver_id: selectedUser.id,
+            content,
+            text: content,
+          })
+          .select(
+            "id,sender_id,receiver_id,content,text,message,created_at,read_at",
+          )
+          .single();
+
+        if (insertError) {
+          throw new Error(insertError.message);
+        }
+
+        if (data) {
+          const nextMessage = data as MessageRow;
+          setThreadMessages((prev) => {
+            if (prev.some((m) => m.id === nextMessage.id)) {
+              return prev;
+            }
+            return [...prev, nextMessage];
+          });
+
+          upsertRawSummary(nextMessage, selectedUser.id, false);
+          awardXP.mutate({ activity: "chat_message" });
+        }
+        return true;
+      } catch (err: any) {
+        logError(err, { context: "useMessages.sendMessage" });
+        toast({
+          title: "Failed to send message",
+          description: err.message || "An unexpected error occurred",
+          variant: "destructive",
+        });
+        return false;
+      }
+    },
+    [currentUserId, selectedUser, awardXP, upsertRawSummary],
+  );
 
   return {
     profiles,

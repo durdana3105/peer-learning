@@ -20,7 +20,7 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 );
 
 interface AnalyticsChartsProps {
@@ -87,10 +87,7 @@ export default function AnalyticsCharts({
         {
           label: "Sessions",
           data: [attendedCount, missedCount],
-          backgroundColor: [
-            "rgba(34,211,238,0.6)",
-            "rgba(239,68,68,0.6)",
-          ],
+          backgroundColor: ["rgba(34,211,238,0.6)", "rgba(239,68,68,0.6)"],
         },
       ],
     }),

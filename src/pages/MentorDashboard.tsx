@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { useRole } from "@/contexts/RoleContext";
 import { useAuth } from "@/contexts/useAuth";
@@ -24,7 +23,9 @@ type MentorProfile = {
 };
 
 const toSessionCardModel = (session: MentorSessionRow): Session => {
-  const scheduledAt = session.scheduled_at ? new Date(session.scheduled_at) : null;
+  const scheduledAt = session.scheduled_at
+    ? new Date(session.scheduled_at)
+    : null;
 
   return {
     id: String(session.id),
@@ -33,16 +34,24 @@ const toSessionCardModel = (session: MentorSessionRow): Session => {
     peerAvatar: "/placeholder.svg",
     subject: session.title || "Mentorship session",
     date: scheduledAt ? scheduledAt.toLocaleDateString() : "Not scheduled",
-    time: scheduledAt ? scheduledAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
+    time: scheduledAt
+      ? scheduledAt.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "",
     duration: session.duration_minutes ?? 60,
-    status: session.status === "ended" || session.status === "completed" ? "completed" : "upcoming",
+    status:
+      session.status === "ended" || session.status === "completed"
+        ? "completed"
+        : "upcoming",
   };
 };
 
 const MentorDashboard = () => {
   const { user, loading } = useAuth();
   const { currentMode } = useRole();
-  
+
   const [profile, setProfile] = useState<MentorProfile | null>(null);
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
 
@@ -64,7 +73,7 @@ const MentorDashboard = () => {
           .select("name,sessions_completed,points,rating")
           .eq("id", user.id)
           .single();
-        
+
         if (profileData) {
           setProfile(profileData);
         }
@@ -98,7 +107,7 @@ const MentorDashboard = () => {
             to="/"
             className="inline-block rounded-md bg-emerald-600 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-500"
           >
-            ← Back 
+            ← Back
           </Link>
 
           <p className="text-sm text-emerald-300">
@@ -130,19 +139,25 @@ const MentorDashboard = () => {
         </div>
 
         <section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
-          <h2 className="mb-5 text-xl font-semibold">Upcoming Mentorship Sessions</h2>
-          
+          <h2 className="mb-5 text-xl font-semibold">
+            Upcoming Mentorship Sessions
+          </h2>
+
           {upcomingSessions.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
               {upcomingSessions.map((session) => (
-                <div key={session.id} className="bg-slate-950 rounded-xl p-2 border border-slate-800">
+                <div
+                  key={session.id}
+                  className="bg-slate-950 rounded-xl p-2 border border-slate-800"
+                >
                   <SessionCard session={session} />
                 </div>
               ))}
             </div>
           ) : (
             <p className="mt-3 text-slate-400">
-              No upcoming sessions. Once learners book with you, they will appear here.
+              No upcoming sessions. Once learners book with you, they will
+              appear here.
             </p>
           )}
         </section>
@@ -158,4 +173,3 @@ const MentorDashboard = () => {
 };
 
 export default MentorDashboard;
-

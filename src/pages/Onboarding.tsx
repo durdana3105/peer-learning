@@ -71,7 +71,7 @@ const Onboarding = () => {
   }, [navigate]);
 
   const handleRoleSelect = async (
-    role: Pick<(typeof roleOptions)[number], "id" | "is_mentor" | "is_learner">
+    role: Pick<(typeof roleOptions)[number], "id" | "is_mentor" | "is_learner">,
   ) => {
     setSelectedRole(role.id);
 
@@ -131,7 +131,8 @@ const Onboarding = () => {
       setSelectedRole(null);
       toast({
         title: "Could not update role",
-        description: err instanceof Error ? err.message : "An unexpected error occurred.",
+        description:
+          err instanceof Error ? err.message : "An unexpected error occurred.",
         variant: "destructive",
       });
     }

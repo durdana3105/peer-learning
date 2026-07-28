@@ -15,7 +15,13 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -53,9 +59,13 @@ const sectionVariants = {
   show: { opacity: 1, y: 0 },
 };
 
-const getTopicLabels = (topics: RecommendationTopic[]) => topics.slice(0, 4).map((topic) => topic.topic);
+const getTopicLabels = (topics: RecommendationTopic[]) =>
+  topics.slice(0, 4).map((topic) => topic.topic);
 
-const RecommendationPanel = ({ profile, sessions }: RecommendationPanelProps) => {
+const RecommendationPanel = ({
+  profile,
+  sessions,
+}: RecommendationPanelProps) => {
   const navigate = useNavigate();
 
   const [mentors, setMentors] = useState<MentorCandidate[]>([]);
@@ -178,20 +188,30 @@ const RecommendationPanel = ({ profile, sessions }: RecommendationPanelProps) =>
           </div>
 
           <div>
-            <h2 className="text-2xl font-black text-white md:text-3xl">Personalized learning recommendations</h2>
+            <h2 className="text-2xl font-black text-white md:text-3xl">
+              Personalized learning recommendations
+            </h2>
             <CardDescription className="mt-2 max-w-3xl text-slate-300">
-              Suggestions are ranked from your skills, interests, streak, points, and upcoming activity so the feed adapts as you learn.
+              Suggestions are ranked from your skills, interests, streak,
+              points, and upcoming activity so the feed adapts as you learn.
             </CardDescription>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" className="border-white/10 bg-white/5 hover:bg-white/10" onClick={() => navigate("/ai")}>
+          <Button
+            variant="outline"
+            className="border-white/10 bg-white/5 hover:bg-white/10"
+            onClick={() => navigate("/ai")}
+          >
             <Brain className="h-4 w-4" />
             Ask AI
           </Button>
 
-          <Button onClick={refreshRecommendations} className="bg-gradient-to-r from-cyan-400 to-blue-500 text-black hover:from-cyan-300 hover:to-blue-400">
+          <Button
+            onClick={refreshRecommendations}
+            className="bg-gradient-to-r from-cyan-400 to-blue-500 text-black hover:from-cyan-300 hover:to-blue-400"
+          >
             <RefreshCw className="h-4 w-4" />
             Refresh
           </Button>
@@ -200,7 +220,11 @@ const RecommendationPanel = ({ profile, sessions }: RecommendationPanelProps) =>
 
       <div className="mb-6 flex flex-wrap gap-2">
         {getTopicLabels(inferredTopics).map((topic) => (
-          <Badge key={topic} variant="outline" className="border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-cyan-200">
+          <Badge
+            key={topic}
+            variant="outline"
+            className="border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-cyan-200"
+          >
             {topic}
           </Badge>
         ))}
@@ -232,48 +256,74 @@ const RecommendationPanel = ({ profile, sessions }: RecommendationPanelProps) =>
         </div>
       ) : (
         <div className="grid gap-4 xl:grid-cols-2">
-          <motion.div variants={sectionVariants} initial="hidden" animate="show">
+          <motion.div
+            variants={sectionVariants}
+            initial="hidden"
+            animate="show"
+          >
             <Card className="h-full border-white/10 bg-white/5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-white">
                   <BookOpen className="h-5 w-5 text-cyan-300" />
                   Resources to open next
                 </CardTitle>
-                <CardDescription>Matched to the subjects you are already exploring.</CardDescription>
+                <CardDescription>
+                  Matched to the subjects you are already exploring.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {recommendedResources.length > 0 ? (
                   recommendedResources.map((resource) => (
-                    <div key={resource.id} className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 transition hover:border-cyan-400/30 hover:bg-cyan-500/5">
+                    <div
+                      key={resource.id}
+                      className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 transition hover:border-cyan-400/30 hover:bg-cyan-500/5"
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 space-y-2">
                           <div className="flex items-center gap-2">
-                            <p className="truncate font-semibold text-white">{resource.title}</p>
-                            <Badge variant="secondary" className="shrink-0 bg-cyan-400/10 text-cyan-200">
+                            <p className="truncate font-semibold text-white">
+                              {resource.title}
+                            </p>
+                            <Badge
+                              variant="secondary"
+                              className="shrink-0 bg-cyan-400/10 text-cyan-200"
+                            >
                               {Math.round(resource.score)} fit
                             </Badge>
                           </div>
                           <p className="text-sm leading-relaxed text-slate-300">
-                            {resource.description || "A resource that lines up with your current learning path."}
+                            {resource.description ||
+                              "A resource that lines up with your current learning path."}
                           </p>
                         </div>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {(resource.hits || []).map((hit: { topic: string; score: number }) => (
-                          <Badge key={hit.topic} variant="outline" className="border-white/10 text-xs text-slate-200">
-                            {hit.topic}
-                          </Badge>
-                        ))}
+                        {(resource.hits || []).map(
+                          (hit: { topic: string; score: number }) => (
+                            <Badge
+                              key={hit.topic}
+                              variant="outline"
+                              className="border-white/10 text-xs text-slate-200"
+                            >
+                              {hit.topic}
+                            </Badge>
+                          ),
+                        )}
                       </div>
                     </div>
                   ))
                 ) : (
                   <p className="rounded-2xl border border-dashed border-white/10 px-4 py-8 text-sm text-slate-400">
-                    Add more resources or update your profile interests to unlock sharper suggestions here.
+                    Add more resources or update your profile interests to
+                    unlock sharper suggestions here.
                   </p>
                 )}
 
-                <Button variant="outline" className="w-full border-white/10 bg-white/5 hover:bg-white/10" onClick={() => navigate("/resources")}>
+                <Button
+                  variant="outline"
+                  className="w-full border-white/10 bg-white/5 hover:bg-white/10"
+                  onClick={() => navigate("/resources")}
+                >
                   Open Resource Hub
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -281,36 +331,61 @@ const RecommendationPanel = ({ profile, sessions }: RecommendationPanelProps) =>
             </Card>
           </motion.div>
 
-          <motion.div variants={sectionVariants} initial="hidden" animate="show">
+          <motion.div
+            variants={sectionVariants}
+            initial="hidden"
+            animate="show"
+          >
             <Card className="h-full border-white/10 bg-white/5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-white">
                   <GraduationCap className="h-5 w-5 text-emerald-300" />
                   Mentors who match your goals
                 </CardTitle>
-                <CardDescription>Recommended from mentor skills, teaching subjects, and activity.</CardDescription>
+                <CardDescription>
+                  Recommended from mentor skills, teaching subjects, and
+                  activity.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {recommendedMentors.length > 0 ? (
                   recommendedMentors.map((mentor) => (
-                    <div key={mentor.id} className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 transition hover:border-emerald-400/30 hover:bg-emerald-500/5">
+                    <div
+                      key={mentor.id}
+                      className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 transition hover:border-emerald-400/30 hover:bg-emerald-500/5"
+                    >
                       <div className="flex items-start gap-4">
                         <img
-                          src={mentor.avatar_url || `https://api.dicebear.com/9.x/avataaars/svg?seed=${mentor.name}`}
+                          src={
+                            mentor.avatar_url ||
+                            `https://api.dicebear.com/9.x/avataaars/svg?seed=${mentor.name}`
+                          }
                           alt={mentor.name || "Mentor"}
                           className="h-14 w-14 rounded-2xl border border-white/10 object-cover"
                         />
                         <div className="min-w-0 flex-1 space-y-2">
                           <div className="flex items-center justify-between gap-3">
-                            <p className="truncate font-semibold text-white">{mentor.name || "Mentor"}</p>
-                            <Badge variant="secondary" className="shrink-0 bg-emerald-400/10 text-emerald-200">
+                            <p className="truncate font-semibold text-white">
+                              {mentor.name || "Mentor"}
+                            </p>
+                            <Badge
+                              variant="secondary"
+                              className="shrink-0 bg-emerald-400/10 text-emerald-200"
+                            >
                               {Math.round(mentor.score)} fit
                             </Badge>
                           </div>
-                          <p className="text-sm leading-relaxed text-slate-300">{mentor.bio || "Experienced mentor ready to help you level up."}</p>
+                          <p className="text-sm leading-relaxed text-slate-300">
+                            {mentor.bio ||
+                              "Experienced mentor ready to help you level up."}
+                          </p>
                           <div className="flex flex-wrap gap-2">
                             {(mentor.overlap || []).map((topic) => (
-                              <Badge key={topic} variant="outline" className="border-white/10 text-xs text-slate-200">
+                              <Badge
+                                key={topic}
+                                variant="outline"
+                                className="border-white/10 text-xs text-slate-200"
+                              >
                                 {topic}
                               </Badge>
                             ))}
@@ -321,11 +396,16 @@ const RecommendationPanel = ({ profile, sessions }: RecommendationPanelProps) =>
                   ))
                 ) : (
                   <p className="rounded-2xl border border-dashed border-white/10 px-4 py-8 text-sm text-slate-400">
-                    No mentor matches yet. Add interests or learner subjects to see stronger mentor suggestions.
+                    No mentor matches yet. Add interests or learner subjects to
+                    see stronger mentor suggestions.
                   </p>
                 )}
 
-                <Button variant="outline" className="w-full border-white/10 bg-white/5 hover:bg-white/10" onClick={() => navigate("/discover")}>
+                <Button
+                  variant="outline"
+                  className="w-full border-white/10 bg-white/5 hover:bg-white/10"
+                  onClick={() => navigate("/discover")}
+                >
                   Browse Mentors
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -333,24 +413,38 @@ const RecommendationPanel = ({ profile, sessions }: RecommendationPanelProps) =>
             </Card>
           </motion.div>
 
-          <motion.div variants={sectionVariants} initial="hidden" animate="show">
+          <motion.div
+            variants={sectionVariants}
+            initial="hidden"
+            animate="show"
+          >
             <Card className="h-full border-white/10 bg-white/5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-white">
                   <Target className="h-5 w-5 text-amber-300" />
                   Practice problems
                 </CardTitle>
-                <CardDescription>Short challenges generated from your highest-signal topics.</CardDescription>
+                <CardDescription>
+                  Short challenges generated from your highest-signal topics.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {practiceRecommendations.map((item) => (
-                  <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 transition hover:border-amber-400/30 hover:bg-amber-500/5">
+                  <div
+                    key={item.id}
+                    className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 transition hover:border-amber-400/30 hover:bg-amber-500/5"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 space-y-2">
                         <p className="font-semibold text-white">{item.title}</p>
-                        <p className="text-sm leading-relaxed text-slate-300">{item.description}</p>
+                        <p className="text-sm leading-relaxed text-slate-300">
+                          {item.description}
+                        </p>
                       </div>
-                      <Badge variant="secondary" className="shrink-0 bg-amber-400/10 text-amber-200">
+                      <Badge
+                        variant="secondary"
+                        className="shrink-0 bg-amber-400/10 text-amber-200"
+                      >
                         {item.difficulty}
                       </Badge>
                     </div>
@@ -361,7 +455,11 @@ const RecommendationPanel = ({ profile, sessions }: RecommendationPanelProps) =>
                   </div>
                 ))}
 
-                <Button variant="outline" className="w-full border-white/10 bg-white/5 hover:bg-white/10" onClick={() => navigate("/ai")}>
+                <Button
+                  variant="outline"
+                  className="w-full border-white/10 bg-white/5 hover:bg-white/10"
+                  onClick={() => navigate("/ai")}
+                >
                   Generate more practice
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -369,38 +467,60 @@ const RecommendationPanel = ({ profile, sessions }: RecommendationPanelProps) =>
             </Card>
           </motion.div>
 
-          <motion.div variants={sectionVariants} initial="hidden" animate="show">
+          <motion.div
+            variants={sectionVariants}
+            initial="hidden"
+            animate="show"
+          >
             <Card className="h-full border-white/10 bg-white/5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-white">
                   <Users className="h-5 w-5 text-blue-300" />
                   Study groups and sessions
                 </CardTitle>
-                <CardDescription>Live and upcoming sessions ranked by topic fit and urgency.</CardDescription>
+                <CardDescription>
+                  Live and upcoming sessions ranked by topic fit and urgency.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {recommendedSessions.length > 0 ? (
                   recommendedSessions.map((session) => (
-                    <div key={session.id} className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 transition hover:border-blue-400/30 hover:bg-blue-500/5">
+                    <div
+                      key={session.id}
+                      className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 transition hover:border-blue-400/30 hover:bg-blue-500/5"
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 space-y-2">
-                          <p className="truncate font-semibold text-white">{session.title || "Study session"}</p>
+                          <p className="truncate font-semibold text-white">
+                            {session.title || "Study session"}
+                          </p>
                           <p className="text-sm leading-relaxed text-slate-300">
-                            {session.description || "An active collaborative session that matches your current learning path."}
+                            {session.description ||
+                              "An active collaborative session that matches your current learning path."}
                           </p>
                         </div>
-                        <Badge variant="secondary" className="shrink-0 bg-blue-400/10 text-blue-200">
+                        <Badge
+                          variant="secondary"
+                          className="shrink-0 bg-blue-400/10 text-blue-200"
+                        >
                           {Math.round(session.score)} fit
                         </Badge>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2">
                         {(session.matches || []).map((topic: string) => (
-                          <Badge key={topic} variant="outline" className="border-white/10 text-xs text-slate-200">
+                          <Badge
+                            key={topic}
+                            variant="outline"
+                            className="border-white/10 text-xs text-slate-200"
+                          >
                             {topic}
                           </Badge>
                         ))}
                         {session.scheduled_at ? (
-                          <Badge variant="outline" className="border-white/10 text-xs text-slate-200">
+                          <Badge
+                            variant="outline"
+                            className="border-white/10 text-xs text-slate-200"
+                          >
                             <CalendarClock className="mr-1 h-3 w-3" />
                             {new Date(session.scheduled_at).toLocaleString()}
                           </Badge>
@@ -410,11 +530,16 @@ const RecommendationPanel = ({ profile, sessions }: RecommendationPanelProps) =>
                   ))
                 ) : (
                   <p className="rounded-2xl border border-dashed border-white/10 px-4 py-8 text-sm text-slate-400">
-                    No session matches right now. Check back when new groups or study rooms are scheduled.
+                    No session matches right now. Check back when new groups or
+                    study rooms are scheduled.
                   </p>
                 )}
 
-                <Button variant="outline" className="w-full border-white/10 bg-white/5 hover:bg-white/10" onClick={() => navigate("/sessions")}>
+                <Button
+                  variant="outline"
+                  className="w-full border-white/10 bg-white/5 hover:bg-white/10"
+                  onClick={() => navigate("/sessions")}
+                >
                   Explore Sessions
                   <ArrowRight className="h-4 w-4" />
                 </Button>

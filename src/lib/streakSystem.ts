@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * streakSystem.ts
  *
@@ -45,7 +44,9 @@ function writeCache(data: StreakData): void {
 
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 function readCache(): StreakData | null {
@@ -64,7 +65,9 @@ function readCache(): StreakData | null {
 function clearCache(): void {
   try {
     localStorage.removeItem(CACHE_KEY);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 // ── Auth helper ────────────────────────────────────────────────
@@ -87,7 +90,9 @@ export async function getStreakData(): Promise<StreakData> {
 
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("streak, last_active, points, restoration_used_today, restoration_date")
+      .select(
+        "streak, last_active, points, restoration_used_today, restoration_date",
+      )
       .eq("id", userId)
       .single();
 
@@ -115,14 +120,16 @@ export async function getStreakData(): Promise<StreakData> {
     return result;
   } catch {
     // Fall back to cache for offline/unauthenticated scenarios
-    return readCache() ?? {
-      streak: 0,
-      lastActive: "",
-      totalXP: 0,
-      dailyXP: 50,
-      canRestore: true,
-      restorationUsedToday: false,
-    };
+    return (
+      readCache() ?? {
+        streak: 0,
+        lastActive: "",
+        totalXP: 0,
+        dailyXP: 50,
+        canRestore: true,
+        restorationUsedToday: false,
+      }
+    );
   }
 }
 
@@ -131,7 +138,10 @@ export async function getStreakData(): Promise<StreakData> {
  * Update the daily streak in Supabase.
  * Called on login / daily visit.
  */
-export async function updateDailyStreak(): Promise<{ streak: number; xpEarned: number }> {
+export async function updateDailyStreak(): Promise<{
+  streak: number;
+  xpEarned: number;
+}> {
   try {
     const { data, error } = await (supabase as any).rpc("update_daily_streak");
     if (error) throw error;
@@ -194,12 +204,14 @@ export async function resetStreak(): Promise<void> {
       .eq("id", userId);
 
     clearCache();
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 // ── Pure utility functions (no storage) ───────────────────────
 export const getStreakMilestone = (
-  streak: number
+  streak: number,
 ): {
   level: string;
   emoji: string;
@@ -208,18 +220,48 @@ export const getStreakMilestone = (
   reward?: string;
 } => {
   if (streak >= 365) {
-    return { level: "Legendary", emoji: "🏆", nextMilestone: 730, progress: 100, reward: "Unlocked: Yearly Badge" };
+    return {
+      level: "Legendary",
+      emoji: "🏆",
+      nextMilestone: 730,
+      progress: 100,
+      reward: "Unlocked: Yearly Badge",
+    };
   }
   if (streak >= 100) {
-    return { level: "Master", emoji: "👑", nextMilestone: 365, progress: Math.floor((streak / 365) * 100), reward: "100 Bonus XP every 7 days" };
+    return {
+      level: "Master",
+      emoji: "👑",
+      nextMilestone: 365,
+      progress: Math.floor((streak / 365) * 100),
+      reward: "100 Bonus XP every 7 days",
+    };
   }
   if (streak >= 30) {
-    return { level: "Elite", emoji: "⭐", nextMilestone: 100, progress: Math.floor((streak / 100) * 100), reward: "50 Bonus XP on day 30" };
+    return {
+      level: "Elite",
+      emoji: "⭐",
+      nextMilestone: 100,
+      progress: Math.floor((streak / 100) * 100),
+      reward: "50 Bonus XP on day 30",
+    };
   }
   if (streak >= 7) {
-    return { level: "Rising Star", emoji: "🌟", nextMilestone: 30, progress: Math.floor((streak / 30) * 100), reward: "Weekly achievement badge" };
+    return {
+      level: "Rising Star",
+      emoji: "🌟",
+      nextMilestone: 30,
+      progress: Math.floor((streak / 30) * 100),
+      reward: "Weekly achievement badge",
+    };
   }
-  return { level: "Beginner", emoji: "🌱", nextMilestone: 7, progress: Math.floor((streak / 7) * 100), reward: "First week milestone" };
+  return {
+    level: "Beginner",
+    emoji: "🌱",
+    nextMilestone: 7,
+    progress: Math.floor((streak / 7) * 100),
+    reward: "First week milestone",
+  };
 };
 
 export const getStreakAchievements = (streak: number): string[] => {

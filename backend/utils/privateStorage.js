@@ -30,7 +30,8 @@ export async function ensurePrivateBucket(bucketName) {
 
   const supabaseAdmin = getSupabaseAdmin();
 
-  const { data: existing, error: listError } = await supabaseAdmin.storage.getBucket(bucketName);
+  const { data: existing, error: listError } =
+    await supabaseAdmin.storage.getBucket(bucketName);
 
   if (listError && listError.message && !/not found/i.test(listError.message)) {
     throw new HttpError(500, `Failed to check storage bucket "${bucketName}"`);
@@ -40,7 +41,7 @@ export async function ensurePrivateBucket(bucketName) {
     if (existing.public) {
       console.warn(
         `[security] Storage bucket "${bucketName}" already exists and is PUBLIC. ` +
-          "ensurePrivateBucket will not flip it automatically; migrate it deliberately."
+          "ensurePrivateBucket will not flip it automatically; migrate it deliberately.",
       );
     }
     return existing;
@@ -51,7 +52,10 @@ export async function ensurePrivateBucket(bucketName) {
   });
 
   if (error) {
-    throw new HttpError(500, `Failed to create private storage bucket "${bucketName}"`);
+    throw new HttpError(
+      500,
+      `Failed to create private storage bucket "${bucketName}"`,
+    );
   }
 
   return data;
@@ -64,10 +68,13 @@ export async function ensurePrivateBucket(bucketName) {
 export async function getSignedFileUrl(
   bucketName,
   filePath,
-  expiresInSeconds = DEFAULT_SIGNED_URL_TTL_SECONDS
+  expiresInSeconds = DEFAULT_SIGNED_URL_TTL_SECONDS,
 ) {
   if (!bucketName || !filePath) {
-    throw new HttpError(500, "getSignedFileUrl requires a bucket name and file path");
+    throw new HttpError(
+      500,
+      "getSignedFileUrl requires a bucket name and file path",
+    );
   }
 
   const supabaseAdmin = getSupabaseAdmin();

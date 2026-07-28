@@ -15,11 +15,11 @@ describe("VideoRoom", () => {
         roomName="a1b2c3d4e5f6"
         userName="Test User"
         onLeave={() => {}}
-      />
+      />,
     );
 
     expect(getByTestId("jitsi-meeting").dataset.roomName).toBe(
-      "PeerLearning_a1b2c3d4e5f6"
+      "PeerLearning_a1b2c3d4e5f6",
     );
   });
 
@@ -28,17 +28,18 @@ describe("VideoRoom", () => {
     // jitsi_room_token should be passed in by callers instead of the
     // session's database primary key (see #1527).
     const sessionPrimaryKeyLike = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
-    const dedicatedRoomToken = "9f8e7d6c5b4a3928170615243342516099887766554433221100aabbccddee";
+    const dedicatedRoomToken =
+      "9f8e7d6c5b4a3928170615243342516099887766554433221100aabbccddee";
 
     const { getByTestId, rerender } = render(
       <VideoRoom
         roomName={dedicatedRoomToken}
         userName="Test User"
         onLeave={() => {}}
-      />
+      />,
     );
     expect(getByTestId("jitsi-meeting").dataset.roomName).toContain(
-      dedicatedRoomToken
+      dedicatedRoomToken,
     );
 
     rerender(
@@ -46,13 +47,13 @@ describe("VideoRoom", () => {
         roomName={sessionPrimaryKeyLike}
         userName="Test User"
         onLeave={() => {}}
-      />
+      />,
     );
     // The component itself is identifier-agnostic; this test documents that
     // the security guarantee lives at the call site (Sessions.tsx), which
     // must pass jitsi_room_token, not the session id.
     expect(getByTestId("jitsi-meeting").dataset.roomName).toContain(
-      sessionPrimaryKeyLike
+      sessionPrimaryKeyLike,
     );
   });
 });

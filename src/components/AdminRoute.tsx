@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 type AdminRpcClient = {
   rpc(
     fn: "has_role",
-    args: { _user_id: string; _role: string }
+    args: { _user_id: string; _role: string },
   ): Promise<{ data: boolean | null; error: unknown }>;
 };
 

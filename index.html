@@ -2,12 +2,12 @@
 <html lang="en">
   <head>
     <script>
-      (function() {
+      (function () {
         try {
-          var theme = localStorage.getItem('app-theme') || 'default';
-          document.documentElement.classList.add('theme-' + theme);
+          var theme = localStorage.getItem("app-theme") || "default";
+          document.documentElement.classList.add("theme-" + theme);
         } catch (e) {
-          document.documentElement.classList.add('theme-default');
+          document.documentElement.classList.add("theme-default");
         }
       })();
     </script>
@@ -15,11 +15,17 @@
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PeerLearning</title>
-    <meta name="description" content="A platform for peer-to-peer learning, mentorship, and study sessions." />
+    <meta
+      name="description"
+      content="A platform for peer-to-peer learning, mentorship, and study sessions."
+    />
     <meta name="author" content="PeerLearn Team" />
 
     <meta property="og:title" content="PeerLearn" />
-    <meta property="og:description" content="A platform for peer-to-peer learning, mentorship, and study sessions." />
+    <meta
+      property="og:description"
+      content="A platform for peer-to-peer learning, mentorship, and study sessions."
+    />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://peerlearn.com/og-image.png" />
 

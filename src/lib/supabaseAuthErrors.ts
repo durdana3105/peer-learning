@@ -51,7 +51,9 @@ type SupabaseAuthRequest = () => Promise<SupabaseAuthResponse>;
 type SupabaseAuthData<TRequest extends SupabaseAuthRequest> =
   Awaited<ReturnType<TRequest>> extends { data: infer TData } ? TData : null;
 
-export const runSupabaseAuthRequest = async <TRequest extends SupabaseAuthRequest>(
+export const runSupabaseAuthRequest = async <
+  TRequest extends SupabaseAuthRequest,
+>(
   request: TRequest,
 ): Promise<SupabaseAuthResponse<SupabaseAuthData<TRequest> | null>> => {
   try {

@@ -6,11 +6,13 @@ import {
 
 describe("sanitizeNotificationActionUrl", () => {
   it("allows relative app paths", () => {
-    expect(sanitizeNotificationActionUrl("/notifications")).toBe("/notifications");
+    expect(sanitizeNotificationActionUrl("/notifications")).toBe(
+      "/notifications",
+    );
     expect(sanitizeNotificationActionUrl("/sessions")).toBe("/sessions");
     expect(sanitizeNotificationActionUrl("/dashboard")).toBe("/dashboard");
     expect(sanitizeNotificationActionUrl("/some/path?query=value")).toBe(
-      "/some/path?query=value"
+      "/some/path?query=value",
     );
   });
 
@@ -32,7 +34,7 @@ describe("sanitizeNotificationActionUrl", () => {
 
     for (const value of unsafeValues) {
       expect(sanitizeNotificationActionUrl(value)).toBe(
-        DEFAULT_NOTIFICATION_ACTION_URL
+        DEFAULT_NOTIFICATION_ACTION_URL,
       );
     }
   });

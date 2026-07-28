@@ -25,10 +25,17 @@ export function useSkillEndorsements({
 }: UseSkillEndorsementsOptions): UseSkillEndorsementsReturn {
   const { toast } = useToast();
   const skillsKey = JSON.stringify(skills);
-  const stableSkills = useMemo(() => JSON.parse(skillsKey) as string[], [skillsKey]);
+  const stableSkills = useMemo(
+    () => JSON.parse(skillsKey) as string[],
+    [skillsKey],
+  );
 
-  const [endorsements, setEndorsements] = useState<Record<string, SkillEndorsementData>>(() =>
-    Object.fromEntries(stableSkills.map((s) => [s, { count: 0, hasEndorsed: false }]))
+  const [endorsements, setEndorsements] = useState<
+    Record<string, SkillEndorsementData>
+  >(() =>
+    Object.fromEntries(
+      stableSkills.map((s) => [s, { count: 0, hasEndorsed: false }]),
+    ),
   );
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -39,14 +46,19 @@ export function useSkillEndorsements({
     let mounted = true;
 
     // Initial load
-    supabase.auth.getUser().then(({ data }) => {
-      if (!mounted) return;
-      setCurrentUserId(data.user?.id ?? null);
-      setAuthReady(true);
-    }).catch(console.error);
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        if (!mounted) return;
+        setCurrentUserId(data.user?.id ?? null);
+        setAuthReady(true);
+      })
+      .catch(console.error);
 
     // Subscribe to changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted) setCurrentUserId(session?.user?.id ?? null);
     });
 
@@ -73,7 +85,7 @@ export function useSkillEndorsements({
       if (error) throw error;
 
       const map: Record<string, SkillEndorsementData> = Object.fromEntries(
-        stableSkills.map((s) => [s, { count: 0, hasEndorsed: false }])
+        stableSkills.map((s) => [s, { count: 0, hasEndorsed: false }]),
       );
 
       for (const row of data ?? []) {
@@ -143,13 +155,11 @@ export function useSkillEndorsements({
             });
           if (error) throw error;
         } else {
-          const { error } = await supabase
-            .from("skill_endorsements")
-            .insert({
-              skill,
-              endorsed_user_id: profileUserId,
-              endorser_id: currentUserId,
-            });
+          const { error } = await supabase.from("skill_endorsements").insert({
+            skill,
+            endorsed_user_id: profileUserId,
+            endorser_id: currentUserId,
+          });
           if (error) throw error;
         }
       } catch (err) {
@@ -171,7 +181,7 @@ export function useSkillEndorsements({
         pendingSkillsRef.current.delete(skill);
       }
     },
-    [currentUserId, profileUserId, endorsements, toast]
+    [currentUserId, profileUserId, endorsements, toast],
   );
 
   return { endorsements, loading, toggleEndorsement, currentUserId };

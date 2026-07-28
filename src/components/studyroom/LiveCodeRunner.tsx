@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Play, Code, Share, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { env } from "@/env";
@@ -7,7 +13,8 @@ import { env } from "@/env";
 // PISTON_API_URL delegates code execution to a secure, containerized third-party execution engine (Piston).
 // This mitigates Issue #1846 by completely removing the execution context from our backend server,
 // ensuring no direct child_process.exec vulnerability or sandbox escape is possible locally.
-const PISTON_API_URL = env.VITE_PISTON_API_URL ?? "https://emkc.org/api/v2/piston/execute";
+const PISTON_API_URL =
+  env.VITE_PISTON_API_URL ?? "https://emkc.org/api/v2/piston/execute";
 
 const MAX_OUTPUT_CHARS = 4096;
 const MAX_SHARE_CHARS = 1024;
@@ -60,7 +67,8 @@ export function LiveCodeRunner({ onShare }: LiveCodeRunnerProps) {
 
       const truncate = (raw: string) =>
         raw.length > MAX_OUTPUT_CHARS
-          ? raw.slice(0, MAX_OUTPUT_CHARS) + `\n\n[Output truncated — ${raw.length.toLocaleString()} characters total]`
+          ? raw.slice(0, MAX_OUTPUT_CHARS) +
+            `\n\n[Output truncated — ${raw.length.toLocaleString()} characters total]`
           : raw;
 
       if (data.compile && data.compile.code !== 0) {
@@ -69,9 +77,15 @@ export function LiveCodeRunner({ onShare }: LiveCodeRunnerProps) {
         if (data.run.signal === "SIGKILL") {
           setOutput("Execution timed out or memory limit exceeded.");
         } else if (data.run.code !== 0) {
-          setOutput(truncate(`Runtime Error (Exit Code: ${data.run.code}):\n${data.run.output}`));
+          setOutput(
+            truncate(
+              `Runtime Error (Exit Code: ${data.run.code}):\n${data.run.output}`,
+            ),
+          );
         } else {
-          setOutput(truncate(data.run.output || "Program finished with no output."));
+          setOutput(
+            truncate(data.run.output || "Program finished with no output."),
+          );
         }
       } else {
         setOutput(data.message || "An unknown error occurred.");
@@ -119,7 +133,12 @@ export function LiveCodeRunner({ onShare }: LiveCodeRunnerProps) {
           <div className="flex items-center justify-between">
             <select
               value={language.id}
-              onChange={(e) => setLanguage(LANGUAGES.find((l) => l.id === e.target.value) || LANGUAGES[0])}
+              onChange={(e) =>
+                setLanguage(
+                  LANGUAGES.find((l) => l.id === e.target.value) ||
+                    LANGUAGES[0],
+                )
+              }
               className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2.5"
             >
               {LANGUAGES.map((lang) => (
@@ -135,7 +154,11 @@ export function LiveCodeRunner({ onShare }: LiveCodeRunnerProps) {
                 disabled={isRunning}
                 className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition disabled:opacity-50"
               >
-                {isRunning ? <Loader2 className="animate-spin" size={16} /> : <Play size={16} />}
+                {isRunning ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  <Play size={16} />
+                )}
                 Run
               </button>
               <button
@@ -159,7 +182,9 @@ export function LiveCodeRunner({ onShare }: LiveCodeRunnerProps) {
               />
             </div>
             <div className="flex flex-col gap-2 h-full">
-              <label className="text-sm font-medium text-gray-400">Output</label>
+              <label className="text-sm font-medium text-gray-400">
+                Output
+              </label>
               <div className="w-full h-full bg-black text-green-400 font-mono text-sm p-4 rounded-xl border border-gray-800 overflow-y-auto whitespace-pre-wrap">
                 {output || "Output will appear here..."}
               </div>

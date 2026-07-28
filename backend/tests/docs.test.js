@@ -20,7 +20,10 @@ const __dirname = dirname(__filename);
 
 const repoRoot = resolve(__dirname, "../../");
 const apiDoc = readFileSync(resolve(repoRoot, "docs/api.md"), "utf-8");
-const notifDoc = readFileSync(resolve(repoRoot, "docs/smart-notifications.md"), "utf-8");
+const notifDoc = readFileSync(
+  resolve(repoRoot, "docs/smart-notifications.md"),
+  "utf-8",
+);
 
 describe("API documentation completeness", () => {
   const requiredRoutes = [
@@ -82,7 +85,10 @@ describe("Operational runbook completeness", () => {
 });
 
 describe("TROUBLESHOOTING.md completeness", () => {
-  const troubleshoot = readFileSync(resolve(repoRoot, "TROUBLESHOOTING.md"), "utf-8");
+  const troubleshoot = readFileSync(
+    resolve(repoRoot, "TROUBLESHOOTING.md"),
+    "utf-8",
+  );
 
   it("TROUBLESHOOTING.md has a push notification section", () => {
     expect(troubleshoot.toLowerCase()).toContain("push notification");

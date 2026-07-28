@@ -19,9 +19,10 @@ interface Testimonial {
 // Same deterministic avatar strategy as the homepage carousel, so a given
 // reviewer's avatar stays consistent between the two views.
 function avatarForUser(userId: string) {
-  const seed = Math.abs(
-    Array.from(userId).reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
-  ) % 70;
+  const seed =
+    Math.abs(
+      Array.from(userId).reduce((acc, ch) => acc + ch.charCodeAt(0), 0),
+    ) % 70;
   return `https://i.pravatar.cc/150?img=${seed}`;
 }
 
@@ -137,7 +138,9 @@ export default function AllReviews() {
 
       if (fetchError) {
         console.error("Failed to load testimonials:", fetchError.message);
-        setError("Couldn't load community reviews right now. Showing highlights instead.");
+        setError(
+          "Couldn't load community reviews right now. Showing highlights instead.",
+        );
       } else {
         setLiveTestimonials((data ?? []).map(mapDbRowToTestimonial));
       }
@@ -151,7 +154,7 @@ export default function AllReviews() {
 
   const allTestimonials = useMemo(
     () => [...liveTestimonials, ...seedTestimonials],
-    [liveTestimonials]
+    [liveTestimonials],
   );
 
   const filtered = useMemo(() => {
@@ -186,7 +189,8 @@ export default function AllReviews() {
         </h1>
         <p className="mb-10 max-w-2xl text-base leading-7 text-slate-400">
           Every story shared by the PeerLearn community, in one place.
-          {!loading && ` ${filtered.length} review${filtered.length === 1 ? "" : "s"}.`}
+          {!loading &&
+            ` ${filtered.length} review${filtered.length === 1 ? "" : "s"}.`}
         </p>
 
         {/* Controls */}
@@ -272,12 +276,17 @@ export default function AllReviews() {
                           </span>
                         )}
                       </div>
-                      <p className="truncate text-sm text-slate-300">{t.role}</p>
+                      <p className="truncate text-sm text-slate-300">
+                        {t.role}
+                      </p>
                     </div>
                   </div>
 
                   <div className="mb-5 flex items-center gap-2">
-                    <span aria-hidden className="text-base tracking-wide text-yellow-400">
+                    <span
+                      aria-hidden
+                      className="text-base tracking-wide text-yellow-400"
+                    >
                       {"★".repeat(t.rating)}
                       {"☆".repeat(5 - t.rating)}
                     </span>
@@ -290,7 +299,9 @@ export default function AllReviews() {
                   </div>
 
                   <p className="flex-1 text-base leading-8 text-slate-100/95">
-                    <span className="text-2xl leading-none text-cyan-400/90">"</span>
+                    <span className="text-2xl leading-none text-cyan-400/90">
+                      "
+                    </span>
                     {t.text}
                   </p>
 

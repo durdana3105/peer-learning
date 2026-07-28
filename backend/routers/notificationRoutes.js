@@ -38,26 +38,44 @@ const verifyNotificationAuth = (req, res, next) => {
   const webhookSecret = process.env.WEBHOOK_SECRET;
 
   if (!webhookSecret) {
-    return next(new HttpError(500, "Webhook secret is not configured on the server"));
+    return next(
+      new HttpError(500, "Webhook secret is not configured on the server"),
+    );
   }
 
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const providedSecret = authHeader.slice(7);
 
-    const expectedHash = crypto.createHash("sha256").update(webhookSecret).digest();
-    const providedHash = crypto.createHash("sha256").update(providedSecret).digest();
+    const expectedHash = crypto
+      .createHash("sha256")
+      .update(webhookSecret)
+      .digest();
+    const providedHash = crypto
+      .createHash("sha256")
+      .update(providedSecret)
+      .digest();
 
     if (crypto.timingSafeEqual(expectedHash, providedHash)) {
       auditLog(req, res, "WEBHOOK");
 
       const clientIp = req.socket?.remoteAddress || req.ip || "unknown";
       if (notificationRateLimiter(clientIp)) {
-        return next(new HttpError(429, "Too many requests to webhook endpoint. Please wait."));
+        return next(
+          new HttpError(
+            429,
+            "Too many requests to webhook endpoint. Please wait.",
+          ),
+        );
       }
 
       const routeKey = `${req.method}:${req.originalUrl}`;
       if (notificationCooldown(routeKey)) {
-        return next(new HttpError(429, "This job was executed recently. Please wait before re-triggering."));
+        return next(
+          new HttpError(
+            429,
+            "This job was executed recently. Please wait before re-triggering.",
+          ),
+        );
       }
 
       return next();
@@ -67,6 +85,10 @@ const verifyNotificationAuth = (req, res, next) => {
   return next(new HttpError(401, "Unauthorized webhook access"));
 };
 
-router.post("/send-push", verifyNotificationAuth, asyncHandler(sendPushNotification));
+router.post(
+  "/send-push",
+  verifyNotificationAuth,
+  asyncHandler(sendPushNotification),
+);
 
 export default router;

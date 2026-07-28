@@ -1,14 +1,7 @@
-export type ToolType =
-  | "pen"
-  | "eraser";
+export type ToolType = "pen" | "eraser";
 
 export type WhiteboardEventType =
-  | "draw-start"
-  | "draw-move"
-  | "draw-end"
-  | "clear"
-  | "undo"
-  | "redo";
+  "draw-start" | "draw-move" | "draw-end" | "clear" | "undo" | "redo";
 
 export type Point = {
   x: number;

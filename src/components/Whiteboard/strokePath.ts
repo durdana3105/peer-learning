@@ -7,7 +7,7 @@ export type StrokeSegment = { from: Point; to: Point };
 // connect across different strokes.
 export const nextSegment = (
   event: WhiteboardEvent,
-  lastPoints: Map<string, Point>
+  lastPoints: Map<string, Point>,
 ): StrokeSegment | null => {
   const strokeId = event.payload.strokeId;
 

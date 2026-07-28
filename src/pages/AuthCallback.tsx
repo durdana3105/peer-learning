@@ -20,34 +20,37 @@ const AuthCallback = () => {
     return err ? decodeURIComponent(err.replace(/\+/g, " ")) : null;
   });
 
-
   useEffect(() => {
     // Give supabase-js a moment to detect the hash token,
     // then listen for the SIGNED_IN event.
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) {
-        listener.subscription.unsubscribe();
-        navigate("/dashboard", { replace: true });
-      } else if (event === "SIGNED_OUT") {
-        setError("Sign-in failed. Please try again.");
-      }
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "SIGNED_IN" && session) {
+          listener.subscription.unsubscribe();
+          navigate("/dashboard", { replace: true });
+        } else if (event === "SIGNED_OUT") {
+          setError("Sign-in failed. Please try again.");
+        }
+      },
+    );
 
     // Fallback: if a session already exists (e.g. fast redirect), go straight to dashboard
-    runSupabaseAuthRequest(() => supabase.auth.getSession()).then(({ data, error }) => {
-      if (error) {
-        setError(error.message);
-        listener.subscription.unsubscribe();
-        return;
-      }
+    runSupabaseAuthRequest(() => supabase.auth.getSession()).then(
+      ({ data, error }) => {
+        if (error) {
+          setError(error.message);
+          listener.subscription.unsubscribe();
+          return;
+        }
 
-      const session = data?.session;
+        const session = data?.session;
 
-      if (session) {
-        listener.subscription.unsubscribe();
-        navigate("/dashboard", { replace: true });
-      }
-    });
+        if (session) {
+          listener.subscription.unsubscribe();
+          navigate("/dashboard", { replace: true });
+        }
+      },
+    );
 
     // Safety timeout – if nothing happens in 10s, show an error
     const timeout = setTimeout(() => {

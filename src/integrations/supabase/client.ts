@@ -6,7 +6,7 @@ export const supabaseMisconfigured = !supabaseUrl || !supabaseAnonKey;
 
 if (supabaseMisconfigured) {
   console.error(
-    "Supabase is misconfigured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or their supported aliases) before starting the app."
+    "Supabase is misconfigured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or their supported aliases) before starting the app.",
   );
 }
 
@@ -19,5 +19,5 @@ export const supabase = createClient<Database>(
       persistSession: true,
       autoRefreshToken: true,
     },
-  }
+  },
 );

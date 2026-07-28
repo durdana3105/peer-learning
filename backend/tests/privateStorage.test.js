@@ -16,7 +16,8 @@ vi.mock("../utils/supabase.js", () => ({
   }),
 }));
 
-const { ensurePrivateBucket, getSignedFileUrl } = await import("../utils/privateStorage.js");
+const { ensurePrivateBucket, getSignedFileUrl } =
+  await import("../utils/privateStorage.js");
 
 describe("ensurePrivateBucket (#1529)", () => {
   beforeEach(() => {
@@ -35,7 +36,9 @@ describe("ensurePrivateBucket (#1529)", () => {
 
     await ensurePrivateBucket("session-replays");
 
-    expect(mockCreateBucket).toHaveBeenCalledWith("session-replays", { public: false });
+    expect(mockCreateBucket).toHaveBeenCalledWith("session-replays", {
+      public: false,
+    });
   });
 
   it("is a no-op when the bucket already exists and is private", async () => {
@@ -74,7 +77,9 @@ describe("ensurePrivateBucket (#1529)", () => {
       error: { message: "storage quota exceeded" },
     });
 
-    await expect(ensurePrivateBucket("session-replays")).rejects.toThrow(HttpError);
+    await expect(ensurePrivateBucket("session-replays")).rejects.toThrow(
+      HttpError,
+    );
   });
 
   it("rejects a missing bucket name", async () => {
@@ -89,7 +94,10 @@ describe("getSignedFileUrl (#1529)", () => {
 
   it("returns a signed URL scoped to the requested bucket and path", async () => {
     mockCreateSignedUrl.mockResolvedValue({
-      data: { signedUrl: "https://project.supabase.co/storage/v1/object/sign/session-replays/abc?token=xyz" },
+      data: {
+        signedUrl:
+          "https://project.supabase.co/storage/v1/object/sign/session-replays/abc?token=xyz",
+      },
       error: null,
     });
 
@@ -117,11 +125,15 @@ describe("getSignedFileUrl (#1529)", () => {
       error: { message: "Object not found" },
     });
 
-    await expect(getSignedFileUrl("session-replays", "missing.webm")).rejects.toThrow(HttpError);
+    await expect(
+      getSignedFileUrl("session-replays", "missing.webm"),
+    ).rejects.toThrow(HttpError);
   });
 
   it("rejects a missing bucket name or file path", async () => {
     await expect(getSignedFileUrl("", "abc.webm")).rejects.toThrow(HttpError);
-    await expect(getSignedFileUrl("session-replays", "")).rejects.toThrow(HttpError);
+    await expect(getSignedFileUrl("session-replays", "")).rejects.toThrow(
+      HttpError,
+    );
   });
 });

@@ -1,5 +1,8 @@
 import express from "express";
-import { getRecommendedPartners, getSupabaseDiscover } from "../controllers/matchController.js";
+import {
+  getRecommendedPartners,
+  getSupabaseDiscover,
+} from "../controllers/matchController.js";
 import { requireAuth, requireProfileRole } from "../middlewares/requireAuth.js";
 import { rateLimiter } from "../middlewares/rateLimiter.js";
 import { validate } from "../middlewares/validate.js";
@@ -14,7 +17,7 @@ router.get(
   requireProfileRole("mentor", "learner"),
   rateLimiter,
   validate(matchSchemas.getRecommendedPartners),
-  getRecommendedPartners
+  getRecommendedPartners,
 );
 
 // 🚀 Modern Supabase Peer Discovery
@@ -23,7 +26,7 @@ router.get(
   requireAuth,
   rateLimiter,
   validate(matchSchemas.getSupabaseDiscover),
-  getSupabaseDiscover
+  getSupabaseDiscover,
 );
 
 export default router;

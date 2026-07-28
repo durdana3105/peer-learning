@@ -15,17 +15,24 @@ const calculateCompatibilityScore = (currentUser, otherUser) => {
   const currentLearn = currentUser.learn_subjects || [];
   const otherLearn = otherUser.learn_subjects || [];
 
-  const commonSkills = currentSkills.filter((skill) => otherSkills.includes(skill));
+  const commonSkills = currentSkills.filter((skill) =>
+    otherSkills.includes(skill),
+  );
   if (commonSkills.length > 0) {
     score += commonSkills.length * 10;
-    reasons.push(`You both share ${commonSkills.slice(0, 2).join(", ")} skills.`);
+    reasons.push(
+      `You both share ${commonSkills.slice(0, 2).join(", ")} skills.`,
+    );
   }
 
   let relatedSkillMatches = [];
   currentSkills.forEach((skill) => {
     const relatedSkills = getRelatedSkills(skill) || [];
     relatedSkills.forEach((relatedSkill) => {
-      if (otherSkills.includes(relatedSkill) && !commonSkills.includes(relatedSkill)) {
+      if (
+        otherSkills.includes(relatedSkill) &&
+        !commonSkills.includes(relatedSkill)
+      ) {
         relatedSkillMatches.push(relatedSkill);
       }
     });
@@ -33,25 +40,39 @@ const calculateCompatibilityScore = (currentUser, otherUser) => {
   relatedSkillMatches = [...new Set(relatedSkillMatches)];
   if (relatedSkillMatches.length > 0) {
     score += relatedSkillMatches.length * 6;
-    reasons.push(`Related technologies include ${relatedSkillMatches.slice(0, 2).join(", ")}.`);
+    reasons.push(
+      `Related technologies include ${relatedSkillMatches.slice(0, 2).join(", ")}.`,
+    );
   }
 
-  const commonInterests = currentInterests.filter((interest) => otherInterests.includes(interest));
+  const commonInterests = currentInterests.filter((interest) =>
+    otherInterests.includes(interest),
+  );
   if (commonInterests.length > 0) {
     score += commonInterests.length * 3;
-    reasons.push(`Shared interests in ${commonInterests.slice(0, 2).join(", ")}.`);
+    reasons.push(
+      `Shared interests in ${commonInterests.slice(0, 2).join(", ")}.`,
+    );
   }
 
-  const currentTeachesOtherLearns = currentTeach.filter((subject) => otherLearn.includes(subject));
+  const currentTeachesOtherLearns = currentTeach.filter((subject) =>
+    otherLearn.includes(subject),
+  );
   if (currentTeachesOtherLearns.length > 0) {
     score += currentTeachesOtherLearns.length * 8;
-    reasons.push(`You can teach them ${currentTeachesOtherLearns.slice(0, 2).join(", ")}.`);
+    reasons.push(
+      `You can teach them ${currentTeachesOtherLearns.slice(0, 2).join(", ")}.`,
+    );
   }
 
-  const currentLearnsOtherTeaches = currentLearn.filter((subject) => otherTeach.includes(subject));
+  const currentLearnsOtherTeaches = currentLearn.filter((subject) =>
+    otherTeach.includes(subject),
+  );
   if (currentLearnsOtherTeaches.length > 0) {
     score += currentLearnsOtherTeaches.length * 8;
-    reasons.push(`They can teach you ${currentLearnsOtherTeaches.slice(0, 2).join(", ")}.`);
+    reasons.push(
+      `They can teach you ${currentLearnsOtherTeaches.slice(0, 2).join(", ")}.`,
+    );
   }
 
   return {
@@ -66,26 +87,33 @@ export const getRecommendedPartners = async (req, res) => {
   try {
     const supabaseAdmin = getSupabaseAdmin();
     if (!supabaseAdmin) {
-      return res.status(500).json({ success: false, message: "Supabase client not configured" });
+      return res
+        .status(500)
+        .json({ success: false, message: "Supabase client not configured" });
     }
 
     const currentUserId = req.user.id;
     const currentUserEmail = req.user.email;
-    
+
     // Fetch current user from Supabase profiles
     const { data: currentUser, error: currentUserError } = await supabaseAdmin
-      .from('profiles')
-      .select('skills, interests, teach_subjects, learn_subjects')
-      .eq('id', currentUserId)
+      .from("profiles")
+      .select("skills, interests, teach_subjects, learn_subjects")
+      .eq("id", currentUserId)
       .single();
 
     if (currentUserError || !currentUser) {
-      return res.status(404).json({ success: false, message: "User profile not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User profile not found" });
     }
 
     // Parse pagination parameters
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limit = Math.min(PAGE_SIZE, Math.max(1, parseInt(req.query.limit, 10) || PAGE_SIZE));
+    const limit = Math.min(
+      PAGE_SIZE,
+      Math.max(1, parseInt(req.query.limit, 10) || PAGE_SIZE),
+    );
     const skip = (page - 1) * limit;
 
     // Calculate related skills
@@ -98,20 +126,25 @@ export const getRecommendedPartners = async (req, res) => {
     allRelatedSkills = [...new Set(allRelatedSkills)];
 
     // Fetch matching users natively via Supabase RPC (O(N) executed in C++ Postgres core, paginated)
-    const { data: matchedUsers, error: usersError } = await supabaseAdmin.rpc('match_users', {
-      target_email: currentUserEmail,
-      target_skills: currentSkills,
-      target_related_skills: allRelatedSkills,
-      target_interests: currentUser.interests || [],
-      target_teach: currentUser.teach_subjects || [],
-      target_learn: currentUser.learn_subjects || [],
-      page_limit: limit + 1,
-      page_offset: skip
-    });
+    const { data: matchedUsers, error: usersError } = await supabaseAdmin.rpc(
+      "match_users",
+      {
+        target_email: currentUserEmail,
+        target_skills: currentSkills,
+        target_related_skills: allRelatedSkills,
+        target_interests: currentUser.interests || [],
+        target_teach: currentUser.teach_subjects || [],
+        target_learn: currentUser.learn_subjects || [],
+        page_limit: limit + 1,
+        page_offset: skip,
+      },
+    );
 
     if (usersError) {
-       console.error("Supabase RPC match_users error:", usersError);
-       return res.status(500).json({ success: false, message: "Database Error" });
+      console.error("Supabase RPC match_users error:", usersError);
+      return res
+        .status(500)
+        .json({ success: false, message: "Database Error" });
     }
 
     // Now format the 20 returned users with reasons
@@ -127,13 +160,15 @@ export const getRecommendedPartners = async (req, res) => {
         teach_subjects: user.teach_subjects || [],
         learn_subjects: user.learn_subjects || [],
         compatibilityScore: user.compatibility_score, // Trust the database score
-        reason: result.reasons[0] || "You have similar learning interests and compatible skills.",
+        reason:
+          result.reasons[0] ||
+          "You have similar learning interests and compatible skills.",
       };
     });
 
     // Fetch limit+1 rows so we can set hasNextPage without a separate COUNT query.
     // The extra row is trimmed before returning; it only signals whether more results exist.
-   const hasNextPage = recommendations.length > limit;
+    const hasNextPage = recommendations.length > limit;
 
     res.status(200).json({
       success: true,
@@ -154,7 +189,10 @@ export const getSupabaseDiscover = async (req, res) => {
     const search = req.query.search || "";
     const filter = req.query.filter || "All";
     const page = Math.min(Math.max(1, parseInt(req.query.page, 10) || 1), 1000);
-    const limit = Math.min(Math.max(1, parseInt(req.query.limit, 10) || 100), 100);
+    const limit = Math.min(
+      Math.max(1, parseInt(req.query.limit, 10) || 100),
+      100,
+    );
     const skip = (page - 1) * limit;
     const supabaseAdmin = getSupabaseAdmin();
 
@@ -163,12 +201,16 @@ export const getSupabaseDiscover = async (req, res) => {
     // for every discover request.
     const { data: currentUser, error: meError } = await supabaseAdmin
       .from("profiles")
-      .select("skills, learning_goals, interests, learn_subjects, teach_subjects, learning_style, preferred_language, timezone")
+      .select(
+        "skills, learning_goals, interests, learn_subjects, teach_subjects, learning_style, preferred_language, timezone",
+      )
       .eq("id", userId)
       .single();
 
     if (meError || !currentUser) {
-      return res.status(404).json({ success: false, message: "User profile not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User profile not found" });
     }
 
     // Postgres gives no ordering guarantee without ORDER BY, so an unordered
@@ -178,7 +220,9 @@ export const getSupabaseDiscover = async (req, res) => {
     // window is deterministic and consistent across page requests.
     let query = supabaseAdmin
       .from("profiles")
-      .select("id, name, skills, interests, learning_goals, teach_subjects, learn_subjects, learning_style, preferred_language, timezone")
+      .select(
+        "id, name, skills, interests, learning_goals, teach_subjects, learn_subjects, learning_style, preferred_language, timezone",
+      )
       .neq("id", userId)
       .order("id", { ascending: true })
       .limit(1000);
@@ -208,12 +252,18 @@ export const getSupabaseDiscover = async (req, res) => {
     const { data: peers, error: peersError } = await query;
 
     if (peersError || !peers) {
-      return res.status(500).json({ success: false, message: "Failed to fetch peers" });
+      return res
+        .status(500)
+        .json({ success: false, message: "Failed to fetch peers" });
     }
 
     const parseArray = (val) => {
       if (Array.isArray(val)) return val.map((s) => s.toLowerCase().trim());
-      if (typeof val === "string") return val.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+      if (typeof val === "string")
+        return val
+          .split(",")
+          .map((s) => s.trim().toLowerCase())
+          .filter(Boolean);
       return [];
     };
 
@@ -231,37 +281,81 @@ export const getSupabaseDiscover = async (req, res) => {
 
       const maxPossibleScore =
         (myGoals.length > 0 ? PRIMARY_WEIGHT : 0) +
-        (mySkills.length > 0 ? SECONDARY_WEIGHT : 0) +
-        (myGoals.length > 0 ? ALIGNMENT_WEIGHT : 0) || 1;
+          (mySkills.length > 0 ? SECONDARY_WEIGHT : 0) +
+          (myGoals.length > 0 ? ALIGNMENT_WEIGHT : 0) || 1;
 
-      const primaryMatches = userSkills.filter((skill) => myGoals.includes(skill)).length;
+      const primaryMatches = userSkills.filter((skill) =>
+        myGoals.includes(skill),
+      ).length;
       if (primaryMatches > 0 && myGoals.length > 0) {
         score += (primaryMatches / myGoals.length) * PRIMARY_WEIGHT;
       }
 
-      const reciprocalMatches = userGoals.filter((goal) => mySkills.includes(goal)).length;
+      const reciprocalMatches = userGoals.filter((goal) =>
+        mySkills.includes(goal),
+      ).length;
       if (reciprocalMatches > 0 && mySkills.length > 0) {
         score += (reciprocalMatches / mySkills.length) * SECONDARY_WEIGHT;
       }
 
-      const studyBuddyMatches = userGoals.filter((goal) => myGoals.includes(goal)).length;
+      const studyBuddyMatches = userGoals.filter((goal) =>
+        myGoals.includes(goal),
+      ).length;
       if (studyBuddyMatches > 0 && myGoals.length > 0) {
         score += (studyBuddyMatches / myGoals.length) * ALIGNMENT_WEIGHT;
       }
 
-      const percentage = Math.min(Math.round((score / maxPossibleScore) * 100), 100);
+      const percentage = Math.min(
+        Math.round((score / maxPossibleScore) * 100),
+        100,
+      );
 
-      const teachOverlap   = myGoals.filter((s) => (p.teach_subjects || []).includes(s)).length;
-      const learnOverlap   = mySkills.filter((s) => (p.learn_subjects || []).includes(s)).length;
-      const interestOverlap = (currentUser.interests || []).filter((s) => (p.interests || []).includes(s)).length;
+      const teachOverlap = myGoals.filter((s) =>
+        (p.teach_subjects || []).includes(s),
+      ).length;
+      const learnOverlap = mySkills.filter((s) =>
+        (p.learn_subjects || []).includes(s),
+      ).length;
+      const interestOverlap = (currentUser.interests || []).filter((s) =>
+        (p.interests || []).includes(s),
+      ).length;
       const hasBaseOverlap = teachOverlap + learnOverlap + interestOverlap > 0;
-      const learningStyleMatch = hasBaseOverlap && currentUser.learning_style && p.learning_style && currentUser.learning_style === p.learning_style ? 15 : 0;
-      const languageMatch      = hasBaseOverlap && currentUser.preferred_language && p.preferred_language && currentUser.preferred_language === p.preferred_language ? 10 : 0;
-      const timezoneMatch      = hasBaseOverlap && currentUser.timezone && p.timezone && currentUser.timezone === p.timezone ? 10 : 0;
+      const learningStyleMatch =
+        hasBaseOverlap &&
+        currentUser.learning_style &&
+        p.learning_style &&
+        currentUser.learning_style === p.learning_style
+          ? 15
+          : 0;
+      const languageMatch =
+        hasBaseOverlap &&
+        currentUser.preferred_language &&
+        p.preferred_language &&
+        currentUser.preferred_language === p.preferred_language
+          ? 10
+          : 0;
+      const timezoneMatch =
+        hasBaseOverlap &&
+        currentUser.timezone &&
+        p.timezone &&
+        currentUser.timezone === p.timezone
+          ? 10
+          : 0;
 
-      const maxExtra = Math.max((currentUser.learn_subjects || []).length + (currentUser.teach_subjects || []).length + (currentUser.interests || []).length, 1);
-      const baseScore = ((teachOverlap + learnOverlap + interestOverlap) / maxExtra) * 65;
-      const matchScore = Math.min(Math.round(baseScore + learningStyleMatch + languageMatch + timezoneMatch), 100);
+      const maxExtra = Math.max(
+        (currentUser.learn_subjects || []).length +
+          (currentUser.teach_subjects || []).length +
+          (currentUser.interests || []).length,
+        1,
+      );
+      const baseScore =
+        ((teachOverlap + learnOverlap + interestOverlap) / maxExtra) * 65;
+      const matchScore = Math.min(
+        Math.round(
+          baseScore + learningStyleMatch + languageMatch + timezoneMatch,
+        ),
+        100,
+      );
 
       const finalScore = Math.max(percentage, matchScore);
 
@@ -284,8 +378,8 @@ export const getSupabaseDiscover = async (req, res) => {
         page,
         limit,
         total: matched.length,
-        totalPages: Math.ceil(matched.length / limit)
-      }
+        totalPages: Math.ceil(matched.length / limit),
+      },
     });
   } catch (error) {
     console.error("Supabase Discover Error:", error);

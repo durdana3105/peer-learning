@@ -21,7 +21,7 @@ const BACKGROUND_MAX_REQUESTS = 5;
  */
 export const createBackgroundRateLimiter = (
   windowMs = BACKGROUND_WINDOW_MS,
-  maxRequests = BACKGROUND_MAX_REQUESTS
+  maxRequests = BACKGROUND_MAX_REQUESTS,
 ) => {
   const counts = new Map();
 
@@ -77,7 +77,7 @@ export const auditLog = (req, res, authType) => {
   const ip = req.socket?.remoteAddress || req.ip || "unknown";
   res.on("finish", () => {
     console.log(
-      `[AUDIT] ${new Date().toISOString()} | IP: ${ip} | Endpoint: ${req.originalUrl} | AuthType: ${authType} | Status: ${res.statusCode}`
+      `[AUDIT] ${new Date().toISOString()} | IP: ${ip} | Endpoint: ${req.originalUrl} | AuthType: ${authType} | Status: ${res.statusCode}`,
     );
   });
 };
@@ -101,7 +101,9 @@ export const requireCronSecret = (req, res, next) => {
   auditLog(req, res, "CRON");
 
   if (!cronSecret) {
-    console.error("[security] CRON_SECRET is not configured. Rejecting cron request.");
+    console.error(
+      "[security] CRON_SECRET is not configured. Rejecting cron request.",
+    );
     next(new HttpError(503, "Cron endpoint is not configured."));
     return;
   }
@@ -109,7 +111,9 @@ export const requireCronSecret = (req, res, next) => {
   // Layer 1: Rate limiting — uses cron-private limiter instance
   const clientIp = req.socket?.remoteAddress || req.ip || "unknown";
   if (cronRateLimiter(clientIp)) {
-    next(new HttpError(429, "Too many requests to cron endpoint. Please wait."));
+    next(
+      new HttpError(429, "Too many requests to cron endpoint. Please wait."),
+    );
     return;
   }
 
@@ -123,7 +127,10 @@ export const requireCronSecret = (req, res, next) => {
   const providedSecret = authHeader.slice(7);
 
   const expectedHash = crypto.createHash("sha256").update(cronSecret).digest();
-  const providedHash = crypto.createHash("sha256").update(providedSecret).digest();
+  const providedHash = crypto
+    .createHash("sha256")
+    .update(providedSecret)
+    .digest();
 
   if (!crypto.timingSafeEqual(expectedHash, providedHash)) {
     next(new HttpError(403, "Invalid cron secret."));
@@ -133,7 +140,12 @@ export const requireCronSecret = (req, res, next) => {
   // Layer 3: Cooldown deduplication — uses cron-private cooldown instance
   const routeKey = `${req.method}:${req.originalUrl}`;
   if (cronCooldown(routeKey)) {
-    next(new HttpError(429, "This job was executed recently. Please wait before re-triggering."));
+    next(
+      new HttpError(
+        429,
+        "This job was executed recently. Please wait before re-triggering.",
+      ),
+    );
     return;
   }
 

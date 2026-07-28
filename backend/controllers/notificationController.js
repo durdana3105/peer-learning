@@ -18,7 +18,8 @@ export const sendPushNotification = async (req, res, next) => {
   try {
     const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
     const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-    const vapidSubject = process.env.VAPID_SUBJECT || "mailto:admin@example.com";
+    const vapidSubject =
+      process.env.VAPID_SUBJECT || "mailto:admin@example.com";
 
     if (!vapidPublicKey || !vapidPrivateKey) {
       return res.status(500).json({ error: "Missing VAPID push server env" });
@@ -52,9 +53,16 @@ export const sendPushNotification = async (req, res, next) => {
     // Security Fix: Prevent IDOR. Enforce that standard users can only send push notifications to themselves.
     // If a webhook secret is used, req.user will be undefined (which bypasses this check if we allow webhooks to send to anyone).
     // If user auth is used, req.user is set.
-    const isAdmin = req.user?.role === "admin" || req.user?.app_metadata?.role === "admin" || req.roles?.includes("admin");
+    const isAdmin =
+      req.user?.role === "admin" ||
+      req.user?.app_metadata?.role === "admin" ||
+      req.roles?.includes("admin");
     if (req.user?.id && req.user.id !== user_id && !isAdmin) {
-      return res.status(403).json({ error: "Not authorized to send push notifications to this user" });
+      return res
+        .status(403)
+        .json({
+          error: "Not authorized to send push notifications to this user",
+        });
     }
 
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
@@ -89,9 +97,9 @@ export const sendPushNotification = async (req, res, next) => {
             title,
             body,
             action_url: safeActionUrl,
-          })
-        )
-      )
+          }),
+        ),
+      ),
     );
 
     // Shared with the cron dispatch path (fixes #1676: cleanup used to only

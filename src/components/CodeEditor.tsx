@@ -44,7 +44,8 @@ export const CodeEditor = () => {
   const [isError, setIsError] = useState(false);
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const lang = LANGUAGES.find((l) => l.value === e.target.value) || LANGUAGES[0];
+    const lang =
+      LANGUAGES.find((l) => l.value === e.target.value) || LANGUAGES[0];
     setSelectedLang(lang);
     setCode(lang.defaultCode);
     setOutput("");
@@ -68,24 +69,30 @@ export const CodeEditor = () => {
             language_id: selectedLang.id,
             stdin: "", // Can be expanded to support stdin from UI if needed
           }),
-        }
+        },
       );
 
       if (!response.ok) {
-        throw new Error("Failed to reach execution server. It might be rate limited.");
+        throw new Error(
+          "Failed to reach execution server. It might be rate limited.",
+        );
       }
 
       const data = await response.json();
-      
+
       if (data.stderr || data.compile_output) {
         setIsError(true);
-        setOutput(data.stderr || data.compile_output || data.message || "Unknown Error");
+        setOutput(
+          data.stderr || data.compile_output || data.message || "Unknown Error",
+        );
       } else {
         setOutput(data.stdout || "Program exited with no output.");
       }
     } catch (error: any) {
       setIsError(true);
-      setOutput(error.message || "An unexpected error occurred during execution.");
+      setOutput(
+        error.message || "An unexpected error occurred during execution.",
+      );
     } finally {
       setIsExecuting(false);
     }
@@ -114,7 +121,11 @@ export const CodeEditor = () => {
           disabled={isExecuting}
           className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-400 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors"
         >
-          {isExecuting ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
+          {isExecuting ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Play size={16} />
+          )}
           Run
         </button>
       </div>
@@ -140,7 +151,8 @@ export const CodeEditor = () => {
       <div className="h-1/3 shrink-0 border-t border-slate-800 bg-slate-900 flex flex-col">
         <div className="h-8 flex items-center px-4 border-b border-slate-800 bg-slate-950/50">
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-            Terminal Output {isError && <AlertCircle size={14} className="text-red-400" />}
+            Terminal Output{" "}
+            {isError && <AlertCircle size={14} className="text-red-400" />}
           </span>
         </div>
         <div className="flex-1 p-4 overflow-y-auto">

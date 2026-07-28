@@ -48,7 +48,10 @@ export default function AnonymousDoubts() {
     const trimmedText = text.trim();
     const trimmedSubject = subject.trim();
     if (!trimmedText || !trimmedSubject) return;
-    if (!user) { toast.error("Please log in to post a doubt."); return; }
+    if (!user) {
+      toast.error("Please log in to post a doubt.");
+      return;
+    }
 
     setSubmitting(true);
     const { error } = await (supabase as any).from("doubts").insert({
@@ -77,7 +80,7 @@ export default function AnonymousDoubts() {
     const newCount = doubt.upvotes + 1;
     setVotedIds((prev) => new Set(prev).add(id));
     setDoubts(
-      doubts.map((d) => (d.id === id ? { ...d, upvotes: newCount } : d))
+      doubts.map((d) => (d.id === id ? { ...d, upvotes: newCount } : d)),
     );
     const { error } = await (supabase as any)
       .from("doubts")
@@ -85,9 +88,13 @@ export default function AnonymousDoubts() {
       .eq("id", id);
     if (error) {
       setDoubts(
-        doubts.map((d) => (d.id === id ? { ...d, upvotes: doubt.upvotes } : d))
+        doubts.map((d) => (d.id === id ? { ...d, upvotes: doubt.upvotes } : d)),
       );
-      setVotedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+      setVotedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       toast.error("Failed to upvote doubt. Please try again.");
     }
   };
@@ -98,7 +105,7 @@ export default function AnonymousDoubts() {
       ? doubts.filter(
           (d) =>
             d.content.toLowerCase().includes(query) ||
-            d.subject.toLowerCase().includes(query)
+            d.subject.toLowerCase().includes(query),
         )
       : doubts;
 
@@ -152,7 +159,9 @@ export default function AnonymousDoubts() {
           onChange={(e) => setSearch(e.target.value)}
         />
         <button
-          onClick={() => setSortOrder(sortOrder === "newest" ? "top" : "newest")}
+          onClick={() =>
+            setSortOrder(sortOrder === "newest" ? "top" : "newest")
+          }
           className="border px-4 py-2 rounded whitespace-nowrap bg-slate-100 hover:bg-slate-200"
         >
           Sort: {sortOrder === "newest" ? "Newest" : "Top"}
@@ -166,7 +175,9 @@ export default function AnonymousDoubts() {
         </div>
       ) : visibleDoubts.length === 0 ? (
         <p className="text-center text-slate-400">
-          {search ? "No doubts match your search." : "No doubts yet. Be the first to ask!"}
+          {search
+            ? "No doubts match your search."
+            : "No doubts yet. Be the first to ask!"}
         </p>
       ) : (
         <div className="space-y-4">
@@ -174,7 +185,9 @@ export default function AnonymousDoubts() {
             <div key={d.id} className="border p-4 rounded-xl">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="font-bold">{d.anonymous ? "Anonymous" : "User"}</h2>
+                  <h2 className="font-bold">
+                    {d.anonymous ? "Anonymous" : "User"}
+                  </h2>
                   <p className="mt-1">{d.content}</p>
                   <span className="text-xs text-slate-400">{d.subject}</span>
                 </div>

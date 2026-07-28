@@ -9,7 +9,10 @@ interface DesktopNavProps {
   isAdmin: boolean;
 }
 
-export const DesktopNav = React.memo(function DesktopNav({ user, isAdmin }: DesktopNavProps) {
+export const DesktopNav = React.memo(function DesktopNav({
+  user,
+  isAdmin,
+}: DesktopNavProps) {
   const location = useLocation();
   const navLinks = getNavLinks(user, isAdmin);
 
@@ -27,10 +30,11 @@ export const DesktopNav = React.memo(function DesktopNav({ user, isAdmin }: Desk
         const Icon = link.icon;
 
         const active = link.to.startsWith("/#")
-          ? location.pathname === "/" && activeSection === link.to.replace("/#", "")
+          ? location.pathname === "/" &&
+            activeSection === link.to.replace("/#", "")
           : link.to === "/"
-          ? location.pathname === "/" && activeSection === null
-          : location.pathname === link.to;
+            ? location.pathname === "/" && activeSection === null
+            : location.pathname === link.to;
 
         const className = `flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300
           ${
@@ -52,7 +56,9 @@ export const DesktopNav = React.memo(function DesktopNav({ user, isAdmin }: Desk
               className={className}
               onClick={(e) => {
                 e.preventDefault();
-                document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+                document
+                  .getElementById(id)
+                  ?.scrollIntoView({ behavior: "smooth" });
                 window.history.replaceState(null, "", link.to.replace("/", ""));
               }}
             >

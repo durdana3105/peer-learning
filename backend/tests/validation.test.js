@@ -6,8 +6,6 @@ import { errorHandler } from "../middlewares/errorHandler.js";
 import { aiSchemas } from "../validation/schemas.js";
 
 describe("backend validation", () => {
-
-
   it("returns the same 400 shape for invalid AI payloads", async () => {
     const testApp = express();
     testApp.use(express.json());

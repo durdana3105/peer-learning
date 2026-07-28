@@ -103,7 +103,7 @@ export const SessionForm = React.memo(function SessionForm({
                         variant="outline"
                         className={cn(
                           "w-full pl-3 text-left font-normal bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white",
-                          !field.value && "text-gray-500"
+                          !field.value && "text-gray-500",
                         )}
                       >
                         {field.value ? (

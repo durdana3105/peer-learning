@@ -35,7 +35,8 @@ vi.mock("../utils/supabase.js", () => ({
   getSupabaseAdmin: vi.fn(() => mockSupabase),
 }));
 
-const { getSupabaseDiscover } = await import("../controllers/matchController.js");
+const { getSupabaseDiscover } =
+  await import("../controllers/matchController.js");
 
 // ── Helpers ────────────────────────────────────────────────────────────────────────
 const createRes = () => {
@@ -95,7 +96,7 @@ app.get(
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
 app.use(errorHandler);
 
@@ -106,7 +107,9 @@ describe("GET /api/match/supabase-discover — page validation", () => {
       .query({ page: "99999" });
 
     expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toMatch(/page must be an integer between 1 and 1000/i);
+    expect(JSON.stringify(res.body)).toMatch(
+      /page must be an integer between 1 and 1000/i,
+    );
   });
 
   it("returns 400 when page=0 (below minimum)", async () => {
@@ -147,42 +150,64 @@ describe("GET /api/match/supabase-discover — page validation", () => {
       .query({ limit: "101" });
 
     expect(res.status).toBe(400);
-    expect(JSON.stringify(res.body)).toMatch(/limit must be an integer between 1 and 100/i);
+    expect(JSON.stringify(res.body)).toMatch(
+      /limit must be an integer between 1 and 100/i,
+    );
   });
 
   it("passes validation when page=1000 (boundary)", async () => {
     mockSupabase.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        neq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-        data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: {
+          skills: [],
+          learning_goals: [],
+          interests: [],
+          learn_subjects: [],
+          teach_subjects: [],
+          learning_style: null,
+          preferred_language: null,
+          timezone: null,
+        },
         error: null,
-        }),
-        order: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue({ data: PEER_PROFILES, error: null }),
+      }),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: PEER_PROFILES, error: null }),
     }));
 
-    const res = await request(app).get("/api/match/supabase-discover").query({ page: "1000" });
+    const res = await request(app)
+      .get("/api/match/supabase-discover")
+      .query({ page: "1000" });
     expect(res.status).toBe(200);
-    });
+  });
 
-    it("passes validation when page is absent (defaults to page 1)", async () => {
+  it("passes validation when page is absent (defaults to page 1)", async () => {
     mockSupabase.from.mockImplementation(() => ({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        neq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-        data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: {
+          skills: [],
+          learning_goals: [],
+          interests: [],
+          learn_subjects: [],
+          teach_subjects: [],
+          learning_style: null,
+          preferred_language: null,
+          timezone: null,
+        },
         error: null,
-        }),
-        order: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockResolvedValue({ data: PEER_PROFILES, error: null }),
+      }),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: PEER_PROFILES, error: null }),
     }));
 
     const res = await request(app).get("/api/match/supabase-discover");
     expect(res.status).toBe(200);
-    });
+  });
 });
 
 // ── Controller unit tests: correct skip calculation ───────────────────────────────
@@ -204,7 +229,16 @@ describe("getSupabaseDiscover — pagination offset calculation", () => {
         eq: vi.fn().mockReturnThis(),
         neq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({
-          data: { skills: ["Python"], learning_goals: ["Python"], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
+          data: {
+            skills: ["Python"],
+            learning_goals: ["Python"],
+            interests: [],
+            learn_subjects: [],
+            teach_subjects: [],
+            learning_style: null,
+            preferred_language: null,
+            timezone: null,
+          },
           error: null,
         }),
         order: vi.fn().mockReturnThis(),
@@ -243,7 +277,16 @@ describe("getSupabaseDiscover — pagination offset calculation", () => {
       eq: vi.fn().mockReturnThis(),
       neq: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({
-        data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
+        data: {
+          skills: [],
+          learning_goals: [],
+          interests: [],
+          learn_subjects: [],
+          teach_subjects: [],
+          learning_style: null,
+          preferred_language: null,
+          timezone: null,
+        },
         error: null,
       }),
       order: vi.fn().mockImplementation((...args) => {
@@ -274,13 +317,25 @@ describe("getSupabaseDiscover — pagination offset calculation", () => {
       eq: vi.fn().mockReturnThis(),
       neq: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({
-        data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
+        data: {
+          skills: [],
+          learning_goals: [],
+          interests: [],
+          learn_subjects: [],
+          teach_subjects: [],
+          learning_style: null,
+          preferred_language: null,
+          timezone: null,
+        },
         error: null,
       }),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockImplementation((lim) => {
         if (table === "profiles") capturedLimit = lim;
-        return { then: (resolve) => resolve({ data: [], error: null }), or: vi.fn().mockReturnThis() };
+        return {
+          then: (resolve) => resolve({ data: [], error: null }),
+          or: vi.fn().mockReturnThis(),
+        };
       }),
     }));
 
@@ -304,7 +359,15 @@ describe("getSupabaseDiscover — skill array search (regression for #1227)", ()
   it("search uses array-overlap operator 'ov' on skills, not ilike", async () => {
     let capturedOrArg;
     const peers = [
-      { id: "uuid-alice", name: "Alice", skills: ["Python"], interests: [], learning_goals: [], teach_subjects: [], learn_subjects: [] },
+      {
+        id: "uuid-alice",
+        name: "Alice",
+        skills: ["Python"],
+        interests: [],
+        learning_goals: [],
+        teach_subjects: [],
+        learn_subjects: [],
+      },
     ];
 
     mockSupabase.from.mockImplementation(() => ({
@@ -312,7 +375,16 @@ describe("getSupabaseDiscover — skill array search (regression for #1227)", ()
       eq: vi.fn().mockReturnThis(),
       neq: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({
-        data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
+        data: {
+          skills: [],
+          learning_goals: [],
+          interests: [],
+          learn_subjects: [],
+          teach_subjects: [],
+          learning_style: null,
+          preferred_language: null,
+          timezone: null,
+        },
         error: null,
       }),
       order: vi.fn().mockReturnThis(),
@@ -340,7 +412,15 @@ describe("getSupabaseDiscover — skill array search (regression for #1227)", ()
   it("filter chip uses .contains() on skills, not ilike", async () => {
     let containsArgs;
     const peers = [
-      { id: "uuid-alice", name: "Alice", skills: ["Python"], interests: [], learning_goals: [], teach_subjects: [], learn_subjects: [] },
+      {
+        id: "uuid-alice",
+        name: "Alice",
+        skills: ["Python"],
+        interests: [],
+        learning_goals: [],
+        teach_subjects: [],
+        learn_subjects: [],
+      },
     ];
 
     mockSupabase.from.mockImplementation(() => ({
@@ -348,7 +428,16 @@ describe("getSupabaseDiscover — skill array search (regression for #1227)", ()
       eq: vi.fn().mockReturnThis(),
       neq: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({
-        data: { skills: [], learning_goals: [], interests: [], learn_subjects: [], teach_subjects: [], learning_style: null, preferred_language: null, timezone: null },
+        data: {
+          skills: [],
+          learning_goals: [],
+          interests: [],
+          learn_subjects: [],
+          teach_subjects: [],
+          learning_style: null,
+          preferred_language: null,
+          timezone: null,
+        },
         error: null,
       }),
       order: vi.fn().mockReturnThis(),

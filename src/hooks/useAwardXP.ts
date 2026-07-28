@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getXPForActivity } from "@/lib/gamification";
@@ -13,7 +12,9 @@ export const useAwardXP = () => {
 
   return useMutation({
     mutationFn: async ({ activity, referenceId }: AwardXpArgs) => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const user = session?.user;
 
       if (!user) throw new Error("User not authenticated");
@@ -21,14 +22,17 @@ export const useAwardXP = () => {
       const xpToAward = getXPForActivity(activity);
 
       // Delegate to the activity-based secure RPC to prevent client-side XP forgery
-      const { error: rpcError } = await (supabase as any).rpc("award_activity_xp", { 
-        _activity_type: activity,
-        _reference_id: referenceId || null
-      });
+      const { error: rpcError } = await (supabase as any).rpc(
+        "award_activity_xp",
+        {
+          _activity_type: activity,
+          _reference_id: referenceId || null,
+        },
+      );
 
       if (rpcError) throw rpcError;
 
-      // We don't have the exact newXP immediately due to the atomic void RPC, 
+      // We don't have the exact newXP immediately due to the atomic void RPC,
       // but the UI queries will be invalidated and refetched automatically.
       return { awarded: xpToAward };
     },
@@ -40,7 +44,6 @@ export const useAwardXP = () => {
       if (import.meta.env.DEV) {
         console.error("Failed to award XP:", error);
       }
-    }
+    },
   });
 };
-

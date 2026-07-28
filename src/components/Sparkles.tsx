@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from "react";
 
 const Sparkles: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -15,15 +14,15 @@ const Sparkles: React.FC = () => {
       for (let i = 0; i < 2; i++) {
         const sparkle = document.createElement("div");
         sparkle.className = "sparkle";
-        
+
         const left = x + Math.random() * 10 - 5;
         const top = y + Math.random() * 10 - 5;
-        
+
         sparkle.style.left = `${left}px`;
         sparkle.style.top = `${top}px`;
         sparkle.style.position = "absolute";
         sparkle.style.pointerEvents = "none";
-        
+
         container.appendChild(sparkle);
 
         const timeout = setTimeout(() => {
@@ -33,7 +32,7 @@ const Sparkles: React.FC = () => {
           // MEMORY LEAK FIX: Remove timer from Set once executed
           timeouts.delete(timeout);
         }, 800);
-        
+
         timeouts.add(timeout);
       }
     };
@@ -61,15 +60,21 @@ const Sparkles: React.FC = () => {
   }, []);
 
   return (
-    <div 
-      ref={containerRef} 
-      id="sparkle-container" 
-      style={{ position: 'fixed', top: 0, left: 0, pointerEvents: 'none', zIndex: 9999, width: '100vw', height: '100vh', overflow: 'hidden' }} 
+    <div
+      ref={containerRef}
+      id="sparkle-container"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        pointerEvents: "none",
+        zIndex: 9999,
+        width: "100vw",
+        height: "100vh",
+        overflow: "hidden",
+      }}
     />
   );
 };
 
 export default React.memo(Sparkles);
-
-
-

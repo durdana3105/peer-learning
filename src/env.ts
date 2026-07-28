@@ -21,7 +21,8 @@ if (!_env.success) {
 
 export const env = _env.data;
 
-export const supabaseUrl = env.VITE_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || "";
+export const supabaseUrl =
+  env.VITE_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || "";
 export const supabaseAnonKey =
   env.VITE_SUPABASE_ANON_KEY ||
   env.VITE_SUPABASE_PUBLISHABLE_KEY ||

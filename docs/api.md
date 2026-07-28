@@ -7,14 +7,15 @@ The Peer Learning Platform primarily relies on the **Supabase JavaScript Client*
 Most data operations are performed directly from the React frontend using the `supabase-js` client. RLS (Row-Level Security) policies in the database ensure these requests are secure.
 
 ### Example: Fetching Study Sessions
+
 ```typescript
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
 
 const fetchSessions = async () => {
   const { data, error } = await supabase
-    .from('study_sessions')
-    .select('*, profiles(username, avatar_url)')
-    .order('created_at', { ascending: false });
+    .from("study_sessions")
+    .select("*, profiles(username, avatar_url)")
+    .order("created_at", { ascending: false });
 
   if (error) console.error(error);
   return data;
@@ -22,15 +23,18 @@ const fetchSessions = async () => {
 ```
 
 ### Example: Sending a Chat Message
+
 ```typescript
-const sendMessage = async (sessionId: string, content: string, userId: string) => {
-  const { error } = await supabase
-    .from('chat_messages')
-    .insert({
-      session_id: sessionId,
-      content: content,
-      sender_id: userId
-    });
+const sendMessage = async (
+  sessionId: string,
+  content: string,
+  userId: string,
+) => {
+  const { error } = await supabase.from("chat_messages").insert({
+    session_id: sessionId,
+    content: content,
+    sender_id: userId,
+  });
 };
 ```
 
@@ -44,19 +48,25 @@ Generates an AI summary of a chat session.
 
 **Endpoint**: `http://localhost:5000/api/ai/summary`  
 **Headers**:
+
 - `Authorization`: `Bearer <Supabase JWT Token>`
 
 **Request Body**:
+
 ```json
 {
   "messages": [
-    {"role": "user", "content": "How does React context work?"},
-    {"role": "assistant", "content": "React context provides a way to pass data through the component tree without having to pass props down manually at every level."}
+    { "role": "user", "content": "How does React context work?" },
+    {
+      "role": "assistant",
+      "content": "React context provides a way to pass data through the component tree without having to pass props down manually at every level."
+    }
   ]
 }
 ```
 
 **Response**:
+
 ```json
 {
   "summary": "The user asked about React Context, and the assistant explained that it is used to avoid prop drilling."
@@ -64,6 +74,7 @@ Generates an AI summary of a chat session.
 ```
 
 **Security & Rate Limiting**:
+
 - Requires a valid Supabase JWT token.
 - Protected by a custom, in-house rate limiter middleware (`backend/middlewares/rateLimiter.js`) to prevent abuse.
 
@@ -80,6 +91,7 @@ All cron requests must supply the `CRON_SECRET` token in the `Authorization` hea
 Atomically claims a batch of pending push notifications (up to 100) and dispatches them to subscribed devices. Uses `push_claimed_at` to prevent concurrent invocations from double-delivering the same notification.
 
 **Response**:
+
 ```json
 { "sent": 5, "processed": 5 }
 ```
@@ -89,6 +101,7 @@ Atomically claims a batch of pending push notifications (up to 100) and dispatch
 Finds upcoming study sessions starting within the next 15 minutes and inserts `session_reminder` notifications for all participants.
 
 **Response**:
+
 ```json
 { "inserted": 3 }
 ```
@@ -98,6 +111,7 @@ Finds upcoming study sessions starting within the next 15 minutes and inserts `s
 Finds incomplete mentorship milestones that are due or overdue within the next 24 hours and inserts `mentorship_reminder` notifications for mentor and mentee.
 
 **Response**:
+
 ```json
 { "inserted": 2 }
 ```
@@ -115,6 +129,7 @@ Requests carrying a valid `WEBHOOK_SECRET` bypass user-level auth. Requests with
 Sends a browser push notification to all subscribed devices for a given `user_id`.
 
 **Request Body**:
+
 ```json
 {
   "user_id": "uuid",
@@ -125,6 +140,7 @@ Sends a browser push notification to all subscribed devices for a given `user_id
 ```
 
 **Response**:
+
 ```json
 { "sent": 1, "failed": 0 }
 ```

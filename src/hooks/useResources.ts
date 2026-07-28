@@ -1,4 +1,3 @@
- 
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { toast } from "@/hooks/use-toast";
@@ -54,24 +53,30 @@ export const useResources = (filters?: ResourceFilters) => {
 
     try {
       let savedResourceIds: string[] | null = null;
-      
+
       if (filters?.savedOnly) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) {
           setResources([]);
           setLoading(false);
           return;
         }
-        
-        const savedData = await safeSupabaseCall<SavedResource[]>(
-          () => (supabase as any).from("saved_resources").select("resource_id").eq("user_id", user.id).abortSignal(controller.signal)
+
+        const savedData = await safeSupabaseCall<SavedResource[]>(() =>
+          (supabase as any)
+            .from("saved_resources")
+            .select("resource_id")
+            .eq("user_id", user.id)
+            .abortSignal(controller.signal),
         );
 
         savedResourceIds =
           (savedData as SavedResource[] | null)?.map(
-            (item) => item.resource_id
+            (item) => item.resource_id,
           ) || [];
-        
+
         if (savedResourceIds.length === 0) {
           setResources([]);
           setLoading(false);
@@ -95,7 +100,7 @@ export const useResources = (filters?: ResourceFilters) => {
       if (filters?.fileType) {
         query = query.eq("file_type", filters.fileType);
       }
-      
+
       if (savedResourceIds && savedResourceIds.length > 0) {
         query = query.in("id", savedResourceIds);
       }
@@ -105,18 +110,33 @@ export const useResources = (filters?: ResourceFilters) => {
         { fallbackMessage: "Unable to load resources." },
       );
 
-      if (!isMountedRef.current || requestId !== requestIdRef.current || controller.signal.aborted) {
+      if (
+        !isMountedRef.current ||
+        requestId !== requestIdRef.current ||
+        controller.signal.aborted
+      ) {
         return;
       }
 
       setResources((data || []) as Resource[]);
     } catch (caughtError) {
-      if (!isMountedRef.current || requestId !== requestIdRef.current || controller.signal.aborted || isAbortError(caughtError)) {
+      if (
+        !isMountedRef.current ||
+        requestId !== requestIdRef.current ||
+        controller.signal.aborted ||
+        isAbortError(caughtError)
+      ) {
         return;
       }
 
-      const normalized = normalizeError(caughtError, "Unable to load resources.");
-      logError(caughtError, { context: "useResources.fetchResources", normalizedMessage: normalized.message });
+      const normalized = normalizeError(
+        caughtError,
+        "Unable to load resources.",
+      );
+      logError(caughtError, {
+        context: "useResources.fetchResources",
+        normalizedMessage: normalized.message,
+      });
 
       setError(normalized.message);
       setResources([]);
@@ -126,9 +146,12 @@ export const useResources = (filters?: ResourceFilters) => {
         description: normalized.message,
         variant: "destructive",
       });
-    }  
-    finally {
-      if (!isMountedRef.current || requestId !== requestIdRef.current || controller.signal.aborted) {
+    } finally {
+      if (
+        !isMountedRef.current ||
+        requestId !== requestIdRef.current ||
+        controller.signal.aborted
+      ) {
         return;
       }
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Notification } from "./types";
@@ -61,48 +60,45 @@ export function useNotifications(userId?: string) {
       }
 
       setNotifications((current) =>
-        nextPage === 0 ? data || [] : [...current, ...(data || [])]
+        nextPage === 0 ? data || [] : [...current, ...(data || [])],
       );
       setPage(nextPage);
       setHasMore((data?.length || 0) === PAGE_SIZE);
       setLoading(false);
     },
-    [userId]
+    [userId],
   );
 
-  const markAsRead = useCallback(
-    async (id: string) => {
-      let previous: Notification[] = [];
-      let wasUnread = false;
+  const markAsRead = useCallback(async (id: string) => {
+    let previous: Notification[] = [];
+    let wasUnread = false;
 
-      setNotifications((current) => {
-        previous = current;
-        const target = current.find((notification) => notification.id === id);
-        wasUnread = !!target && !target.read;
-        return current.map((notification) =>
-          notification.id === id ? { ...notification, read: true } : notification
-        );
-      });
+    setNotifications((current) => {
+      previous = current;
+      const target = current.find((notification) => notification.id === id);
+      wasUnread = !!target && !target.read;
+      return current.map((notification) =>
+        notification.id === id ? { ...notification, read: true } : notification,
+      );
+    });
 
+    if (wasUnread) {
+      setUnreadCount((current) => Math.max(0, current - 1));
+    }
+
+    const { error } = await (supabase as any)
+      .from("notifications")
+      .update({ read: true })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Failed to mark notification as read:", error);
+      setNotifications(previous);
       if (wasUnread) {
-        setUnreadCount((current) => Math.max(0, current - 1));
+        setUnreadCount((current) => current + 1);
       }
-
-      const { error } = await (supabase as any)
-        .from("notifications")
-        .update({ read: true })
-        .eq("id", id);
-
-      if (error) {
-        console.error("Failed to mark notification as read:", error);
-        setNotifications(previous);
-        if (wasUnread) {
-          setUnreadCount((current) => current + 1);
-        }
-      }
-    },
-    []
-  );
+    }
+  }, []);
 
   const markAllAsRead = useCallback(async () => {
     if (!userId) return;
@@ -157,7 +153,9 @@ export function useNotifications(userId?: string) {
           const incoming = payload.new as Notification;
 
           setNotifications((current) => {
-            if (current.some((notification) => notification.id === incoming.id)) {
+            if (
+              current.some((notification) => notification.id === incoming.id)
+            ) {
               return current;
             }
 
@@ -169,16 +167,21 @@ export function useNotifications(userId?: string) {
           fetchUnreadCount();
 
           // Check focus mode before showing popup
-          supabase.from('profiles').select('is_in_focus_mode').eq('id', userId).single().then(({ data }) => {
-            if (!data?.is_in_focus_mode) {
-              showBrowserNotification(
-                incoming.title,
-                incoming.body,
-                sanitizeNotificationActionUrl(incoming.action_url)
-              );
-            }
-          });
-        }
+          supabase
+            .from("profiles")
+            .select("is_in_focus_mode")
+            .eq("id", userId)
+            .single()
+            .then(({ data }) => {
+              if (!data?.is_in_focus_mode) {
+                showBrowserNotification(
+                  incoming.title,
+                  incoming.body,
+                  sanitizeNotificationActionUrl(incoming.action_url),
+                );
+              }
+            });
+        },
       )
       .on(
         "postgres_changes",
@@ -193,14 +196,14 @@ export function useNotifications(userId?: string) {
 
           setNotifications((current) =>
             current.map((notification) =>
-              notification.id === updated.id ? updated : notification
-            )
+              notification.id === updated.id ? updated : notification,
+            ),
           );
 
           // The read/unread status may have changed on a row outside the
           // loaded page (or from another client/tab), so re-sync the count.
           fetchUnreadCount();
-        }
+        },
       )
       .subscribe((status) => {
         if (status === "CHANNEL_ERROR") {

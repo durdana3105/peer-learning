@@ -8,9 +8,7 @@ interface ProtectedMentorRouteProps {
   children: ReactNode;
 }
 
-const ProtectedMentorRoute = ({
-  children,
-}: ProtectedMentorRouteProps) => {
+const ProtectedMentorRoute = ({ children }: ProtectedMentorRouteProps) => {
   const { user, loading } = useAuth();
   const { isMentor, currentMode, setMode } = useRole();
   const { pathname } = useLocation();

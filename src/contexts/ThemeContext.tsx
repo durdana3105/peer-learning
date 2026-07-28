@@ -3,7 +3,8 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 
 import { hasFunctionalConsent } from "@/lib/cookieConsent";
 
-export type Theme = "default" | "purple" | "blue" | "green" | "orange" | "black-white";
+export type Theme =
+  "default" | "purple" | "blue" | "green" | "orange" | "black-white";
 
 interface ThemeContextType {
   theme: Theme;
@@ -12,7 +13,9 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (!hasFunctionalConsent()) {
       return "default";
@@ -40,7 +43,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     const root = window.document.documentElement;
     // Remove all previous theme classes
-    root.classList.remove("theme-default", "theme-purple", "theme-blue", "theme-green", "theme-orange","theme-black-white");
+    root.classList.remove(
+      "theme-default",
+      "theme-purple",
+      "theme-blue",
+      "theme-green",
+      "theme-orange",
+      "theme-black-white",
+    );
     // Add new theme class
     root.classList.add(`theme-${theme}`);
   }, [theme]);

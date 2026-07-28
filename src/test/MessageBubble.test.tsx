@@ -15,7 +15,7 @@ describe("MessageBubble", () => {
 
   it("aligns to the right for sender=user", () => {
     const { container } = render(
-      <MessageBubble text="My message" sender="user" time="12:00 PM" />
+      <MessageBubble text="My message" sender="user" time="12:00 PM" />,
     );
     const wrapper = container.firstChild as HTMLElement;
     expect(wrapper.className).toContain("justify-end");
@@ -23,7 +23,7 @@ describe("MessageBubble", () => {
 
   it("aligns to the left for sender=other", () => {
     const { container } = render(
-      <MessageBubble text="Their message" sender="other" time="12:01 PM" />
+      <MessageBubble text="Their message" sender="other" time="12:01 PM" />,
     );
     const wrapper = container.firstChild as HTMLElement;
     expect(wrapper.className).toContain("justify-start");

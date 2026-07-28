@@ -19,11 +19,11 @@ interface UserProfile {
 
 type AdminRpcClient = {
   rpc(
-    fn: "admin_get_all_profiles"
+    fn: "admin_get_all_profiles",
   ): Promise<{ data: UserProfile[] | null; error: unknown }>;
   rpc(
     fn: "has_role",
-    args: { _user_id: string; _role: string }
+    args: { _user_id: string; _role: string },
   ): Promise<{ data: boolean | null; error: unknown }>;
 };
 
@@ -64,11 +64,10 @@ const Admin = () => {
     fetchUsers();
   }, []);
 
-
   const filteredUsers = users.filter(
     (u) =>
       u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase())
+      u.email.toLowerCase().includes(search.toLowerCase()),
   );
 
   if (loading) {
@@ -107,7 +106,7 @@ const Admin = () => {
               label: "Avg Points",
               value: Math.round(
                 users.reduce((a, u) => a + (u.points || 0), 0) /
-                  (users.length || 1)
+                  (users.length || 1),
               ),
               icon: Shield,
             },

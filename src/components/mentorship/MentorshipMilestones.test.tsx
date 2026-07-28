@@ -23,8 +23,8 @@ describe("MentorshipMilestones Component", () => {
       select: vi.fn().mockReturnValue({
         or: vi.fn().mockReturnValue({
           order: mockSelect,
-        })
-      })
+        }),
+      }),
     });
 
     render(<MentorshipMilestones userId="123" isMentor={false} />);
@@ -37,17 +37,21 @@ describe("MentorshipMilestones Component", () => {
       select: vi.fn().mockReturnValue({
         or: vi.fn().mockReturnValue({
           order: mockSelect,
-        })
-      })
+        }),
+      }),
     });
 
     render(<MentorshipMilestones userId="123" isMentor={false} />);
-    
+
     await waitFor(() => {
-      expect(screen.queryByText("Loading mentorship paths...")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("Loading mentorship paths..."),
+      ).not.toBeInTheDocument();
     });
 
-    expect(screen.getByText("No active mentorship roadmaps found.")).toBeInTheDocument();
+    expect(
+      screen.getByText("No active mentorship roadmaps found."),
+    ).toBeInTheDocument();
   });
 
   it("should render paths and milestones correctly", async () => {
@@ -60,28 +64,30 @@ describe("MentorshipMilestones Component", () => {
         mentorship_milestones: [
           { id: "m1", title: "Learn React", is_completed: true },
           { id: "m2", title: "Learn TypeScript", is_completed: false },
-        ]
-      }
+        ],
+      },
     ];
 
-    const mockSelect = vi.fn().mockResolvedValue({ data: mockData, error: null });
+    const mockSelect = vi
+      .fn()
+      .mockResolvedValue({ data: mockData, error: null });
     (supabase.from as any).mockReturnValue({
       select: vi.fn().mockReturnValue({
         or: vi.fn().mockReturnValue({
           order: mockSelect,
-        })
-      })
+        }),
+      }),
     });
 
     render(<MentorshipMilestones userId="123" isMentor={true} />);
-    
+
     await waitFor(() => {
       expect(screen.getByText("Become a frontend master")).toBeInTheDocument();
     });
 
     expect(screen.getByText("Learn React")).toBeInTheDocument();
     expect(screen.getByText("Learn TypeScript")).toBeInTheDocument();
-    
+
     // Progress calculation: 1 out of 2 completed = 50%
     expect(screen.getByText("50%")).toBeInTheDocument();
   });

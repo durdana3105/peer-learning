@@ -17,10 +17,13 @@ export const formSchema = z
     date: z.date({ required_error: "A date is required." }),
     time: z.string().min(1, "Time is required."),
     durationPreset: z.number().optional(),
-    durationCustom: z.string().optional().refine(
-      (val) => !val || (parseInt(val) >= 15 && parseInt(val) <= 480),
-      "Duration must be between 15 and 480 minutes"
-    ),
+    durationCustom: z
+      .string()
+      .optional()
+      .refine(
+        (val) => !val || (parseInt(val) >= 15 && parseInt(val) <= 480),
+        "Duration must be between 15 and 480 minutes",
+      ),
     seatLimit: z.string().optional(),
   })
   .refine(
@@ -33,7 +36,7 @@ export const formSchema = z
     {
       message: "Session must be scheduled at least 1 hour from now.",
       path: ["time"],
-    }
+    },
   );
 
 export type FormValues = z.infer<typeof formSchema>;
@@ -43,7 +46,10 @@ interface UseCreateSessionProps {
   setOpen: (open: boolean) => void;
 }
 
-export function useCreateSession({ onSuccess, setOpen }: UseCreateSessionProps) {
+export function useCreateSession({
+  onSuccess,
+  setOpen,
+}: UseCreateSessionProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -62,71 +68,80 @@ export function useCreateSession({ onSuccess, setOpen }: UseCreateSessionProps) 
     },
   });
 
-  const resolveDurationMinutes = useCallback((values: FormValues): number => {
-    if (useCustom) {
-      const c = parseInt(values.durationCustom ?? "", 10);
-      if (isNaN(c) || c < 15) return 60;
-      if (c > 480) return 480;
-      return c;
-    }
-    return selectedPreset;
-  }, [useCustom, selectedPreset]);
+  const resolveDurationMinutes = useCallback(
+    (values: FormValues): number => {
+      if (useCustom) {
+        const c = parseInt(values.durationCustom ?? "", 10);
+        if (isNaN(c) || c < 15) return 60;
+        if (c > 480) return 480;
+        return c;
+      }
+      return selectedPreset;
+    },
+    [useCustom, selectedPreset],
+  );
 
-  const onSubmit = useCallback(async (values: FormValues) => {
-    if (!user) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to create a session.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const onSubmit = useCallback(
+    async (values: FormValues) => {
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to create a session.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    setIsLoading(true);
+      setIsLoading(true);
 
-    try {
-      const [hours, minutes] = values.time.split(":").map(Number);
-      const scheduledAt = new Date(values.date);
-      scheduledAt.setHours(hours, minutes, 0, 0);
+      try {
+        const [hours, minutes] = values.time.split(":").map(Number);
+        const scheduledAt = new Date(values.date);
+        scheduledAt.setHours(hours, minutes, 0, 0);
 
-      const durationMinutes = resolveDurationMinutes(values);
-      const seatLimit = values.seatLimit && values.seatLimit.trim() !== "" ? parseInt(values.seatLimit, 10) : null;
+        const durationMinutes = resolveDurationMinutes(values);
+        const seatLimit =
+          values.seatLimit && values.seatLimit.trim() !== ""
+            ? parseInt(values.seatLimit, 10)
+            : null;
 
-      const { error } = await supabase.from("sessions").insert({
-        title: values.title,
-        description: values.description,
-        scheduled_at: scheduledAt.toISOString(),
-        duration_minutes: durationMinutes,
-        status: "scheduled",
-        mentor_id: user.id,
-        seat_limit: seatLimit,
-      });
+        const { error } = await supabase.from("sessions").insert({
+          title: values.title,
+          description: values.description,
+          scheduled_at: scheduledAt.toISOString(),
+          duration_minutes: durationMinutes,
+          status: "scheduled",
+          mentor_id: user.id,
+          seat_limit: seatLimit,
+        });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Session scheduled! 🎉",
-        description: `"${values.title}" is scheduled for ${format(scheduledAt, "PPP 'at' p")}.`,
-      });
+        toast({
+          title: "Session scheduled! 🎉",
+          description: `"${values.title}" is scheduled for ${format(scheduledAt, "PPP 'at' p")}.`,
+        });
 
-      form.reset();
-      setSelectedPreset(60);
-      setUseCustom(false);
-      setOpen(false);
-      awardXP.mutate({ activity: "host_session" });
-      onSuccess();
-    } catch (error: unknown) {
-      const msg =
-        error instanceof Error ? error.message : "Something went wrong.";
-      toast({
-        title: "Error",
-        description: msg,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, resolveDurationMinutes, form, toast, awardXP, onSuccess, setOpen]);
+        form.reset();
+        setSelectedPreset(60);
+        setUseCustom(false);
+        setOpen(false);
+        awardXP.mutate({ activity: "host_session" });
+        onSuccess();
+      } catch (error: unknown) {
+        const msg =
+          error instanceof Error ? error.message : "Something went wrong.";
+        toast({
+          title: "Error",
+          description: msg,
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [user, resolveDurationMinutes, form, toast, awardXP, onSuccess, setOpen],
+  );
 
   return {
     form,

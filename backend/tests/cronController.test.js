@@ -106,10 +106,21 @@ describe("sendSessionReminders", () => {
     // Two notifications: one for mentor, one for participant.
     expect(notifQueryBuilder.upsert).toHaveBeenCalledWith(
       expect.arrayContaining([
-        expect.objectContaining({ user_id: mentorId, entity_id: sessionId, type: "session_reminder" }),
-        expect.objectContaining({ user_id: participantId, entity_id: sessionId, type: "session_reminder" }),
+        expect.objectContaining({
+          user_id: mentorId,
+          entity_id: sessionId,
+          type: "session_reminder",
+        }),
+        expect.objectContaining({
+          user_id: participantId,
+          entity_id: sessionId,
+          type: "session_reminder",
+        }),
       ]),
-      expect.objectContaining({ onConflict: "user_id,entity_id,type", ignoreDuplicates: true })
+      expect.objectContaining({
+        onConflict: "user_id,entity_id,type",
+        ignoreDuplicates: true,
+      }),
     );
 
     expect(res.json).toHaveBeenCalledWith({ inserted: 2 });
@@ -167,7 +178,12 @@ describe("sendSessionReminders", () => {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
-      lte: vi.fn().mockResolvedValue({ data: null, error: { message: "db connection lost" } }),
+      lte: vi
+        .fn()
+        .mockResolvedValue({
+          data: null,
+          error: { message: "db connection lost" },
+        }),
     };
 
     mockSupabase.from.mockReturnValue(sessionQueryBuilder);
@@ -201,7 +217,9 @@ describe("sendSessionReminders", () => {
         error: null,
       }),
     };
-    const notifQueryBuilder = { upsert: vi.fn().mockResolvedValue({ error: null }) };
+    const notifQueryBuilder = {
+      upsert: vi.fn().mockResolvedValue({ error: null }),
+    };
 
     mockSupabase.from
       .mockReturnValueOnce(sessionQueryBuilder)

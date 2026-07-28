@@ -7,6 +7,7 @@ Welcome to the troubleshooting guide for Peer Learning! If you encounter problem
 **Symptom**: The application crashes on startup or features do not work, often with errors indicating missing configuration keys (e.g., Supabase URLs or API keys).
 
 **Solution**:
+
 - Ensure you have copied `.env.example` to `.env`.
   ```bash
   cp .env.example .env
@@ -18,6 +19,7 @@ Welcome to the troubleshooting guide for Peer Learning! If you encounter problem
 **Symptom**: You see errors like "Failed to connect to database", "Network Error", or authentication features do not work during signup or login.
 
 **Solution**:
+
 - Check your `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in your `.env` file. They must match exactly with your Supabase project settings.
 - If you encounter a "Failed to fetch" error during signup, verify that your `.env` file contains valid `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` values, then restart the development server.
 - If you are running Supabase locally using the CLI, ensure the Docker containers are running:
@@ -35,6 +37,7 @@ Welcome to the troubleshooting guide for Peer Learning! If you encounter problem
 **Symptom**: Running `npm install`, `yarn`, or `bun install` throws errors, or dependencies fail to resolve.
 
 **Solution**:
+
 - This project uses `bun` (as indicated by `bun.lockb`). Try using `bun` to install dependencies instead of `npm`:
   ```bash
   bun install
@@ -52,6 +55,7 @@ Welcome to the troubleshooting guide for Peer Learning! If you encounter problem
 **Symptom**: The app fails to build when running `npm run build` or `bun run build`. Errors mention TypeScript compilation or Vite build failures.
 
 **Solution**:
+
 - Run TypeScript checking to identify type errors:
   ```bash
   bun run tsc --noEmit
@@ -64,6 +68,7 @@ Welcome to the troubleshooting guide for Peer Learning! If you encounter problem
 **Symptom**: Users cannot sign in or sign up. OAuth providers (e.g., Google, GitHub) return an error.
 
 **Solution**:
+
 - Verify that your Supabase instance has the correct authentication providers enabled.
 - If testing locally, ensure the Site URL in Supabase Auth settings is set to `http://localhost:5173` (or whatever port you are using).
 - For OAuth, verify that the Client ID and Secret match the ones configured in your OAuth provider's developer console, and that the callback URL matches your Supabase project's redirect URL.
@@ -75,10 +80,12 @@ Welcome to the troubleshooting guide for Peer Learning! If you encounter problem
 **Solution**:
 
 ### Browser Permission
+
 - Ensure the user has granted the browser notification permission. Open browser settings and verify that the site is allowed to show notifications.
 - If permission was denied, the user must manually re-enable it in the browser settings — the app cannot re-prompt automatically after a denial.
 
 ### VAPID Configuration
+
 - Push notifications require valid VAPID (Voluntary Application Server Identification) keys. If you see `Missing VAPID push server env` errors in the backend logs, the following environment variables are not set:
   ```env
   VAPID_PUBLIC_KEY=
@@ -92,11 +99,12 @@ Welcome to the troubleshooting guide for Peer Learning! If you encounter problem
 - Set the same `VAPID_PUBLIC_KEY` in both the backend `.env` and the frontend (`VITE_VAPID_PUBLIC_KEY`). The keys **must** match — using different keys for frontend and backend will cause push subscriptions to be invalid.
 
 ### Subscription Expiry
+
 - Expired push subscriptions return `410 Gone` or `404 Not Found` from the push service. These subscriptions should be removed from the `push_subscriptions` table. If you observe a flood of 410/404 errors, run:
   ```sql
   DELETE FROM push_subscriptions WHERE updated_at < now() - interval '30 days';
   ```
 
 ### Cron Job Not Running
-- If push notifications were working and suddenly stopped, check that the `dispatch-push-notifications` Supabase Edge Function cron is still active. Navigate to **Supabase → Functions → dispatch-push-notifications → Logs** to verify it is firing every minute.
 
+- If push notifications were working and suddenly stopped, check that the `dispatch-push-notifications` Supabase Edge Function cron is still active. Navigate to **Supabase → Functions → dispatch-push-notifications → Logs** to verify it is firing every minute.

@@ -9,7 +9,9 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
       getUser: vi.fn(),
-      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+      onAuthStateChange: vi.fn(() => ({
+        data: { subscription: { unsubscribe: vi.fn() } },
+      })),
     },
     from: vi.fn(),
   },
@@ -26,16 +28,14 @@ describe("useSkillEndorsements rapid interactions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (useToast as any).mockReturnValue({ toast: mockToast });
-    
+
     // Default auth mock
     (supabase.auth.getUser as any).mockResolvedValue({
       data: { user: { id: "current-user-123" } },
     });
   });
 
-  it(
-    "prevents rapid toggling state desync",
-    async () => {
+  it("prevents rapid toggling state desync", async () => {
     let resolveInsert: (val: any) => void;
     const insertPromise = new Promise((res) => {
       resolveInsert = res;
@@ -59,7 +59,7 @@ describe("useSkillEndorsements rapid interactions", () => {
     });
 
     const { result } = renderHook(() =>
-      useSkillEndorsements({ profileUserId: "profile-123", skills: ["React"] })
+      useSkillEndorsements({ profileUserId: "profile-123", skills: ["React"] }),
     );
 
     await waitFor(() => {
@@ -71,7 +71,7 @@ describe("useSkillEndorsements rapid interactions", () => {
 
     act(() => {
       result.current.toggleEndorsement("React");
-      result.current.toggleEndorsement("React"); 
+      result.current.toggleEndorsement("React");
     });
 
     expect(result.current.endorsements["React"].count).toBe(1);
@@ -83,7 +83,5 @@ describe("useSkillEndorsements rapid interactions", () => {
 
     expect(mockInsert).toHaveBeenCalledTimes(1);
     expect(mockDelete).not.toHaveBeenCalled();
-    },
-    15000
-  );
+  }, 15000);
 });

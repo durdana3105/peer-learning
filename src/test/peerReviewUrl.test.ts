@@ -7,12 +7,16 @@ import {
 describe("peer review submission URL validation", () => {
   it("accepts https URLs", () => {
     expect(isValidPeerReviewSubmissionUrl("https://example.com")).toBe(true);
-    expect(getSafePeerReviewSubmissionUrl("https://example.com")).toBe("https://example.com");
+    expect(getSafePeerReviewSubmissionUrl("https://example.com")).toBe(
+      "https://example.com",
+    );
   });
 
   it("accepts http URLs", () => {
     expect(isValidPeerReviewSubmissionUrl("http://example.com")).toBe(true);
-    expect(getSafePeerReviewSubmissionUrl("http://example.com")).toBe("http://example.com");
+    expect(getSafePeerReviewSubmissionUrl("http://example.com")).toBe(
+      "http://example.com",
+    );
   });
 
   it("accepts an empty string as optional", () => {
@@ -25,7 +29,11 @@ describe("peer review submission URL validation", () => {
   });
 
   it("rejects data URLs", () => {
-    expect(isValidPeerReviewSubmissionUrl("data:text/html,<script>alert(1)</script>")).toBe(false);
+    expect(
+      isValidPeerReviewSubmissionUrl(
+        "data:text/html,<script>alert(1)</script>",
+      ),
+    ).toBe(false);
   });
 
   it("rejects invalid URLs", () => {

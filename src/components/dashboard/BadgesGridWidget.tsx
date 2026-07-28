@@ -29,23 +29,27 @@ export default function BadgesGridWidget() {
         const data = await getStreakData();
         if (!mounted) return;
         const totalXP = data.totalXP || 0;
-        
+
         // Map first 5 achievements for the grid
-        const mappedBadges = ALL_ACHIEVEMENTS.slice(0, 5).map((achievement) => ({
-          id: achievement.id,
-          name: achievement.name,
-          description: achievement.description,
-          icon: achievement.icon,
-          unlocked: totalXP >= achievement.xpRequired,
-        }));
-        
+        const mappedBadges = ALL_ACHIEVEMENTS.slice(0, 5).map(
+          (achievement) => ({
+            id: achievement.id,
+            name: achievement.name,
+            description: achievement.description,
+            icon: achievement.icon,
+            unlocked: totalXP >= achievement.xpRequired,
+          }),
+        );
+
         setBadges(mappedBadges);
       } catch (error) {
         console.error("Failed to load badges data:", error);
       }
     }
     loadBadges();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const unlockedCount = badges.filter((b) => b.unlocked).length;

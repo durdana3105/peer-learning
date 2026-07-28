@@ -46,7 +46,8 @@ const UPLOAD_PRESETS = {
     ]),
     extensions: {
       "application/pdf": "pdf",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        "docx",
       "application/zip": "zip",
       "text/plain": "txt",
       "text/markdown": "md",
@@ -125,18 +126,37 @@ export const handleUpload = async (req, res, next) => {
     const detected = await fileTypeFromFile(file.path);
 
     if (BINARY_MIMETYPES.has(file.mimetype)) {
-      const isDocxAsZip = file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" && detected?.mime === "application/zip";
-      const isZipAsDocx = file.mimetype === "application/zip" && detected?.mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      const isDocxAsZip =
+        file.mimetype ===
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document" &&
+        detected?.mime === "application/zip";
+      const isZipAsDocx =
+        file.mimetype === "application/zip" &&
+        detected?.mime ===
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-      if (!detected || (detected.mime !== file.mimetype && !isDocxAsZip && !isZipAsDocx)) {
+      if (
+        !detected ||
+        (detected.mime !== file.mimetype && !isDocxAsZip && !isZipAsDocx)
+      ) {
         fs.unlinkSync(file.path);
-        throw new HttpError(415, "Unsupported or suspicious upload: file content does not match the provided MIME type.");
+        throw new HttpError(
+          415,
+          "Unsupported or suspicious upload: file content does not match the provided MIME type.",
+        );
       }
     } else {
       // Ensure text uploads are not disguised binaries or archives
-      if (detected && !detected.mime.startsWith("text/") && !detected.mime.startsWith("application/xml")) {
+      if (
+        detected &&
+        !detected.mime.startsWith("text/") &&
+        !detected.mime.startsWith("application/xml")
+      ) {
         fs.unlinkSync(file.path);
-        throw new HttpError(415, "Unsupported or suspicious upload: binary content detected in text upload.");
+        throw new HttpError(
+          415,
+          "Unsupported or suspicious upload: binary content detected in text upload.",
+        );
       }
 
       // Inspect first 4096 bytes for raw null bytes (0x00) indicating binary content in text uploads
@@ -157,7 +177,10 @@ export const handleUpload = async (req, res, next) => {
 
       if (containsNullByte) {
         fs.unlinkSync(file.path);
-        throw new HttpError(415, "Unsupported or suspicious upload: null bytes found in text upload.");
+        throw new HttpError(
+          415,
+          "Unsupported or suspicious upload: null bytes found in text upload.",
+        );
       }
     }
 
@@ -177,7 +200,7 @@ export const handleUpload = async (req, res, next) => {
 
     // Upload to Supabase Storage using a ReadStream
     const fileStream = fs.createReadStream(file.path);
-    
+
     // Prevent unhandled stream errors if the file is deleted or fails to read
     fileStream.on("error", (err) => {
       console.error("ReadStream error:", err);
@@ -199,7 +222,9 @@ export const handleUpload = async (req, res, next) => {
     }
 
     // Generate public URL
-    const { data: publicUrlData } = supabaseAdmin.storage.from(folder).getPublicUrl(filePath);
+    const { data: publicUrlData } = supabaseAdmin.storage
+      .from(folder)
+      .getPublicUrl(filePath);
 
     res.status(200).json({
       success: true,

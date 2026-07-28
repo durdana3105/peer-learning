@@ -93,17 +93,14 @@ export function Features() {
   return (
     <>
       {/* Stats */}
-      <section id="stats" className="container mx-auto mt-20 grid grid-cols-2 gap-6 px-6 py-10 text-center md:grid-cols-4">
+      <section
+        id="stats"
+        className="container mx-auto mt-20 grid grid-cols-2 gap-6 px-6 py-10 text-center md:grid-cols-4"
+      >
         {stats.map((s, i) => (
-<StatCard
-            key={s.label}
-            value={s.value}
-            label={s.label}
-            index={i}
-          />
+          <StatCard key={s.label} value={s.value} label={s.label} index={i} />
         ))}
       </section>
-
 
       {/* How it Works */}
       <section className="container px-6 py-24 relative">

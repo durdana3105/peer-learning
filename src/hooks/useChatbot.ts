@@ -47,7 +47,9 @@ export function useChatbot() {
   // Load only the current user's chat messages
   useEffect(() => {
     const loadChats = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session?.user) return;
 
       const { data, error } = await (supabase as any)
@@ -71,7 +73,9 @@ export function useChatbot() {
   const sendMessage = useCallback(async () => {
     if (!input.trim() || loading) return;
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session?.user) return;
 
     const userId = session.user.id;
@@ -115,12 +119,18 @@ export function useChatbot() {
       });
 
       if (!res.ok) {
-        throw new Error(`Request failed with status ${res.status}: ${res.statusText}`);
+        throw new Error(
+          `Request failed with status ${res.status}: ${res.statusText}`,
+        );
       }
 
       const data = await res.json();
       const botReply = data?.answer || "No response 😅";
-      const botMsg: Message = { role: "assistant", text: botReply, user_id: userId };
+      const botMsg: Message = {
+        role: "assistant",
+        text: botReply,
+        user_id: userId,
+      };
 
       // Smoother typing effect (chunked rendering)
       let currentText = "";
@@ -148,7 +158,11 @@ export function useChatbot() {
     } catch (err) {
       logError(err, { context: "useChatbot.sendMessage" });
       toast.error("Failed to send message. Please try again.");
-      const errorMsg: Message = { role: "assistant", text: "Something went wrong. Please try again.", user_id: userId };
+      const errorMsg: Message = {
+        role: "assistant",
+        text: "Something went wrong. Please try again.",
+        user_id: userId,
+      };
       setMessages((prev) => [...prev, errorMsg]);
       await (supabase as any).from("chat_messages").insert([errorMsg as any]);
     }

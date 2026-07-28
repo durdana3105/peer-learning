@@ -26,15 +26,10 @@ export default function StudyTimer() {
 
   return (
     <div className="bg-slate-900 border border-slate-700 rounded-xl p-4">
-      <h2 className="font-semibold mb-3">
-          ⏳ Collaborative Study Timer
-      </h2>
+      <h2 className="font-semibold mb-3">⏳ Collaborative Study Timer</h2>
 
       <p className="text-3xl font-bold text-center mb-4">
-        {minutes}:
-        {remainingSeconds
-          .toString()
-          .padStart(2, "0")}
+        {minutes}:{remainingSeconds.toString().padStart(2, "0")}
       </p>
 
       <div className="flex gap-2">

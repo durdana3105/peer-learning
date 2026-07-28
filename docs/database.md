@@ -41,6 +41,7 @@ erDiagram
 ```
 
 ## 🔐 Authentication Flow
+
 1. **User Sign Up/In**: Handled via Supabase Authentication (Email/Password or OAuth).
 2. **Profile Generation**: A database trigger automatically creates a row in the `profiles` table matching the newly created user's `auth.users.id`.
 3. **Session Management**: Supabase automatically handles JWT token issuance, refresh, and storage in the client.
@@ -49,7 +50,9 @@ erDiagram
 ## 📑 Core Tables
 
 ### 1. `profiles`
+
 Stores extended user information and gamification stats.
+
 - `id`: UUID (Primary Key, references `auth.users.id`)
 - `username`: Text
 - `skills`: Text Array (skills the user wants to learn or teach)
@@ -57,14 +60,18 @@ Stores extended user information and gamification stats.
 - `level`: Integer (Calculated level based on XP)
 
 ### 2. `study_sessions`
+
 Represents collaborative learning rooms.
+
 - `id`: UUID
 - `title`: Text
 - `creator_id`: UUID (References `profiles.id`)
 - `status`: Text (e.g., 'active', 'completed')
 
 ### 3. `chat_messages`
+
 Stores all messages sent within study sessions.
+
 - `id`: UUID
 - `session_id`: UUID (References `study_sessions.id`)
 - `sender_id`: UUID (References `profiles.id`)

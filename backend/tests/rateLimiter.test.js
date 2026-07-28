@@ -5,8 +5,12 @@ import {
 } from "../middlewares/requireCronSecret.js";
 
 describe("createBackgroundRateLimiter", () => {
-  beforeEach(() => { vi.useFakeTimers(); });
-  afterEach(() => { vi.useRealTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it("allows the first request from an IP", () => {
     const limiter = createBackgroundRateLimiter(60_000, 5);
@@ -38,7 +42,7 @@ describe("createBackgroundRateLimiter", () => {
   it("tracks different IPs independently", () => {
     const limiter = createBackgroundRateLimiter(60_000, 5);
     for (let i = 0; i < 5; i++) limiter("1.1.1.1");
-    expect(limiter("1.1.1.1")).toBe(true);  // exhausted
+    expect(limiter("1.1.1.1")).toBe(true); // exhausted
     expect(limiter("2.2.2.2")).toBe(false); // fresh IP unaffected
   });
 
@@ -57,8 +61,12 @@ describe("createBackgroundRateLimiter", () => {
 });
 
 describe("createCooldownTracker", () => {
-  beforeEach(() => { vi.useFakeTimers(); });
-  afterEach(() => { vi.useRealTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it("allows first invocation of a route key", () => {
     const cooldown = createCooldownTracker(60_000);
@@ -92,7 +100,7 @@ describe("createCooldownTracker", () => {
     const KEY = "POST:/shared-route";
 
     cronCooldown(KEY);
-    expect(cronCooldown(KEY)).toBe(true);   // cron on cooldown
+    expect(cronCooldown(KEY)).toBe(true); // cron on cooldown
     expect(notifCooldown(KEY)).toBe(false); // notif cooldown unaffected
   });
 });

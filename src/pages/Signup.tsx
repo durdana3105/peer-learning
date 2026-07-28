@@ -1,4 +1,7 @@
-import { supabase, supabaseMisconfigured } from "@/integrations/supabase/client";
+import {
+  supabase,
+  supabaseMisconfigured,
+} from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -8,7 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { AUTH_SERVICE_UNAVAILABLE_MESSAGE, runSupabaseAuthRequest } from "@/lib/supabaseAuthErrors";
+import {
+  AUTH_SERVICE_UNAVAILABLE_MESSAGE,
+  runSupabaseAuthRequest,
+} from "@/lib/supabaseAuthErrors";
 
 // ✅ Proper TypeScript type
 type FormErrors = {
@@ -129,7 +135,7 @@ const Signup = () => {
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
-      })
+      }),
     );
 
     if (error) {
@@ -156,10 +162,9 @@ const Signup = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-[#0b1329] to-background px-4 font-[Inter] text-slate-100">
-      
       {/* Glow background */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(var(--theme-color-1),0.15),transparent)] pointer-events-none" />
-      
+
       {/* LEFT SIDE */}
       <div className="hidden lg:flex w-1/2 relative items-center justify-center p-16 z-10">
         <motion.div
@@ -187,9 +192,9 @@ const Signup = () => {
           </h1>
 
           <p className="mt-6 text-lg text-slate-300 leading-relaxed">
-            Join live mentorship sessions, collaborate with classmates,
-            solve doubts instantly, and become part of a futuristic
-            collaborative learning community.
+            Join live mentorship sessions, collaborate with classmates, solve
+            doubts instantly, and become part of a futuristic collaborative
+            learning community.
           </p>
 
           <div className="mt-10 flex flex-wrap gap-4">
@@ -301,32 +306,67 @@ const Signup = () => {
 
             {password && (
               <div className="mt-2">
-              <div className="h-2 w-full bg-slate-700 rounded">
-                <div
-                  className ={`h-2 rounded transition-all duration-300 ${passwordStrength.color}`}
-                  style={{ width: `${(passwordStrength.label === "Weak" ? 33 : passwordStrength.label === "Medium" ? 66 : 100)}%` }}
-                />
+                <div className="h-2 w-full bg-slate-700 rounded">
+                  <div
+                    className={`h-2 rounded transition-all duration-300 ${passwordStrength.color}`}
+                    style={{
+                      width: `${passwordStrength.label === "Weak" ? 33 : passwordStrength.label === "Medium" ? 66 : 100}%`,
+                    }}
+                  />
+                </div>
+                <p className="text-sm text-slate-300 mt-1">
+                  Password Strength: {passwordStrength.label}
+                </p>
+                <div className="mt-2 text-sm space-y-1">
+                  <p
+                    className={
+                      password.length >= 8 ? "text-green-400" : "text-red-400"
+                    }
+                  >
+                    {password.length >= 8 ? "✓" : "✗"} At least 8 characters
+                  </p>
+                  <p
+                    className={
+                      /([A-Z])/.test(password)
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }
+                  >
+                    {/([A-Z])/.test(password) ? "✓" : "✗"} Uppercase letter
+                    (A-Z)
+                  </p>
+                  <p
+                    className={
+                      /([a-z])/.test(password)
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }
+                  >
+                    {/([a-z])/.test(password) ? "✓" : "✗"} Lowercase letter
+                    (a-z)
+                  </p>
+                  <p
+                    className={
+                      /([0-9])/.test(password)
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }
+                  >
+                    {/([0-9])/.test(password) ? "✓" : "✗"} Number (0-9)
+                  </p>
+                  <p
+                    className={
+                      /([^A-Za-z0-9])/.test(password)
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }
+                  >
+                    {/([^A-Za-z0-9])/.test(password) ? "✓" : "✗"} Special
+                    character (!@#$%)
+                  </p>
+                </div>
               </div>
-              <p className="text-sm text-slate-300 mt-1">Password Strength: {passwordStrength.label}</p>
-              <div className="mt-2 text-sm space-y-1">
-                <p className={password.length >= 8 ? "text-green-400" : "text-red-400"}>
-                  {password.length >= 8 ? "✓" : "✗"} At least 8 characters
-                </p>
-                <p className={/([A-Z])/.test(password) ? "text-green-400" : "text-red-400"}>
-                  {/([A-Z])/.test(password) ? "✓" : "✗"} Uppercase letter (A-Z)
-                </p>
-                <p className={/([a-z])/.test(password) ? "text-green-400" : "text-red-400"}>
-                  {/([a-z])/.test(password) ? "✓" : "✗"} Lowercase letter (a-z)
-                </p>
-                <p className={/([0-9])/.test(password) ? "text-green-400" : "text-red-400"}>
-                  {/([0-9])/.test(password) ? "✓" : "✗"} Number (0-9)
-                </p>
-                <p className={/([^A-Za-z0-9])/.test(password) ? "text-green-400" : "text-red-400"}>
-                  {/([^A-Za-z0-9])/.test(password) ? "✓" : "✗"} Special character (!@#$%)
-                </p>
-              </div>
-            </div>
-             )}
+            )}
             {errors.password && (
               <p className="text-red-400 text-sm">{errors.password}</p>
             )}
@@ -344,29 +384,18 @@ const Signup = () => {
               <button
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300"
-                onClick={() =>
-                  setShowConfirmPassword(!showConfirmPassword)
-                }
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
-                {showConfirmPassword ? (
-                  <EyeOff size={16} />
-                ) : (
-                  <Eye size={16} />
-                )}
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
 
             {errors.confirmPassword && (
-              <p className="text-red-400 text-sm">
-                {errors.confirmPassword}
-              </p>
+              <p className="text-red-400 text-sm">{errors.confirmPassword}</p>
             )}
 
             {/* Button */}
-            <motion.div
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-            >
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
               <Button
                 type="submit"
                 disabled={isLoading}
@@ -383,11 +412,7 @@ const Signup = () => {
               onClick={handleGoogleLogin}
               className="h-10 w-full border border-white/10 bg-white/5 text-white hover:bg-white/10"
             >
-              <img
-                src={googleIcon}
-                alt="google"
-                className="mr-2 h-5 w-5"
-              />
+              <img src={googleIcon} alt="google" className="mr-2 h-5 w-5" />
               Continue with Google
             </Button>
           </form>

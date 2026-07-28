@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from "react";
 import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,9 +47,9 @@ export const NotificationsDropdown = () => {
         },
         (payload: any) => {
           setNotifications((prev) =>
-            [payload.new as Notification, ...prev].slice(0, 20)
+            [payload.new as Notification, ...prev].slice(0, 20),
           );
-        }
+        },
       )
       .subscribe();
 
@@ -62,7 +61,10 @@ export const NotificationsDropdown = () => {
   // Click outside to close
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -72,24 +74,27 @@ export const NotificationsDropdown = () => {
   }, []);
 
   const markAsRead = async (id: string) => {
-    await (supabase as any).from("notifications").update({ read: true }).eq("id", id);
+    await (supabase as any)
+      .from("notifications")
+      .update({ read: true })
+      .eq("id", id);
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
   };
   const markAllAsRead = async () => {
-        const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id);
-      if (unreadIds.length === 0) return;
-    
-        await (supabase as any)
-          .from("notifications")
-          .update({ read: true })
-          .in("id", unreadIds);
-    
-        setNotifications((prev) =>
-          prev.map((n) => (unreadIds.includes(n.id) ? { ...n, read: true } : n))
-        );
-     };
+    const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id);
+    if (unreadIds.length === 0) return;
+
+    await (supabase as any)
+      .from("notifications")
+      .update({ read: true })
+      .in("id", unreadIds);
+
+    setNotifications((prev) =>
+      prev.map((n) => (unreadIds.includes(n.id) ? { ...n, read: true } : n)),
+    );
+  };
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
@@ -101,8 +106,8 @@ export const NotificationsDropdown = () => {
         <Bell size={20} />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full border border-[#0B0F19]">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                   </span>
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
         )}
       </button>
 
@@ -112,16 +117,16 @@ export const NotificationsDropdown = () => {
             <h3 className="font-bold text-white">Notifications</h3>
             {unreadCount > 0 && (
               <div className="flex items-center gap-2">
-                            <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-full">
-                              {unreadCount} new
-                            </span>
-                            <button
-                              onClick={markAllAsRead}
-                               className="text-xs text-gray-400 hover:text-cyan-400 font-medium transition"
-                             >
-                               Mark all read
-                         </button>
-                          </div>
+                <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-full">
+                  {unreadCount} new
+                </span>
+                <button
+                  onClick={markAllAsRead}
+                  className="text-xs text-gray-400 hover:text-cyan-400 font-medium transition"
+                >
+                  Mark all read
+                </button>
+              </div>
             )}
           </div>
 
@@ -159,6 +164,5 @@ export const NotificationsDropdown = () => {
     </div>
   );
 };
-
 
 // Fix for #1162: Added ARIA labels

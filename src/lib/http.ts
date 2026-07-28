@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { toast } from "sonner";
 
 type UnknownRecord = Record<string, unknown>;
@@ -21,7 +20,9 @@ function getString(value: unknown): string | undefined {
 }
 
 function getNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : undefined;
 }
 
 function isRecord(value: unknown): value is UnknownRecord {
@@ -36,10 +37,15 @@ export function isAbortError(error: unknown): boolean {
   const name = getString(error.name);
   const code = getString(error.code);
 
-  return name === "AbortError" || code === "ERR_CANCELED" || code === "ABORT_ERR";
+  return (
+    name === "AbortError" || code === "ERR_CANCELED" || code === "ABORT_ERR"
+  );
 }
 
-export function normalizeError(error: unknown, fallbackMessage = "Something went wrong"): ApiError {
+export function normalizeError(
+  error: unknown,
+  fallbackMessage = "Something went wrong",
+): ApiError {
   if (typeof error === "string") {
     return { message: error };
   }
@@ -82,7 +88,7 @@ export async function withErrorBoundary<T>(
 
     const normalized = normalizeError(error, options.fallbackMessage);
     options.onError?.(normalized);
-    
+
     toast.error(normalized.message || "An unexpected error occurred");
 
     throw normalized;
@@ -104,7 +110,9 @@ export async function safeSupabaseCall<T>(
   }, options);
 }
 
-async function readResponseBody(response: Response): Promise<string | undefined> {
+async function readResponseBody(
+  response: Response,
+): Promise<string | undefined> {
   try {
     const text = await response.text();
     return text.trim() || undefined;
@@ -123,8 +131,9 @@ export async function safeFetchJson<T>(
 
     if (!response.ok) {
       const responseBody = await readResponseBody(response);
-      const error = new Error(responseBody || `${response.status} ${response.statusText}`) as Error &
-        UnknownRecord;
+      const error = new Error(
+        responseBody || `${response.status} ${response.statusText}`,
+      ) as Error & UnknownRecord;
 
       error.name = "HttpError";
       error.status = response.status;

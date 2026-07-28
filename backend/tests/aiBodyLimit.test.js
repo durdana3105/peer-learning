@@ -19,7 +19,9 @@ describe("AI route body limit", () => {
 
   it("still allows non-AI requests up to the global 100KB limit", async () => {
     const between = { pad: "x".repeat(80 * 1024) };
-    const res = await request(app).post("/api/notifications/send-push").send(between);
+    const res = await request(app)
+      .post("/api/notifications/send-push")
+      .send(between);
     expect(res.status).not.toBe(413);
   });
 });

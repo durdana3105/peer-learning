@@ -54,13 +54,19 @@ const makeSupabaseMock = () => {
       then(resolve) {
         // Claim query: unsent, not permanently failed, and either unclaimed
         // or claimed long enough ago that the claim has expired.
-        if (table === "notifications" && _operation === "update" && _isOrClaim) {
+        if (
+          table === "notifications" &&
+          _operation === "update" &&
+          _isOrClaim
+        ) {
           const now = Date.now();
           const claimable = dbRows.filter((r) => {
             if (r.push_sent_at != null) return false;
             if (r.push_failed_at != null) return false;
             if (r.push_claimed_at == null) return true;
-            return now - new Date(r.push_claimed_at).getTime() > PUSH_CLAIM_TTL_MS;
+            return (
+              now - new Date(r.push_claimed_at).getTime() > PUSH_CLAIM_TTL_MS
+            );
           });
           const batch = claimable.slice(0, 100);
           batch.forEach((r) => {
@@ -84,14 +90,22 @@ const makeSupabaseMock = () => {
         }
 
         // Per-notification stamp: success / attempt increment / permanent failure.
-        if (table === "notifications" && _operation === "update" && _filters["id"]) {
+        if (
+          table === "notifications" &&
+          _operation === "update" &&
+          _filters["id"]
+        ) {
           const row = dbRows.find((r) => r.id === _filters["id"]);
           if (row) Object.assign(row, _payload);
           return resolve({ data: null, error: null });
         }
 
         // Expired-subscription cleanup.
-        if (table === "push_subscriptions" && _operation === "delete" && _filters["id__in"]) {
+        if (
+          table === "push_subscriptions" &&
+          _operation === "delete" &&
+          _filters["id__in"]
+        ) {
           const ids = new Set(_filters["id__in"]);
           subscriptionStore = subscriptionStore.filter((s) => !ids.has(s.id));
           return resolve({ data: null, error: null });
@@ -100,7 +114,9 @@ const makeSupabaseMock = () => {
         // Fetch subscriptions for claimed notifications.
         if (table === "push_subscriptions" && !_operation) {
           const userIds = _filters["user_id__in"] || [];
-          const subs = subscriptionStore.filter((s) => userIds.includes(s.user_id));
+          const subs = subscriptionStore.filter((s) =>
+            userIds.includes(s.user_id),
+          );
           return resolve({ data: subs, error: null });
         }
 
@@ -122,8 +138,13 @@ vi.mock("@supabase/supabase-js", () => ({
     mock.from = (table) => {
       if (table === "push_subscriptions" && forceSubscriptionError) {
         forceSubscriptionError = false; // only fail once
-        const fakeChain = new Promise((resolve) => resolve({ data: null, error: { message: "DB error" } }));
-        Object.assign(fakeChain, { select: () => fakeChain, in: () => fakeChain });
+        const fakeChain = new Promise((resolve) =>
+          resolve({ data: null, error: { message: "DB error" } }),
+        );
+        Object.assign(fakeChain, {
+          select: () => fakeChain,
+          in: () => fakeChain,
+        });
         return fakeChain;
       }
       return originalFrom(table);
@@ -140,7 +161,8 @@ vi.mock("web-push", () => ({
       return new Promise((resolve, reject) => {
         setTimeout(() => {
           if (behavior === "success") resolve({ statusCode: 201 });
-          else if (behavior === "expired") reject({ statusCode: 410, message: "gone" });
+          else if (behavior === "expired")
+            reject({ statusCode: 410, message: "gone" });
           else reject({ statusCode: 500, message: "push failed" });
         }, 20);
       });
@@ -150,11 +172,14 @@ vi.mock("web-push", () => ({
 
 // ─── App fixture ─────────────────────────────────────────────────────────────
 const buildApp = async () => {
-  const { dispatchPushNotifications } = await import("../controllers/cronController.js");
+  const { dispatchPushNotifications } =
+    await import("../controllers/cronController.js");
   const app = express();
   app.use(express.json());
   app.post("/dispatch", dispatchPushNotifications);
-  app.use((err, _req, res, _next) => res.status(500).json({ error: err.message }));
+  app.use((err, _req, res, _next) =>
+    res.status(500).json({ error: err.message }),
+  );
   return app;
 };
 
@@ -196,7 +221,15 @@ describe("dispatchPushNotifications", () => {
   describe("happy path", () => {
     it("returns sent=N, processed=N for N seeded rows", async () => {
       dbRows = [seedRow({ id: "notif-a", user_id: "user-a" })];
-      subscriptionStore = [{ id: "sub-a", user_id: "user-a", endpoint: "ep-a", p256dh: "k", auth: "a" }];
+      subscriptionStore = [
+        {
+          id: "sub-a",
+          user_id: "user-a",
+          endpoint: "ep-a",
+          p256dh: "k",
+          auth: "a",
+        },
+      ];
       endpointBehavior["ep-a"] = "success";
 
       const res = await request(app).post("/dispatch");
@@ -213,8 +246,22 @@ describe("dispatchPushNotifications", () => {
     });
 
     it("sanitizes queued action_url values before sending push payloads", async () => {
-      dbRows = [seedRow({ id: "unsafe-notif", user_id: "user-unsafe", action_url: "https://example.com" })];
-      subscriptionStore = [{ id: "sub-1", user_id: "user-unsafe", endpoint: "ep-1", p256dh: "k", auth: "a" }];
+      dbRows = [
+        seedRow({
+          id: "unsafe-notif",
+          user_id: "user-unsafe",
+          action_url: "https://example.com",
+        }),
+      ];
+      subscriptionStore = [
+        {
+          id: "sub-1",
+          user_id: "user-unsafe",
+          endpoint: "ep-1",
+          p256dh: "k",
+          auth: "a",
+        },
+      ];
       endpointBehavior["ep-1"] = "success";
 
       const res = await request(app).post("/dispatch");
@@ -228,7 +275,9 @@ describe("dispatchPushNotifications", () => {
 
   describe("concurrency (race condition, issue #804)", () => {
     it("concurrent calls do not double-deliver: total sent === seeded count", async () => {
-      dbRows = Array.from({ length: 5 }, (_, i) => seedRow({ id: `notif-${i}`, user_id: `user-${i}` }));
+      dbRows = Array.from({ length: 5 }, (_, i) =>
+        seedRow({ id: `notif-${i}`, user_id: `user-${i}` }),
+      );
       subscriptionStore = dbRows.map((r) => ({
         id: `sub-${r.user_id}`,
         user_id: r.user_id,
@@ -257,7 +306,15 @@ describe("dispatchPushNotifications", () => {
   describe("failed delivery retry/expiry (issue #1676)", () => {
     it("keeps a fully-failed notification claimed but does not immediately retry it", async () => {
       dbRows = [seedRow({ id: "notif-fail", user_id: "user-fail" })];
-      subscriptionStore = [{ id: "sub-1", user_id: "user-fail", endpoint: "ep-fail", p256dh: "k", auth: "a" }];
+      subscriptionStore = [
+        {
+          id: "sub-1",
+          user_id: "user-fail",
+          endpoint: "ep-fail",
+          p256dh: "k",
+          auth: "a",
+        },
+      ];
       endpointBehavior["ep-fail"] = "fail";
 
       const res1 = await request(app).post("/dispatch");
@@ -281,10 +338,20 @@ describe("dispatchPushNotifications", () => {
           id: "notif-expired-claim",
           user_id: "user-fail",
           push_attempts: 1,
-          push_claimed_at: new Date(Date.now() - PUSH_CLAIM_TTL_MS - 1000).toISOString(),
+          push_claimed_at: new Date(
+            Date.now() - PUSH_CLAIM_TTL_MS - 1000,
+          ).toISOString(),
         }),
       ];
-      subscriptionStore = [{ id: "sub-1", user_id: "user-fail", endpoint: "ep-fail", p256dh: "k", auth: "a" }];
+      subscriptionStore = [
+        {
+          id: "sub-1",
+          user_id: "user-fail",
+          endpoint: "ep-fail",
+          p256dh: "k",
+          auth: "a",
+        },
+      ];
       endpointBehavior["ep-fail"] = "fail";
 
       const res = await request(app).post("/dispatch");
@@ -299,10 +366,20 @@ describe("dispatchPushNotifications", () => {
           id: "notif-give-up",
           user_id: "user-fail",
           push_attempts: MAX_PUSH_ATTEMPTS - 1,
-          push_claimed_at: new Date(Date.now() - PUSH_CLAIM_TTL_MS - 1000).toISOString(),
+          push_claimed_at: new Date(
+            Date.now() - PUSH_CLAIM_TTL_MS - 1000,
+          ).toISOString(),
         }),
       ];
-      subscriptionStore = [{ id: "sub-1", user_id: "user-fail", endpoint: "ep-fail", p256dh: "k", auth: "a" }];
+      subscriptionStore = [
+        {
+          id: "sub-1",
+          user_id: "user-fail",
+          endpoint: "ep-fail",
+          p256dh: "k",
+          auth: "a",
+        },
+      ];
       endpointBehavior["ep-fail"] = "fail";
 
       const res1 = await request(app).post("/dispatch");
@@ -311,7 +388,9 @@ describe("dispatchPushNotifications", () => {
       expect(dbRows[0].push_failed_at).not.toBeNull();
 
       // Even after the claim would have expired, it's excluded forever now.
-      dbRows[0].push_claimed_at = new Date(Date.now() - PUSH_CLAIM_TTL_MS - 1000).toISOString();
+      dbRows[0].push_claimed_at = new Date(
+        Date.now() - PUSH_CLAIM_TTL_MS - 1000,
+      ).toISOString();
       const res2 = await request(app).post("/dispatch");
       expect(res2.body).toEqual({ sent: 0, processed: 0 });
     });
@@ -331,8 +410,20 @@ describe("dispatchPushNotifications", () => {
     it("deletes an expired (410) push subscription during dispatch, keeping the working one", async () => {
       dbRows = [seedRow({ id: "notif-mixed", user_id: "user-mixed" })];
       subscriptionStore = [
-        { id: "sub-good", user_id: "user-mixed", endpoint: "ep-good", p256dh: "k", auth: "a" },
-        { id: "sub-dead", user_id: "user-mixed", endpoint: "ep-dead", p256dh: "k", auth: "a" },
+        {
+          id: "sub-good",
+          user_id: "user-mixed",
+          endpoint: "ep-good",
+          p256dh: "k",
+          auth: "a",
+        },
+        {
+          id: "sub-dead",
+          user_id: "user-mixed",
+          endpoint: "ep-dead",
+          p256dh: "k",
+          auth: "a",
+        },
       ];
       endpointBehavior["ep-good"] = "success";
       endpointBehavior["ep-dead"] = "expired";
@@ -348,7 +439,15 @@ describe("dispatchPushNotifications", () => {
   describe("subscription fetch failure", () => {
     it("claimed notifications remain retryable after subscription fetch error", async () => {
       dbRows = [seedRow({ id: "notif-suberr", user_id: "user-suberr" })];
-      subscriptionStore = [{ id: "sub-1", user_id: "user-suberr", endpoint: "ep-1", p256dh: "k", auth: "a" }];
+      subscriptionStore = [
+        {
+          id: "sub-1",
+          user_id: "user-suberr",
+          endpoint: "ep-1",
+          p256dh: "k",
+          auth: "a",
+        },
+      ];
       endpointBehavior["ep-1"] = "success";
       forceSubscriptionError = true;
 

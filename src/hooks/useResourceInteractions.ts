@@ -36,14 +36,18 @@ const useAllUserSaves = (userId: string | null | undefined) => {
   });
 };
 
-export const useResourceInteractions = (resourceId: string, userId: string | null | undefined) => {
+export const useResourceInteractions = (
+  resourceId: string,
+  userId: string | null | undefined,
+) => {
   const queryClient = useQueryClient();
 
   const { data: allVotes, isLoading: isLoadingVotes } = useAllUserVotes(userId);
   const { data: allSaves, isLoading: isLoadingSaves } = useAllUserSaves(userId);
 
-  const vote = allVotes?.find(v => v.resource_id === resourceId)?.vote_type ?? null;
-  const isSaved = allSaves?.some(s => s.resource_id === resourceId) ?? false;
+  const vote =
+    allVotes?.find((v) => v.resource_id === resourceId)?.vote_type ?? null;
+  const isSaved = allSaves?.some((s) => s.resource_id === resourceId) ?? false;
 
   const toggleVoteMutation = useMutation({
     mutationFn: async (voteType: 1 | -1 | null) => {
@@ -60,13 +64,15 @@ export const useResourceInteractions = (resourceId: string, userId: string | nul
           .from("resource_votes")
           .upsert(
             { resource_id: resourceId, user_id: userId, vote_type: voteType },
-            { onConflict: "resource_id,user_id" }
+            { onConflict: "resource_id,user_id" },
           );
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["all_resource_votes", userId] });
+      queryClient.invalidateQueries({
+        queryKey: ["all_resource_votes", userId],
+      });
     },
   });
 
@@ -80,7 +86,7 @@ export const useResourceInteractions = (resourceId: string, userId: string | nul
           .from("saved_resources")
           .upsert(
             { resource_id: resourceId, user_id: userId },
-            { onConflict: "resource_id,user_id", ignoreDuplicates: true }
+            { onConflict: "resource_id,user_id", ignoreDuplicates: true },
           );
         if (error) throw error;
       } else {
@@ -93,7 +99,9 @@ export const useResourceInteractions = (resourceId: string, userId: string | nul
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["all_saved_resources", userId] });
+      queryClient.invalidateQueries({
+        queryKey: ["all_saved_resources", userId],
+      });
     },
   });
 
