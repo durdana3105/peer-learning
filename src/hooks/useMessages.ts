@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAwardXP } from "@/hooks/useAwardXP";
 import { toast } from "@/hooks/use-toast";
 import { logError } from "@/utils/logger";
+import { sanitizeMessageContent } from "@/utils/sanitize";
 
 export type ProfileSummary = {
   id: string;
@@ -577,13 +578,14 @@ export function useMessages(
     }
 
     try {
+      const sanitizedContent = sanitizeMessageContent(content);
       const { data, error: insertError } = await supabase
         .from("messages")
         .insert({
           sender_id: currentUserId,
           receiver_id: selectedUser.id,
-          content,
-          text: content,
+          content: sanitizedContent,
+          text: sanitizedContent,
         })
         .select("id,sender_id,receiver_id,content,text,message,created_at,read_at")
         .single();
