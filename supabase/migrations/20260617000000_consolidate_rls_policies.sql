@@ -339,6 +339,7 @@ CREATE POLICY "Users can delete peer connections"
   ON public.peer_connections FOR DELETE USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
 
 -- peer_submissions
+ALTER TABLE public.peer_submissions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view submissions" 
   ON public.peer_submissions FOR SELECT USING (true);
 
@@ -364,6 +365,7 @@ CREATE POLICY "Users can delete own submissions"
   ON public.peer_submissions FOR DELETE USING (user_id = auth.uid());
 
 -- peer_reviews
+ALTER TABLE public.peer_reviews ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view reviews" 
   ON public.peer_reviews FOR SELECT USING (true);
 

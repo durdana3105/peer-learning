@@ -1,6 +1,6 @@
-import React, { useEffect, Suspense, useState, useRef } from "react";
+import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, Router, useLocation } from "react-router-dom";
+import { RouterProvider } from "react-router-dom";
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -10,9 +10,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CookieConsentProvider } from "@/contexts/CookieConsentContext";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import AdminRoute from "@/components/AdminRoute";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import ProtectedMentorRoute from "@/components/ProtectedMentorRoute";
 
 // Global layout components - rendered on every page, keep static
 import Navbar from "./components/Navbar/Navbar";
@@ -404,15 +401,13 @@ function App() {
           <Toaster />
           <Sonner />
 
-          <BrowserRouter>
-            <CookieConsentProvider>
-              <AuthProvider>
-                <RoleProvider>
-                  <AppContent />
-                </RoleProvider>
-              </AuthProvider>
-            </CookieConsentProvider>
-          </BrowserRouter>
+          <CookieConsentProvider>
+            <AuthProvider>
+              <RoleProvider>
+                <RouterProvider router={router} />
+              </RoleProvider>
+            </AuthProvider>
+          </CookieConsentProvider>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
