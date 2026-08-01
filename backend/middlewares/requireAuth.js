@@ -202,7 +202,11 @@ export const requireProfileRole = (...allowedRoles) => async (req, res, next) =>
 
     const { data: profile, error } = await supabaseAdmin
       .from("profiles")
-      .select("id, is_mentor, is_learner, is_admin")
+      // is_admin is intentionally not selected: no migration creates that column,
+      // and selecting it makes PostgREST reject the query (500). deriveActiveRoles
+      // reads profile?.is_admin defensively, so admin derivation resumes with no
+      // code change if a future migration adds the column back to this select.
+      .select("id, is_mentor, is_learner")
       .eq("id", req.user.id)
       .maybeSingle();
 
