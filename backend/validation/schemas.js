@@ -94,7 +94,7 @@ export const aiSchemas = {
           content: z.string().trim().min(1).max(4000),
         })
       ).min(1).max(MAX_ASK_MESSAGES),
-      systemPrompt: z.string().optional(),
+      systemPrompt: z.string().max(2000).optional(),
       model: z.string().optional()
     }),
   },
