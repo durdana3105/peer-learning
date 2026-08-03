@@ -16,7 +16,7 @@ type SessionChatProps = {
   studyTime: number;
   isFocusMode: boolean;
   setIsFocusMode: (val: boolean) => void;
-  sendMessage: (msg: string) => void;
+  sendMessage: (msg: string) => Promise<boolean>;
   togglePinMessage: (msgId: string, currentPinStatus: boolean) => void;
   sendTypingEvent: () => void;
   handleLeaveVideo: () => void;
@@ -317,12 +317,12 @@ export function SessionChat({
           {/* INPUT */}
           <div className="pt-4 border-t border-white/10 flex gap-3">
             <LiveCodeRunner 
-              onShare={(code, lang, output) => {
+              onShare={async (code, lang, output) => {
                 let formattedMessage = `\`\`\`${lang}\n${code}\n\`\`\``;
                 if (output) {
                   formattedMessage += `\n**Output:**\n\`\`\`text\n${output}\n\`\`\``;
                 }
-                sendMessage(formattedMessage);
+                await sendMessage(formattedMessage);
               }}
             />
             <input
@@ -333,19 +333,27 @@ export function SessionChat({
                 setMessage(e.target.value);
                 sendTypingEvent();
               }}
-              onKeyDown={(e) => {
+              onKeyDown={async (e) => {
                 if (e.key === "Enter") {
-                  sendMessage(message);
-                  setMessage("");
+                  if (message.trim()) {
+                    const success = await sendMessage(message);
+                    if (success) {
+                      setMessage("");
+                    }
+                  }
                 }
               }}
               className="flex-1 bg-white/10 border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-cyan-400 text-white"
             />
 
             <button
-              onClick={() => {
-                sendMessage(message);
-                setMessage("");
+              onClick={async () => {
+                if (message.trim()) {
+                  const success = await sendMessage(message);
+                  if (success) {
+                    setMessage("");
+                  }
+                }
               }}
               className="bg-gradient-to-r from-cyan-400 to-purple-500 text-black p-4 rounded-2xl hover:opacity-90 transition"
             >

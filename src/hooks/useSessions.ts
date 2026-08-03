@@ -303,7 +303,7 @@ export function useSessions(user: any) {
   }, [user, awardXP, toast]);
 
   const sendMessage = useCallback(async (msgText: string) => {
-    if (!msgText.trim() || !selectedSession) return;
+    if (!msgText.trim() || !selectedSession) return false;
 
     const activity = {
       id: Date.now(),
@@ -330,8 +330,10 @@ export function useSessions(user: any) {
         });
 
       if (error) throw error;
+      return true;
     } catch (err: any) {
       toast({ title: "Failed to send message", description: err.message || "An unexpected error occurred.", variant: "destructive" });
+      return false;
     }
   }, [selectedSession, user, toast]);
 
