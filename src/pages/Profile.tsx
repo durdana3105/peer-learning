@@ -52,7 +52,9 @@ const Profile = () => {
 
       const { data: rawProfileData, error: profileError } = await supabase
         .from("profiles")
-        .select("*")
+        // SECURITY (#1924): select only the columns rendered on this page —
+        // never email.
+        .select("id, name, bio, skills, avatar_url, streak, points")
         .eq("id", user.id)
         .single();
 
