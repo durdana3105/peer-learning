@@ -20,6 +20,9 @@ const TestComponent = () => {
       <button data-testid="set-dark" onClick={() => setMode("dark")}>
         Set Dark
       </button>
+      <button data-testid="set-system" onClick={() => setMode("system")}>
+        Set System
+      </button>
       <button data-testid="set-purple" onClick={() => setTheme("purple")}>
         Set Purple
       </button>
@@ -43,6 +46,34 @@ describe("ThemeContext & Dark Mode Toggle", () => {
     expect(screen.getByTestId("mode").textContent).toBe("dark");
     expect(screen.getByTestId("isDarkMode").textContent).toBe("true");
     expect(document.documentElement.classList.contains("dark")).toBe(true);
+  });
+
+  it("falls back to 'dark' mode when localStorage contains a malformed app-mode string", () => {
+    localStorage.setItem("peerlearn_cookie_consent", JSON.stringify({ version: 1, consentGiven: true, functional: true }));
+    localStorage.setItem("app-mode", "invalid_stale_mode");
+
+    render(
+      <ThemeProvider>
+        <TestComponent />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByTestId("mode").textContent).toBe("dark");
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+  });
+
+  it("restores valid app-mode from localStorage when consent is granted", () => {
+    localStorage.setItem("peerlearn_cookie_consent", JSON.stringify({ version: 1, consentGiven: true, functional: true }));
+    localStorage.setItem("app-mode", "light");
+
+    render(
+      <ThemeProvider>
+        <TestComponent />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByTestId("mode").textContent).toBe("light");
+    expect(document.documentElement.classList.contains("light")).toBe(true);
   });
 
   it("toggles dark mode off (to light mode)", () => {
@@ -73,6 +104,17 @@ describe("ThemeContext & Dark Mode Toggle", () => {
     fireEvent.click(screen.getByTestId("set-dark"));
     expect(screen.getByTestId("mode").textContent).toBe("dark");
     expect(document.documentElement.classList.contains("dark")).toBe(true);
+  });
+
+  it("supports system preference mode", () => {
+    render(
+      <ThemeProvider>
+        <TestComponent />
+      </ThemeProvider>
+    );
+
+    fireEvent.click(screen.getByTestId("set-system"));
+    expect(screen.getByTestId("mode").textContent).toBe("system");
   });
 
   it("updates color preset theme and applies theme class", () => {

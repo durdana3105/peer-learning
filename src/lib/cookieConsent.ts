@@ -23,6 +23,7 @@ const CURRENT_VERSION = 1;
 
 const FUNCTIONAL_STORAGE_KEYS = [
   "app-theme",
+  "app-mode",
   "peerlearn_mode",
   "pl_streak",
   "pl_last_active",

@@ -94,22 +94,22 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white overflow-hidden pb-20">
+    <div className="min-h-screen bg-background text-foreground overflow-hidden pb-20">
       {/* Background glow effects */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500/20 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/20 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/10 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="relative z-10 flex justify-center min-h-screen p-6 pt-12 md:p-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-3xl rounded-[36px] border border-white/10 bg-white/5 backdrop-blur-2xl p-6 md:p-10 shadow-[0_0_60px_rgba(34,211,238,0.05)]"
+          className="w-full max-w-3xl rounded-[36px] border border-border bg-card/60 text-card-foreground backdrop-blur-2xl p-6 md:p-10 shadow-card"
         >
           {/* Header */}
           <div className="mb-10">
             <button
               onClick={() => navigate("/dashboard")}
-              className="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-gray-300 px-4 py-2 rounded-full hover:border-cyan-400/50 hover:text-cyan-300 transition mb-6"
+              className="inline-flex items-center gap-2 bg-muted/50 border border-border text-foreground px-4 py-2 rounded-full hover:bg-muted transition mb-6"
             >
               <ArrowLeft size={16} /> Back to Dashboard
             </button>
@@ -119,8 +119,8 @@ const Settings = () => {
                 <Bell size={28} />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold">Settings & Preferences</h1>
-                <p className="text-gray-400 mt-1">Manage your app appearance and notification preferences.</p>
+                <h1 className="text-3xl md:text-4xl font-bold text-foreground">Settings & Preferences</h1>
+                <p className="text-muted-foreground mt-1">Manage your app appearance and notification preferences.</p>
               </div>
             </div>
           </div>
@@ -132,38 +132,40 @@ const Settings = () => {
                 <Sun size={22} />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-100">Appearance & Dark Mode</h2>
-                <p className="text-xs text-gray-400">Customize theme and viewing preferences.</p>
+                <h2 className="text-xl font-bold text-foreground">Appearance & Dark Mode</h2>
+                <p className="text-xs text-muted-foreground">Customize theme and viewing preferences.</p>
               </div>
             </div>
 
-            <div className="bg-black/20 rounded-3xl border border-white/5 p-6 flex flex-col gap-6">
+            <div className="bg-muted/30 rounded-3xl border border-border p-6 flex flex-col gap-6">
               {/* Dark Mode Toggle Row */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-base text-gray-200 flex items-center gap-2">
+                  <h3 className="font-semibold text-base text-foreground flex items-center gap-2">
                     {isDarkMode ? <Moon size={18} className="text-cyan-400" /> : <Sun size={18} className="text-amber-400" />}
                     Dark Mode
                   </h3>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     Reduce eye strain during study sessions and mock interviews.
                   </p>
                 </div>
                 <ToggleSwitch
                   checked={isDarkMode}
                   onChange={toggleDarkMode}
+                  label="Toggle Dark Mode"
                 />
               </div>
 
               {/* Mode Selection Buttons */}
-              <div className="grid grid-cols-3 gap-3 pt-3 border-t border-white/5">
+              <div className="grid grid-cols-3 gap-3 pt-3 border-t border-border">
                 <button
                   type="button"
+                  aria-pressed={mode === "light"}
                   onClick={() => setMode("light")}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition ${
                     mode === "light"
-                      ? "bg-cyan-500/15 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
-                      : "bg-white/5 border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-200"
+                      ? "bg-cyan-500/15 border-cyan-400 text-cyan-500 dark:text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+                      : "bg-muted/40 border-border text-muted-foreground hover:border-border hover:text-foreground"
                   }`}
                 >
                   <Sun size={20} className="text-amber-400" />
@@ -172,11 +174,12 @@ const Settings = () => {
 
                 <button
                   type="button"
+                  aria-pressed={mode === "dark"}
                   onClick={() => setMode("dark")}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition ${
                     mode === "dark"
-                      ? "bg-cyan-500/15 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
-                      : "bg-white/5 border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-200"
+                      ? "bg-cyan-500/15 border-cyan-400 text-cyan-500 dark:text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+                      : "bg-muted/40 border-border text-muted-foreground hover:border-border hover:text-foreground"
                   }`}
                 >
                   <Moon size={20} className="text-cyan-400" />
@@ -185,11 +188,12 @@ const Settings = () => {
 
                 <button
                   type="button"
+                  aria-pressed={mode === "system"}
                   onClick={() => setMode("system")}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition ${
                     mode === "system"
-                      ? "bg-cyan-500/15 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
-                      : "bg-white/5 border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-200"
+                      ? "bg-cyan-500/15 border-cyan-400 text-cyan-500 dark:text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+                      : "bg-muted/40 border-border text-muted-foreground hover:border-border hover:text-foreground"
                   }`}
                 >
                   <Monitor size={20} className="text-purple-400" />
@@ -291,13 +295,24 @@ const Settings = () => {
 };
 
 // Simple custom toggle switch component
-const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => {
+const ToggleSwitch = ({
+  checked,
+  onChange,
+  label = "Notification preference",
+}: {
+  checked: boolean;
+  onChange: () => void;
+  label?: string;
+}) => {
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
       onClick={onChange}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-[#020617] ${
-        checked ? "bg-cyan-400" : "bg-gray-600"
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 ${
+        checked ? "bg-cyan-400" : "bg-muted-foreground/40"
       }`}
     >
       <span

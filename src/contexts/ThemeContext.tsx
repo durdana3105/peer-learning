@@ -36,7 +36,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     try {
-      return (localStorage.getItem("app-mode") as Mode) || "dark";
+      const savedMode = localStorage.getItem("app-mode");
+      if (savedMode === "light" || savedMode === "dark" || savedMode === "system") {
+        return savedMode;
+      }
+      return "dark";
     } catch {
       return "dark";
     }
