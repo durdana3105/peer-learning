@@ -185,12 +185,21 @@ export const askAI = async (req, res, next) => {
       totalContentLength += m.content.length;
     }
 
+    // systemPrompt is forwarded to the model too, so it must count toward the
+    // total-content cap and the response-token budget — otherwise a large
+    // systemPrompt bypasses both and inflates upstream token cost.
+    const systemPromptText = typeof systemPrompt === "string" ? systemPrompt : "";
+    totalContentLength += systemPromptText.length;
+
     if (totalContentLength > MAX_TOTAL_CONTENT_LENGTH) {
       return res.status(400).json({ error: "Total message content exceeds maximum allowed length." });
     }
 
     const latestMessage = messages[messages.length - 1].content;
-    const maxTokens = budgetResponseTokens(latestMessage, ASK_AI_MAX_TOKENS);
+    const maxTokens = budgetResponseTokens(
+      systemPromptText ? `${systemPromptText}\n${latestMessage}` : latestMessage,
+      ASK_AI_MAX_TOKENS
+    );
 
     const model = ALLOWED_MODELS.includes(requestedModel) ? requestedModel : OPENROUTER_MODEL;
     
