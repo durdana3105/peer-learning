@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { ArrowLeft, Bell, Mail, Smartphone, Save } from "lucide-react";
+import { ArrowLeft, Bell, Mail, Smartphone, Save, Sun, Moon, Monitor } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from "@/contexts/ThemeContext";
 
 type NotificationCategory = "messages" | "sessions" | "friends";
 type NotificationChannels = {
@@ -20,6 +21,7 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { mode, setMode, isDarkMode, toggleDarkMode } = useTheme();
   const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
   const [isSaving, setIsSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -117,8 +119,82 @@ const Settings = () => {
                 <Bell size={28} />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold">Notification Preferences</h1>
-                <p className="text-gray-400 mt-1">Control how and when you want to be notified.</p>
+                <h1 className="text-3xl md:text-4xl font-bold">Settings & Preferences</h1>
+                <p className="text-gray-400 mt-1">Manage your app appearance and notification preferences.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Appearance & Dark Mode Section */}
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 bg-purple-500/10 rounded-xl border border-purple-400/20 text-purple-400">
+                <Sun size={22} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-100">Appearance & Dark Mode</h2>
+                <p className="text-xs text-gray-400">Customize theme and viewing preferences.</p>
+              </div>
+            </div>
+
+            <div className="bg-black/20 rounded-3xl border border-white/5 p-6 flex flex-col gap-6">
+              {/* Dark Mode Toggle Row */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-base text-gray-200 flex items-center gap-2">
+                    {isDarkMode ? <Moon size={18} className="text-cyan-400" /> : <Sun size={18} className="text-amber-400" />}
+                    Dark Mode
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Reduce eye strain during study sessions and mock interviews.
+                  </p>
+                </div>
+                <ToggleSwitch
+                  checked={isDarkMode}
+                  onChange={toggleDarkMode}
+                />
+              </div>
+
+              {/* Mode Selection Buttons */}
+              <div className="grid grid-cols-3 gap-3 pt-3 border-t border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setMode("light")}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition ${
+                    mode === "light"
+                      ? "bg-cyan-500/15 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+                      : "bg-white/5 border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-200"
+                  }`}
+                >
+                  <Sun size={20} className="text-amber-400" />
+                  <span className="text-xs font-semibold">Light</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMode("dark")}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition ${
+                    mode === "dark"
+                      ? "bg-cyan-500/15 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+                      : "bg-white/5 border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-200"
+                  }`}
+                >
+                  <Moon size={20} className="text-cyan-400" />
+                  <span className="text-xs font-semibold">Dark</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMode("system")}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition ${
+                    mode === "system"
+                      ? "bg-cyan-500/15 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+                      : "bg-white/5 border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-200"
+                  }`}
+                >
+                  <Monitor size={20} className="text-purple-400" />
+                  <span className="text-xs font-semibold">System</span>
+                </button>
               </div>
             </div>
           </div>
