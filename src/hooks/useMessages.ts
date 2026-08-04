@@ -8,7 +8,6 @@ import { sanitizeMessageContent } from "@/utils/sanitize";
 export type ProfileSummary = {
   id: string;
   name: string | null;
-  email: string | null;
   avatar_url: string | null;
   is_mentor: boolean;
   is_learner: boolean;
@@ -82,7 +81,6 @@ const THREAD_PAGE_SIZE = 50;
 const normalizeProfile = (row: ProfileRow | UserRow): ProfileSummary => ({
   id: row.id,
   name: row.name,
-  email: row.email,
   avatar_url: row.avatar_url ?? null,
   is_mentor: "is_mentor" in row ? row.is_mentor : false,
   is_learner: "is_learner" in row ? row.is_learner : false,
@@ -232,7 +230,9 @@ export function useMessages(
       try {
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
-          .select("*")
+          // SECURITY (#1924): never select email — only the non-sensitive
+          // columns needed for the peer directory are fetched.
+          .select("id, name, avatar_url, is_mentor, is_learner, last_active, last_seen")
           .neq("id", currentUserId)
           .order("name", { ascending: true })
           .limit(100);

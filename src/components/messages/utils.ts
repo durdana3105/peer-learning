@@ -1,9 +1,9 @@
 import { ProfileSummary, MessageRow } from "@/hooks/useMessages";
 
-export const getDisplayName = (profile?: Pick<ProfileSummary, "name" | "email"> | null) =>
-  profile?.name?.trim() || profile?.email?.split("@")[0] || "Learner";
+export const getDisplayName = (profile?: Pick<ProfileSummary, "name"> | null) =>
+  profile?.name?.trim() || "Learner";
 
-export const getInitial = (profile?: Pick<ProfileSummary, "name" | "email"> | null) =>
+export const getInitial = (profile?: Pick<ProfileSummary, "name"> | null) =>
   getDisplayName(profile).charAt(0).toUpperCase();
 
 export const getMessageBody = (message: MessageRow) =>
