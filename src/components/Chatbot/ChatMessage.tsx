@@ -1,30 +1,25 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Message } from "@/hooks/useChatbot";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 interface ChatMessageProps {
   message: Message;
 }
 
 export const ChatMessage = React.memo(function ChatMessage({ message }: ChatMessageProps) {
-  // 💻 Code formatting (fixed)
-  const formatMessage = (text: string) => {
-    if (text.includes("```")) {
-      const parts = text.split("```");
-
-      return parts.map((part, i) =>
-        i % 2 === 1 ? (
-          <pre
-            key={i}
-            className="bg-black text-green-400 p-2 rounded text-xs overflow-x-auto"
-          >
-            {part}
-          </pre>
-        ) : (
-          <span key={i}>{part}</span>
-        )
-      );
+  const renderMessageContent = (text: string) => {
+    if (message.role === "user") {
+      return <span className="whitespace-pre-wrap">{text}</span>;
     }
-    return <span>{text}</span>;
+
+    return (
+      <Suspense fallback={<span className="whitespace-pre-wrap">{text}</span>}>
+        <MarkdownRenderer
+          content={text}
+          className="prose-sm prose-invert text-sm whitespace-pre-wrap"
+        />
+      </Suspense>
+    );
   };
 
   return (
@@ -35,7 +30,7 @@ export const ChatMessage = React.memo(function ChatMessage({ message }: ChatMess
           : "bg-gray-800"
       }`}
     >
-      {formatMessage(message.text)}
+      {renderMessageContent(message.text)}
     </div>
   );
 });

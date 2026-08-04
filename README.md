@@ -25,6 +25,7 @@ A modern peer-to-peer learning platform where students can connect, collaborate,
 - [Screenshots](#screenshots)
 - [Problem Statement](#problem-statement)
 - [Tech Stack](#tech-stack)
+- [Security Model](#security-model)
 - [System Architecture](#system-architecture)
 - [Project Structure](#project-structure)
 - [Installation & Setup](#installation--setup)
@@ -133,6 +134,49 @@ Many students struggle to find suitable learning partners, mentors, and collabor
 | **Testing** | Vitest, Playwright, Supertest, Testing Library |
 | **Code Quality** | ESLint |
 | **Deployment** | Vercel |
+
+---
+
+## Security Model
+
+> **⚠️ CRITICAL**: The application's security depends entirely on Row-Level Security (RLS) policies being properly configured in Supabase.
+
+### Public Anon Key
+
+The `VITE_SUPABASE_ANON_KEY` is intentionally public and embedded in the frontend JavaScript bundle. This is expected behavior for Supabase:
+
+- Anyone can view it in the browser's network tab or DevTools → Sources
+- Searching for `eyJ` (JWT prefix) instantly finds the key in page source
+- This is not a vulnerability; it's the designed authentication method
+
+### Security Boundary: Row-Level Security (RLS)
+
+PostgreSQL RLS policies form the actual security boundary. Every table in the database has:
+
+1. **RLS Enabled**: `ALTER TABLE ... ENABLE ROW LEVEL SECURITY;`
+2. **Authentication Policies**: Only `authenticated` users can access data
+3. **Authorization Policies**: Users can only see/modify their own data
+4. **Sensitive Column Protection**: Scores and badges can only update via server-side functions
+
+### Key Security Principles
+
+- ✅ Every table has RLS enabled
+- ✅ Every policy checks `auth.uid()` for user context
+- ✅ Sensitive columns (xp, badges) are immutable via direct updates
+- ✅ Points only awarded through server-side functions with rate limiting
+- ✅ Messages have length limits to prevent storage abuse
+- ✅ Audit logs are admin-only and immutable
+- ✅ Chat responses are HTML-sanitized to prevent XSS
+
+### Documentation
+
+For detailed RLS policy documentation, see [SECURITY.md](./SECURITY.md).
+
+**Before Deployment**:
+1. Review [SECURITY.md](./SECURITY.md) to understand all RLS policies
+2. Verify all tables have RLS enabled (use SQL checks in SECURITY.md)
+3. Test that users cannot read/modify other users' data
+4. Confirm that score updates only work through server-side functions
 
 ---
 
