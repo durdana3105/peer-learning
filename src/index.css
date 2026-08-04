@@ -585,7 +585,8 @@ body {
 }
 
 .dark body {
-  background: linear-gradient(135deg, #020617 0%, #0d0d2b 40%, #020617 100%);
+  background-image: linear-gradient(135deg, #020617 0%, #0d0d2b 40%, #020617 100%);
+  background-attachment: fixed;
   color: hsl(var(--foreground));
 }
 
