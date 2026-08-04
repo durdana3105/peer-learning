@@ -10,7 +10,7 @@ interface VideoRoomProps {
 
 const VideoRoom: React.FC<VideoRoomProps> = ({ roomName, userName, onLeave }) => {
   return (
-    <div className="w-full h-[750px] bg-white/5 border border-white/10 backdrop-blur-2xl rounded-3xl overflow-hidden relative">
+    <div className="w-full h-[60vh] md:h-[750px] bg-white/5 border border-white/10 backdrop-blur-2xl rounded-3xl overflow-hidden relative flex flex-col">
       <JitsiMeeting
         domain="meet.jit.si"
         roomName={`PeerLearning_${roomName}`}
