@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Play, Code, Share, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { env } from "@/env";
+import { Editor } from "@monaco-editor/react";
 
 // PISTON_API_URL delegates code execution to a secure, containerized third-party execution engine (Piston).
 // This mitigates Issue #1846 by completely removing the execution context from our backend server,
@@ -150,13 +151,21 @@ export function LiveCodeRunner({ onShare }: LiveCodeRunnerProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[400px]">
             <div className="flex flex-col gap-2 h-full">
               <label className="text-sm font-medium text-gray-400">Code</label>
-              <textarea
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="w-full h-full bg-gray-950 text-gray-100 font-mono text-sm p-4 rounded-xl border border-gray-800 focus:outline-none focus:border-cyan-500 resize-none"
-                placeholder={`Write your ${language.name} code here...`}
-                spellCheck={false}
-              />
+              <div className="w-full h-full rounded-xl border border-gray-800 overflow-hidden focus-within:border-cyan-500">
+                <Editor
+                  height="100%"
+                  language={language.id === "cpp" ? "cpp" : language.id}
+                  theme="vs-dark"
+                  value={code}
+                  onChange={(value) => setCode(value || "")}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    wordWrap: "on",
+                    padding: { top: 16 },
+                  }}
+                />
+              </div>
             </div>
             <div className="flex flex-col gap-2 h-full">
               <label className="text-sm font-medium text-gray-400">Output</label>
