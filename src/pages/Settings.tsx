@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { ArrowLeft, Bell, Mail, Smartphone, Save } from "lucide-react";
+import { ArrowLeft, Bell, Mail, Smartphone, Save, Moon, Sun } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from "next-themes";
 
 type NotificationCategory = "messages" | "sessions" | "friends";
 type NotificationChannels = {
@@ -23,6 +24,7 @@ const Settings = () => {
   const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
   const [isSaving, setIsSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const loadPreferences = async () => {
@@ -192,6 +194,35 @@ const Settings = () => {
                   <ToggleSwitch
                     checked={preferences.friends.inApp}
                     onChange={() => handleToggle("friends", "inApp")}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Appearance Section */}
+          <div className="mt-10">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-cyan-500/10 rounded-2xl border border-cyan-400/20 text-cyan-400">
+                <Moon size={28} className="hidden dark:block" />
+                <Sun size={28} className="block dark:hidden" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">Appearance</h2>
+                <p className="text-gray-400 mt-1">Customize the visual theme of the platform.</p>
+              </div>
+            </div>
+            
+            <div className="bg-black/20 rounded-3xl border border-white/5 overflow-hidden">
+              <div className="grid grid-cols-12 gap-4 p-5 items-center hover:bg-white/5 transition">
+                <div className="col-span-8">
+                  <h3 className="font-semibold text-lg text-gray-200">Dark Mode</h3>
+                  <p className="text-sm text-gray-400 mt-1">Toggle between light and dark mode.</p>
+                </div>
+                <div className="col-span-4 flex justify-end">
+                  <ToggleSwitch
+                    checked={theme === "dark"}
+                    onChange={() => setTheme(theme === "dark" ? "light" : "dark")}
                   />
                 </div>
               </div>

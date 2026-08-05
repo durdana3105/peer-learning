@@ -5,6 +5,7 @@ import Logo from "@/components/Logo";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useNavbarProfile } from "@/hooks/useNavbarProfile";
 import { ThemeToggle } from "./ThemeToggle";
+import { DarkModeToggle } from "./DarkModeToggle";
 import { DesktopNav } from "./DesktopNav";
 import { MobileNav } from "./MobileNav";
 import { UserMenu } from "./UserMenu";
@@ -45,6 +46,7 @@ const Navbar = memo(function Navbar() {
 
         {/* RIGHT SECTION */}
         <div className="hidden items-center gap-4 md:flex">
+          <DarkModeToggle />
           <ThemeToggle setTheme={setTheme} />
           <UserMenu
             user={user}

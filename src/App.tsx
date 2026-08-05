@@ -396,25 +396,29 @@ function AppContent() {
   );
 }
 
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
+      <NextThemesProvider attribute="class" defaultTheme="dark">
+        <ThemeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
 
-          <BrowserRouter>
-            <CookieConsentProvider>
-              <AuthProvider>
-                <RoleProvider>
-                  <AppContent />
-                </RoleProvider>
-              </AuthProvider>
-            </CookieConsentProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </ThemeProvider>
+            <BrowserRouter>
+              <CookieConsentProvider>
+                <AuthProvider>
+                  <RoleProvider>
+                    <AppContent />
+                  </RoleProvider>
+                </AuthProvider>
+              </CookieConsentProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </ThemeProvider>
+      </NextThemesProvider>
     </QueryClientProvider>
   );
 }
