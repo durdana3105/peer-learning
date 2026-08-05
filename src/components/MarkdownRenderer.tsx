@@ -12,9 +12,18 @@ interface MarkdownRendererProps {
 const remarkPlugins: PluggableList = [remarkGfm];
 const strictSchema = {
   ...defaultSchema,
+  tagNames: [
+    ...(defaultSchema.tagNames || []),
+    'input',
+    'table', 'thead', 'tbody', 'tr', 'th', 'td'
+  ],
   attributes: {
     ...defaultSchema.attributes,
+    '*': ['className', 'style'],
     a: ['href', 'title', 'target', 'rel'],
+    input: ['type', 'checked', 'disabled'],
+    th: ['align', 'colSpan', 'rowSpan'],
+    td: ['align', 'colSpan', 'rowSpan'],
   },
   protocols: {
     ...defaultSchema.protocols,
