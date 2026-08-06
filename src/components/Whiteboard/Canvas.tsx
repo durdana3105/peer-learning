@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 import { toast } from "sonner";
+import { Download, FileText } from "lucide-react";
+import { exportCanvasToPNG, exportCanvasToPDF } from "./exportUtils";
 import {
   Point,
   ToolType,
@@ -480,12 +482,42 @@ export default function Canvas({ roomId }: Props) {
     });
   };
 
+  const handleExportPNG = () => {
+    if (!canvasRef.current) {
+      toast.error("Canvas is not ready for export.");
+      return;
+    }
+    try {
+      const filename = `whiteboard-${roomId || "export"}-${Date.now()}.png`;
+      exportCanvasToPNG(canvasRef.current, filename);
+      toast.success("Whiteboard exported as PNG");
+    } catch (error) {
+      console.error("Failed to export PNG:", error);
+      toast.error("Failed to export whiteboard as PNG.");
+    }
+  };
+
+  const handleExportPDF = () => {
+    if (!canvasRef.current) {
+      toast.error("Canvas is not ready for export.");
+      return;
+    }
+    try {
+      const filename = `whiteboard-${roomId || "export"}-${Date.now()}.pdf`;
+      exportCanvasToPDF(canvasRef.current, filename);
+      toast.success("Whiteboard exported as PDF");
+    } catch (error) {
+      console.error("Failed to export PDF:", error);
+      toast.error("Failed to export whiteboard as PDF.");
+    }
+  };
+
   return (
     <div
       ref={containerRef}
       className="w-full h-full flex flex-col bg-slate-950"
     >
-      <div className="flex items-center gap-3 p-3 border-b border-slate-800 bg-slate-900">
+      <div className="flex items-center gap-3 p-3 border-b border-slate-800 bg-slate-900 flex-wrap">
         <button
           onClick={() => setTool("pen")}
           className={`px-3 py-1 rounded text-sm ${tool === "pen"
@@ -512,9 +544,25 @@ export default function Canvas({ roomId }: Props) {
           onChange={(e) =>
             setColor(e.target.value)
           }
-          className="w-10 h-10 bg-transparent border-none"
+          className="w-10 h-10 bg-transparent border-none cursor-pointer"
         />
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleExportPNG}
+            className="px-3 py-1 rounded text-sm bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1.5 transition-colors"
+            title="Export canvas as PNG image"
+          >
+            <Download className="w-4 h-4" />
+            Export PNG
+          </button>
+          <button
+            onClick={handleExportPDF}
+            className="px-3 py-1 rounded text-sm bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-1.5 transition-colors"
+            title="Export canvas as PDF document"
+          >
+            <FileText className="w-4 h-4" />
+            Export PDF
+          </button>
           <button
             onClick={undoLastStroke}
             disabled={!canUndo}
