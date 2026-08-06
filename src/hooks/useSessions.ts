@@ -180,16 +180,16 @@ export function useSessions(user: any) {
           const state = roomChannel.presenceState();
           setParticipantCount(Math.max(1, Object.keys(state).length));
         })
-        .on("broadcast", { event: "typing" }, ({ payload }) => {
-          if (payload.user === (user?.user_metadata?.full_name || "Someone")) return;
+        .on("broadcast", { event: "typing" }, ({ payload }: { payload: { user?: string } }) => {
+          if (!payload.user || payload.user === (user?.user_metadata?.full_name || "Someone")) return;
           setTypingUser(payload.user);
           clearTimeout(typingTimeoutRef.current);
           typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
         })
-        .on("broadcast", { event: "activity" }, ({ payload }) => {
+        .on("broadcast", { event: "activity" }, ({ payload }: { payload: any }) => {
           setActivities((prev) => [payload, ...prev]);
         })
-        .subscribe(async (status) => {
+        .subscribe(async (status: string) => {
           if (status === "SUBSCRIBED" && isMounted) {
             await roomChannel.track({ online_at: new Date().toISOString() });
 
