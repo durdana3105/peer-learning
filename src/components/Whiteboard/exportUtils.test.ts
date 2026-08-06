@@ -20,31 +20,61 @@ vi.mock("jspdf", () => {
 
 describe("exportUtils", () => {
   let dummyCanvas: HTMLCanvasElement;
+  let mockContext: { fillStyle: string; fillRect: ReturnType<typeof vi.fn>; drawImage: ReturnType<typeof vi.fn> };
+  let mockOffscreenCanvas: HTMLCanvasElement;
+  const realCreateElement = document.createElement.bind(document);
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    dummyCanvas = document.createElement("canvas");
+    dummyCanvas = realCreateElement("canvas");
     dummyCanvas.width = 800;
     dummyCanvas.height = 600;
 
-    // Mock HTMLCanvasElement.prototype.toDataURL if needed in jsdom
-    dummyCanvas.toDataURL = vi.fn().mockReturnValue("data:image/png;base64,fakeData");
-
-    const mockContext = {
+    mockContext = {
       fillStyle: "",
       fillRect: vi.fn(),
       drawImage: vi.fn(),
-    } as unknown as CanvasRenderingContext2D;
+    };
 
-    dummyCanvas.getContext = vi.fn().mockReturnValue(mockContext);
+    mockOffscreenCanvas = {
+      width: 0,
+      height: 0,
+      getContext: vi.fn().mockReturnValue(mockContext),
+      toDataURL: vi.fn().mockReturnValue("data:image/png;base64,fakeData"),
+    } as unknown as HTMLCanvasElement;
+
+    vi.spyOn(document, "createElement").mockImplementation((tagName: string) => {
+      if (tagName === "canvas") {
+        return mockOffscreenCanvas;
+      }
+      return realCreateElement(tagName);
+    });
   });
 
   describe("getExportCanvasDataURL", () => {
     it("returns a data URL string after filling background", () => {
       const dataUrl = getExportCanvasDataURL(dummyCanvas, "#020617");
 
+      expect(mockContext.fillStyle).toBe("#020617");
+      expect(mockContext.fillRect).toHaveBeenCalledWith(0, 0, 800, 600);
+      expect(mockContext.drawImage).toHaveBeenCalledWith(dummyCanvas, 0, 0);
+      expect(mockOffscreenCanvas.toDataURL).toHaveBeenCalledWith("image/png");
       expect(dataUrl).toBe("data:image/png;base64,fakeData");
+    });
+
+    it("throws an error when canvas has zero width or zero height", () => {
+      dummyCanvas.width = 0;
+      dummyCanvas.height = 600;
+      expect(() => getExportCanvasDataURL(dummyCanvas)).toThrow(
+        "Canvas dimensions must be greater than zero."
+      );
+
+      dummyCanvas.width = 800;
+      dummyCanvas.height = 0;
+      expect(() => getExportCanvasDataURL(dummyCanvas)).toThrow(
+        "Canvas dimensions must be greater than zero."
+      );
     });
   });
 
@@ -54,14 +84,16 @@ describe("exportUtils", () => {
       const removeChildSpy = vi.spyOn(document.body, "removeChild");
       const clickSpy = vi.fn();
 
-      const createElementOriginal = document.createElement.bind(document);
       vi.spyOn(document, "createElement").mockImplementation((tagName: string) => {
         if (tagName === "a") {
-          const anchor = createElementOriginal("a");
+          const anchor = realCreateElement("a");
           anchor.click = clickSpy;
           return anchor;
         }
-        return createElementOriginal(tagName);
+        if (tagName === "canvas") {
+          return mockOffscreenCanvas;
+        }
+        return realCreateElement(tagName);
       });
 
       exportCanvasToPNG(dummyCanvas, "test-whiteboard.png");
@@ -69,8 +101,6 @@ describe("exportUtils", () => {
       expect(appendChildSpy).toHaveBeenCalled();
       expect(clickSpy).toHaveBeenCalled();
       expect(removeChildSpy).toHaveBeenCalled();
-
-      vi.restoreAllMocks();
     });
   });
 

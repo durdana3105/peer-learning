@@ -8,6 +8,10 @@ export const getExportCanvasDataURL = (
   canvas: HTMLCanvasElement,
   backgroundColor: string = "#020617"
 ): string => {
+  if (canvas.width === 0 || canvas.height === 0) {
+    throw new Error("Canvas dimensions must be greater than zero.");
+  }
+
   const offscreen = document.createElement("canvas");
   offscreen.width = canvas.width;
   offscreen.height = canvas.height;

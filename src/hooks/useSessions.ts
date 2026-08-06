@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { REALTIME_SUBSCRIBE_STATES } from "@supabase/supabase-js";
 import { useAwardXP } from "@/hooks/useAwardXP";
 import { useToast } from "@/hooks/use-toast";
 import { API_BASE_URL } from "@/config/api";
@@ -10,6 +11,16 @@ const TAB_TO_STATUS: Record<string, string[]> = {
   Joined: ["live"],
   Completed: ["ended"],
 };
+
+interface TypingPayload {
+  user: string;
+}
+
+interface ActivityPayload {
+  id: number;
+  text: string;
+  time: string;
+}
 
 export function useSessions(user: any) {
   const { mutate: awardXP } = useAwardXP();
@@ -180,16 +191,16 @@ export function useSessions(user: any) {
           const state = roomChannel.presenceState();
           setParticipantCount(Math.max(1, Object.keys(state).length));
         })
-        .on("broadcast", { event: "typing" }, ({ payload }: { payload: any }) => {
+        .on("broadcast", { event: "typing" }, ({ payload }: { payload: TypingPayload }) => {
           if (payload.user === (user?.user_metadata?.full_name || "Someone")) return;
           setTypingUser(payload.user);
           clearTimeout(typingTimeoutRef.current);
           typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
         })
-        .on("broadcast", { event: "activity" }, ({ payload }: { payload: any }) => {
+        .on("broadcast", { event: "activity" }, ({ payload }: { payload: ActivityPayload }) => {
           setActivities((prev) => [payload, ...prev]);
         })
-        .subscribe(async (status: string) => {
+        .subscribe(async (status: `${REALTIME_SUBSCRIBE_STATES}`) => {
           if (status === "SUBSCRIBED" && isMounted) {
             await roomChannel.track({ online_at: new Date().toISOString() });
 
