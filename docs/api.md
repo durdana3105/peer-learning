@@ -130,3 +130,11 @@ Sends a browser push notification to all subscribed devices for a given `user_id
 ```
 
 **Security**: Standard users may only send push notifications to themselves (IDOR prevention). Webhook callers authenticated via `WEBHOOK_SECRET` may send to any user.
+
+### `POST /api/upload`
+
+Uploads generic project resources with magic byte validation (accepted types: avatars, resources).
+
+### `POST /api/users/upload-photo`
+
+Uploads user profile photos (avatars) with magic byte validation.
