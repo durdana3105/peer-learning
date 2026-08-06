@@ -8,6 +8,7 @@ const MAX_PUSH_ATTEMPTS = 5;
 // ─── Shared mutable state across mock DB calls ───────────────────────────────
 let dbRows = [];
 let subscriptionStore = []; // { id, user_id, endpoint, p256dh, auth }
+let profileStore = []; // { id, notification_preferences }
 let endpointBehavior = {}; // endpoint -> "success" | "fail" | "expired"
 
 const makeSupabaseMock = () => {
@@ -104,6 +105,13 @@ const makeSupabaseMock = () => {
           return resolve({ data: subs, error: null });
         }
 
+        // Preference lookup for claimed notification recipients.
+        if (table === "profiles" && !_operation) {
+          const userIds = _filters["id__in"] || [];
+          const rows = profileStore.filter((p) => userIds.includes(p.id));
+          return resolve({ data: rows, error: null });
+        }
+
         return resolve({ data: [], error: null });
       },
     };
@@ -164,6 +172,7 @@ const seedRow = (overrides = {}) => ({
   title: "Title",
   body: "Body",
   action_url: "/notifications",
+  type: "message",
   push_sent_at: null,
   push_claimed_at: null,
   push_failed_at: null,
@@ -184,6 +193,7 @@ describe("dispatchPushNotifications", () => {
     endpointBehavior = {};
     dbRows = [];
     subscriptionStore = [];
+    profileStore = [];
     app = await buildApp();
   });
 
@@ -361,4 +371,43 @@ describe("dispatchPushNotifications", () => {
       expect(res2.body).toEqual({ sent: 1, processed: 1 });
     });
   });
+
+
+  describe("notification preferences (issue #1900)", () => {
+    it("skips push delivery when the category inApp preference is disabled", async () => {
+      dbRows = [
+        seedRow({ id: "notif-muted", user_id: "user-muted", type: "message" }),
+      ];
+      subscriptionStore = [
+        {
+          id: "sub-muted",
+          user_id: "user-muted",
+          endpoint: "ep-muted",
+          p256dh: "k",
+          auth: "a",
+        },
+      ];
+      profileStore = [
+        {
+          id: "user-muted",
+          notification_preferences: {
+            messages: { inApp: false },
+            sessions: { inApp: true },
+            friends: { inApp: true },
+          },
+        },
+      ];
+      endpointBehavior["ep-muted"] = "success";
+
+      const webpush = (await import("web-push")).default;
+      webpush.sendNotification.mockClear();
+
+      const res = await request(app).post("/dispatch");
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ sent: 0, processed: 1 });
+      expect(dbRows[0].push_sent_at).not.toBeNull();
+      expect(webpush.sendNotification).not.toHaveBeenCalled();
+    });
+  });
+
 });
