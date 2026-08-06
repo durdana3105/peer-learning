@@ -164,9 +164,10 @@ export function useNotifications(userId?: string) {
             return [incoming, ...current];
           });
 
-          // Re-fetch the authoritative unread count rather than incrementing
-          // locally, since the loaded page may not include every notification.
-          fetchUnreadCount();
+          // Increment locally since Realtime can sometimes beat the read replica
+          if (!incoming.read) {
+            setUnreadCount((current) => current + 1);
+          }
 
           // Check focus mode before showing popup
           supabase.from('profiles').select('is_in_focus_mode').eq('id', userId).single().then(({ data }) => {
