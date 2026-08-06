@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { useRole } from "@/contexts/RoleContext";
 import { useAuth } from "@/contexts/useAuth";
@@ -7,36 +6,13 @@ import { supabase } from "@/integrations/supabase/client";
 import SessionCard from "@/components/SessionCard";
 import { MentorshipMilestones } from "@/components/mentorship/MentorshipMilestones";
 import type { Session } from "@/types";
-
-type MentorSessionRow = {
-  id: number;
-  title: string | null;
-  scheduled_at: string | null;
-  duration_minutes: number | null;
-  status: string | null;
-};
+import { toSessionCardModel, type MentorSessionRow } from "./mentorSessionCard";
 
 type MentorProfile = {
   name: string | null;
   sessions_completed: number | null;
   points: number | null;
   rating: number | null;
-};
-
-const toSessionCardModel = (session: MentorSessionRow): Session => {
-  const scheduledAt = session.scheduled_at ? new Date(session.scheduled_at) : null;
-
-  return {
-    id: String(session.id),
-    peerId: "",
-    peerName: "Learner",
-    peerAvatar: "/placeholder.svg",
-    subject: session.title || "Mentorship session",
-    date: scheduledAt ? scheduledAt.toLocaleDateString() : "Not scheduled",
-    time: scheduledAt ? scheduledAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
-    duration: session.duration_minutes ?? 60,
-    status: session.status === "ended" || session.status === "completed" ? "completed" : "upcoming",
-  };
 };
 
 const MentorDashboard = () => {
@@ -69,16 +45,20 @@ const MentorDashboard = () => {
           setProfile(profileData);
         }
 
-        // Fetch Upcoming Mentor Sessions
+        // Fetch Upcoming Mentor Sessions with booked learner profiles
         const { data: sessionData } = await supabase
           .from("sessions")
-          .select("id,title,scheduled_at,duration_minutes,status")
+          .select(
+            "id,title,scheduled_at,duration_minutes,status,student_id, student:profiles!student_id(id, name, avatar_url)"
+          )
           .eq("status", "scheduled")
           .eq("mentor_id", user.id)
           .limit(4);
 
         if (sessionData) {
-          setUpcomingSessions(sessionData.map(toSessionCardModel));
+          setUpcomingSessions(
+            (sessionData as MentorSessionRow[]).map(toSessionCardModel)
+          );
         }
       } catch (err) {
         console.error("Failed to fetch mentor dashboard data", err);
@@ -158,4 +138,3 @@ const MentorDashboard = () => {
 };
 
 export default MentorDashboard;
-
