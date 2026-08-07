@@ -131,10 +131,42 @@ Sends a browser push notification to all subscribed devices for a given `user_id
 
 **Security**: Standard users may only send push notifications to themselves (IDOR prevention). Webhook callers authenticated via `WEBHOOK_SECRET` may send to any user.
 
+## Upload Routes (`/api/upload` & `/api/users/upload-photo`)
+
 ### `POST /api/upload`
 
-Uploads generic project resources with magic byte validation (accepted types: avatars, resources).
+Uploads generic project resources with magic byte validation.
+
+**Auth**: Requires a valid Supabase JWT token in `Authorization: Bearer <token>` or `access_token` cookie.  
+**Content-Type**: `multipart/form-data`  
+**Form Fields**:
+- `file` (File, required): The file to upload.
+- `folder` (string, required): Permitted values are `avatars` or `resources`.
+
+**Response** (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "url": "https://<supabase-url>/storage/v1/object/public/resources/user-id/filename.pdf"
+  }
+}
+```
 
 ### `POST /api/users/upload-photo`
 
 Uploads user profile photos (avatars) with magic byte validation.
+
+**Auth**: Requires a valid Supabase JWT token in `Authorization: Bearer <token>` or `access_token` cookie.  
+**Content-Type**: `multipart/form-data`  
+**Form Fields**:
+- `profilePhoto` (File, required): The profile image file (max size: 2 MiB).
+
+**Response** (`200 OK`):
+```json
+{
+  "success": true,
+  "fileUrl": "https://<supabase-url>/storage/v1/object/public/avatars/user-id/filename.png"
+}
+```
+

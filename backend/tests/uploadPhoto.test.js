@@ -166,8 +166,10 @@ describe("POST /api/users/upload-photo", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    // Filename must contain the authenticated user's ID
+    // Filename/path must contain the authenticated user's ID
     expect(res.body.fileUrl).toContain(TEST_USER_ID);
+    const pathSegments = new URL(res.body.fileUrl).pathname.split("/").filter(Boolean);
+    expect(pathSegments).toContain(TEST_USER_ID);
   });
 
   it("returns 200 when a valid JWT is supplied via HttpOnly cookie", async () => {
