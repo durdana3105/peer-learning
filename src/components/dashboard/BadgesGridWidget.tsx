@@ -8,7 +8,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { getStreakData } from "@/lib/streakSystem";
-import { ALL_ACHIEVEMENTS } from "@/lib/gamification";
+import {
+  ALL_ACHIEVEMENTS,
+  isAchievementUnlocked,
+  type AchievementStats,
+} from "@/lib/gamification";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/useAuth";
 
 interface Badge {
   id: string;
@@ -19,34 +25,69 @@ interface Badge {
   unlockedAt?: string;
 }
 
+async function loadAchievementStats(userId: string): Promise<AchievementStats> {
+  const [streakData, activityResult, rankResult] = await Promise.all([
+    getStreakData(),
+    supabase.from("user_activity_log").select("activity_type").eq("user_id", userId),
+    supabase.rpc("get_user_rank", { p_user_id: userId }),
+  ]);
+
+  const activityCounts: Record<string, number> = {};
+  for (const row of activityResult.data ?? []) {
+    const type = row.activity_type as string;
+    if (!type) continue;
+    activityCounts[type] = (activityCounts[type] ?? 0) + 1;
+  }
+
+  const rank =
+    typeof rankResult.data === "number"
+      ? rankResult.data
+      : Number.isFinite(Number(rankResult.data))
+        ? Number(rankResult.data)
+        : null;
+
+  return {
+    totalXP: streakData.totalXP || 0,
+    streak: streakData.streak || 0,
+    activityCounts,
+    rank,
+  };
+}
+
 export default function BadgesGridWidget() {
+  const { user } = useAuth();
   const [badges, setBadges] = useState<Badge[]>([]);
 
   useEffect(() => {
     let mounted = true;
     async function loadBadges() {
+      if (!user) {
+        if (mounted) setBadges([]);
+        return;
+      }
+
       try {
-        const data = await getStreakData();
+        const stats = await loadAchievementStats(user.id);
         if (!mounted) return;
-        const totalXP = data.totalXP || 0;
-        
-        // Map first 5 achievements for the grid
+
         const mappedBadges = ALL_ACHIEVEMENTS.slice(0, 5).map((achievement) => ({
           id: achievement.id,
           name: achievement.name,
           description: achievement.description,
           icon: achievement.icon,
-          unlocked: totalXP >= achievement.xpRequired,
+          unlocked: isAchievementUnlocked(achievement, stats),
         }));
-        
+
         setBadges(mappedBadges);
       } catch (error) {
         console.error("Failed to load badges data:", error);
       }
     }
     loadBadges();
-    return () => { mounted = false; };
-  }, []);
+    return () => {
+      mounted = false;
+    };
+  }, [user]);
 
   const unlockedCount = badges.filter((b) => b.unlocked).length;
 
