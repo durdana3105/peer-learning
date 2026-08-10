@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SessionCard from "@/components/SessionCard";
 import { MentorshipMilestones } from "@/components/mentorship/MentorshipMilestones";
+import { sessionJoinPath } from "@/lib/sessionJoinPath";
 import type { Session } from "@/types";
 import { toSessionCardModel, type MentorSessionRow } from "./mentorSessionCard";
 
@@ -13,6 +14,25 @@ type MentorProfile = {
   sessions_completed: number | null;
   points: number | null;
   rating: number | null;
+};
+
+
+const toSessionCardModel = (session: MentorSessionRow): Session => {
+  const scheduledAt = session.scheduled_at ? new Date(session.scheduled_at) : null;
+  const id = String(session.id);
+
+  return {
+    id,
+    peerId: "",
+    peerName: "Learner",
+    peerAvatar: "/placeholder.svg",
+    subject: session.title || "Mentorship session",
+    date: scheduledAt ? scheduledAt.toLocaleDateString() : "Not scheduled",
+    time: scheduledAt ? scheduledAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
+    duration: session.duration_minutes ?? 60,
+    status: session.status === "ended" || session.status === "completed" ? "completed" : "upcoming",
+    joinHref: session.id != null ? sessionJoinPath(session.id) : null,
+  };
 };
 
 const MentorDashboard = () => {
