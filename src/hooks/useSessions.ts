@@ -39,6 +39,17 @@ export function useSessions(user: any) {
   const [participantCount, setParticipantCount] = useState(1);
   const [isVideoActive, setIsVideoActive] = useState(false);
   const [sessionSummary, setSessionSummary] = useState<any>(null);
+  const [myRsvp, setMyRsvp] = useState<
+  "going" | "maybe" | "cant_attend" | null
+>(null);
+
+const [rsvpCounts, setRsvpCounts] = useState({
+  going: 0,
+  maybe: 0,
+  cant_attend: 0,
+});
+
+const [rsvpLoading, setRsvpLoading] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [studyTime, setStudyTime] = useState(60 * 60);
 
@@ -114,10 +125,17 @@ export function useSessions(user: any) {
   // - messages: without this, the previous session's thread stays rendered
   //   for the whole fetch round-trip after switching.
   useEffect(() => {
-    setParticipantCount(1);
-    setSessionSummary(null);
-    setMessages([]);
-  }, [selectedSession]);
+  setParticipantCount(1);
+  setSessionSummary(null);
+  setMessages([]);
+
+  setMyRsvp(null);
+  setRsvpCounts({
+    going: 0,
+    maybe: 0,
+    cant_attend: 0,
+  });
+}, [selectedSession]);
 
   useEffect(() => {
     if (!selectedSession) return;
@@ -267,7 +285,92 @@ export function useSessions(user: any) {
       window.removeEventListener("click", handleActivity);
     };
   }, []);
+const fetchRsvpData = useCallback(async () => {
+  if (!selectedSession || !user?.id) {
+    return;
+  }
 
+  try {
+    const { data, error } = await (supabase as any).rpc(
+      "get_session_rsvp_summary",
+      {
+        p_session_id: selectedSession.id,
+      }
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    const summary = Array.isArray(data) ? data[0] : data;
+
+    setMyRsvp(summary?.my_status ?? null);
+
+    setRsvpCounts({
+      going: Number(summary?.going_count ?? 0),
+      maybe: Number(summary?.maybe_count ?? 0),
+      cant_attend: Number(summary?.cant_attend_count ?? 0),
+    });
+  } catch (error) {
+    console.error("Failed to fetch RSVP data:", error);
+
+    setMyRsvp(null);
+    setRsvpCounts({
+      going: 0,
+      maybe: 0,
+      cant_attend: 0,
+    });
+  }
+}, [selectedSession, user]);
+
+useEffect(() => {
+  fetchRsvpData();
+}, [fetchRsvpData]);
+
+const updateRsvp = useCallback(
+  async (status: "going" | "maybe" | "cant_attend") => {
+    if (!selectedSession || !user?.id) return;
+
+    setRsvpLoading(true);
+
+    try {
+      const { error } = await (supabase as any).rpc(
+        "set_session_rsvp",
+        {
+          p_session_id: selectedSession.id,
+          p_status: status,
+        }
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      setMyRsvp(status);
+
+      toast({
+        title: "RSVP updated",
+        description:
+          status === "going"
+            ? "You're marked as going."
+            : status === "maybe"
+              ? "You're marked as maybe."
+              : "You're marked as unable to attend.",
+      });
+
+      await fetchRsvpData();
+    } catch (error: any) {
+      toast({
+        title: "Unable to update RSVP",
+        description: error.message || "Failed to update RSVP.",
+        variant: "destructive",
+      });
+    } finally {
+      setRsvpLoading(false);
+    }
+  },
+  [selectedSession, user, fetchRsvpData, toast]
+);
   const handleJoinSession = useCallback(async (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
     try {
@@ -439,6 +542,10 @@ export function useSessions(user: any) {
     studyTime,
     isFocusMode,
     setIsFocusMode,
+    myRsvp,
+    rsvpCounts,
+    rsvpLoading,
+    updateRsvp,
     handleJoinSession,
     sendMessage,
     togglePinMessage,

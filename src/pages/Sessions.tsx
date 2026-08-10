@@ -30,6 +30,10 @@ export default function Sessions() {
     studyTime,
     isFocusMode,
     setIsFocusMode,
+    myRsvp,
+    rsvpCounts,
+    rsvpLoading,
+    updateRsvp,
     handleJoinSession,
     sendMessage,
     sendTypingEvent,
@@ -99,6 +103,10 @@ export default function Sessions() {
               studyTime={studyTime}
               isFocusMode={isFocusMode}
               setIsFocusMode={setIsFocusMode}
+              myRsvp={myRsvp}
+              rsvpCounts={rsvpCounts}
+              rsvpLoading={rsvpLoading}
+              updateRsvp={updateRsvp}
               togglePinMessage={togglePinMessage}
               sendMessage={sendMessage}
               sendTypingEvent={sendTypingEvent}
