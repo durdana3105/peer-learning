@@ -11,7 +11,7 @@ const TAB_TO_STATUS: Record<string, string[]> = {
   Completed: ["ended"],
 };
 
-export function useSessions(user: any) {
+export function useSessions(user: any, deepLinkSessionId?: string | null) {
   const { mutate: awardXP } = useAwardXP();
   const { toast } = useToast();
 
@@ -70,13 +70,25 @@ const [rsvpLoading, setRsvpLoading] = useState(false);
       if (!error && data) {
         setSessions(data);
         if (data.length > 0) {
-          setSelectedSession(data[0]);
+          const deepLinked = deepLinkSessionId
+            ? data.find((s) => String(s.id) === String(deepLinkSessionId))
+            : null;
+
+          if (deepLinked) {
+            const status = deepLinked.status?.toLowerCase();
+            if (status === "live") setSelectedTab("Joined");
+            else if (status === "ended" || status === "completed") setSelectedTab("Completed");
+            else setSelectedTab("Upcoming");
+            setSelectedSession(deepLinked);
+          } else {
+            setSelectedSession(data[0]);
+          }
         }
       }
     };
 
     fetchSessions();
-  }, []);
+  }, [deepLinkSessionId]);
 
   const filteredSessions = useMemo(() => {
     let filtered = sessions;
