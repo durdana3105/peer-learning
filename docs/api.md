@@ -131,6 +131,47 @@ Sends a browser push notification to all subscribed devices for a given `user_id
 
 **Security**: Standard users may only send push notifications to themselves (IDOR prevention). Webhook callers authenticated via `WEBHOOK_SECRET` may send to any user.
 
+
+## Upload Routes (`/api/upload` & `/api/users/upload-photo`)
+
+### `POST /api/upload`
+
+Uploads generic project resources with magic byte validation.
+
+**Auth**: Requires a valid Supabase JWT token in `Authorization: Bearer <token>` or `access_token` cookie.  
+**Content-Type**: `multipart/form-data`  
+**Form Fields**:
+- `file` (File, required): The file to upload.
+- `folder` (string, required): Permitted values are `avatars` or `resources`.
+
+**Response** (`200 OK`):
+```json
+{
+  "success": true,
+  "data": {
+    "url": "https://<supabase-url>/storage/v1/object/public/resources/user-id/filename.pdf"
+  }
+}
+```
+
+### `POST /api/users/upload-photo`
+
+Uploads user profile photos (avatars) with magic byte validation.
+
+**Auth**: Requires a valid Supabase JWT token in `Authorization: Bearer <token>` or `access_token` cookie.  
+**Content-Type**: `multipart/form-data`  
+**Form Fields**:
+- `profilePhoto` (File, required): The profile image file (max size: 2 MiB).
+
+**Response** (`200 OK`):
+```json
+{
+  "success": true,
+  "fileUrl": "https://<supabase-url>/storage/v1/object/public/avatars/user-id/filename.png"
+}
+```
+
+
 ## File Upload Routes
 
 Authenticated multipart uploads are written to Supabase Storage. Storage paths are generated on the server from the caller's user id — clients cannot choose arbitrary object keys.
@@ -164,3 +205,4 @@ Profile-photo upload into the `profiles` bucket (2MB limit).
 - Strict image MIME allow-list
 - Magic byte verification that file content matches the declared image type
 - Per-user rate limit (10 uploads per hour)
+
