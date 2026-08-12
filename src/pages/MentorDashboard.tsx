@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import SessionCard from "@/components/SessionCard";
 import { MentorshipMilestones } from "@/components/mentorship/MentorshipMilestones";
+import { sessionJoinPath } from "@/lib/sessionJoinPath";
 import type { Session } from "@/types";
 
 type MentorSessionRow = {
@@ -25,9 +26,10 @@ type MentorProfile = {
 
 const toSessionCardModel = (session: MentorSessionRow): Session => {
   const scheduledAt = session.scheduled_at ? new Date(session.scheduled_at) : null;
+  const id = String(session.id);
 
   return {
-    id: String(session.id),
+    id,
     peerId: "",
     peerName: "Learner",
     peerAvatar: "/placeholder.svg",
@@ -36,6 +38,7 @@ const toSessionCardModel = (session: MentorSessionRow): Session => {
     time: scheduledAt ? scheduledAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
     duration: session.duration_minutes ?? 60,
     status: session.status === "ended" || session.status === "completed" ? "completed" : "upcoming",
+    joinHref: session.id != null ? sessionJoinPath(session.id) : null,
   };
 };
 

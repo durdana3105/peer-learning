@@ -5,7 +5,18 @@ import {
   getBadgeByXP,
   getAchievements,
   getXPForActivity,
+  isAchievementUnlocked,
+  ALL_ACHIEVEMENTS,
+  type AchievementStats,
 } from "./gamification";
+
+const baseStats = (overrides: Partial<AchievementStats> = {}): AchievementStats => ({
+  totalXP: 0,
+  streak: 0,
+  activityCounts: {},
+  rank: null,
+  ...overrides,
+});
 
 describe("Gamification Utility Functions", () => {
   describe("calculateLevel", () => {
@@ -48,21 +59,65 @@ describe("Gamification Utility Functions", () => {
     });
   });
 
+  describe("isAchievementUnlocked", () => {
+    it("unlocks XP badges from totalXP alone", () => {
+      const firstSteps = ALL_ACHIEVEMENTS.find((a) => a.id === "first_steps")!;
+      expect(isAchievementUnlocked(firstSteps, baseStats({ totalXP: 49 }))).toBe(false);
+      expect(isAchievementUnlocked(firstSteps, baseStats({ totalXP: 50 }))).toBe(true);
+    });
+
+    it("does not unlock activity badges from XP alone", () => {
+      const activeLearner = ALL_ACHIEVEMENTS.find((a) => a.id === "active_learner")!;
+      const sessionHost = ALL_ACHIEVEMENTS.find((a) => a.id === "session_host")!;
+      const communityMentor = ALL_ACHIEVEMENTS.find((a) => a.id === "community_mentor")!;
+
+      const highXpNoActivity = baseStats({ totalXP: 5000 });
+      expect(isAchievementUnlocked(activeLearner, highXpNoActivity)).toBe(false);
+      expect(isAchievementUnlocked(sessionHost, highXpNoActivity)).toBe(false);
+      expect(isAchievementUnlocked(communityMentor, highXpNoActivity)).toBe(false);
+    });
+
+    it("unlocks activity badges when the required activity count is met", () => {
+      const activeLearner = ALL_ACHIEVEMENTS.find((a) => a.id === "active_learner")!;
+      const sessionHost = ALL_ACHIEVEMENTS.find((a) => a.id === "session_host")!;
+
+      expect(
+        isAchievementUnlocked(
+          activeLearner,
+          baseStats({ activityCounts: { session_join: 1 } })
+        )
+      ).toBe(true);
+
+      expect(
+        isAchievementUnlocked(
+          sessionHost,
+          baseStats({ activityCounts: { host_session: 1 } })
+        )
+      ).toBe(false);
+
+      expect(
+        isAchievementUnlocked(
+          sessionHost,
+          baseStats({ activityCounts: { host_session: 2 } })
+        )
+      ).toBe(true);
+    });
+  });
+
   describe("getAchievements", () => {
-    it("should return no achievements if below 50 XP", () => {
-      expect(getAchievements(49)).toEqual([]);
+    it("should return no achievements if below 50 XP and without activity", () => {
+      expect(getAchievements(baseStats({ totalXP: 49 }))).toEqual([]);
     });
 
     it("should return First Steps for 50 XP", () => {
-      expect(getAchievements(50)).toEqual(["First Steps"]);
+      expect(getAchievements(baseStats({ totalXP: 50 }))).toEqual(["First Steps"]);
     });
 
-    it("should return multiple achievements as XP grows", () => {
-      const achievements = getAchievements(550);
+    it("should require activity for Active Learner even with high XP", () => {
+      const achievements = getAchievements(baseStats({ totalXP: 550 }));
       expect(achievements).toContain("First Steps");
-      expect(achievements).toContain("Active Learner");
-      expect(achievements).toContain("Knowledge Explorer");
-      expect(achievements).not.toContain("Consistency King");
+      expect(achievements).not.toContain("Active Learner");
+      expect(achievements).not.toContain("Knowledge Explorer");
     });
   });
 

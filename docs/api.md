@@ -131,6 +131,7 @@ Sends a browser push notification to all subscribed devices for a given `user_id
 
 **Security**: Standard users may only send push notifications to themselves (IDOR prevention). Webhook callers authenticated via `WEBHOOK_SECRET` may send to any user.
 
+
 ## Upload Routes (`/api/upload` & `/api/users/upload-photo`)
 
 ### `POST /api/upload`
@@ -169,4 +170,39 @@ Uploads user profile photos (avatars) with magic byte validation.
   "fileUrl": "https://<supabase-url>/storage/v1/object/public/avatars/user-id/filename.png"
 }
 ```
+
+
+## File Upload Routes
+
+Authenticated multipart uploads are written to Supabase Storage. Storage paths are generated on the server from the caller's user id — clients cannot choose arbitrary object keys.
+
+### `POST /api/upload`
+
+General-purpose upload for `avatars`, `profiles`, and `resources` buckets.
+
+**Auth**: valid Supabase JWT (`Authorization` header or `access_token` cookie)
+
+**Form fields**:
+- `folder`: one of `avatars`, `profiles`, `resources`
+- `file`: the file to upload
+
+**Validation**:
+- MIME type must match the destination folder allow-list
+- Magic byte / content-type verification rejects spoofed uploads
+- Binary content and null bytes are rejected for text resource uploads
+
+### `POST /api/users/upload-photo`
+
+Profile-photo upload into the `profiles` bucket (2MB limit).
+
+**Auth**: valid Supabase JWT (`Authorization` header or `access_token` cookie)
+
+**Form fields**:
+- `profilePhoto`: JPEG, PNG, WebP, or GIF image
+
+**Validation**:
+- 2MB size limit
+- Strict image MIME allow-list
+- Magic byte verification that file content matches the declared image type
+- Per-user rate limit (10 uploads per hour)
 

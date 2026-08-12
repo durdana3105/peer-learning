@@ -25,6 +25,8 @@ export interface Session {
   duration: number;
   status: "upcoming" | "completed" | "cancelled";
   rating?: number;
+  /** Destination for the Join action; omit or null when the session cannot be joined. */
+  joinHref?: string | null;
 }
 
 export interface Message {
