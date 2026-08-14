@@ -604,7 +604,7 @@ export function useMessages(
         });
 
         upsertRawSummary(nextMessage, selectedUser.id, false);
-        awardXP.mutate({ activity: "chat_message" });
+        awardXP.mutate({ activity: "chat_message", referenceId: nextMessage.id });
       }
       return true;
     } catch (err: any) {
