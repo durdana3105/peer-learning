@@ -15,6 +15,8 @@ interface ChatBoxProps {
   onSendMessage: (msg: string) => Promise<void>;
 }
 
+const MAX_MESSAGE_LENGTH = 5000;
+
 export const ChatBox = React.memo(function ChatBox({
   messages,
   user,
@@ -27,9 +29,19 @@ export const ChatBox = React.memo(function ChatBox({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const isValidMessage = newMessage.trim().length > 0 && newMessage.length <= MAX_MESSAGE_LENGTH;
+  const charCount = newMessage.length;
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    if (newValue.length <= MAX_MESSAGE_LENGTH) {
+      setNewMessage(newValue);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!isValidMessage) return;
     const msg = newMessage;
     setNewMessage("");
     await onSendMessage(msg);
@@ -83,22 +95,29 @@ export const ChatBox = React.memo(function ChatBox({
 
       <form
         onSubmit={handleSubmit}
-        className="p-4 border-t border-slate-800 bg-slate-950 flex gap-3"
+        className="flex flex-col gap-2 border-t border-slate-800 bg-slate-950 p-4"
       >
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type your message..."
-          className="flex-1 bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 transition"
-        />
-        <button
-          type="submit"
-          disabled={!newMessage.trim()}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
-        >
-          Send
-        </button>
+        <div className="flex gap-3">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={handleInputChange}
+            placeholder="Type your message..."
+            maxLength={MAX_MESSAGE_LENGTH}
+            className="flex-1 bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 transition"
+          />
+          <button
+            type="submit"
+            disabled={!isValidMessage}
+            title={isValidMessage ? "Send message" : "Message is empty or exceeds limit"}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+          >
+            Send
+          </button>
+        </div>
+        <div className={`text-xs px-1 ${charCount >= MAX_MESSAGE_LENGTH ? "text-red-400" : "text-slate-400"}`}>
+          {charCount} / {MAX_MESSAGE_LENGTH}
+        </div>
       </form>
     </div>
   );

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { API_BASE_URL } from "@/config/api";
 import { logError } from "@/utils/logger";
 import { toast } from "sonner";
+import { sanitizeMessageContent } from "@/utils/sanitize";
 
 export type Message = {
   role: "user" | "assistant";
@@ -75,7 +76,8 @@ export function useChatbot() {
     if (!session?.user) return;
 
     const userId = session.user.id;
-    const userMsg: Message = { role: "user", text: input, user_id: userId };
+    const sanitizedText = sanitizeMessageContent(input);
+    const userMsg: Message = { role: "user", text: sanitizedText, user_id: userId };
 
     const updatedMessages = [...messages, userMsg];
 
@@ -120,7 +122,8 @@ export function useChatbot() {
 
       const data = await res.json();
       const botReply = data?.answer || "No response 😅";
-      const botMsg: Message = { role: "assistant", text: botReply, user_id: userId };
+      const sanitizedBotReply = sanitizeMessageContent(botReply);
+      const botMsg: Message = { role: "assistant", text: sanitizedBotReply, user_id: userId };
 
       // Smoother typing effect (chunked rendering)
       let currentText = "";

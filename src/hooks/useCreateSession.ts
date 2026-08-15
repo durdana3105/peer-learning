@@ -92,15 +92,19 @@ export function useCreateSession({ onSuccess, setOpen }: UseCreateSessionProps) 
       const durationMinutes = resolveDurationMinutes(values);
       const seatLimit = values.seatLimit && values.seatLimit.trim() !== "" ? parseInt(values.seatLimit, 10) : null;
 
-      const { error } = await supabase.from("sessions").insert({
-        title: values.title,
-        description: values.description,
-        scheduled_at: scheduledAt.toISOString(),
-        duration_minutes: durationMinutes,
-        status: "scheduled",
-        mentor_id: user.id,
-        seat_limit: seatLimit,
-      });
+      const { data, error } = await supabase
+        .from("sessions")
+        .insert({
+          title: values.title,
+          description: values.description,
+          scheduled_at: scheduledAt.toISOString(),
+          duration_minutes: durationMinutes,
+          status: "scheduled",
+          mentor_id: user.id,
+          seat_limit: seatLimit,
+        })
+        .select("id")
+        .single();
 
       if (error) throw error;
 
@@ -113,7 +117,7 @@ export function useCreateSession({ onSuccess, setOpen }: UseCreateSessionProps) 
       setSelectedPreset(60);
       setUseCustom(false);
       setOpen(false);
-      awardXP.mutate({ activity: "host_session" });
+      awardXP.mutate({ activity: "host_session", referenceId: data.id });
       onSuccess();
     } catch (error: unknown) {
       const msg =

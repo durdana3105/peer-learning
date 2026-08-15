@@ -15,7 +15,6 @@ const MarkdownRenderer = React.lazy(() =>
 type Profile = {
   id: string;
   name: string | null;
-  email: string | null;
   avatar_url?: string | null;
 };
 
@@ -100,7 +99,7 @@ const ChatBubble = memo(
 );
 
 const getDisplayName = (profile?: Profile | null) =>
-  profile?.name || profile?.email?.split("@")[0] || "Learner";
+  profile?.name?.trim() || "Learner";
 
 const getInitial = (profile?: Profile | null) =>
   getDisplayName(profile).charAt(0).toUpperCase();
@@ -137,7 +136,7 @@ const Chat = () => {
     if (!query) return users;
 
     return users.filter((user) =>
-      `${user.name ?? ""} ${user.email ?? ""}`.toLowerCase().includes(query)
+      `${user.name ?? ""}`.toLowerCase().includes(query)
     );
   }, [search, users]);
 
@@ -169,7 +168,9 @@ const Chat = () => {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("*")
+        // SECURITY (#1924): select only the non-sensitive columns rendered in
+        // the chat sidebar — never email.
+        .select("id, name, avatar_url")
         .neq("id", currentUser.id)
         .order("name", { ascending: true })
         .limit(100);
@@ -403,18 +404,22 @@ const Chat = () => {
     setMessageText("");
     await sendTypingStatus(false);
 
-    const { error } = await supabase.from("messages").insert({
-      sender_id: currentUser.id,
-      receiver_id: selectedUser.id,
-      content,
-      text: content,
-    });
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        sender_id: currentUser.id,
+        receiver_id: selectedUser.id,
+        content,
+        text: content,
+      })
+      .select("id")
+      .single();
 
     if (error) {
       setMessageText(content);
       console.error("Failed to send message:", error.message);
     } else {
-      awardXP.mutate({ activity: "chat_message" });
+      awardXP.mutate({ activity: "chat_message", referenceId: data.id });
     }
   }, [currentUser?.id, messageText, selectedUser?.id, sendTypingStatus, awardXP]);
 

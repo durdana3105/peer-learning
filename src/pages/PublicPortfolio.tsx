@@ -66,15 +66,7 @@ const parseGithubUsername = (url: string) => {
 
 const normalizeArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 
-const sanitizeUrl = (url: string | null | undefined): string => {
-  if (!url) return "";
-  const trimmed = url.trim();
-  const lower = trimmed.toLowerCase();
-  if (lower.startsWith("javascript:") || lower.startsWith("data:") || lower.startsWith("vbscript:")) {
-    return "";
-  }
-  return trimmed;
-};
+import { validateAndNormalizeUrl } from "@/utils/urlValidation";
 
 const PublicPortfolio = () => {
   const { slug } = useParams();
@@ -153,11 +145,11 @@ const PublicPortfolio = () => {
         setPortfolio({
           profile_id: pd.profile_id,
           headline: pd.headline || "",
-          github_url: sanitizeUrl(pd.github_url),
-          linkedin_url: sanitizeUrl(pd.linkedin_url),
+          github_url: validateAndNormalizeUrl(pd.github_url, "github.com"),
+          linkedin_url: validateAndNormalizeUrl(pd.linkedin_url, "linkedin.com"),
           skills: pd.skills || [],
           achievements: normalizeArray<Achievement>(pd.achievements),
-          projects: normalizeArray<Project>(pd.projects).map((p: Project) => ({ ...p, url: sanitizeUrl(p.url) })),
+          projects: normalizeArray<Project>(pd.projects).map((p: Project) => ({ ...p, url: validateAndNormalizeUrl(p.url) })),
           learning_progress: {
             focus:
               typeof progress?.focus === "string"

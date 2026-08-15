@@ -32,7 +32,9 @@ const EditProfile = () => {
 
       const { data } = await supabase
         .from("profiles")
-        .select("*")
+        // SECURITY (#1924): select only the editable columns rendered here —
+        // never email.
+        .select("id, name, bio, skills")
         .eq("id", user.id)
         .maybeSingle();
 

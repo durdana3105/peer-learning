@@ -1,4 +1,5 @@
 import { Flame } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/useAuth";
 import { useSessions } from "@/hooks/useSessions";
 import { SessionFilters } from "@/components/sessions/SessionFilters";
@@ -10,6 +11,8 @@ const tabs = ["Upcoming", "Joined", "Completed"];
 
 export default function Sessions() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const deepLinkSessionId = searchParams.get("session");
   
   const {
     filteredSessions,
@@ -30,13 +33,17 @@ export default function Sessions() {
     studyTime,
     isFocusMode,
     setIsFocusMode,
+    myRsvp,
+    rsvpCounts,
+    rsvpLoading,
+    updateRsvp,
     handleJoinSession,
     sendMessage,
     sendTypingEvent,
     handleLeaveVideo,
     handleJoinVideo,
     togglePinMessage,
-  } = useSessions(user);
+  } = useSessions(user, deepLinkSessionId);
 
   return (
     <div className="min-h-screen bg-[#020617] text-white overflow-hidden">
@@ -60,7 +67,7 @@ export default function Sessions() {
         />
 
         {/* CONTENT */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
           {/* LEFT SIDE */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2 mb-6">
@@ -99,6 +106,10 @@ export default function Sessions() {
               studyTime={studyTime}
               isFocusMode={isFocusMode}
               setIsFocusMode={setIsFocusMode}
+              myRsvp={myRsvp}
+              rsvpCounts={rsvpCounts}
+              rsvpLoading={rsvpLoading}
+              updateRsvp={updateRsvp}
               togglePinMessage={togglePinMessage}
               sendMessage={sendMessage}
               sendTypingEvent={sendTypingEvent}

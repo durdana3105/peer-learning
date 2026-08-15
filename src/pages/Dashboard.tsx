@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/useAuth";
 import { useRole } from "@/contexts/RoleContext";
 import { supabase } from "@/integrations/supabase/client";
 import { API_BASE_URL } from "@/config/api";
+import { sessionJoinPath } from "@/lib/sessionJoinPath";
+import type { Session as SessionCardModel } from "@/types";
 const AnalyticsCharts = lazy(() => import("@/components/AnalyticsCharts"));
 
 interface Profile {
@@ -32,12 +34,35 @@ interface Profile {
   timezone: string | null;
   focus_time_this_week: number | null;
 }
-interface Session {
-  id: string;
-  status: string;
-  title?: string;
-  date?: string;
-}
+
+const toDashboardSessionCard = (row: {
+  id: string | number;
+  title?: string | null;
+  scheduled_at?: string | null;
+  duration_minutes?: number | null;
+  status?: string | null;
+  mentor_id?: string | null;
+  student_id?: string | null;
+}): SessionCardModel => {
+  const scheduledAt = row.scheduled_at ? new Date(row.scheduled_at) : null;
+  const id = String(row.id);
+
+  return {
+    id,
+    peerId: row.mentor_id || row.student_id || "",
+    peerName: "Peer",
+    peerAvatar: "/placeholder.svg",
+    subject: row.title || "Session",
+    date: scheduledAt ? scheduledAt.toLocaleDateString() : "Not scheduled",
+    time: scheduledAt
+      ? scheduledAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : "",
+    duration: row.duration_minutes ?? 60,
+    status:
+      row.status === "ended" || row.status === "completed" ? "completed" : "upcoming",
+    joinHref: row.id != null && row.id !== "" ? sessionJoinPath(row.id) : null,
+  };
+};
 
 const Clock = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -466,7 +491,7 @@ const Dashboard = () => {
 
               {upcomingSessions.length > 0 ? (
                 upcomingSessions.map((s) => (
-                  <SessionCard key={s.id} session={s} />
+                  <SessionCard key={s.id} session={toDashboardSessionCard(s)} />
                 ))
               ) : (
                 <p className="py-8 text-center text-slate-400">

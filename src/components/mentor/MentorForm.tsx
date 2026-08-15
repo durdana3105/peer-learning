@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Loader2, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { validateAndNormalizeUrl } from "@/utils/urlValidation";
 
 const DEFAULT_SKILLS = [
   "JavaScript", "TypeScript", "React", "Node.js", "Python",
@@ -117,8 +118,8 @@ export default function MentorForm() {
 
   const validateExperience = () => {
     return (
-      formData.github.trim() !== "" &&
-      formData.linkedin.trim() !== ""
+      validateAndNormalizeUrl(formData.github.trim(), "github.com") !== "" &&
+      validateAndNormalizeUrl(formData.linkedin.trim(), "linkedin.com") !== ""
     );
   };
 
@@ -157,8 +158,8 @@ export default function MentorForm() {
             full_name: formData.full_name,
             college: formData.college,
             bio: formData.bio,
-            github: formData.github,
-            linkedin: formData.linkedin,
+            github: validateAndNormalizeUrl(formData.github.trim(), "github.com"),
+            linkedin: validateAndNormalizeUrl(formData.linkedin.trim(), "linkedin.com"),
             skills: formData.skills,
             mentorship_types: formData.mentorship_types,
           },
@@ -389,7 +390,7 @@ export default function MentorForm() {
                   return;
                 }
                 if (step === 2 && !validateExperience()) {
-                  setError("Please fill GitHub and LinkedIn profiles");
+                  setError("Please provide valid GitHub and LinkedIn URLs");
                   return;
                 }
                 setError("");
