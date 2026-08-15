@@ -67,7 +67,7 @@ export default function Sessions() {
         />
 
         {/* CONTENT */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
           {/* LEFT SIDE */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2 mb-6">
