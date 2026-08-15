@@ -11,17 +11,22 @@ import { errorHandler } from "../middlewares/errorHandler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const profilesUploadDir = path.resolve(__dirname, "../uploads/profiles");
+const profilesUploadDir = path.resolve(__dirname, "../../uploads/profiles");
 
 // ── Supabase stub (requireAuth fast-path won't reach it, but the import needs it) ──
 // Extended with a storage stub so the /api/upload suite below (uploadController.js)
 // can assert on the path passed to storage.upload().
 const { storageUploadMock, storageFromMock } = vi.hoisted(() => {
-  const storageUploadMock = vi.fn(async (_filePath, fileStream) => {
-    const finished = once(fileStream, "end");
-    fileStream.resume();
-    await finished;
-    return { data: { path: "mock-path" }, error: null };
+  const storageUploadMock = vi.fn((path, stream) => {
+    if (stream) {
+      if (typeof stream.on === 'function') {
+        stream.on('error', () => {}); // swallow unhandled stream errors in mock
+      }
+      if (typeof stream.destroy === 'function') {
+        stream.destroy();
+      }
+    }
+    return Promise.resolve({ data: { path: "mock-path" }, error: null });
   });
   const storageFromMock = vi.fn(() => ({
     upload: storageUploadMock,

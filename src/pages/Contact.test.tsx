@@ -29,7 +29,9 @@ describe("Contact", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage?.clear();
+    if (typeof window !== "undefined" && window.localStorage && typeof window.localStorage.clear === "function") {
+      window.localStorage.clear();
+    }
 
     (useToast as any).mockReturnValue({ toast });
     (supabase.from as any).mockReturnValue({ insert });

@@ -64,7 +64,7 @@ export function useSkillEndorsements({
     }
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("skill_endorsements")
         .select("skill, endorser_id")
         .eq("endorsed_user_id", profileUserId)
@@ -133,7 +133,7 @@ export function useSkillEndorsements({
 
       try {
         if (isRemoving) {
-          const { error } = await supabase
+          const { error } = await (supabase as any)
             .from("skill_endorsements")
             .delete()
             .match({
@@ -143,7 +143,7 @@ export function useSkillEndorsements({
             });
           if (error) throw error;
         } else {
-          const { error } = await supabase
+          const { error } = await (supabase as any)
             .from("skill_endorsements")
             .insert({
               skill,
