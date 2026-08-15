@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
+import { sanitizeMessageContent } from "@/utils/sanitize";
 
 export function useRoomChat(id: string | undefined, user: User | null) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,9 +31,10 @@ export function useRoomChat(id: string | undefined, user: User | null) {
   const handleSendMessage = useCallback(async (newMessage: string) => {
     if (!newMessage.trim() || !user || !id) return false;
 
+    const sanitizedMessage = sanitizeMessageContent(newMessage);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from('study_room_messages' as any).insert([
-      { room_id: id, profile_id: user.id, content: newMessage }
+      { room_id: id, profile_id: user.id, content: sanitizedMessage }
     ]);
     
     if (error) {

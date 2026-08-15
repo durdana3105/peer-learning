@@ -171,8 +171,16 @@ describe("POST /api/users/upload-photo", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    // Filename must contain the authenticated user's ID
-    expect(res.body.fileUrl).toMatch(new RegExp(`profile-${TEST_USER_ID}-`));
+
+    // Filename/path must contain the authenticated user's ID
+    expect(res.body.fileUrl).toContain(TEST_USER_ID);
+    const pathSegments = new URL(res.body.fileUrl).pathname.split("/").filter(Boolean);
+    expect(pathSegments).toContain(TEST_USER_ID);
+
+    // Supabase storage path is scoped to the authenticated user's ID
+    expect(res.body.fileUrl).toContain(`${TEST_USER_ID}/`);
+    expect(storageUploadMock).toHaveBeenCalled();
+
   });
 
   it("returns 200 when a valid JWT is supplied via HttpOnly cookie", async () => {
@@ -226,9 +234,9 @@ describe("POST /api/users/upload-photo", () => {
     expect(res.body.error).toMatch(/no file/i);
   });
 
-  it("returns 413 when the uploaded file exceeds the 5MB size limit", async () => {
+  it("returns 413 when the uploaded file exceeds the 2MB size limit", async () => {
     const token = makeToken();
-    const oversized = Buffer.alloc(6 * 1024 * 1024, 0xff); // 6 MB of 0xFF bytes
+    const oversized = Buffer.alloc(3 * 1024 * 1024, 0xff); // 3 MB of 0xFF bytes
     const res = await request(app)
       .post("/api/users/upload-photo")
       .set("Authorization", `Bearer ${token}`)
@@ -238,7 +246,7 @@ describe("POST /api/users/upload-photo", () => {
       });
 
     expect(res.status).toBe(413);
-    expect(res.body.error).toMatch(/5mb/i);
+    expect(res.body.error).toMatch(/2mb/i);
   });
 });
 
@@ -348,5 +356,58 @@ describe("POST /api/upload", () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data.path.startsWith(`${TEST_USER_ID}/`)).toBe(true);
     expect(res.body.data.path.endsWith(".pdf")).toBe(true);
+  });
+
+  it("returns 415 when a file with spoofed MIME type (mismatched magic bytes) is uploaded", async () => {
+    const token = makeToken();
+    // Raw script bytes uploaded with contentType "image/png" under avatars
+    const spoofedBytes = Buffer.from("#!/bin/bash\necho pwned\n");
+    const res = await request(uploadApp)
+      .post("/api/upload")
+      .set("Authorization", `Bearer ${token}`)
+      .field("folder", "avatars")
+      .attach("file", spoofedBytes, {
+        filename: "avatar.png",
+        contentType: "image/png",
+      });
+
+    expect(res.status).toBe(415);
+    expect(res.body.error).toMatch(/file content does not match the provided MIME type/i);
+    expect(storageUploadMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 415 when a binary archive or executable is uploaded under a text MIME type", async () => {
+    const token = makeToken();
+    // Tiny PNG bytes uploaded with contentType "text/plain" under resources
+    const res = await request(uploadApp)
+      .post("/api/upload")
+      .set("Authorization", `Bearer ${token}`)
+      .field("folder", "resources")
+      .attach("file", TINY_PNG, {
+        filename: "notes.txt",
+        contentType: "text/plain",
+      });
+
+    expect(res.status).toBe(415);
+    expect(res.body.error).toMatch(/binary content detected in text upload/i);
+    expect(storageUploadMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 415 when a text file upload contains raw null bytes (0x00)", async () => {
+    const token = makeToken();
+    // Buffer with ASCII chars and an injected NULL byte
+    const suspiciousText = Buffer.from([0x63, 0x6f, 0x6e, 0x73, 0x6f, 0x6c, 0x65, 0x2e, 0x6c, 0x6f, 0x67, 0x28, 0x30, 0x29, 0x3b, 0x00, 0x0a]);
+    const res = await request(uploadApp)
+      .post("/api/upload")
+      .set("Authorization", `Bearer ${token}`)
+      .field("folder", "resources")
+      .attach("file", suspiciousText, {
+        filename: "script.js",
+        contentType: "text/javascript",
+      });
+
+    expect(res.status).toBe(415);
+    expect(res.body.error).toMatch(/null bytes found in text upload/i);
+    expect(storageUploadMock).not.toHaveBeenCalled();
   });
 });

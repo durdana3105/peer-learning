@@ -72,6 +72,10 @@ export default function AnonymousDoubts() {
 
   const upvote = async (id: string) => {
     if (votedIds.has(id)) return;
+    if (!user) {
+      toast.error("Please log in to upvote a doubt.");
+      return;
+    }
     const doubt = doubts.find((d) => d.id === id);
     if (!doubt) return;
     const newCount = doubt.upvotes + 1;
@@ -79,10 +83,11 @@ export default function AnonymousDoubts() {
     setDoubts(
       doubts.map((d) => (d.id === id ? { ...d, upvotes: newCount } : d))
     );
-    const { error } = await (supabase as any)
-      .from("doubts")
-      .update({ upvotes: newCount })
-      .eq("id", id);
+    // SECURITY (#1928): upvotes are incremented server-side by the
+    // SECURITY DEFINER RPC upvote_doubt() — never computed client-side.
+    const { error } = await (supabase as any).rpc("upvote_doubt", {
+      p_doubt_id: id,
+    });
     if (error) {
       setDoubts(
         doubts.map((d) => (d.id === id ? { ...d, upvotes: doubt.upvotes } : d))

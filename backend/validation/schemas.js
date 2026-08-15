@@ -94,7 +94,7 @@ export const aiSchemas = {
           content: z.string().trim().min(1).max(4000),
         })
       ).min(1).max(MAX_ASK_MESSAGES),
-      systemPrompt: z.string().optional(),
+      systemPrompt: z.string().max(2000).optional(),
       model: z.string().optional()
     }),
   },
@@ -157,6 +157,20 @@ export const aiSchemas = {
           });
         }
       }),
+  },
+};
+
+export const profileSchemas = {
+  updateProfile: {
+    body: z.object({
+      name: z.string().trim().max(50).optional(),
+      bio: z.string().trim().max(300).optional(),
+      skills: z.array(z.string().trim().max(50)).max(20).optional(),
+      avatar_url: z.string().trim().max(500).optional(),
+      interests: z.array(z.string().trim().max(50)).max(20).optional(),
+      teach_subjects: z.array(z.string().trim().max(50)).max(20).optional(),
+      learn_subjects: z.array(z.string().trim().max(50)).max(20).optional(),
+    }).strict(), // .strict() rejects any unknown keys — prevents mass assignment
   },
 };
 

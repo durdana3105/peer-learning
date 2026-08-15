@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { Send, Video, Sparkles, BellOff, Bell, Download, Pin, PinOff } from "lucide-react";
 import { LiveCodeRunner } from "@/components/studyroom/LiveCodeRunner";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { RsvpSection } from "@/components/sessions/RsvpSection";
 
 type SessionChatProps = {
   selectedSession: any;
@@ -16,7 +17,15 @@ type SessionChatProps = {
   studyTime: number;
   isFocusMode: boolean;
   setIsFocusMode: (val: boolean) => void;
-  sendMessage: (msg: string) => void;
+  myRsvp: "going" | "maybe" | "cant_attend" | null;
+  rsvpCounts: {
+    going: number;
+    maybe: number;
+    cant_attend: number;
+  };
+  rsvpLoading: boolean;
+  updateRsvp: (status: "going" | "maybe" | "cant_attend") => void;
+  sendMessage: (msg: string) => Promise<boolean>;
   togglePinMessage: (msgId: string, currentPinStatus: boolean) => void;
   sendTypingEvent: () => void;
   handleLeaveVideo: () => void;
@@ -37,6 +46,10 @@ export function SessionChat({
   studyTime,
   isFocusMode,
   setIsFocusMode,
+  myRsvp,
+  rsvpCounts,
+  rsvpLoading,
+  updateRsvp,
   sendMessage,
   togglePinMessage,
   sendTypingEvent,
@@ -164,6 +177,14 @@ export function SessionChat({
               </div>
             </div>
             
+            <RsvpSection
+              sessionStatus={selectedSession?.status}
+              myRsvp={myRsvp}
+              rsvpCounts={rsvpCounts}
+              rsvpLoading={rsvpLoading}
+              updateRsvp={updateRsvp}
+            />
+
             <button
               onClick={handleExport}
               title="Export Session Notes and Chat"
@@ -235,7 +256,7 @@ export function SessionChat({
                   className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[80%] px-4 py-3 rounded-2xl overflow-hidden relative group ${
+                    className={`max-w-[80%] px-4 py-3 rounded-2xl overflow-hidden ${
                       isCurrentUser
                         ? "bg-gradient-to-r from-cyan-400 to-purple-500 text-black"
                         : "bg-white/10"
@@ -317,12 +338,12 @@ export function SessionChat({
           {/* INPUT */}
           <div className="pt-4 border-t border-white/10 flex gap-3">
             <LiveCodeRunner 
-              onShare={(code, lang, output) => {
+              onShare={async (code, lang, output) => {
                 let formattedMessage = `\`\`\`${lang}\n${code}\n\`\`\``;
                 if (output) {
                   formattedMessage += `\n**Output:**\n\`\`\`text\n${output}\n\`\`\``;
                 }
-                sendMessage(formattedMessage);
+                await sendMessage(formattedMessage);
               }}
             />
             <input
@@ -333,19 +354,27 @@ export function SessionChat({
                 setMessage(e.target.value);
                 sendTypingEvent();
               }}
-              onKeyDown={(e) => {
+              onKeyDown={async (e) => {
                 if (e.key === "Enter") {
-                  sendMessage(message);
-                  setMessage("");
+                  if (message.trim()) {
+                    const success = await sendMessage(message);
+                    if (success) {
+                      setMessage("");
+                    }
+                  }
                 }
               }}
               className="flex-1 bg-white/10 border border-white/10 rounded-2xl px-4 py-3 outline-none focus:border-cyan-400 text-white"
             />
 
             <button
-              onClick={() => {
-                sendMessage(message);
-                setMessage("");
+              onClick={async () => {
+                if (message.trim()) {
+                  const success = await sendMessage(message);
+                  if (success) {
+                    setMessage("");
+                  }
+                }
               }}
               className="bg-gradient-to-r from-cyan-400 to-purple-500 text-black p-4 rounded-2xl hover:opacity-90 transition"
             >

@@ -11,7 +11,7 @@ const TAB_TO_STATUS: Record<string, string[]> = {
   Completed: ["ended"],
 };
 
-export function useSessions(user: any) {
+export function useSessions(user: any, deepLinkSessionId?: string | null) {
   const { mutate: awardXP } = useAwardXP();
   const { toast } = useToast();
 
@@ -39,6 +39,17 @@ export function useSessions(user: any) {
   const [participantCount, setParticipantCount] = useState(1);
   const [isVideoActive, setIsVideoActive] = useState(false);
   const [sessionSummary, setSessionSummary] = useState<any>(null);
+  const [myRsvp, setMyRsvp] = useState<
+  "going" | "maybe" | "cant_attend" | null
+>(null);
+
+const [rsvpCounts, setRsvpCounts] = useState({
+  going: 0,
+  maybe: 0,
+  cant_attend: 0,
+});
+
+const [rsvpLoading, setRsvpLoading] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [studyTime, setStudyTime] = useState(60 * 60);
 
@@ -59,13 +70,25 @@ export function useSessions(user: any) {
       if (!error && data) {
         setSessions(data);
         if (data.length > 0) {
-          setSelectedSession(data[0]);
+          const deepLinked = deepLinkSessionId
+            ? data.find((s) => String(s.id) === String(deepLinkSessionId))
+            : null;
+
+          if (deepLinked) {
+            const status = deepLinked.status?.toLowerCase();
+            if (status === "live") setSelectedTab("Joined");
+            else if (status === "ended" || status === "completed") setSelectedTab("Completed");
+            else setSelectedTab("Upcoming");
+            setSelectedSession(deepLinked);
+          } else {
+            setSelectedSession(data[0]);
+          }
         }
       }
     };
 
     fetchSessions();
-  }, []);
+  }, [deepLinkSessionId]);
 
   const filteredSessions = useMemo(() => {
     let filtered = sessions;
@@ -114,10 +137,17 @@ export function useSessions(user: any) {
   // - messages: without this, the previous session's thread stays rendered
   //   for the whole fetch round-trip after switching.
   useEffect(() => {
-    setParticipantCount(1);
-    setSessionSummary(null);
-    setMessages([]);
-  }, [selectedSession]);
+  setParticipantCount(1);
+  setSessionSummary(null);
+  setMessages([]);
+
+  setMyRsvp(null);
+  setRsvpCounts({
+    going: 0,
+    maybe: 0,
+    cant_attend: 0,
+  });
+}, [selectedSession]);
 
   useEffect(() => {
     if (!selectedSession) return;
@@ -140,58 +170,84 @@ export function useSessions(user: any) {
 
     fetchMessages();
 
-    const roomChannel = supabase.channel(`room:${selectedSession.id}`, {
-      config: {
-        presence: {
-          key: user?.id || "anonymous",
+    let isMounted = true;
+    let roomChannel: any = null;
+
+    // Debounce the Realtime connection to prevent connection leaks on rapid navigation
+    const timeoutId = setTimeout(async () => {
+      if (!isMounted) return;
+
+      // Cleanup any stale channel in the ref before establishing a new one
+      if (channelRef.current) {
+        await supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+
+      if (!isMounted) return;
+
+      roomChannel = supabase.channel(`room:${selectedSession.id}`, {
+        config: {
+          presence: {
+            key: user?.id || "anonymous",
+          },
         },
-      },
-    });
-
-    channelRef.current = roomChannel;
-
-    roomChannel
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `session_id=eq.${selectedSession.id}` }, (payload: any) => {
-        if (payload.new.session_id === selectedSession.id) {
-          setMessages((prev) => [...prev, payload.new]);
-        }
-      })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `session_id=eq.${selectedSession.id}` }, (payload: any) => {
-        if (payload.new.session_id === selectedSession.id) {
-          setMessages((prev) => prev.map(msg => msg.id === payload.new.id ? payload.new : msg));
-        }
-      })
-      .on("presence", { event: "sync" }, () => {
-        const state = roomChannel.presenceState();
-        setParticipantCount(Math.max(1, Object.keys(state).length));
-      })
-      .on("broadcast", { event: "typing" }, ({ payload }) => {
-        if (payload.user === (user?.user_metadata?.full_name || "Someone")) return;
-        setTypingUser(payload.user);
-        clearTimeout(typingTimeoutRef.current);
-        typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
-      })
-      .on("broadcast", { event: "activity" }, ({ payload }) => {
-        setActivities((prev) => [payload, ...prev]);
-      })
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          await roomChannel.track({ online_at: new Date().toISOString() });
-
-          roomChannel.send({
-            type: "broadcast",
-            event: "activity",
-            payload: {
-              id: Date.now(),
-              text: `${user?.user_metadata?.full_name || "Someone"} joined the session`,
-              time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            },
-          });
-        }
       });
 
+      channelRef.current = roomChannel;
+
+      roomChannel
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `session_id=eq.${selectedSession.id}` }, (payload: any) => {
+          if (payload.new.session_id === selectedSession.id) {
+            setMessages((prev) => [...prev, payload.new]);
+          }
+        })
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `session_id=eq.${selectedSession.id}` }, (payload: any) => {
+          if (payload.new.session_id === selectedSession.id) {
+            setMessages((prev) => prev.map(msg => msg.id === payload.new.id ? payload.new : msg));
+          }
+        })
+        .on("presence", { event: "sync" }, () => {
+          const state = roomChannel.presenceState();
+          setParticipantCount(Math.max(1, Object.keys(state).length));
+        })
+
+        .on("broadcast", { event: "typing" }, ({ payload }: { payload: { user: string } }) => {
+          if (payload.user === (user?.user_metadata?.full_name || "Someone")) return;
+        .on("broadcast", { event: "typing" }, ({ payload }: { payload: { user?: string } }) => {
+          if (!payload.user || payload.user === (user?.user_metadata?.full_name || "Someone")) return;
+          setTypingUser(payload.user);
+          clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
+        })
+        .on("broadcast", { event: "activity" }, ({ payload }: { payload: any }) => {
+          setActivities((prev) => [payload, ...prev]);
+        })
+        .subscribe(async (status: string) => {
+          if (status === "SUBSCRIBED" && isMounted) {
+            await roomChannel.track({ online_at: new Date().toISOString() });
+
+            roomChannel.send({
+              type: "broadcast",
+              event: "activity",
+              payload: {
+                id: Date.now(),
+                text: `${user?.user_metadata?.full_name || "Someone"} joined the session`,
+                time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              },
+            });
+          }
+        });
+    }, 300);
+
     return () => {
-      supabase.removeChannel(roomChannel);
+      isMounted = false;
+      clearTimeout(timeoutId);
+      if (roomChannel) {
+        supabase.removeChannel(roomChannel).catch(console.error);
+        if (channelRef.current === roomChannel) {
+          channelRef.current = null;
+        }
+      }
     };
   }, [selectedSession, user, toast]);
 
@@ -244,7 +300,92 @@ export function useSessions(user: any) {
       window.removeEventListener("click", handleActivity);
     };
   }, []);
+const fetchRsvpData = useCallback(async () => {
+  if (!selectedSession || !user?.id) {
+    return;
+  }
 
+  try {
+    const { data, error } = await (supabase as any).rpc(
+      "get_session_rsvp_summary",
+      {
+        p_session_id: selectedSession.id,
+      }
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    const summary = Array.isArray(data) ? data[0] : data;
+
+    setMyRsvp(summary?.my_status ?? null);
+
+    setRsvpCounts({
+      going: Number(summary?.going_count ?? 0),
+      maybe: Number(summary?.maybe_count ?? 0),
+      cant_attend: Number(summary?.cant_attend_count ?? 0),
+    });
+  } catch (error) {
+    console.error("Failed to fetch RSVP data:", error);
+
+    setMyRsvp(null);
+    setRsvpCounts({
+      going: 0,
+      maybe: 0,
+      cant_attend: 0,
+    });
+  }
+}, [selectedSession, user]);
+
+useEffect(() => {
+  fetchRsvpData();
+}, [fetchRsvpData]);
+
+const updateRsvp = useCallback(
+  async (status: "going" | "maybe" | "cant_attend") => {
+    if (!selectedSession || !user?.id) return;
+
+    setRsvpLoading(true);
+
+    try {
+      const { error } = await (supabase as any).rpc(
+        "set_session_rsvp",
+        {
+          p_session_id: selectedSession.id,
+          p_status: status,
+        }
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      setMyRsvp(status);
+
+      toast({
+        title: "RSVP updated",
+        description:
+          status === "going"
+            ? "You're marked as going."
+            : status === "maybe"
+              ? "You're marked as maybe."
+              : "You're marked as unable to attend.",
+      });
+
+      await fetchRsvpData();
+    } catch (error: any) {
+      toast({
+        title: "Unable to update RSVP",
+        description: error.message || "Failed to update RSVP.",
+        variant: "destructive",
+      });
+    } finally {
+      setRsvpLoading(false);
+    }
+  },
+  [selectedSession, user, fetchRsvpData, toast]
+);
   const handleJoinSession = useCallback(async (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
     try {
@@ -271,7 +412,7 @@ export function useSessions(user: any) {
         // since opening the video does not by itself confirm participation.
         if (!existingParticipant) {
           awardedSessionsRef.current.add(sessionId);
-          awardXP({ activity: "session_join" });
+          awardXP({ activity: "session_join", referenceId: sessionId });
         }
       }
     } catch (err: any) {
@@ -280,7 +421,7 @@ export function useSessions(user: any) {
   }, [user, awardXP, toast]);
 
   const sendMessage = useCallback(async (msgText: string) => {
-    if (!msgText.trim() || !selectedSession) return;
+    if (!msgText.trim() || !selectedSession) return false;
 
     const activity = {
       id: Date.now(),
@@ -307,8 +448,10 @@ export function useSessions(user: any) {
         });
 
       if (error) throw error;
+      return true;
     } catch (err: any) {
       toast({ title: "Failed to send message", description: err.message || "An unexpected error occurred.", variant: "destructive" });
+      return false;
     }
   }, [selectedSession, user, toast]);
 
@@ -414,6 +557,10 @@ export function useSessions(user: any) {
     studyTime,
     isFocusMode,
     setIsFocusMode,
+    myRsvp,
+    rsvpCounts,
+    rsvpLoading,
+    updateRsvp,
     handleJoinSession,
     sendMessage,
     togglePinMessage,

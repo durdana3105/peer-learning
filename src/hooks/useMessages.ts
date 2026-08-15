@@ -3,11 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAwardXP } from "@/hooks/useAwardXP";
 import { toast } from "@/hooks/use-toast";
 import { logError } from "@/utils/logger";
+import { sanitizeMessageContent } from "@/utils/sanitize";
 
 export type ProfileSummary = {
   id: string;
   name: string | null;
-  email: string | null;
   avatar_url: string | null;
   is_mentor: boolean;
   is_learner: boolean;
@@ -81,7 +81,6 @@ const THREAD_PAGE_SIZE = 50;
 const normalizeProfile = (row: ProfileRow | UserRow): ProfileSummary => ({
   id: row.id,
   name: row.name,
-  email: row.email,
   avatar_url: row.avatar_url ?? null,
   is_mentor: "is_mentor" in row ? row.is_mentor : false,
   is_learner: "is_learner" in row ? row.is_learner : false,
@@ -231,7 +230,9 @@ export function useMessages(
       try {
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
-          .select("*")
+          // SECURITY (#1924): never select email — only the non-sensitive
+          // columns needed for the peer directory are fetched.
+          .select("id, name, avatar_url, is_mentor, is_learner, last_active, last_seen")
           .neq("id", currentUserId)
           .order("name", { ascending: true })
           .limit(100);
@@ -577,13 +578,14 @@ export function useMessages(
     }
 
     try {
+      const sanitizedContent = sanitizeMessageContent(content);
       const { data, error: insertError } = await supabase
         .from("messages")
         .insert({
           sender_id: currentUserId,
           receiver_id: selectedUser.id,
-          content,
-          text: content,
+          content: sanitizedContent,
+          text: sanitizedContent,
         })
         .select("id,sender_id,receiver_id,content,text,message,created_at,read_at")
         .single();
@@ -602,7 +604,7 @@ export function useMessages(
         });
 
         upsertRawSummary(nextMessage, selectedUser.id, false);
-        awardXP.mutate({ activity: "chat_message" });
+        awardXP.mutate({ activity: "chat_message", referenceId: nextMessage.id });
       }
       return true;
     } catch (err: any) {
