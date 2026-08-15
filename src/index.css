@@ -671,3 +671,320 @@ html { scroll-behavior: smooth; }
 }
 
 /* fix/skip-to-main-content */
+
+/* ==========================================================
+   RESPONSIVE FIXES
+   Append at the END of index.css
+========================================================== */
+
+/* Better responsive sizing */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+}
+
+/* Prevent horizontal scrolling */
+html,
+body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Better responsive containers */
+.container,
+[class*="container"] {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container,
+  [class*="container"] {
+    max-width: 640px;
+  }
+}
+
+@media (min-width: 768px) {
+  .container,
+  [class*="container"] {
+    max-width: 768px;
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container,
+  [class*="container"] {
+    max-width: 1024px;
+    padding-inline: 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container,
+  [class*="container"] {
+    max-width: 1280px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .container,
+  [class*="container"] {
+    max-width: 1440px;
+  }
+}
+
+/* Responsive Typography */
+h1 {
+  font-size: clamp(2rem, 5vw, 4.5rem);
+  line-height: 1.1;
+}
+
+h2 {
+  font-size: clamp(1.75rem, 4vw, 3.2rem);
+  line-height: 1.15;
+}
+
+h3 {
+  font-size: clamp(1.4rem, 3vw, 2.3rem);
+}
+
+h4 {
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
+}
+
+p {
+  font-size: clamp(0.95rem, 1vw, 1.05rem);
+}
+
+/* Responsive sections */
+section {
+  padding-block: clamp(3rem, 8vw, 7rem);
+}
+
+/* Glass cards */
+.glass-card {
+  width: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .glass-card {
+    border-radius: 18px;
+    padding: 1rem;
+  }
+}
+
+/* Buttons */
+.btn-primary {
+  min-height: 48px;
+  padding-inline: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .btn-primary {
+    width: 100%;
+    justify-content: center;
+    padding: 0.9rem 1.2rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* Inputs */
+.glass-input {
+  width: 100%;
+}
+
+/* Navigation */
+.glass-nav {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .glass-nav {
+    padding-inline: 1rem;
+  }
+}
+
+/* Grid responsiveness */
+.responsive-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+@media (max-width: 640px) {
+  .responsive-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Flex helpers */
+.flex-responsive {
+  display: flex;
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .flex-responsive {
+    flex-direction: column;
+  }
+}
+
+/* Responsive spacing */
+.responsive-padding {
+  padding: clamp(1rem, 3vw, 3rem);
+}
+
+.responsive-margin {
+  margin: clamp(1rem, 3vw, 3rem);
+}
+
+/* Tables */
+table {
+  width: 100%;
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* Code blocks */
+pre {
+  overflow-x: auto;
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+
+  body {
+    font-size: 15px;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    word-break: break-word;
+  }
+
+  .chip {
+    font-size: 0.72rem;
+    padding: 0.3rem 0.6rem;
+  }
+
+  .glass-button,
+  .btn-primary {
+    width: 100%;
+  }
+
+  .orb {
+    filter: blur(60px);
+  }
+
+  .shadow-neon-cyan,
+  .shadow-neon-purple {
+    box-shadow: none;
+  }
+}
+
+/* Tablets */
+@media (min-width: 641px) and (max-width: 1023px) {
+
+  section {
+    padding-block: 5rem;
+  }
+
+  .glass-card {
+    padding: 1.5rem;
+  }
+}
+
+/* Large Screens */
+@media (min-width: 1600px) {
+
+  body {
+    font-size: 18px;
+  }
+
+  .container,
+  [class*="container"] {
+    max-width: 1500px;
+  }
+
+  section {
+    padding-block: 8rem;
+  }
+}
+
+/* Landscape phones */
+@media (max-height: 500px) and (orientation: landscape) {
+
+  section {
+    padding-block: 2rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+}
+
+/* Better touch targets */
+@media (pointer: coarse) {
+
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    min-height: 44px;
+  }
+}
+
+/* Prevent overflowing text */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+div {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Utility */
+.full-width-mobile {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .full-width-mobile {
+    width: auto;
+  }
+}
+
