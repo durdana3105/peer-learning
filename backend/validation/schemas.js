@@ -160,6 +160,20 @@ export const aiSchemas = {
   },
 };
 
+export const profileSchemas = {
+  updateProfile: {
+    body: z.object({
+      name: z.string().trim().max(50).optional(),
+      bio: z.string().trim().max(300).optional(),
+      skills: z.array(z.string().trim().max(50)).max(20).optional(),
+      avatar_url: z.string().trim().max(500).optional(),
+      interests: z.array(z.string().trim().max(50)).max(20).optional(),
+      teach_subjects: z.array(z.string().trim().max(50)).max(20).optional(),
+      learn_subjects: z.array(z.string().trim().max(50)).max(20).optional(),
+    }).strict(), // .strict() rejects any unknown keys — prevents mass assignment
+  },
+};
+
 export const matchSchemas = {
   getRecommendedPartners: {
     query: z.object({

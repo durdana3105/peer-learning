@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { User, FileText, Code, Save, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { API_BASE_URL } from "@/config/api";
 
 interface ProfileState {
   name: string;
@@ -67,22 +68,37 @@ const EditProfile = () => {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
+      // SECURITY (#1851): Use server-side endpoint with field whitelisting
+      // instead of direct Supabase client call to prevent mass-assignment attacks.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
+
+      const skillsArray =
+        typeof profile.skills === "string"
+          ? profile.skills.split(",").map((s) => s.trim()).filter(Boolean)
+          : profile.skills;
+
+      const res = await fetch(`${API_BASE_URL}/api/users/${userId}/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
           name: profile.name,
           bio: profile.bio,
-          skills:
-            typeof profile.skills === "string"
-              ? profile.skills
-                  .split(",")
-                  .map((s) => s.trim())
-                  .filter(Boolean)
-              : profile.skills,
-        })
-        .eq("id", userId as string);
+          skills: skillsArray,
+        }),
+      });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to update profile");
+      }
       toast.success("Profile updated successfully!");
       navigate("/profile");
     } catch (err: unknown) {
