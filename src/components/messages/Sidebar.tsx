@@ -97,7 +97,6 @@ export function Sidebar({
     return conversationSummaries.filter(({ profile, lastMessage }) => {
       const haystack = [
         getDisplayName(profile),
-        profile.email ?? "",
         getRoleLabel(profile),
         lastMessage ? getMessageBody(lastMessage) : "",
       ]
@@ -114,7 +113,7 @@ export function Sidebar({
       if (profile.id === currentUserId) return false;
       if (!query) return true;
 
-      const haystack = [getDisplayName(profile), profile.email ?? "", getRoleLabel(profile)]
+      const haystack = [getDisplayName(profile), getRoleLabel(profile)]
         .join(" ")
         .toLowerCase();
       return haystack.includes(query);

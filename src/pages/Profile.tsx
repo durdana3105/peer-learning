@@ -60,6 +60,15 @@ const Profile = () => {
 
       if (!user) return;
 
+
+      const { data: rawProfileData, error: profileError } = await supabase
+        .from("profiles")
+        // SECURITY (#1924): select only the columns rendered on this page —
+        // never email.
+        .select("id, name, bio, skills, avatar_url, streak, points")
+        .eq("id", user.id)
+        .single();
+
       const [
         { data: rawProfileData, error: profileError },
         { data: activityRows },
@@ -69,6 +78,7 @@ const Profile = () => {
         supabase.from("user_activity_log").select("activity_type").eq("user_id", user.id),
         supabase.rpc("get_user_rank", { p_user_id: user.id }),
       ]);
+
 
       if (profileError) {
         console.error("Failed to fetch profile:", profileError);
