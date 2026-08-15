@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
+import { API_BASE_URL } from "@/config/api";
 
 import { Camera, Save, Sparkles, User, Flame, Zap, Trophy, Lock, Settings } from "lucide-react";
 import StreakStats from "@/components/StreakStats";
@@ -12,8 +13,10 @@ import {
   calculateLevel,
   getBadgeByXP,
   getAchievements,
+  isAchievementUnlocked,
   ALL_BADGES,
-  ALL_ACHIEVEMENTS
+  ALL_ACHIEVEMENTS,
+  type AchievementStats,
 } from "../lib/gamification";
 
 const avatars = [
@@ -25,6 +28,13 @@ const avatars = [
   "https://api.dicebear.com/7.x/adventurer/svg?seed=Sophia",
 ];
 const MAX_BIO_CHARS = 300;
+const emptyAchievementStats: AchievementStats = {
+  totalXP: 0,
+  streak: 0,
+  activityCounts: {},
+  rank: null,
+};
+
 const Profile = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -39,6 +49,7 @@ const Profile = () => {
     level: 1,
     badge: "",
     achievements: [],
+    achievementStats: emptyAchievementStats,
   });
 
   // FETCH PROFILE
@@ -50,11 +61,25 @@ const Profile = () => {
 
       if (!user) return;
 
+
       const { data: rawProfileData, error: profileError } = await supabase
         .from("profiles")
-        .select("*")
+        // SECURITY (#1924): select only the columns rendered on this page —
+        // never email.
+        .select("id, name, bio, skills, avatar_url, streak, points")
         .eq("id", user.id)
         .single();
+
+      const [
+        { data: rawProfileData, error: profileError },
+        { data: activityRows },
+        { data: rankData },
+      ] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", user.id).single(),
+        supabase.from("user_activity_log").select("activity_type").eq("user_id", user.id),
+        supabase.rpc("get_user_rank", { p_user_id: user.id }),
+      ]);
+
 
       if (profileError) {
         console.error("Failed to fetch profile:", profileError);
@@ -65,6 +90,27 @@ const Profile = () => {
       const profileData = rawProfileData as any;
 
       if (profileData) {
+        const activityCounts: Record<string, number> = {};
+        for (const row of activityRows ?? []) {
+          const type = row.activity_type as string;
+          if (!type) continue;
+          activityCounts[type] = (activityCounts[type] ?? 0) + 1;
+        }
+
+        const rank =
+          typeof rankData === "number"
+            ? rankData
+            : Number.isFinite(Number(rankData))
+              ? Number(rankData)
+              : null;
+
+        const achievementStats: AchievementStats = {
+          totalXP: profileData.points || 0,
+          streak: profileData.streak || 0,
+          activityCounts,
+          rank,
+        };
+
         setProfile({
           name: profileData.name || "",
           bio: profileData.bio || "",
@@ -74,7 +120,8 @@ const Profile = () => {
           xp: profileData.points || 0,
           level: calculateLevel(profileData.points || 0),
           badge: getBadgeByXP(profileData.points || 0),
-          achievements: getAchievements(profileData.points || 0),
+          achievements: getAchievements(achievementStats),
+          achievementStats,
         });
       }
     };
@@ -96,21 +143,33 @@ if (profile.bio.length > MAX_BIO_CHARS) {
         toast.error(`Bio must be ${MAX_BIO_CHARS} characters or fewer.`);
         return;
       }
-      const { error } = await supabase
-        .from("profiles")
-        .update({
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/users/${user.id}/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
           name: profile.name,
           bio: profile.bio,
           skills: Array.isArray(profile.skills) ? profile.skills : profile.skills.split(",").map((s: string) => s.trim()).filter(Boolean),
           avatar_url: profile.avatar_url,
-        })
-        .eq("id", user.id);
+        }),
+      });
 
-      if (error) {
-        toast.error("Failed to update profile: " + error.message);
-      } else {
-        toast.success("Profile updated successfully!");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to update profile");
       }
+
+      toast.success("Profile updated successfully!");
     } catch (err: any) {
       toast.error("An unexpected error occurred: " + err.message);
     } finally {
@@ -381,7 +440,10 @@ if (profile.bio.length > MAX_BIO_CHARS) {
                 <h3 className="text-xl font-semibold mb-4 text-gray-300">Achievements</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {ALL_ACHIEVEMENTS.map((achievement) => {
-                    const isUnlocked = profile.xp >= achievement.xpRequired;
+                    const isUnlocked = isAchievementUnlocked(
+                      achievement,
+                      profile.achievementStats ?? emptyAchievementStats
+                    );
                     return (
                       <motion.div
                         key={achievement.id}
@@ -397,7 +459,7 @@ if (profile.bio.length > MAX_BIO_CHARS) {
                         </h4>
                         {!isUnlocked && (
                           <div className="flex items-center gap-1 mt-2 text-[10px] text-gray-500 bg-black/30 px-2 py-1 rounded-md">
-                            <Lock size={10} /> {achievement.xpRequired} XP
+                            <Lock size={10} /> {achievement.description}
                           </div>
                         )}
                       </motion.div>

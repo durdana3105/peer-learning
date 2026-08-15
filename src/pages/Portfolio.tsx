@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { validateAndNormalizeUrl } from "@/utils/urlValidation";
 
 type Achievement = {
   title: string;
@@ -281,18 +282,57 @@ const Portfolio = () => {
       return;
     }
 
+    const githubUrl = form.github_url.trim();
+    const normalizedGithub = githubUrl ? validateAndNormalizeUrl(githubUrl, "github.com") : "";
+    if (githubUrl && !normalizedGithub) {
+      setSaving(false);
+      toast({
+        title: "Invalid GitHub URL",
+        description: "Please enter a valid GitHub URL.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const linkedinUrl = form.linkedin_url.trim();
+    const normalizedLinkedin = linkedinUrl ? validateAndNormalizeUrl(linkedinUrl, "linkedin.com") : "";
+    if (linkedinUrl && !normalizedLinkedin) {
+      setSaving(false);
+      toast({
+        title: "Invalid LinkedIn URL",
+        description: "Please enter a valid LinkedIn URL.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    for (const project of form.projects) {
+      if (project.url.trim() && !validateAndNormalizeUrl(project.url)) {
+        setSaving(false);
+        toast({
+          title: "Invalid Project URL",
+          description: `The URL for project "${project.title || 'Untitled'}" is invalid.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     const payload = {
       profile_id: user.id,
       slug,
       headline: form.headline.trim(),
-      github_url: form.github_url.trim(),
-      linkedin_url: form.linkedin_url.trim(),
+      github_url: normalizedGithub,
+      linkedin_url: normalizedLinkedin,
       skills: form.skills
         .split(",")
         .map((skill) => skill.trim())
         .filter(Boolean),
       achievements: form.achievements.filter((item) => item.title.trim()),
-      projects: form.projects.filter((item) => item.title.trim()),
+      projects: form.projects.filter((item) => item.title.trim()).map(p => ({
+        ...p,
+        url: p.url.trim() ? validateAndNormalizeUrl(p.url) : ""
+      })),
       learning_progress: form.learning_progress,
       is_published: form.is_published,
     };
