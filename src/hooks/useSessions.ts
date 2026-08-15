@@ -11,7 +11,7 @@ const TAB_TO_STATUS: Record<string, string[]> = {
   Completed: ["ended"],
 };
 
-export function useSessions(user: any) {
+export function useSessions(user: any, deepLinkSessionId?: string | null) {
   const { mutate: awardXP } = useAwardXP();
   const { toast } = useToast();
 
@@ -39,6 +39,17 @@ export function useSessions(user: any) {
   const [participantCount, setParticipantCount] = useState(1);
   const [isVideoActive, setIsVideoActive] = useState(false);
   const [sessionSummary, setSessionSummary] = useState<any>(null);
+  const [myRsvp, setMyRsvp] = useState<
+  "going" | "maybe" | "cant_attend" | null
+>(null);
+
+const [rsvpCounts, setRsvpCounts] = useState({
+  going: 0,
+  maybe: 0,
+  cant_attend: 0,
+});
+
+const [rsvpLoading, setRsvpLoading] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [studyTime, setStudyTime] = useState(60 * 60);
 
@@ -59,13 +70,25 @@ export function useSessions(user: any) {
       if (!error && data) {
         setSessions(data);
         if (data.length > 0) {
-          setSelectedSession(data[0]);
+          const deepLinked = deepLinkSessionId
+            ? data.find((s) => String(s.id) === String(deepLinkSessionId))
+            : null;
+
+          if (deepLinked) {
+            const status = deepLinked.status?.toLowerCase();
+            if (status === "live") setSelectedTab("Joined");
+            else if (status === "ended" || status === "completed") setSelectedTab("Completed");
+            else setSelectedTab("Upcoming");
+            setSelectedSession(deepLinked);
+          } else {
+            setSelectedSession(data[0]);
+          }
         }
       }
     };
 
     fetchSessions();
-  }, []);
+  }, [deepLinkSessionId]);
 
   const filteredSessions = useMemo(() => {
     let filtered = sessions;
@@ -114,10 +137,17 @@ export function useSessions(user: any) {
   // - messages: without this, the previous session's thread stays rendered
   //   for the whole fetch round-trip after switching.
   useEffect(() => {
-    setParticipantCount(1);
-    setSessionSummary(null);
-    setMessages([]);
-  }, [selectedSession]);
+  setParticipantCount(1);
+  setSessionSummary(null);
+  setMessages([]);
+
+  setMyRsvp(null);
+  setRsvpCounts({
+    going: 0,
+    maybe: 0,
+    cant_attend: 0,
+  });
+}, [selectedSession]);
 
   useEffect(() => {
     if (!selectedSession) return;
@@ -180,16 +210,16 @@ export function useSessions(user: any) {
           const state = roomChannel.presenceState();
           setParticipantCount(Math.max(1, Object.keys(state).length));
         })
-        .on("broadcast", { event: "typing" }, ({ payload }) => {
-          if (payload.user === (user?.user_metadata?.full_name || "Someone")) return;
+        .on("broadcast", { event: "typing" }, ({ payload }: { payload: { user?: string } }) => {
+          if (!payload.user || payload.user === (user?.user_metadata?.full_name || "Someone")) return;
           setTypingUser(payload.user);
           clearTimeout(typingTimeoutRef.current);
           typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
         })
-        .on("broadcast", { event: "activity" }, ({ payload }) => {
+        .on("broadcast", { event: "activity" }, ({ payload }: { payload: any }) => {
           setActivities((prev) => [payload, ...prev]);
         })
-        .subscribe(async (status) => {
+        .subscribe(async (status: string) => {
           if (status === "SUBSCRIBED" && isMounted) {
             await roomChannel.track({ online_at: new Date().toISOString() });
 
@@ -267,7 +297,92 @@ export function useSessions(user: any) {
       window.removeEventListener("click", handleActivity);
     };
   }, []);
+const fetchRsvpData = useCallback(async () => {
+  if (!selectedSession || !user?.id) {
+    return;
+  }
 
+  try {
+    const { data, error } = await (supabase as any).rpc(
+      "get_session_rsvp_summary",
+      {
+        p_session_id: selectedSession.id,
+      }
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    const summary = Array.isArray(data) ? data[0] : data;
+
+    setMyRsvp(summary?.my_status ?? null);
+
+    setRsvpCounts({
+      going: Number(summary?.going_count ?? 0),
+      maybe: Number(summary?.maybe_count ?? 0),
+      cant_attend: Number(summary?.cant_attend_count ?? 0),
+    });
+  } catch (error) {
+    console.error("Failed to fetch RSVP data:", error);
+
+    setMyRsvp(null);
+    setRsvpCounts({
+      going: 0,
+      maybe: 0,
+      cant_attend: 0,
+    });
+  }
+}, [selectedSession, user]);
+
+useEffect(() => {
+  fetchRsvpData();
+}, [fetchRsvpData]);
+
+const updateRsvp = useCallback(
+  async (status: "going" | "maybe" | "cant_attend") => {
+    if (!selectedSession || !user?.id) return;
+
+    setRsvpLoading(true);
+
+    try {
+      const { error } = await (supabase as any).rpc(
+        "set_session_rsvp",
+        {
+          p_session_id: selectedSession.id,
+          p_status: status,
+        }
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      setMyRsvp(status);
+
+      toast({
+        title: "RSVP updated",
+        description:
+          status === "going"
+            ? "You're marked as going."
+            : status === "maybe"
+              ? "You're marked as maybe."
+              : "You're marked as unable to attend.",
+      });
+
+      await fetchRsvpData();
+    } catch (error: any) {
+      toast({
+        title: "Unable to update RSVP",
+        description: error.message || "Failed to update RSVP.",
+        variant: "destructive",
+      });
+    } finally {
+      setRsvpLoading(false);
+    }
+  },
+  [selectedSession, user, fetchRsvpData, toast]
+);
   const handleJoinSession = useCallback(async (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
     try {
@@ -439,6 +554,10 @@ export function useSessions(user: any) {
     studyTime,
     isFocusMode,
     setIsFocusMode,
+    myRsvp,
+    rsvpCounts,
+    rsvpLoading,
+    updateRsvp,
     handleJoinSession,
     sendMessage,
     togglePinMessage,

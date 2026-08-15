@@ -47,7 +47,6 @@ const Profile = React.lazy(() => import("./pages/Profile"));
 const EditProfile = React.lazy(() => import("./pages/EditProfile"));
 const Settings = React.lazy(() => import("./pages/Settings"));
 const Notifications = React.lazy(() => import("./pages/Notifications"));
-const Settings = React.lazy(() => import("./pages/Settings"));
 const Leaderboard = React.lazy(() => import("./pages/Leaderboard"));
 const Admin = React.lazy(() => import("./pages/Admin"));
 const ForgotPassword = React.lazy(() => import("./pages/ForgotPassword"));
@@ -396,25 +395,29 @@ function AppContent() {
   );
 }
 
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
+      <NextThemesProvider attribute="class" defaultTheme="dark">
+        <ThemeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
 
-          <BrowserRouter>
-            <CookieConsentProvider>
-              <AuthProvider>
-                <RoleProvider>
-                  <AppContent />
-                </RoleProvider>
-              </AuthProvider>
-            </CookieConsentProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </ThemeProvider>
+            <BrowserRouter>
+              <CookieConsentProvider>
+                <AuthProvider>
+                  <RoleProvider>
+                    <AppContent />
+                  </RoleProvider>
+                </AuthProvider>
+              </CookieConsentProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </ThemeProvider>
+      </NextThemesProvider>
     </QueryClientProvider>
   );
 }

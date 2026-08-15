@@ -2,6 +2,10 @@ import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import { sanitizeNotificationActionUrl } from "../utils/notificationActionUrl.js";
 import { collectExpiredSubscriptionIds } from "../utils/pushDeliveryCleanup.js";
+import {
+  isPushAllowedForCategory,
+  notificationTypeToCategory,
+} from "../utils/notificationPreferences.js";
 
 const getSupabaseClient = () => {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -89,7 +93,7 @@ export const dispatchPushNotifications = async (req, res, next) => {
       .is("push_sent_at", null)
       .is("push_failed_at", null)
       .or(`push_claimed_at.is.null,push_claimed_at.lt.${claimExpiryThreshold}`)
-      .select("id,user_id,title,body,action_url,push_attempts")
+      .select("id,user_id,title,body,action_url,push_attempts,type")
       .limit(100);
 
     if (claimError) {
@@ -123,6 +127,27 @@ export const dispatchPushNotifications = async (req, res, next) => {
       return res.status(500).json({ error: subError.message });
     }
 
+    const { data: profiles, error: prefsError } = await supabase
+      .from("profiles")
+      .select("id, notification_preferences")
+      .in("id", userIds);
+
+    if (prefsError) {
+      const notificationIds = notifications.map((n) => n.id);
+      if (notificationIds.length > 0) {
+        await supabase
+          .from("notifications")
+          .update({ push_claimed_at: null })
+          .in("id", notificationIds);
+      }
+      return res.status(500).json({ error: prefsError.message });
+    }
+
+    const prefsByUser = {};
+    for (const profile of profiles || []) {
+      prefsByUser[profile.id] = profile.notification_preferences;
+    }
+
     // Group subscriptions by user_id for O(1) lookup per notification.
     const subsByUser = {};
     for (const sub of allSubscriptions || []) {
@@ -134,6 +159,16 @@ export const dispatchPushNotifications = async (req, res, next) => {
     const expiredSubscriptionIds = new Set();
 
     for (const notification of notifications) {
+      const category = notificationTypeToCategory(notification.type);
+      if (!isPushAllowedForCategory(prefsByUser[notification.user_id], category)) {
+        // Opted out — mark handled so the claim doesn't retry forever.
+        await supabase
+          .from("notifications")
+          .update({ push_sent_at: new Date().toISOString() })
+          .eq("id", notification.id);
+        continue;
+      }
+
       const subscriptions = subsByUser[notification.user_id] || [];
 
       const pushResults = await Promise.allSettled(

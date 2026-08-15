@@ -404,18 +404,22 @@ const Chat = () => {
     setMessageText("");
     await sendTypingStatus(false);
 
-    const { error } = await supabase.from("messages").insert({
-      sender_id: currentUser.id,
-      receiver_id: selectedUser.id,
-      content,
-      text: content,
-    });
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        sender_id: currentUser.id,
+        receiver_id: selectedUser.id,
+        content,
+        text: content,
+      })
+      .select("id")
+      .single();
 
     if (error) {
       setMessageText(content);
       console.error("Failed to send message:", error.message);
     } else {
-      awardXP.mutate({ activity: "chat_message" });
+      awardXP.mutate({ activity: "chat_message", referenceId: data.id });
     }
   }, [currentUser?.id, messageText, selectedUser?.id, sendTypingStatus, awardXP]);
 

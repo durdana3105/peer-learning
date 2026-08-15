@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { Send, Video, Sparkles, BellOff, Bell, Download, Pin, PinOff } from "lucide-react";
 import { LiveCodeRunner } from "@/components/studyroom/LiveCodeRunner";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { RsvpSection } from "@/components/sessions/RsvpSection";
 
 type SessionChatProps = {
   selectedSession: any;
@@ -16,6 +17,14 @@ type SessionChatProps = {
   studyTime: number;
   isFocusMode: boolean;
   setIsFocusMode: (val: boolean) => void;
+  myRsvp: "going" | "maybe" | "cant_attend" | null;
+  rsvpCounts: {
+    going: number;
+    maybe: number;
+    cant_attend: number;
+  };
+  rsvpLoading: boolean;
+  updateRsvp: (status: "going" | "maybe" | "cant_attend") => void;
   sendMessage: (msg: string) => Promise<boolean>;
   togglePinMessage: (msgId: string, currentPinStatus: boolean) => void;
   sendTypingEvent: () => void;
@@ -37,6 +46,10 @@ export function SessionChat({
   studyTime,
   isFocusMode,
   setIsFocusMode,
+  myRsvp,
+  rsvpCounts,
+  rsvpLoading,
+  updateRsvp,
   sendMessage,
   togglePinMessage,
   sendTypingEvent,
@@ -164,6 +177,14 @@ export function SessionChat({
               </div>
             </div>
             
+            <RsvpSection
+              sessionStatus={selectedSession?.status}
+              myRsvp={myRsvp}
+              rsvpCounts={rsvpCounts}
+              rsvpLoading={rsvpLoading}
+              updateRsvp={updateRsvp}
+            />
+
             <button
               onClick={handleExport}
               title="Export Session Notes and Chat"

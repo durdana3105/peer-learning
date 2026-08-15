@@ -103,7 +103,7 @@ const UploadDialog = ({ open, onOpenChange, onSuccess }: UploadDialogProps) => {
     }
 
     toast.success("Resource uploaded successfully.");
-    awardXP.mutate({ activity: "resource_upload" });
+    awardXP.mutate({ activity: "resource_upload", referenceId: result.data.id });
     resetForm();
     onOpenChange(false);
     onSuccess();

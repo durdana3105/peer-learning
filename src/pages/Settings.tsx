@@ -2,20 +2,31 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { ArrowLeft, Bell, Mail, Smartphone, Save } from "lucide-react";
+import { ArrowLeft, Bell, Smartphone, Save, Moon, Sun } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from "next-themes";
 
 type NotificationCategory = "messages" | "sessions" | "friends";
 type NotificationChannels = {
-  email: boolean;
   inApp: boolean;
 };
 type NotificationPreferences = Record<NotificationCategory, NotificationChannels>;
 
 const DEFAULT_PREFERENCES: NotificationPreferences = {
-  messages: { email: true, inApp: true },
-  sessions: { email: true, inApp: true },
-  friends: { email: false, inApp: true },
+  messages: { inApp: true },
+  sessions: { inApp: true },
+  friends: { inApp: true },
+};
+
+const normalizePreferences = (raw: unknown): NotificationPreferences => {
+  const source =
+    raw && typeof raw === "object" ? (raw as Record<string, { inApp?: boolean }>) : {};
+
+  return {
+    messages: { inApp: source.messages?.inApp !== false },
+    sessions: { inApp: source.sessions?.inApp !== false },
+    friends: { inApp: source.friends?.inApp !== false },
+  };
 };
 
 const Settings = () => {
@@ -23,6 +34,7 @@ const Settings = () => {
   const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
   const [isSaving, setIsSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const loadPreferences = async () => {
@@ -36,8 +48,8 @@ const Settings = () => {
             .eq("id", user.id)
             .maybeSingle();
 
-          if (data && data.notification_preferences) {
-            setPreferences(data.notification_preferences as NotificationPreferences);
+          if (!error && data?.notification_preferences) {
+            setPreferences(normalizePreferences(data.notification_preferences));
             return;
           }
         }
@@ -49,7 +61,7 @@ const Settings = () => {
       const saved = localStorage.getItem("notification_preferences");
       if (saved) {
         try {
-          setPreferences(JSON.parse(saved));
+          setPreferences(normalizePreferences(JSON.parse(saved)));
         } catch (e) {
           console.error("Failed to parse preferences", e);
         }
@@ -59,12 +71,12 @@ const Settings = () => {
     loadPreferences();
   }, []);
 
-  const handleToggle = (category: NotificationCategory, channel: keyof NotificationChannels) => {
+  const handleToggle = (category: NotificationCategory) => {
     setPreferences((prev) => ({
       ...prev,
       [category]: {
         ...prev[category],
-        [channel]: !prev[category][channel],
+        inApp: !prev[category].inApp,
       },
     }));
   };
@@ -118,7 +130,7 @@ const Settings = () => {
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold">Notification Preferences</h1>
-                <p className="text-gray-400 mt-1">Control how and when you want to be notified.</p>
+                <p className="text-gray-400 mt-1">Control which push notifications you receive.</p>
               </div>
             </div>
           </div>
@@ -126,72 +138,77 @@ const Settings = () => {
           {/* Preferences Table */}
           <div className="bg-black/20 rounded-3xl border border-white/5 overflow-hidden">
             <div className="grid grid-cols-12 gap-4 p-5 border-b border-white/5 bg-white/5 font-semibold text-sm text-gray-300 uppercase tracking-wider">
-              <div className="col-span-6 md:col-span-8">Event</div>
-              <div className="col-span-3 md:col-span-2 text-center flex items-center justify-center gap-2">
-                <Mail size={16} /> <span className="hidden md:inline">Email</span>
-              </div>
-              <div className="col-span-3 md:col-span-2 text-center flex items-center justify-center gap-2">
-                <Smartphone size={16} /> <span className="hidden md:inline">In-App</span>
+              <div className="col-span-8 md:col-span-9">Event</div>
+              <div className="col-span-4 md:col-span-3 text-center flex items-center justify-center gap-2">
+                <Smartphone size={16} /> <span className="hidden md:inline">Push</span>
               </div>
             </div>
 
             <div className="divide-y divide-white/5">
-              {/* New Messages */}
               <div className="grid grid-cols-12 gap-4 p-5 items-center hover:bg-white/5 transition">
-                <div className="col-span-6 md:col-span-8">
+                <div className="col-span-8 md:col-span-9">
                   <h3 className="font-semibold text-lg text-gray-200">New Messages</h3>
                   <p className="text-sm text-gray-400 mt-1">Direct messages from peers and mentors.</p>
                 </div>
-                <div className="col-span-3 md:col-span-2 flex justify-center">
-                  <ToggleSwitch
-                    checked={preferences.messages.email}
-                    onChange={() => handleToggle("messages", "email")}
-                  />
-                </div>
-                <div className="col-span-3 md:col-span-2 flex justify-center">
+                <div className="col-span-4 md:col-span-3 flex justify-center">
                   <ToggleSwitch
                     checked={preferences.messages.inApp}
-                    onChange={() => handleToggle("messages", "inApp")}
+                    onChange={() => handleToggle("messages")}
                   />
                 </div>
               </div>
 
-              {/* Upcoming Sessions */}
               <div className="grid grid-cols-12 gap-4 p-5 items-center hover:bg-white/5 transition">
-                <div className="col-span-6 md:col-span-8">
+                <div className="col-span-8 md:col-span-9">
                   <h3 className="font-semibold text-lg text-gray-200">Upcoming Sessions</h3>
                   <p className="text-sm text-gray-400 mt-1">Reminders before your study sessions start.</p>
                 </div>
-                <div className="col-span-3 md:col-span-2 flex justify-center">
-                  <ToggleSwitch
-                    checked={preferences.sessions.email}
-                    onChange={() => handleToggle("sessions", "email")}
-                  />
-                </div>
-                <div className="col-span-3 md:col-span-2 flex justify-center">
+                <div className="col-span-4 md:col-span-3 flex justify-center">
                   <ToggleSwitch
                     checked={preferences.sessions.inApp}
-                    onChange={() => handleToggle("sessions", "inApp")}
+                    onChange={() => handleToggle("sessions")}
                   />
                 </div>
               </div>
 
-              {/* Friend Requests */}
               <div className="grid grid-cols-12 gap-4 p-5 items-center hover:bg-white/5 transition">
-                <div className="col-span-6 md:col-span-8">
+                <div className="col-span-8 md:col-span-9">
                   <h3 className="font-semibold text-lg text-gray-200">Friend Requests</h3>
                   <p className="text-sm text-gray-400 mt-1">When someone sends you a connection request.</p>
                 </div>
-                <div className="col-span-3 md:col-span-2 flex justify-center">
-                  <ToggleSwitch
-                    checked={preferences.friends.email}
-                    onChange={() => handleToggle("friends", "email")}
-                  />
-                </div>
-                <div className="col-span-3 md:col-span-2 flex justify-center">
+                <div className="col-span-4 md:col-span-3 flex justify-center">
                   <ToggleSwitch
                     checked={preferences.friends.inApp}
-                    onChange={() => handleToggle("friends", "inApp")}
+                    onChange={() => handleToggle("friends")}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Appearance Section */}
+          <div className="mt-10">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-cyan-500/10 rounded-2xl border border-cyan-400/20 text-cyan-400">
+                <Moon size={28} className="hidden dark:block" />
+                <Sun size={28} className="block dark:hidden" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">Appearance</h2>
+                <p className="text-gray-400 mt-1">Customize the visual theme of the platform.</p>
+              </div>
+            </div>
+            
+            <div className="bg-black/20 rounded-3xl border border-white/5 overflow-hidden">
+              <div className="grid grid-cols-12 gap-4 p-5 items-center hover:bg-white/5 transition">
+                <div className="col-span-8">
+                  <h3 className="font-semibold text-lg text-gray-200">Dark Mode</h3>
+                  <p className="text-sm text-gray-400 mt-1">Toggle between light and dark mode.</p>
+                </div>
+                <div className="col-span-4 flex justify-end">
+                  <ToggleSwitch
+                    checked={theme === "dark"}
+                    onChange={() => setTheme(theme === "dark" ? "light" : "dark")}
                   />
                 </div>
               </div>

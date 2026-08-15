@@ -2,6 +2,10 @@ import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import { sanitizeNotificationActionUrl } from "../utils/notificationActionUrl.js";
 import { collectExpiredSubscriptionIds } from "../utils/pushDeliveryCleanup.js";
+import {
+  isPushAllowedForCategory,
+  resolvePushCategory,
+} from "../utils/notificationPreferences.js";
 
 const getSupabaseClient = () => {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -27,7 +31,7 @@ export const sendPushNotification = async (req, res, next) => {
     // Auth is already handled by either requireAuth or webhookSecret middleware in the route.
     // Assuming requireAuth sets req.user
 
-    const { user_id, title, body, action_url } = req.body;
+    const { user_id, title, body, action_url, type, category } = req.body;
 
     if (!user_id || !title || !body) {
       return res.status(400).json({
@@ -60,6 +64,26 @@ export const sendPushNotification = async (req, res, next) => {
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
     const supabase = getSupabaseClient();
     const safeActionUrl = sanitizeNotificationActionUrl(action_url);
+    const pushCategory = resolvePushCategory({ type, category });
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("notification_preferences")
+      .eq("id", user_id)
+      .maybeSingle();
+
+    if (profileError) {
+      return res.status(500).json({ error: profileError.message });
+    }
+
+    if (!isPushAllowedForCategory(profile?.notification_preferences, pushCategory)) {
+      return res.json({
+        sent: 0,
+        failed: 0,
+        skipped: true,
+        reason: "preference_disabled",
+      });
+    }
 
     const { data: subscriptions, error } = await supabase
       .from("push_subscriptions")
