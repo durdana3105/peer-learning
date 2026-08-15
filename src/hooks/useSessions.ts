@@ -210,6 +210,9 @@ const [rsvpLoading, setRsvpLoading] = useState(false);
           const state = roomChannel.presenceState();
           setParticipantCount(Math.max(1, Object.keys(state).length));
         })
+
+        .on("broadcast", { event: "typing" }, ({ payload }: { payload: { user: string } }) => {
+          if (payload.user === (user?.user_metadata?.full_name || "Someone")) return;
         .on("broadcast", { event: "typing" }, ({ payload }: { payload: { user?: string } }) => {
           if (!payload.user || payload.user === (user?.user_metadata?.full_name || "Someone")) return;
           setTypingUser(payload.user);

@@ -47,11 +47,9 @@ export default function RecentActivity() {
             .order("created_at", { ascending: false })
             .limit(3),
           supabase
-            .from("resources")
-            .select("id, title, created_at")
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(3),
+  .from("resources")
+  .select("id, title, created_at")
+  .eq("uploaded_by", user.id),
           supabase
             .from("study_room_participants")
             .select("room_id, joined_at, study_rooms(topic)")
